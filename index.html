@@ -209,12 +209,28 @@
         <div class="stat-box"><div class="v">-</div><div class="l">🟨 Amar.</div></div>
       </div>
       <div class="card">
+        <div class="card-title">Momentum</div>
+        <canvas id="momentumCanvas" width="420" height="90" style="width:100%; height:90px; border-radius:8px; background:#0f172a;"></canvas>
+      </div>
+      <div class="card">
         <div class="card-title">⭐ Jugadores — ordenado por impacto ponderado</div>
         <table class="player-table">
           <thead><tr><th>Jugador</th><th>Min</th><th>⚽</th><th>👟</th><th>🛡️</th><th>Impac.</th><th>Pond.</th></tr></thead>
           <tbody id="tablaJugadoresLive"><tr><td colspan="7" class="loader">Cargando...</td></tr></tbody>
         </table>
         <div class="sub-caption">🛡️ Acciones defensivas · Pond. = impacto normalizado a 70 min</div>
+        <div class="sub-caption" style="text-align:left; margin-top:2px;">👆 Toca un jugador para ver su Perfil</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🗺️ Geo — zonas de acción del partido</div>
+        <canvas id="geoCanvas" width="360" height="480" style="width:100%; border-radius:10px;"></canvas>
+        <div id="geoStats" class="sub-caption" style="text-align:center; margin-top:6px;"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">💤 Rotación — tiempo en banquillo</div>
+        <div id="rotacionLista"><div class="loader">Sin suplentes en banquillo</div></div>
       </div>
     </div>
 
@@ -245,19 +261,59 @@
       </div>
 
       <div id="subSinergias" class="sub-panel">
-        <div class="placeholder-view"><span class="ic">🔗</span>Sinergias entre jugadores — disponible en la próxima actualización del visor.</div>
+        <div class="card">
+          <div class="card-title">🔗 Conexiones tácticas — parejas por impacto ponderado</div>
+          <div id="sinergiasLista"><div class="loader">Cargando...</div></div>
+        </div>
       </div>
       <div id="subRachas" class="sub-panel">
-        <div class="placeholder-view"><span class="ic">🔥</span>Rachas de la temporada — disponible en la próxima actualización del visor.</div>
+        <div class="card">
+          <div class="card-title">🔥 Rachas de la temporada</div>
+          <div id="rachasLista"><div class="loader">Cargando...</div></div>
+        </div>
       </div>
       <div id="subComparativa" class="sub-panel">
-        <div class="placeholder-view"><span class="ic">📊</span>Comparador jugador vs jugador — disponible en la próxima actualización del visor.</div>
+        <div class="card">
+          <div class="card-title">📊 Top 5 de la temporada</div>
+          <select id="comparativaStatSelect" onchange="rerenderComparativa()" style="width:100%; padding:8px; border-radius:8px; background:#0f172a; color:#e2e8f0; border:1px solid rgba(255,255,255,.1); margin-bottom:10px; font-size:12px;">
+            <option value="impactoAcum">Impacto acumulado</option>
+            <option value="goles">Goles</option>
+            <option value="asistencias">Asistencias</option>
+            <option value="accionesDef">Acciones defensivas</option>
+            <option value="minutos">Minutos</option>
+          </select>
+          <div id="comparativaLista"><div class="loader">Cargando...</div></div>
+        </div>
       </div>
       <div id="subHeatmap" class="sub-panel">
-        <div class="placeholder-view"><span class="ic">🗺️</span>Heatmap de temporada — disponible en la próxima actualización del visor.</div>
+        <div class="card">
+          <div class="card-title">🗺️ Heatmap de temporada</div>
+          <div style="display:flex; gap:5px; margin-bottom:8px;">
+            <select id="heatmapFiltroSelect" onchange="rerenderHeatmap()" style="flex:1; padding:6px; border-radius:8px; background:#0f172a; color:#e2e8f0; border:1px solid rgba(255,255,255,.1); font-size:11px;">
+              <option value="todo">Todo</option>
+              <option value="ofensivo">Ofensivas</option>
+              <option value="defensivo">Defensivas</option>
+            </select>
+            <select id="heatmapRivalSelect" onchange="rerenderHeatmap()" style="flex:1; padding:6px; border-radius:8px; background:#0f172a; color:#e2e8f0; border:1px solid rgba(255,255,255,.1); font-size:11px;">
+              <option value="todos">Todos los partidos</option>
+            </select>
+          </div>
+          <canvas id="heatmapCanvas" width="360" height="480" style="width:100%; border-radius:10px;"></canvas>
+          <div id="heatmapStats" class="sub-caption" style="text-align:center; margin-top:6px;"></div>
+        </div>
       </div>
       <div id="subOnceIdeal" class="sub-panel">
-        <div class="placeholder-view"><span class="ic">🏅</span>Once ideal de la temporada — disponible en la próxima actualización del visor.</div>
+        <div class="card">
+          <div class="card-title">🏅 Once ideal de la temporada</div>
+          <select id="onceIdealFormacionSelect" onchange="rerenderOnceIdeal()" style="width:100%; padding:8px; border-radius:8px; background:#0f172a; color:#e2e8f0; border:1px solid rgba(255,255,255,.1); margin-bottom:10px; font-size:12px;">
+            <option value="4-3-3">1-4-3-3</option>
+            <option value="4-4-2">1-4-4-2</option>
+            <option value="4-2-3-1">1-4-2-3-1</option>
+            <option value="3-5-2">1-3-5-2</option>
+            <option value="3-4-3">1-3-4-3</option>
+          </select>
+          <div id="onceIdealLista"><div class="loader">Cargando...</div></div>
+        </div>
       </div>
     </div>
   </div>
@@ -270,6 +326,13 @@
 </div>
 
 <p class="note">HERGAR Live — visor de solo lectura para familias del club.</p>
+
+<div id="perfilModal" style="display:none; position:fixed; inset:0; z-index:900; background:rgba(0,0,0,.85); align-items:center; justify-content:center; padding:20px;">
+  <div style="background:linear-gradient(145deg,#111827,#0f172a); border-radius:20px; padding:20px; max-width:340px; width:100%; border:1px solid rgba(255,255,255,.08);">
+    <div id="perfilContenido"></div>
+    <button onclick="document.getElementById('perfilModal').style.display='none';" style="margin-top:14px; width:100%; padding:11px; background:rgba(255,255,255,.06); color:#e2e8f0; border:none; border-radius:10px; font-weight:700; font-family:'Montserrat',sans-serif;">CERRAR</button>
+  </div>
+</div>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
@@ -343,12 +406,12 @@
   }
 
   function pintarTablaJugadores(matchData) {
-    const jugadores = Object.values(matchData.jugadores || {});
-    jugadores.sort((a,b) => (b.impactoPond||0) - (a.impactoPond||0));
+    const jugadores = Object.entries(matchData.jugadores || {});
+    jugadores.sort((a,b) => (b[1].impactoPond||0) - (a[1].impactoPond||0));
     const tbody = document.getElementById('tablaJugadoresLive');
     if (jugadores.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="loader">Sin jugadores todavía</td></tr>'; return; }
-    tbody.innerHTML = jugadores.map(p => `
-      <tr>
+    tbody.innerHTML = jugadores.map(([id,p]) => `
+      <tr onclick="abrirPerfilJugador('${id}')" style="cursor:pointer;">
         <td class="nombre"><span class="dorsal-mini">${p.dorsal}</span>${(p.name||'').split(' ')[0]}</td>
         <td>${p.minutos}'</td>
         <td>${p.goles}</td>
@@ -359,8 +422,122 @@
       </tr>`).join('');
   }
 
+  function pintarGeo(matchData) {
+    const canvas = document.getElementById('geoCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle = '#1a5c32'; ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(0,H/2); ctx.lineTo(W,H/2); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,.2)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0,H/3); ctx.lineTo(W,H/3); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,2*H/3); ctx.lineTo(W,2*H/3); ctx.stroke();
+    const zonasEquipo = matchData.zonasEquipo || { of:{}, def:{} };
+    const of = zonasEquipo.of || {}, def = zonasEquipo.def || {};
+    const zonas = {};
+    Object.keys(ZONAS_COORD_PCT).forEach(z => { zonas[z] = (parseInt(of[z])||0) + (parseInt(def[z])||0); });
+    const maxVal = Math.max(...Object.values(zonas), 1);
+    let total = 0;
+    Object.keys(ZONAS_COORD_PCT).forEach(zStr => {
+      const z = parseInt(zStr);
+      const val = zonas[z] || 0;
+      if (val === 0) return;
+      total += val;
+      const intensidad = val / maxVal;
+      const pos = { x: W*ZONAS_COORD_PCT[z].x/100, y: H*ZONAS_COORD_PCT[z].y/100 };
+      const r = 30 * (0.5 + 0.5*intensidad);
+      const grad = ctx.createRadialGradient(pos.x,pos.y,0,pos.x,pos.y,r);
+      grad.addColorStop(0, `rgba(255, ${Math.round(200*(1-intensidad))}, 0, ${0.5+0.45*intensidad})`);
+      grad.addColorStop(1, 'rgba(255,100,0,0)');
+      ctx.beginPath(); ctx.arc(pos.x,pos.y,r,0,2*Math.PI); ctx.fillStyle = grad; ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.font = `bold ${8+Math.round(3*intensidad)}px Inter`; ctx.textAlign='center';
+      ctx.fillText(val, pos.x, pos.y+3);
+    });
+    const statsEl = document.getElementById('geoStats');
+    if (statsEl) statsEl.textContent = total > 0 ? `${total} acciones registradas` : 'Sin acciones registradas todavía';
+  }
+
+  function pintarRotacion(matchData) {
+    const cont = document.getElementById('rotacionLista');
+    if (!cont) return;
+    const bench = matchData.benchIds || [];
+    const sitting = matchData.benchSittingTime || {};
+    const jugadores = matchData.jugadores || {};
+    if (bench.length === 0) { cont.innerHTML = '<div class="loader">Sin suplentes en banquillo</div>'; return; }
+    const filas = bench.map(id => {
+      const p = jugadores[id];
+      if (!p) return '';
+      const segs = sitting[id] || 0;
+      const mins = Math.floor(segs / 60);
+      return `<div class="rank-row"><div class="rank-name">${(p.name||'').split(' ')[0]}</div><div class="rank-val" style="color:#94a3b8;">${mins}' en banquillo</div></div>`;
+    }).join('');
+    cont.innerHTML = filas || '<div class="loader">Sin datos</div>';
+  }
+
+  // ── Perfil (cromo en vivo) ──────────────────────────────────────────
+  const MIN_MINUTOS_PERFIL = 20;
+  function clamp99(v) { return Math.max(40, Math.min(99, Math.round(v))); }
+  function calcularAtributosCromo(s) {
+    const rit = clamp99(40 + (Math.min(90, s.minutos) / 90) * 59);
+    const tirosTotales = (s.disparosPuerta||0) + (s.disparosFuera||0);
+    const precision = tirosTotales > 0 ? s.disparosPuerta / tirosTotales : 0.5;
+    const tir = clamp99(40 + precision*30 + Math.min(29, (s.goles||0)*6));
+    const pasVal = (s.pasesClave||0)*3 + (s.pasesArea||0) + (s.asistencias||0)*3;
+    const pas = clamp99(40 + Math.min(59, pasVal*2));
+    const regVal = (s.asistencias||0)*5 + (s.pasesClave||0)*3 + (s.goles||0)*2;
+    const reg = clamp99(40 + Math.min(59, regVal));
+    let def, defLabel;
+    if (s.esPortero) { def = clamp99(40 + Math.min(59, (s.paradas||0)*4 + (s.paradasDificiles||0)*9)); defLabel='PAR'; }
+    else { def = clamp99(40 + Math.min(59, (s.accionesDef||0)*4)); defLabel='DEF'; }
+    const fis = clamp99(40 + Math.min(59, (s.impactoPond||0)*9));
+    const rating = Math.round((rit+tir+pas+reg+def+fis)/6);
+    let tier = 'bronce';
+    if (rating >= 85) tier = 'especial'; else if (rating >= 75) tier = 'oro'; else if (rating >= 65) tier = 'plata';
+    return { rit, tir, pas, reg, def, defLabel, fis, rating, tier };
+  }
+  const CROMO_COLORES = {
+    bronce: '#d99a52', plata: '#dbe4e8', oro: '#f5a623', especial: '#c299f5'
+  };
+
+  window.abrirPerfilJugador = (id) => {
+    if (!ultimoMatchData) return;
+    const p = ultimoMatchData.jugadores?.[id];
+    const cont = document.getElementById('perfilContenido');
+    if (!p) return;
+    if ((p.minutos||0) < MIN_MINUTOS_PERFIL) {
+      cont.innerHTML = `
+        <div style="text-align:center; padding:20px 10px;">
+          <div style="font-size:28px; margin-bottom:8px;">⏳</div>
+          <div style="font-weight:800; color:#e2e8f0; margin-bottom:4px;">${(p.name||'').split(' ')[0]}</div>
+          <div style="font-size:12px; color:#64748b;">Aún sin los ${MIN_MINUTOS_PERFIL} minutos mínimos para generar su Perfil (lleva ${p.minutos||0}')</div>
+        </div>`;
+    } else {
+      const attrs = calcularAtributosCromo(p);
+      const color = CROMO_COLORES[attrs.tier];
+      cont.innerHTML = `
+        <div style="text-align:center;">
+          <div style="font-size:42px; font-weight:900; font-family:'Montserrat',sans-serif; color:${color};">${attrs.rating}</div>
+          <div style="font-size:10px; letter-spacing:2px; color:${color}; text-transform:uppercase; font-weight:800; margin-bottom:4px;">${attrs.tier}</div>
+          <div style="font-size:15px; font-weight:800; color:#e2e8f0; margin-bottom:2px;">#${p.dorsal} ${(p.name||'').split(' ')[0]}</div>
+          <div style="font-size:11px; color:#64748b; margin-bottom:14px;">${p.minutos}' jugados</div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+          ${[['RIT',attrs.rit],['TIR',attrs.tir],['PAS',attrs.pas],['REG',attrs.reg],[attrs.defLabel,attrs.def],['FÍS',attrs.fis]].map(([label,val]) => `
+            <div style="background:rgba(255,255,255,.04); border-radius:8px; padding:8px; display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:10px; color:#94a3b8; font-weight:700;">${label}</span>
+              <span style="font-size:16px; font-weight:900; color:${color}; font-family:'Montserrat',sans-serif;">${val}</span>
+            </div>`).join('')}
+        </div>`;
+    }
+    document.getElementById('perfilModal').style.display = 'flex';
+  };
+
+  let ultimoMatchData = null;
   function actualizarVistaPartido(matchData) {
     if (!matchData) return;
+    ultimoMatchData = matchData;
     document.getElementById('scoreLocal').textContent = matchData.golesLocal ?? 0;
     document.getElementById('scoreRival').textContent = matchData.golesRival ?? 0;
     document.getElementById('rivalName').textContent = (matchData.rival || 'RIVAL').toUpperCase();
@@ -379,6 +556,9 @@
     pintarEventos(matchData);
     pintarStatsGrid(matchData);
     pintarTablaJugadores(matchData);
+    pintarMomentum(matchData);
+    pintarGeo(matchData);
+    pintarRotacion(matchData);
   }
 
   function pintarRanking(temporada) {
@@ -406,6 +586,231 @@
         <div class="rank-name">${p.fecha || ''} · vs ${p.rival}</div>
         <div class="streak-chip ${chipClass}">${p.golesLocal}–${p.golesRival} ${icon}</div>
       </div>`;
+    }).join('');
+  }
+
+  function pintarMomentum(matchData) {
+    const canvas = document.getElementById('momentumCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+    const datos = matchData.momentumData || [];
+    if (datos.length < 2) {
+      ctx.fillStyle = '#334155'; ctx.font = '11px Inter'; ctx.textAlign = 'center';
+      ctx.fillText('Sin datos suficientes todavía', W/2, H/2);
+      return;
+    }
+    // Línea cero central
+    ctx.strokeStyle = 'rgba(255,255,255,.1)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, H/2); ctx.lineTo(W, H/2); ctx.stroke();
+
+    const maxAbs = Math.max(...datos.map(d => Math.abs(d.acum)), 1);
+    const stepX = W / (datos.length - 1);
+    const yFor = (acum) => H/2 - (acum / maxAbs) * (H/2 - 8);
+
+    ctx.beginPath();
+    datos.forEach((d, i) => {
+      const x = i * stepX, y = yFor(d.acum);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = '#2ed573'; ctx.lineWidth = 2; ctx.stroke();
+
+    // Relleno degradado bajo la línea
+    ctx.lineTo(W, H/2); ctx.lineTo(0, H/2); ctx.closePath();
+    const grad = ctx.createLinearGradient(0,0,0,H);
+    grad.addColorStop(0, 'rgba(46,213,115,.25)'); grad.addColorStop(1, 'rgba(46,213,115,0)');
+    ctx.fillStyle = grad; ctx.fill();
+  }
+
+  function pintarSinergias(t) {
+    const cont = document.getElementById('sinergiasLista');
+    if (!cont) return;
+    const sinergias = t.sinergias || {};
+    const nombres = {};
+    Object.values(t.jugadores || {}).forEach(j => nombres[j.id] = `${(j.name||'').split(' ')[0]}`);
+    const filas = Object.entries(sinergias).map(([clave, data]) => {
+      const [idA, idB] = clave.split('_').map(Number);
+      const mins = Math.floor((data.segs || 0) / 60);
+      const impPond = mins > 0 ? (data.impactoAcum / mins * 70) : 0;
+      return { idA, idB, mins, impPond };
+    }).filter(d => d.mins > 0).sort((a,b) => b.impPond - a.impPond);
+    if (filas.length === 0) { cont.innerHTML = '<div class="loader">Sin datos aún</div>'; return; }
+    const maxImp = Math.max(...filas.map(f => f.impPond), 0.01);
+    cont.innerHTML = filas.slice(0, 12).map(f => {
+      const pct = Math.round((f.impPond / maxImp) * 100);
+      const nomA = nombres[f.idA] || `ID${f.idA}`, nomB = nombres[f.idB] || `ID${f.idB}`;
+      return `<div style="padding:8px 0; border-bottom:1px solid rgba(255,255,255,.04);">
+        <div style="display:flex; justify-content:space-between; font-size:11.5px; color:#cbd5e1; margin-bottom:4px;">
+          <span>${nomA} ↔ ${nomB}</span><span style="color:#64748b;">${f.mins}' juntos</span>
+        </div>
+        <div style="background:#0d1f17; border-radius:3px; height:5px;">
+          <div style="width:${pct}%; height:100%; background:#2ed573; border-radius:3px;"></div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function pintarRachas(t) {
+    const cont = document.getElementById('rachasLista');
+    if (!cont) return;
+    const partidos = t.partidos || [];
+    if (partidos.length === 0) { cont.innerHTML = '<div class="loader">Sin datos aún</div>'; return; }
+    const V = partidos.filter(p=>p.resultado==='V').length;
+    const E = partidos.filter(p=>p.resultado==='E').length;
+    const D = partidos.filter(p=>p.resultado==='D').length;
+    const GF = partidos.reduce((s,p)=>s+p.golesLocal,0);
+    const GC = partidos.reduce((s,p)=>s+p.golesRival,0);
+    let jugadores = Object.values(t.jugadores || {}).filter(j => j.partidos > 0);
+    jugadores.sort((a,b) => (b.rachaActualTitular||0) - (a.rachaActualTitular||0));
+    const filasJugadores = jugadores.slice(0, 10).map(j => `
+      <div class="rank-row">
+        <div class="rank-name">${(j.name||'').split(' ')[0]}</div>
+        <div class="rank-val">${j.rachaActualTitular||0} 🔥</div>
+      </div>`).join('');
+    cont.innerHTML = `
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-bottom:12px;">
+        <div class="stat-box"><div class="v" style="color:#2ed573;">${V}</div><div class="l">VICTORIAS</div></div>
+        <div class="stat-box"><div class="v" style="color:#f5a623;">${E}</div><div class="l">EMPATES</div></div>
+        <div class="stat-box"><div class="v" style="color:#ff4757;">${D}</div><div class="l">DERROTAS</div></div>
+      </div>
+      <div style="font-size:11.5px; color:#cbd5e1; margin-bottom:10px;">${partidos.length} partidos · GF: <strong style="color:#2ed573;">${GF}</strong> · GC: <strong style="color:#ff4757;">${GC}</strong></div>
+      <div class="card-title" style="margin-top:6px;">🔥 Racha de titularidad por jugador</div>
+      ${filasJugadores || '<div class="loader">Sin datos</div>'}`;
+  }
+
+  const COMPARATIVA_STATS = { impactoAcum: 'Impacto', goles: 'Goles', asistencias: 'Asistencias', accionesDef: 'Acc. defensivas', minutos: 'Minutos' };
+  function pintarComparativa(t) {
+    const sel = document.getElementById('comparativaStatSelect');
+    if (!sel) return;
+    const stat = sel.value || 'impactoAcum';
+    const jugadores = Object.values(t.jugadores || {});
+    const cont = document.getElementById('comparativaLista');
+    if (jugadores.length === 0) { cont.innerHTML = '<div class="loader">Sin datos aún</div>'; return; }
+    const sorted = jugadores.slice().sort((a,b) => (b[stat]||0) - (a[stat]||0)).slice(0, 5);
+    const medals = ['🥇','🥈','🥉','4️⃣','5️⃣'];
+    cont.innerHTML = sorted.map((j,i) => `
+      <div class="rank-row">
+        <div class="rank-pos">${medals[i]}</div>
+        <div class="rank-name">${(j.name||'').split(' ')[0]}</div>
+        <div class="rank-val">${(j[stat]||0).toFixed ? (j[stat]||0).toFixed(stat==='impactoAcum'?2:0) : j[stat]||0}</div>
+      </div>`).join('');
+  }
+
+  const ZONAS_COORD_PCT = {
+    1:{x:83,y:90}, 4:{x:83,y:73}, 7:{x:83,y:57}, 10:{x:83,y:40}, 13:{x:83,y:23},
+    2:{x:50,y:90}, 5:{x:50,y:73}, 8:{x:50,y:57}, 11:{x:50,y:40}, 14:{x:50,y:23},
+    3:{x:17,y:90}, 6:{x:17,y:73}, 9:{x:17,y:57}, 12:{x:17,y:40}, 15:{x:17,y:23}
+  };
+  function dibujarHeatmapViewer(zonasData) {
+    const canvas = document.getElementById('heatmapCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle = '#1a5c32'; ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(0,H/2); ctx.lineTo(W,H/2); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,.2)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0,H/3); ctx.lineTo(W,H/3); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,2*H/3); ctx.lineTo(W,2*H/3); ctx.stroke();
+    const maxVal = Math.max(...Object.values(zonasData).map(v => parseInt(v)||0), 1);
+    let total = 0;
+    Object.keys(ZONAS_COORD_PCT).forEach(zStr => {
+      const z = parseInt(zStr);
+      const val = parseInt(zonasData[z]) || 0;
+      if (val === 0) return;
+      total += val;
+      const intensidad = val / maxVal;
+      const pos = { x: W*ZONAS_COORD_PCT[z].x/100, y: H*ZONAS_COORD_PCT[z].y/100 };
+      const r = 30 * (0.5 + 0.5*intensidad);
+      const grad = ctx.createRadialGradient(pos.x,pos.y,0,pos.x,pos.y,r);
+      grad.addColorStop(0, `rgba(255, ${Math.round(200*(1-intensidad))}, 0, ${0.5+0.45*intensidad})`);
+      grad.addColorStop(1, 'rgba(255,100,0,0)');
+      ctx.beginPath(); ctx.arc(pos.x,pos.y,r,0,2*Math.PI); ctx.fillStyle = grad; ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.font = `bold ${8+Math.round(3*intensidad)}px Inter`; ctx.textAlign='center';
+      ctx.fillText(val, pos.x, pos.y+3);
+    });
+    const statsEl = document.getElementById('heatmapStats');
+    if (statsEl) statsEl.textContent = total > 0 ? `${total} acciones registradas` : 'Sin acciones registradas aún';
+  }
+  function pintarHeatmap(t) {
+    const filtro = document.getElementById('heatmapFiltroSelect')?.value || 'todo';
+    const rivalSel = document.getElementById('heatmapRivalSelect');
+    if (rivalSel && rivalSel.options.length <= 1) {
+      const rivales = [...new Set((t.partidos||[]).map(p => p.rival))];
+      rivalSel.innerHTML = '<option value="todos">Todos los partidos</option>' + rivales.map(r => `<option value="${r}">${r}</option>`).join('');
+    }
+    const rivalFiltro = rivalSel?.value || 'todos';
+    let base = (rivalFiltro !== 'todos' && t.zonasPorRival?.[rivalFiltro]) ? t.zonasPorRival[rivalFiltro] : (t.zonasEquipo || {of:{},def:{}});
+    const of = base.of || {}, def = base.def || {};
+    let zonas = {};
+    if (filtro === 'todo') { Object.keys(ZONAS_COORD_PCT).forEach(z => { zonas[z] = (of[z]||0)+(def[z]||0); }); }
+    else if (filtro === 'ofensivo') zonas = {...of};
+    else zonas = {...def};
+    dibujarHeatmapViewer(zonas);
+  }
+
+  function obtenerCuposFormacion(formacion) {
+    const esquema = formacion.split('-').map(Number);
+    const cupos = { portero: 1, defensa: esquema[0], centrocampista: 0, delantero: 0 };
+    if (esquema.length === 4) { cupos.centrocampista = esquema[1]+esquema[2]; cupos.delantero = esquema[3]; }
+    else { cupos.centrocampista = esquema[1]; cupos.delantero = esquema[2]; }
+    return cupos;
+  }
+  const MIN_MINUTOS_ONCE_IDEAL = 20;
+  function calcularMejorOnce(t, formacion) {
+    const cupos = obtenerCuposFormacion(formacion);
+    const posiciones = ['portero','defensa','centrocampista','delantero'];
+    const candidatosPorJugador = {};
+    Object.values(t.jugadores || {}).forEach(j => {
+      const mpp = j.minutosPorPosicion || {}, ipp = j.impactoPorPosicion || {};
+      const opciones = [];
+      posiciones.forEach(pos => {
+        const mins = mpp[pos] || 0;
+        if (mins >= MIN_MINUTOS_ONCE_IDEAL) {
+          opciones.push({ id: j.id, nombre: j.name, dorsal: j.dorsal, pos, impPond: (ipp[pos]||0)/mins*70, mins });
+        }
+      });
+      if (opciones.length > 0) { opciones.sort((a,b)=>b.impPond-a.impPond); candidatosPorJugador[j.id] = opciones; }
+    });
+    const asignados = { portero:[], defensa:[], centrocampista:[], delantero:[] };
+    function intentarColocar(jugadorId, visitados) {
+      const opciones = candidatosPorJugador[jugadorId] || [];
+      for (const opcion of opciones) {
+        const pos = opcion.pos;
+        if (visitados.has(pos)) continue;
+        visitados.add(pos);
+        if (asignados[pos].length < cupos[pos]) { asignados[pos].push(opcion); return true; }
+        for (const ocupante of asignados[pos]) {
+          if (ocupante.id === jugadorId) continue;
+          if (intentarColocar(ocupante.id, visitados)) {
+            asignados[pos] = asignados[pos].filter(c => c.id !== ocupante.id);
+            asignados[pos].push(opcion);
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+    const orden = Object.keys(candidatosPorJugador).sort((a,b) => candidatosPorJugador[b][0].impPond - candidatosPorJugador[a][0].impPond);
+    orden.forEach(id => intentarColocar(id, new Set()));
+    return { cupos, asignados };
+  }
+  function pintarOnceIdeal(t) {
+    const cont = document.getElementById('onceIdealLista');
+    const formacion = document.getElementById('onceIdealFormacionSelect')?.value || '4-3-3';
+    if (!cont) return;
+    if (Object.keys(t.jugadores || {}).length === 0) { cont.innerHTML = '<div class="loader">Sin datos aún</div>'; return; }
+    const { cupos, asignados } = calcularMejorOnce(t, formacion);
+    const posLabels = { portero:'🧤 Portero', defensa:'🛡️ Defensas', centrocampista:'⚙️ Centrocampistas', delantero:'⚽ Delanteros' };
+    const orden = ['delantero','centrocampista','defensa','portero'];
+    cont.innerHTML = orden.map(pos => {
+      const filas = asignados[pos].map(c => `
+        <div class="rank-row"><div class="rank-pos">${c.dorsal}</div><div class="rank-name">${(c.nombre||'').split(' ')[0]}</div><div class="rank-val">${c.impPond.toFixed(1)}</div></div>`).join('');
+      const vacios = cupos[pos] - asignados[pos].length;
+      const filasVacias = vacios > 0 ? Array.from({length:vacios}).map(()=> `<div class="rank-row" style="opacity:.4;"><div class="rank-name">Sin datos suficientes</div></div>`).join('') : '';
+      return `<div style="margin-bottom:10px;"><div class="card-title">${posLabels[pos]} (${asignados[pos].length}/${cupos[pos]})</div>${filas}${filasVacias}</div>`;
     }).join('');
   }
 
@@ -450,12 +855,23 @@
   }
 
   // ── Temporada: siempre suscrita, esté o no en vivo un partido ──
+  let ultimaTemporada = null;
   onValue(ref(db, 'temporada/temporada'), (snap) => {
     const temporada = snap.val();
     if (!temporada) return;
+    ultimaTemporada = temporada;
     pintarRanking(temporada);
     pintarPartidos(temporada);
+    pintarSinergias(temporada);
+    pintarRachas(temporada);
+    pintarComparativa(temporada);
+    pintarHeatmap(temporada);
+    pintarOnceIdeal(temporada);
   });
+
+  window.rerenderComparativa = () => { if (ultimaTemporada) pintarComparativa(ultimaTemporada); };
+  window.rerenderHeatmap = () => { if (ultimaTemporada) pintarHeatmap(ultimaTemporada); };
+  window.rerenderOnceIdeal = () => { if (ultimaTemporada) pintarOnceIdeal(ultimaTemporada); };
 
   // Registro del service worker para instalabilidad (PWA)
   if ('serviceWorker' in navigator) {

@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0">
+<title>HERGAR Live</title>
+<meta name="theme-color" content="#0a0e14">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  body {
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+    background:#0a0e14; color:#e2e8f0; min-height:100vh; padding:12px;
+    background-image:
+      radial-gradient(ellipse at 20% 50%, rgba(46,213,115,.05) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 50%, rgba(52,152,219,.05) 0%, transparent 60%);
+  }
+  .app-container {
+    max-width:480px; margin:0 auto;
+    background:linear-gradient(145deg,#111827,#0f172a);
+    border-radius:20px; box-shadow:0 25px 60px -15px rgba(0,0,0,.8), 0 0 0 1px rgba(255,255,255,.03);
+    padding:4px; padding-bottom:78px; position:relative; min-height:70vh;
+  }
+  .live-banner {
+    display:none; align-items:center; gap:6px; justify-content:center;
+    background:rgba(255,71,87,.12); border:1px solid rgba(255,71,87,.35);
+    color:#ff4757; font-family:'Montserrat',sans-serif; font-weight:800; font-size:11px;
+    letter-spacing:.5px; border-radius:14px 14px 0 0; padding:6px;
+  }
+  .offline-banner {
+    display:none; align-items:center; gap:6px; justify-content:center;
+    background:rgba(100,116,139,.15); border:1px solid rgba(100,116,139,.3);
+    color:#94a3b8; font-family:'Montserrat',sans-serif; font-weight:700; font-size:11px;
+    border-radius:14px 14px 0 0; padding:6px;
+  }
+  .live-dot { width:7px; height:7px; border-radius:50%; background:#ff4757; animation:pulse 1.4s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.25} }
+
+  .match-header {
+    background:linear-gradient(135deg,#0f172a 0%,#1a2332 100%);
+    padding:14px 16px; border-bottom:2px solid rgba(46,213,115,.3); position:relative;
+  }
+  .readonly-tag {
+    position:absolute; top:10px; right:14px; font-size:9px; font-weight:700;
+    color:#64748b; background:rgba(255,255,255,.05); padding:3px 7px; border-radius:6px;
+    font-family:'Montserrat',sans-serif; letter-spacing:.3px;
+  }
+  .match-meta { text-align:center; font-size:11px; color:#64748b; font-weight:600; margin-bottom:8px; }
+  .scoreboard-row { display:flex; align-items:center; justify-content:center; gap:14px; }
+  .scoreboard-team { font-family:'Montserrat',sans-serif; font-weight:800; font-size:13px; color:#94a3b8; }
+  .scoreboard-team.hergar { color:#2ed573; }
+  .scoreboard-goals { font-family:'Montserrat',sans-serif; font-weight:900; font-size:32px; color:#f5f7fa; }
+  .timer-row { text-align:center; margin-top:8px; }
+  .timer-display { font-family:'Montserrat',sans-serif; font-weight:800; font-size:14px; color:#f5a623; letter-spacing:1px; }
+
+  .content { padding:12px; }
+  .tabs-header { display:grid; grid-template-columns:1fr 1fr 1fr; gap:4px; margin-bottom:10px; }
+  .tab-btn {
+    text-align:center; padding:9px 4px; border-radius:10px; font-size:12px; font-weight:700;
+    font-family:'Montserrat',sans-serif; color:#64748b; background:rgba(255,255,255,.03);
+    border:1px solid rgba(255,255,255,.05); cursor:pointer;
+  }
+  .tab-btn.active { color:#0a0e14; background:#2ed573; border-color:#2ed573; }
+
+  .panel { display:none; }
+  .panel.active { display:block; }
+  .sub-panel { display:none; }
+  .sub-panel.active { display:block; }
+
+  .card { background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06); border-radius:14px; padding:12px; margin-bottom:10px; }
+  .card-title { font-family:'Montserrat',sans-serif; font-weight:800; font-size:11px; color:#94a3b8; text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; }
+
+  .campo {
+    position:relative; width:100%; aspect-ratio:3/4; border-radius:12px;
+    background:linear-gradient(180deg,#123f1f,#0d2e17);
+    border:1px solid rgba(255,255,255,.08); overflow:hidden;
+  }
+  .campo::before {
+    content:''; position:absolute; inset:0;
+    background-image: repeating-linear-gradient(0deg, rgba(255,255,255,.03) 0 40px, transparent 40px 80px);
+  }
+  .linea-medio { position:absolute; left:0; right:0; top:50%; height:1px; background:rgba(255,255,255,.15); }
+  .circulo-medio { position:absolute; left:50%; top:50%; width:70px; height:70px; border:1px solid rgba(255,255,255,.15); border-radius:50%; transform:translate(-50%,-50%); }
+  .jugador-wrap { position:absolute; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; }
+  .jugador {
+    width:30px; height:30px; border-radius:50%;
+    background:linear-gradient(145deg,#1a2332,#0f172a); border:2px solid #2ed573;
+    display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:800; color:#e2e8f0;
+    box-shadow:0 3px 8px rgba(0,0,0,.4);
+  }
+  .jugador.gk { border-color:#f5a623; }
+  .jugador-nombre {
+    margin-top:2px; font-size:8px; font-weight:700; color:#cbd5e1; text-align:center;
+    text-shadow:0 1px 3px rgba(0,0,0,.9); white-space:nowrap; max-width:56px; overflow:hidden; text-overflow:ellipsis;
+  }
+
+  .stat-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:10px; }
+  .stat-box { background:rgba(0,0,0,.3); border-radius:10px; padding:8px 4px; text-align:center; border:1px solid rgba(255,255,255,.04); }
+  .stat-box .v { font-family:'Montserrat',sans-serif; font-weight:800; font-size:15px; color:#2ed573; }
+  .stat-box .l { font-size:9px; color:#64748b; margin-top:2px; }
+
+  .timeline-item { display:flex; gap:8px; align-items:center; padding:7px 0; border-bottom:1px solid rgba(255,255,255,.04); font-size:12px; }
+  .timeline-text { color:#cbd5e1; }
+
+  .player-table { width:100%; border-collapse:collapse; font-size:11px; }
+  .player-table th {
+    text-align:center; font-family:'Montserrat',sans-serif; font-weight:700; font-size:9px;
+    color:#64748b; text-transform:uppercase; letter-spacing:.3px; padding:4px 2px; border-bottom:1px solid rgba(255,255,255,.08);
+  }
+  .player-table th:first-child, .player-table td:first-child { text-align:left; }
+  .player-table td { text-align:center; padding:7px 2px; border-bottom:1px solid rgba(255,255,255,.04); color:#cbd5e1; }
+  .player-table td.nombre { display:flex; align-items:center; gap:6px; font-weight:700; color:#e2e8f0; }
+  .dorsal-mini {
+    width:18px; height:18px; border-radius:50%; background:rgba(46,213,115,.12); border:1px solid #2ed573;
+    display:flex; align-items:center; justify-content:center; font-size:8.5px; font-weight:800; color:#2ed573; flex-shrink:0;
+  }
+  .player-table td.impacto { font-family:'Montserrat',sans-serif; font-weight:800; color:#f5a623; }
+  .player-table td.pond { font-family:'Montserrat',sans-serif; font-weight:800; color:#3498db; }
+  .sub-caption { font-size:9.5px; color:#475569; margin-top:6px; text-align:right; }
+
+  .subtabs { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:10px; }
+  .subtab-btn {
+    flex:1 1 auto; white-space:nowrap; padding:7px 8px; border-radius:9px; font-size:10px; font-weight:700;
+    font-family:'Montserrat',sans-serif; color:#94a3b8; background:rgba(30,41,59,.6); border:1px solid rgba(255,255,255,.05);
+    text-align:center; min-width:66px;
+  }
+  .subtab-btn.active { background:linear-gradient(135deg,#f5a623,#c98a1c); color:#0a0e0a; border-color:transparent; }
+  .rank-row { display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid rgba(255,255,255,.04); }
+  .rank-pos { font-family:'Montserrat',sans-serif; font-weight:900; font-size:13px; color:#475569; width:18px; }
+  .rank-name { flex:1; font-weight:700; font-size:12.5px; color:#e2e8f0; }
+  .rank-val { font-family:'Montserrat',sans-serif; font-weight:800; font-size:13px; color:#f5a623; }
+  .streak-chip { display:inline-flex; align-items:center; gap:3px; font-size:10px; font-weight:700; padding:2px 7px; border-radius:20px; }
+  .streak-win { background:rgba(46,213,115,.12); color:#2ed573; }
+  .streak-loss { background:rgba(255,71,87,.12); color:#ff4757; }
+  .streak-draw { background:rgba(148,163,184,.12); color:#94a3b8; }
+  .placeholder-view {
+    text-align:center; padding:26px 12px; color:#475569; font-size:11.5px; line-height:1.5;
+    background:rgba(0,0,0,.2); border-radius:12px; border:1px dashed rgba(255,255,255,.08);
+  }
+  .placeholder-view .ic { font-size:26px; display:block; margin-bottom:8px; }
+
+  .bottom-tabbar {
+    position:fixed; left:50%; bottom:0; transform:translateX(-50%); width:100%; max-width:480px; z-index:500; display:flex;
+    background:rgba(10,16,12,.96); backdrop-filter:blur(10px);
+    border-top:1px solid rgba(255,255,255,.08); border-radius:16px 16px 0 0;
+    padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px));
+  }
+  .bottom-tab { flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; padding:7px 2px; border-radius:10px; color:#52665c; font-family:'Montserrat',sans-serif; font-weight:700; font-size:9.5px; }
+  .bottom-tab .ic { font-size:18px; }
+  .bottom-tab.active { color:#f5a623; background:rgba(245,166,35,.08); }
+
+  .loader { text-align:center; padding:40px 12px; color:#475569; font-size:12px; }
+  .note { max-width:480px; margin:14px auto 0; text-align:center; font-size:11px; color:#475569; padding:0 20px; }
+</style>
+</head>
+<body>
+
+<div class="app-container">
+  <div class="live-banner" id="liveBanner"><span class="live-dot"></span> EN VIVO — Solo lectura</div>
+  <div class="offline-banner" id="offlineBanner">📅 Sin partido en vivo ahora mismo</div>
+
+  <div class="match-header">
+    <span class="readonly-tag">👁️ HERGAR LIVE</span>
+    <div class="match-meta" id="matchMeta">Cargando...</div>
+    <div class="scoreboard-row">
+      <div class="scoreboard-team hergar">HERGAR</div>
+      <div class="scoreboard-goals" id="scoreLocal">-</div>
+      <div class="scoreboard-goals" style="color:#64748b;">—</div>
+      <div class="scoreboard-goals" id="scoreRival">-</div>
+      <div class="scoreboard-team" id="rivalName">RIVAL</div>
+    </div>
+    <div class="timer-row"><span class="timer-display" id="timerDisplay">⏱ --:-- </span></div>
+  </div>
+
+  <div class="content">
+    <div class="tabs-header">
+      <div class="tab-btn active" onclick="showTab('partido')">⚽ Partido</div>
+      <div class="tab-btn" onclick="showTab('envivo')">📊 En vivo</div>
+      <div class="tab-btn" onclick="showTab('temporada')">🏆 Temporada</div>
+    </div>
+
+    <!-- PARTIDO -->
+    <div id="partido" class="panel active">
+      <div class="card">
+        <div class="card-title" id="formacionTitulo">Formación en el campo</div>
+        <div class="campo" id="campoContainer">
+          <div class="linea-medio"></div>
+          <div class="circulo-medio"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Últimos eventos</div>
+        <div id="eventosLista"><div class="loader">Esperando datos del partido...</div></div>
+      </div>
+    </div>
+
+    <!-- EN VIVO -->
+    <div id="envivo" class="panel">
+      <div class="stat-grid" id="statGrid">
+        <div class="stat-box"><div class="v">-</div><div class="l">Disparos</div></div>
+        <div class="stat-box"><div class="v">-</div><div class="l">A puerta</div></div>
+        <div class="stat-box"><div class="v">-</div><div class="l">Faltas</div></div>
+        <div class="stat-box"><div class="v">-</div><div class="l">🟨 Amar.</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">⭐ Jugadores — ordenado por impacto ponderado</div>
+        <table class="player-table">
+          <thead><tr><th>Jugador</th><th>Min</th><th>⚽</th><th>👟</th><th>🛡️</th><th>Impac.</th><th>Pond.</th></tr></thead>
+          <tbody id="tablaJugadoresLive"><tr><td colspan="7" class="loader">Cargando...</td></tr></tbody>
+        </table>
+        <div class="sub-caption">🛡️ Acciones defensivas · Pond. = impacto normalizado a 70 min</div>
+      </div>
+    </div>
+
+    <!-- TEMPORADA -->
+    <div id="temporada" class="panel">
+      <div class="subtabs">
+        <div class="subtab-btn active" onclick="showSub(event,'subRanking')">📈 Ranking</div>
+        <div class="subtab-btn" onclick="showSub(event,'subPartidos')">📅 Partidos</div>
+        <div class="subtab-btn" onclick="showSub(event,'subSinergias')">🔗 Sinergias</div>
+        <div class="subtab-btn" onclick="showSub(event,'subRachas')">🔥 Rachas</div>
+        <div class="subtab-btn" onclick="showSub(event,'subComparativa')">📊 Comp.</div>
+        <div class="subtab-btn" onclick="showSub(event,'subHeatmap')">🗺️ Heatmap</div>
+        <div class="subtab-btn" onclick="showSub(event,'subOnceIdeal')">🏅 Once</div>
+      </div>
+
+      <div id="subRanking" class="sub-panel active">
+        <div class="card">
+          <div class="card-title">Ranking de temporada — por impacto ponderado</div>
+          <div id="rankingLista"><div class="loader">Cargando temporada...</div></div>
+        </div>
+      </div>
+
+      <div id="subPartidos" class="sub-panel">
+        <div class="card">
+          <div class="card-title">Historial de partidos</div>
+          <div id="partidosLista"><div class="loader">Cargando...</div></div>
+        </div>
+      </div>
+
+      <div id="subSinergias" class="sub-panel">
+        <div class="placeholder-view"><span class="ic">🔗</span>Sinergias entre jugadores — disponible en la próxima actualización del visor.</div>
+      </div>
+      <div id="subRachas" class="sub-panel">
+        <div class="placeholder-view"><span class="ic">🔥</span>Rachas de la temporada — disponible en la próxima actualización del visor.</div>
+      </div>
+      <div id="subComparativa" class="sub-panel">
+        <div class="placeholder-view"><span class="ic">📊</span>Comparador jugador vs jugador — disponible en la próxima actualización del visor.</div>
+      </div>
+      <div id="subHeatmap" class="sub-panel">
+        <div class="placeholder-view"><span class="ic">🗺️</span>Heatmap de temporada — disponible en la próxima actualización del visor.</div>
+      </div>
+      <div id="subOnceIdeal" class="sub-panel">
+        <div class="placeholder-view"><span class="ic">🏅</span>Once ideal de la temporada — disponible en la próxima actualización del visor.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="bottom-tabbar">
+  <div class="bottom-tab active" onclick="showTab('partido')"><span class="ic">⚽</span>Partido</div>
+  <div class="bottom-tab" onclick="showTab('envivo')"><span class="ic">📊</span>En vivo</div>
+  <div class="bottom-tab" onclick="showTab('temporada')"><span class="ic">🏆</span>Temporada</div>
+</div>
+
+<p class="note">HERGAR Live — visor de solo lectura para familias del club.</p>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
+  import { getDatabase, ref, onValue, get } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBtCX0v3z5GTCv-X_5VBtWzXMSGQubL7O8",
+    authDomain: "hergar-fut-11-live.firebaseapp.com",
+    databaseURL: "https://hergar-fut-11-live-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "hergar-fut-11-live",
+    storageBucket: "hergar-fut-11-live.firebasestorage.app",
+    messagingSenderId: "1082733772828",
+    appId: "1:1082733772828:web:60603a24a5528df1fe5fd9"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  const COORDENADAS_FORMACIONES = {
+    "4-3-3":   [{x: 50, y: 93}, {x: 15, y: 75}, {x: 38, y: 77}, {x: 62, y: 77}, {x: 85, y: 75}, {x: 50, y: 57}, {x: 28, y: 47}, {x: 72, y: 47}, {x: 18, y: 22}, {x: 50, y: 15}, {x: 82, y: 22}],
+    "4-4-2":   [{x: 50, y: 93}, {x: 15, y: 75}, {x: 38, y: 77}, {x: 62, y: 77}, {x: 85, y: 75}, {x: 10, y: 47}, {x: 36, y: 50}, {x: 64, y: 50}, {x: 90, y: 47}, {x: 35, y: 17}, {x: 65, y: 17}],
+    "4-2-3-1": [{x: 50, y: 93}, {x: 15, y: 75}, {x: 38, y: 77}, {x: 62, y: 77}, {x: 85, y: 75}, {x: 35, y: 57}, {x: 65, y: 57}, {x: 10, y: 34}, {x: 50, y: 34}, {x: 90, y: 34}, {x: 50, y: 14}],
+    "3-5-2":   [{x: 50, y: 93}, {x: 25, y: 75}, {x: 50, y: 77}, {x: 75, y: 75}, {x: 10, y: 47}, {x: 31, y: 50}, {x: 50, y: 44}, {x: 69, y: 50}, {x: 90, y: 47}, {x: 35, y: 17}, {x: 65, y: 17}],
+    "3-4-3":   [{x: 50, y: 93}, {x: 25, y: 75}, {x: 50, y: 77}, {x: 75, y: 75}, {x: 10, y: 50}, {x: 36, y: 52}, {x: 64, y: 52}, {x: 90, y: 50}, {x: 17, y: 19}, {x: 50, y: 14}, {x: 83, y: 19}]
+  };
+
+  function formatMinuto(min, parte, running, finished) {
+    if (finished) return `⏱ Final · ${min}'`;
+    if (!running) return `⏱ ${min}' · pausado`;
+    return `⏱ ${min}' · ${parte === 2 ? '2ª parte' : '1ª parte'}`;
+  }
+
+  function pintarCampo(matchData) {
+    const container = document.getElementById('campoContainer');
+    container.querySelectorAll('.jugador-wrap').forEach(el => el.remove());
+    const formacion = matchData.formacion || '4-3-3';
+    const coords = COORDENADAS_FORMACIONES[formacion] || COORDENADAS_FORMACIONES['4-3-3'];
+    const onField = matchData.onFieldIds || [];
+    const jugadores = matchData.jugadores || {};
+    document.getElementById('formacionTitulo').textContent = `Formación en el campo — 1-${formacion}`;
+
+    onField.forEach((id, i) => {
+      const p = jugadores[id];
+      if (!p || !coords[i]) return;
+      const wrap = document.createElement('div');
+      wrap.className = 'jugador-wrap';
+      wrap.style.left = coords[i].x + '%';
+      wrap.style.top = coords[i].y + '%';
+      wrap.innerHTML = `
+        <div class="jugador ${i === 0 ? 'gk' : ''}">${p.dorsal}</div>
+        <div class="jugador-nombre">${(p.name || '').split(' ')[0]}</div>`;
+      container.appendChild(wrap);
+    });
+  }
+
+  function pintarEventos(matchData) {
+    const cont = document.getElementById('eventosLista');
+    const eventos = (matchData.eventos || []).slice().reverse();
+    if (eventos.length === 0) { cont.innerHTML = '<div class="loader">Sin eventos todavía</div>'; return; }
+    cont.innerHTML = eventos.map(ev => `<div class="timeline-item"><span class="timeline-text">${ev}</span></div>`).join('');
+  }
+
+  function pintarStatsGrid(matchData) {
+    const grid = document.getElementById('statGrid');
+    const disparos = (matchData.tirosNuestrosPuerta || 0) + (matchData.tirosNuestrosFuera || 0);
+    grid.innerHTML = `
+      <div class="stat-box"><div class="v">${disparos}</div><div class="l">Disparos</div></div>
+      <div class="stat-box"><div class="v">${matchData.tirosNuestrosPuerta || 0}</div><div class="l">A puerta</div></div>
+      <div class="stat-box"><div class="v">${(matchData.faltasFavor||0)+(matchData.faltasContra||0)}</div><div class="l">Faltas</div></div>
+      <div class="stat-box"><div class="v">${Object.values(matchData.jugadores||{}).reduce((s,p)=>s+(p.amarillas||0),0)}</div><div class="l">🟨 Amar.</div></div>`;
+  }
+
+  function pintarTablaJugadores(matchData) {
+    const jugadores = Object.values(matchData.jugadores || {});
+    jugadores.sort((a,b) => (b.impactoPond||0) - (a.impactoPond||0));
+    const tbody = document.getElementById('tablaJugadoresLive');
+    if (jugadores.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="loader">Sin jugadores todavía</td></tr>'; return; }
+    tbody.innerHTML = jugadores.map(p => `
+      <tr>
+        <td class="nombre"><span class="dorsal-mini">${p.dorsal}</span>${(p.name||'').split(' ')[0]}</td>
+        <td>${p.minutos}'</td>
+        <td>${p.goles}</td>
+        <td>${p.asistencias}</td>
+        <td>${p.accionesDef}</td>
+        <td class="impacto">${(p.impacto||0).toFixed(2)}</td>
+        <td class="pond">${(p.impactoPond||0).toFixed(2)}</td>
+      </tr>`).join('');
+  }
+
+  function actualizarVistaPartido(matchData) {
+    if (!matchData) return;
+    document.getElementById('scoreLocal').textContent = matchData.golesLocal ?? 0;
+    document.getElementById('scoreRival').textContent = matchData.golesRival ?? 0;
+    document.getElementById('rivalName').textContent = (matchData.rival || 'RIVAL').toUpperCase();
+    document.getElementById('timerDisplay').textContent = formatMinuto(matchData.minuto || 0, matchData.parte, matchData.matchRunning, matchData.matchFinished);
+    document.getElementById('matchMeta').textContent = matchData.matchFinished ? 'Partido finalizado' : (matchData.matchRunning ? 'Partido en juego' : 'Partido en pausa');
+
+    const liveBanner = document.getElementById('liveBanner');
+    const offlineBanner = document.getElementById('offlineBanner');
+    if (matchData.matchRunning) {
+      liveBanner.style.display = 'flex'; offlineBanner.style.display = 'none';
+    } else {
+      liveBanner.style.display = 'none'; offlineBanner.style.display = matchData.matchFinished ? 'none' : 'flex';
+    }
+
+    pintarCampo(matchData);
+    pintarEventos(matchData);
+    pintarStatsGrid(matchData);
+    pintarTablaJugadores(matchData);
+  }
+
+  function pintarRanking(temporada) {
+    const jugadores = Object.values(temporada.jugadores || {});
+    jugadores.forEach(j => { j._pond = j.minutos > 0 ? (j.impactoAcum / j.minutos * 70) : 0; });
+    jugadores.sort((a,b) => b._pond - a._pond);
+    const cont = document.getElementById('rankingLista');
+    if (jugadores.length === 0) { cont.innerHTML = '<div class="loader">Sin datos de temporada todavía</div>'; return; }
+    cont.innerHTML = jugadores.slice(0, 15).map((j, i) => `
+      <div class="rank-row">
+        <div class="rank-pos">${i+1}</div>
+        <div class="rank-name">${(j.name||'').split(' ')[0]}</div>
+        <div class="rank-val">${j._pond.toFixed(2)}</div>
+      </div>`).join('');
+  }
+
+  function pintarPartidos(temporada) {
+    const partidos = (temporada.partidos || []).slice().reverse();
+    const cont = document.getElementById('partidosLista');
+    if (partidos.length === 0) { cont.innerHTML = '<div class="loader">Sin partidos todavía</div>'; return; }
+    cont.innerHTML = partidos.slice(0, 15).map(p => {
+      const chipClass = p.resultado === 'V' ? 'streak-win' : p.resultado === 'D' ? 'streak-loss' : 'streak-draw';
+      const icon = p.resultado === 'V' ? '✅' : p.resultado === 'D' ? '❌' : '➖';
+      return `<div class="rank-row">
+        <div class="rank-name">${p.fecha || ''} · vs ${p.rival}</div>
+        <div class="streak-chip ${chipClass}">${p.golesLocal}–${p.golesRival} ${icon}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function showTab(id){
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    const map = {partido:0, envivo:1, temporada:2};
+    document.querySelectorAll('.content .tabs-header .tab-btn').forEach((b,i)=>b.classList.toggle('active', i===map[id]));
+    document.querySelectorAll('.bottom-tab').forEach((b,i)=>b.classList.toggle('active', i===map[id]));
+  }
+  function showSub(ev, id){
+    document.querySelectorAll('.sub-panel').forEach(p=>p.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.querySelectorAll('.subtab-btn').forEach(b=>b.classList.remove('active'));
+    ev.target.classList.add('active');
+  }
+  window.showTab = showTab;
+  window.showSub = showSub;
+
+  function suscribirPartido(code) {
+    onValue(ref(db, `matches/${code}`), (snap) => {
+      const data = snap.val();
+      if (data) actualizarVistaPartido(data);
+    });
+  }
+
+  // ── Arranque: URL ?m=CODIGO tiene prioridad, si no, último partido conocido ──
+  const params = new URLSearchParams(window.location.search);
+  const codeFromUrl = params.get('m');
+
+  if (codeFromUrl) {
+    suscribirPartido(codeFromUrl.toUpperCase());
+  } else {
+    get(ref(db, 'lastMatchCode')).then(snap => {
+      const data = snap.val();
+      if (data && data.code) {
+        suscribirPartido(data.code);
+      } else {
+        document.getElementById('matchMeta').textContent = 'Sin partidos registrados todavía';
+      }
+    });
+  }
+
+  // ── Temporada: siempre suscrita, esté o no en vivo un partido ──
+  onValue(ref(db, 'temporada/temporada'), (snap) => {
+    const temporada = snap.val();
+    if (!temporada) return;
+    pintarRanking(temporada);
+    pintarPartidos(temporada);
+  });
+
+  // Registro del service worker para instalabilidad (PWA)
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  }
+</script>
+</body>
+</html>

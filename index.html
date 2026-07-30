@@ -908,16 +908,17 @@
   };
 
   function actualizarEstadoNotificaciones() {
-    const permitido = window.OneSignal?.Notifications?.permission;
     const banner = document.getElementById('notifBanner');
     const ok = document.getElementById('notifOkBanner');
     if (!banner || !ok) return;
-    if (permitido === true) {
+    if (!('Notification' in window)) { banner.style.display = 'none'; ok.style.display = 'none'; return; }
+    const permiso = Notification.permission; // 'granted' | 'denied' | 'default'
+    if (permiso === 'granted') {
       banner.style.display = 'none'; ok.style.display = 'flex';
-    } else if (permitido === false) {
+    } else if (permiso === 'denied') {
       ok.style.display = 'none';
       banner.style.display = 'flex';
-      banner.innerHTML = `<span style="color:#ff4757; font-size:11.5px; line-height:1.4;">🔕 Las notificaciones están bloqueadas para esta web. Actívalas desde los ajustes de tu navegador (icono de candado junto a la URL → Notificaciones → Permitir).</span>`;
+      banner.innerHTML = `<span style="color:#ff4757; font-size:11.5px; line-height:1.4;">🔕 Las notificaciones están bloqueadas para esta web. Actívalas desde los ajustes de tu navegador (icono ⓘ junto a la URL → Permisos → Notificaciones → Permitir).</span>`;
     } else {
       banner.style.display = 'flex'; ok.style.display = 'none';
     }

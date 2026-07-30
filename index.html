@@ -4,6 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0">
 <title>HERGAR Live</title>
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+      appId: "d633132d-6ebc-4dce-9bf2-6f05c3576139",
+      serviceWorkerPath: "OneSignalSDKWorker.js",
+      serviceWorkerParam: { scope: "/Hergar-Live/" }
+    });
+  });
+</script>
 <meta name="theme-color" content="#0a0e14">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -145,9 +156,13 @@
   }
   .placeholder-view .ic { font-size:26px; display:block; margin-bottom:8px; }
 
+  .bottom-tabbar-wrap {
+    position:fixed; left:0; right:0; bottom:0; z-index:500;
+    display:flex; justify-content:center; pointer-events:none;
+  }
   .bottom-tabbar {
-    position:fixed; left:50%; bottom:0; transform:translateX(-50%); width:100%; max-width:480px; z-index:500; display:flex;
-    background:rgba(10,16,12,.96); backdrop-filter:blur(10px);
+    width:100%; max-width:480px; display:flex; pointer-events:auto;
+    background:rgba(10,16,12,.96); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
     border-top:1px solid rgba(255,255,255,.08); border-radius:16px 16px 0 0;
     padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px));
   }
@@ -176,6 +191,14 @@
       <div class="scoreboard-team" id="rivalName">RIVAL</div>
     </div>
     <div class="timer-row"><span class="timer-display" id="timerDisplay">⏱ --:-- </span></div>
+  </div>
+
+  <div id="notifBanner" style="display:none; align-items:center; justify-content:space-between; gap:8px; background:rgba(245,166,35,.12); border:1px solid rgba(245,166,35,.4); border-radius:10px; padding:10px 12px; margin:8px 8px 0;">
+    <span style="color:#f5a623; font-weight:700; font-size:12px;">🔔 Recibe un aviso cuando marquemos gol</span>
+    <button onclick="activarNotificacionesGol()" style="background:#f5a623; color:#0a0e14; border:none; padding:7px 12px; border-radius:8px; font-weight:800; font-family:'Montserrat',sans-serif; font-size:11px; flex-shrink:0;">ACTIVAR</button>
+  </div>
+  <div id="notifOkBanner" style="display:none; align-items:center; justify-content:center; gap:6px; background:rgba(46,213,115,.12); border:1px solid rgba(46,213,115,.4); border-radius:10px; padding:8px 12px; margin:8px 8px 0; color:#2ed573; font-weight:700; font-size:12px;">
+    ✅ Notificaciones de gol activadas
   </div>
 
   <div class="content">
@@ -319,10 +342,12 @@
   </div>
 </div>
 
+<div class="bottom-tabbar-wrap">
 <div class="bottom-tabbar">
   <div class="bottom-tab active" onclick="showTab('partido')"><span class="ic">⚽</span>Partido</div>
   <div class="bottom-tab" onclick="showTab('envivo')"><span class="ic">📊</span>En vivo</div>
   <div class="bottom-tab" onclick="showTab('temporada')"><span class="ic">🏆</span>Temporada</div>
+</div>
 </div>
 
 <p class="note">HERGAR Live — visor de solo lectura para familias del club.</p>
@@ -872,6 +897,26 @@
   window.rerenderComparativa = () => { if (ultimaTemporada) pintarComparativa(ultimaTemporada); };
   window.rerenderHeatmap = () => { if (ultimaTemporada) pintarHeatmap(ultimaTemporada); };
   window.rerenderOnceIdeal = () => { if (ultimaTemporada) pintarOnceIdeal(ultimaTemporada); };
+
+  // ── Notificaciones de gol (OneSignal) ──────────────────────────────
+  window.activarNotificacionesGol = async () => {
+    try {
+      await OneSignal.Notifications.requestPermission();
+      actualizarEstadoNotificaciones();
+    } catch (e) { console.error('Error activando notificaciones:', e); }
+  };
+
+  function actualizarEstadoNotificaciones() {
+    const permitido = window.OneSignal?.Notifications?.permission;
+    const banner = document.getElementById('notifBanner');
+    const ok = document.getElementById('notifOkBanner');
+    if (!banner || !ok) return;
+    if (permitido === true) { banner.style.display = 'none'; ok.style.display = 'flex'; }
+    else if (permitido === false) { banner.style.display = 'none'; ok.style.display = 'none'; }
+    else { banner.style.display = 'flex'; ok.style.display = 'none'; }
+  }
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function() { actualizarEstadoNotificaciones(); });
 
   // Registro del service worker para instalabilidad (PWA)
   if ('serviceWorker' in navigator) {

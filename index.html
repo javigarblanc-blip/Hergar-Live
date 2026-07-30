@@ -11,7 +11,8 @@
     await OneSignal.init({
       appId: "d633132d-6ebc-4dce-9bf2-6f05c3576139",
       serviceWorkerPath: "OneSignalSDKWorker.js",
-      serviceWorkerParam: { scope: "/Hergar-Live/" }
+      serviceWorkerParam: { scope: "/Hergar-Live/" },
+      promptOptions: { slidedown: { prompts: [{ type: "push", autoPrompt: false }] } }
     });
   });
 </script>

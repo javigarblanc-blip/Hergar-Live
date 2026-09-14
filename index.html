@@ -147,6 +147,7 @@
   .rank-pos { font-family:'Montserrat',sans-serif; font-weight:900; font-size:13px; color:#475569; width:18px; }
   .rank-name { flex:1; font-weight:700; font-size:12.5px; color:#e2e8f0; }
   .rank-val { font-family:'Montserrat',sans-serif; font-weight:800; font-size:13px; color:#f5a623; }
+  .rank-notaia { font-family:'Montserrat',sans-serif; font-weight:700; font-size:11px; color:#a855f7; background:rgba(168,85,247,.12); border-radius:6px; padding:2px 6px; }
   .streak-chip { display:inline-flex; align-items:center; gap:3px; font-size:10px; font-weight:700; padding:2px 7px; border-radius:20px; }
   .streak-win { background:rgba(46,213,115,.12); color:#2ed573; }
   .streak-loss { background:rgba(255,71,87,.12); color:#ff4757; }
@@ -246,7 +247,7 @@
         <div class="sub-caption" style="text-align:left; margin-top:2px;">👆 Toca un jugador para ver su Perfil</div>
       </div>
 
-      <div class="card">
+      <div class="card" style="display:none;">
         <div class="card-title">🗺️ Geo — zonas de acción del partido</div>
         <canvas id="geoCanvas" width="360" height="480" style="width:100%; border-radius:10px;"></canvas>
         <div id="geoStats" class="sub-caption" style="text-align:center; margin-top:6px;"></div>
@@ -266,13 +267,21 @@
         <div class="subtab-btn" onclick="showSub(event,'subSinergias')">🔗 Sinergias</div>
         <div class="subtab-btn" onclick="showSub(event,'subRachas')">🔥 Rachas</div>
         <div class="subtab-btn" onclick="showSub(event,'subComparativa')">📊 Comp.</div>
-        <div class="subtab-btn" onclick="showSub(event,'subHeatmap')">🗺️ Heatmap</div>
+        <div class="subtab-btn" style="display:none;" onclick="showSub(event,'subHeatmap')">🗺️ Heatmap</div>
         <div class="subtab-btn" onclick="showSub(event,'subOnceIdeal')">🏅 Once</div>
       </div>
 
       <div id="subRanking" class="sub-panel active">
         <div class="card">
-          <div class="card-title">Ranking de temporada — por impacto ponderado</div>
+          <div class="card-title">Ranking de temporada</div>
+          <select id="rankingCriterioSelect" onchange="rerenderRanking()" style="width:100%; padding:8px; border-radius:8px; background:#0f172a; color:#e2e8f0; border:1px solid rgba(255,255,255,.1); margin-bottom:10px; font-size:12px;">
+            <option value="pond">⭐ Impacto (x70min)</option>
+            <option value="goles">⚽ Goles</option>
+            <option value="asistencias">👟 Asistencias</option>
+            <option value="minutos">⏱ Minutos</option>
+            <option value="partidos">📋 Partidos</option>
+            <option value="notaIA">🤖 Nota IA</option>
+          </select>
           <div id="rankingLista"><div class="loader">Cargando temporada...</div></div>
         </div>
       </div>
@@ -589,15 +598,38 @@
 
   function pintarRanking(temporada) {
     const jugadores = Object.values(temporada.jugadores || {});
-    jugadores.forEach(j => { j._pond = j.minutos > 0 ? (j.impactoAcum / j.minutos * 70) : 0; });
-    jugadores.sort((a,b) => b._pond - a._pond);
+    jugadores.forEach(j => {
+      j._pond = j.minutos > 0 ? (j.impactoAcum / j.minutos * 70) : 0;
+      j._notaIA = (j.notaIApartidos > 0) ? (j.notaIAacum / j.notaIApartidos) : null;
+    });
+    const criterio = document.getElementById('rankingCriterioSelect')?.value || 'pond';
+    const valorPorCriterio = {
+      pond: j => j._pond,
+      goles: j => j.goles || 0,
+      asistencias: j => j.asistencias || 0,
+      minutos: j => j.minutos || 0,
+      partidos: j => j.partidos || 0,
+      notaIA: j => j._notaIA !== null ? j._notaIA : -1,
+    };
+    const getVal = valorPorCriterio[criterio] || valorPorCriterio.pond;
+    jugadores.sort((a,b) => getVal(b) - getVal(a));
     const cont = document.getElementById('rankingLista');
     if (jugadores.length === 0) { cont.innerHTML = '<div class="loader">Sin datos de temporada todavía</div>'; return; }
+    const etiquetaVal = {
+      pond: j => j._pond.toFixed(2),
+      goles: j => j.goles || 0,
+      asistencias: j => j.asistencias || 0,
+      minutos: j => `${j.minutos || 0}'`,
+      partidos: j => j.partidos || 0,
+      notaIA: j => j._notaIA !== null ? j._notaIA.toFixed(1) : '—',
+    };
+    const getEtiqueta = etiquetaVal[criterio] || etiquetaVal.pond;
     cont.innerHTML = jugadores.slice(0, 15).map((j, i) => `
       <div class="rank-row">
         <div class="rank-pos">${i+1}</div>
         <div class="rank-name">${(j.name||'').split(' ')[0]}</div>
-        <div class="rank-val">${j._pond.toFixed(2)}</div>
+        ${(criterio !== 'notaIA' && j._notaIA !== null) ? `<div class="rank-notaia" title="Nota IA media">🤖 ${j._notaIA.toFixed(1)}</div>` : ''}
+        <div class="rank-val">${getEtiqueta(j)}</div>
       </div>`).join('');
   }
 
@@ -898,6 +930,7 @@
   window.rerenderComparativa = () => { if (ultimaTemporada) pintarComparativa(ultimaTemporada); };
   window.rerenderHeatmap = () => { if (ultimaTemporada) pintarHeatmap(ultimaTemporada); };
   window.rerenderOnceIdeal = () => { if (ultimaTemporada) pintarOnceIdeal(ultimaTemporada); };
+  window.rerenderRanking = () => { if (ultimaTemporada) pintarRanking(ultimaTemporada); };
 
   // ── Notificaciones de gol (OneSignal) ──────────────────────────────
   window.activarNotificacionesGol = async () => {

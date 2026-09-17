@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0">
+<title>HERGAR Live</title>
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+      appId: "d633132d-6ebc-4dce-9bf2-6f05c3576139",
+      serviceWorkerPath: "OneSignalSDKWorker.js",
+      serviceWorkerParam: { scope: "/Hergar-Live/" },
+      promptOptions: { slidedown: { prompts: [{ type: "push", autoPrompt: false }] } }
+    });
+  });
+</script>
+<meta name="theme-color" content="#0a0e14">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  body {
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+    background:#0a0e14; color:#e2e8f0; min-height:100vh; padding:12px;
+    background-image:
+      radial-gradient(ellipse at 20% 50%, rgba(46,213,115,.05) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 50%, rgba(52,152,219,.05) 0%, transparent 60%);
+  }
+  .app-container {
+    max-width:480px; margin:0 auto;
+    background:linear-gradient(145deg,#111827,#0f172a);
+    border-radius:20px; box-shadow:0 25px 60px -15px rgba(0,0,0,.8), 0 0 0 1px rgba(255,255,255,.03);
+    padding:4px; padding-bottom:78px; position:relative; min-height:70vh;
+  }
+  .live-banner {
+    display:none; align-items:center; gap:6px; justify-content:center;
+    background:rgba(255,71,87,.12); border:1px solid rgba(255,71,87,.35);
+    color:#ff4757; font-family:'Montserrat',sans-serif; font-weight:800; font-size:11px;
+    letter-spacing:.5px; border-radius:14px 14px 0 0; padding:6px;
+  }
+  .offline-banner {
+    display:none; align-items:center; gap:6px; justify-content:center;
+    background:rgba(100,116,139,.15); border:1px solid rgba(100,116,139,.3);
+    color:#94a3b8; font-family:'Montserrat',sans-serif; font-weight:700; font-size:11px;
+    border-radius:14px 14px 0 0; padding:6px;
+  }
+  .live-dot { width:7px; height:7px; border-radius:50%; background:#ff4757; animation:pulse 1.4s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.25} }
+
+  .match-header {
+    background:linear-gradient(135deg,#0f172a 0%,#1a2332 100%);
+    padding:14px 16px; border-bottom:2px solid rgba(46,213,115,.3); position:relative;
+  }
+  .readonly-tag {
+    position:absolute; top:10px; right:14px; font-size:9px; font-weight:700;
+    color:#64748b; background:rgba(255,255,255,.05); padding:3px 7px; border-radius:6px;
+    font-family:'Montserrat',sans-serif; letter-spacing:.3px;
+  }
+  .match-meta { text-align:center; font-size:11px; color:#64748b; font-weight:600; margin-bottom:8px; }
+  .scoreboard-row { display:flex; align-items:center; justify-content:center; gap:14px; }
+  .scoreboard-team { font-family:'Montserrat',sans-serif; font-weight:800; font-size:13px; color:#94a3b8; }
+  .scoreboard-team.hergar { color:#2ed573; }
+  .scoreboard-goals { font-family:'Montserrat',sans-serif; font-weight:900; font-size:32px; color:#f5f7fa; }
+  .timer-row { text-align:center; margin-top:8px; }
+  .timer-display { font-family:'Montserrat',sans-serif; font-weight:800; font-size:14px; color:#f5a623; letter-spacing:1px; }
+
+  .content { padding:12px; }
+  .tabs-header { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:4px; margin-bottom:10px; }
+  .tab-btn {
+    text-align:center; padding:9px 4px; border-radius:10px; font-size:12px; font-weight:700;
+    font-family:'Montserrat',sans-serif; color:#64748b; background:rgba(255,255,255,.03);
+    border:1px solid rgba(255,255,255,.05); cursor:pointer;
+  }
+  .tab-btn.active { color:#0a0e14; background:#2ed573; border-color:#2ed573; }
+
+  .panel { display:none; }
+  .panel.active { display:block; }
+  .sub-panel { display:none; }
+  .sub-panel.active { display:block; }
+
+  .card { background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06); border-radius:14px; padding:12px; margin-bottom:10px; }
+  .card-title { font-family:'Montserrat',sans-serif; font-weight:800; font-size:11px; color:#94a3b8; text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; }
+
+  .campo {
+    position:relative; width:100%; aspect-ratio:3/4; border-radius:12px;
+    background:linear-gradient(180deg,#123f1f,#0d2e17);
+    border:1px solid rgba(255,255,255,.08); overflow:hidden;
+  }
+  .campo::before {
+    content:''; position:absolute; inset:0;
+    background-image: repeating-linear-gradient(0deg, rgba(255,255,255,.03) 0 40px, transparent 40px 80px);
+  }
+  .linea-medio { position:absolute; left:0; right:0; top:50%; height:1px; background:rgba(255,255,255,.15); }
+  .circulo-medio { position:absolute; left:50%; top:50%; width:70px; height:70px; border:1px solid rgba(255,255,255,.15); border-radius:50%; transform:translate(-50%,-50%); }
+  .jugador-wrap { position:absolute; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; }
+  .jugador {
+    width:30px; height:30px; border-radius:50%;
+    background:linear-gradient(145deg,#1a2332,#0f172a); border:2px solid #2ed573;
+    display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:800; color:#e2e8f0;
+    box-shadow:0 3px 8px rgba(0,0,0,.4);
+  }
+  .jugador.gk { border-color:#f5a623; }
+  .jugador-nombre {
+    margin-top:2px; font-size:8px; font-weight:700; color:#cbd5e1; text-align:center;
+    text-shadow:0 1px 3px rgba(0,0,0,.9); white-space:nowrap; max-width:56px; overflow:hidden; text-overflow:ellipsis;
+  }
+
+  .stat-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:10px; }
+  .stat-box { background:rgba(0,0,0,.3); border-radius:10px; padding:8px 4px; text-align:center; border:1px solid rgba(255,255,255,.04); }
+  .stat-box .v { font-family:'Montserrat',sans-serif; font-weight:800; font-size:15px; color:#2ed573; }
+  .stat-box .l { font-size:9px; color:#64748b; margin-top:2px; }
+
+  .timeline-item { display:flex; gap:8px; align-items:center; padding:7px 0; border-bottom:1px solid rgba(255,255,255,.04); font-size:12px; }
+  .timeline-text { color:#cbd5e1; }
+
+  .player-table { width:100%; border-collapse:collapse; font-size:11px; }
+  .player-table th {
+    text-align:center; font-family:'Montserrat',sans-serif; font-weight:700; font-size:9px;
+    color:#64748b; text-transform:uppercase; letter-spacing:.3px; padding:4px 2px; border-bottom:1px solid rgba(255,255,255,.08);
+  }
+  .player-table th:first-child, .player-table td:first-child { text-align:left; }
+  .player-table td { text-align:center; padding:7px 2px; border-bottom:1px solid rgba(255,255,255,.04); color:#cbd5e1; }
+  .player-table td.nombre { display:flex; align-items:center; gap:6px; font-weight:700; color:#e2e8f0; }
+  .dorsal-mini {
+    width:18px; height:18px; border-radius:50%; background:rgba(46,213,115,.12); border:1px solid #2ed573;
+    display:flex; align-items:center; justify-content:center; font-size:8.5px; font-weight:800; color:#2ed573; flex-shrink:0;
+  }
+  .player-table td.impacto { font-family:'Montserrat',sans-serif; font-weight:800; color:#f5a623; }
+  .player-table td.pond { font-family:'Montserrat',sans-serif; font-weight:800; color:#3498db; }
+  .sub-caption { font-size:9.5px; color:#475569; margin-top:6px; text-align:right; }
+
+  .subtabs { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:10px; }
+  .subtab-btn {
+    flex:1 1 auto; white-space:nowrap; padding:7px 8px; border-radius:9px; font-size:10px; font-weight:700;
+    font-family:'Montserrat',sans-serif; color:#94a3b8; background:rgba(30,41,59,.6); border:1px solid rgba(255,255,255,.05);
+    text-align:center; min-width:66px;
+  }
+  .subtab-btn.active { background:linear-gradient(135deg,#f5a623,#c98a1c); color:#0a0e0a; border-color:transparent; }
+  .rank-row { display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid rgba(255,255,255,.04); }
+  .rank-pos { font-family:'Montserrat',sans-serif; font-weight:900; font-size:13px; color:#475569; width:18px; }
+  .rank-name { flex:1; font-weight:700; font-size:12.5px; color:#e2e8f0; }
+  .rank-val { font-family:'Montserrat',sans-serif; font-weight:800; font-size:13px; color:#f5a623; }
+  .rank-notaia { font-family:'Montserrat',sans-serif; font-weight:700; font-size:11px; color:#a855f7; background:rgba(168,85,247,.12); border-radius:6px; padding:2px 6px; }
+  .streak-chip { display:inline-flex; align-items:center; gap:3px; font-size:10px; font-weight:700; padding:2px 7px; border-radius:20px; }
+  .streak-win { background:rgba(46,213,115,.12); color:#2ed573; }
+  .streak-loss { background:rgba(255,71,87,.12); color:#ff4757; }
+  .streak-draw { background:rgba(148,163,184,.12); color:#94a3b8; }
+
+  /* ── Liga ── */
+  .liga-equipo-row { display:flex; align-items:center; gap:10px; padding:10px 4px; border-bottom:1px solid rgba(255,255,255,.04); }
+  .liga-equipo-dot { width:8px; height:8px; border-radius:50%; background:#3498db; flex-shrink:0; }
+  .liga-equipo-dot.hergar { background:#b41438; box-shadow:0 0 8px rgba(180,20,56,.6); }
+  .liga-equipo-nombre { flex:1; font-size:12.5px; font-weight:700; color:#e2e8f0; }
+  .liga-equipo-nombre.hergar { color:#ff5577; }
+  .liga-vuelta-select { display:flex; gap:6px; margin-bottom:10px; }
+  .liga-vuelta-chip { flex:1; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08);
+    color:#94a3b8; font-family:'Montserrat',sans-serif; font-weight:800; font-size:10px; letter-spacing:.5px;
+    padding:7px 6px; border-radius:20px; text-align:center; }
+  .liga-vuelta-chip.active { background:rgba(245,166,35,.12); border-color:#f5a623; color:#f5a623; }
+  .liga-jornada-nav { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+  .liga-jornada-nav button { background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08);
+    color:#e2e8f0; width:30px; height:30px; border-radius:9px; font-size:14px; }
+  .liga-jornada-nav .liga-jn-label { flex:1; text-align:center; font-family:'Montserrat',sans-serif;
+    font-weight:800; font-size:12px; color:#f5a623; letter-spacing:.5px; }
+  .liga-jornada-fecha { text-align:center; font-size:10px; color:#64748b; margin-bottom:10px; font-weight:600; }
+  .liga-partido-row { display:flex; align-items:center; gap:8px; padding:9px 4px; border-bottom:1px solid rgba(255,255,255,.04); }
+  .liga-equipo-name { flex:1; font-size:11px; font-weight:700; text-align:center; color:#e2e8f0; line-height:1.25; }
+  .liga-equipo-name.local { text-align:right; }
+  .liga-equipo-name.hergar-team { color:#ff5577; }
+  .liga-marcador { font-family:'Montserrat',sans-serif; font-weight:900; font-size:13px; color:#f5f7fa;
+    background:#0f172a; border-radius:7px; padding:4px 8px; min-width:44px; text-align:center; flex-shrink:0; }
+  .liga-marcador.pendiente { color:#475569; font-size:10px; font-weight:700; }
+  table.liga-clasif { width:100%; border-collapse:collapse; font-size:11px; }
+  table.liga-clasif th { color:#64748b; font-weight:800; font-size:9px; letter-spacing:.5px;
+    padding:8px 4px; text-align:center; border-bottom:1px solid rgba(255,255,255,.08); }
+  table.liga-clasif th:nth-child(2) { text-align:left; }
+  table.liga-clasif td { padding:8px 4px; text-align:center; border-bottom:1px solid rgba(255,255,255,.04); color:#cbd5e1; font-weight:600; }
+  table.liga-clasif td:nth-child(1) { color:#64748b; font-weight:800; font-size:10px; }
+  table.liga-clasif td:nth-child(2) { text-align:left; font-weight:700; font-size:10.5px; color:#e2e8f0; }
+  table.liga-clasif td:last-child { font-weight:900; color:#2ed573; }
+  tr.liga-fila-hergar td { background:rgba(180,20,56,.12); }
+  tr.liga-fila-hergar td:nth-child(2) { color:#ff5577; }
+  tr.liga-fila-hergar td:nth-child(1) { color:#ff5577; }
+  .liga-evol-chip { background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08);
+    border-radius:20px; padding:6px 11px; font-size:10.5px; font-weight:700; color:#64748b; }
+  .placeholder-view {
+    text-align:center; padding:26px 12px; color:#475569; font-size:11.5px; line-height:1.5;
+    background:rgba(0,0,0,.2); border-radius:12px; border:1px dashed rgba(255,255,255,.08);
+  }
+  .placeholder-view .ic { font-size:26px; display:block; margin-bottom:8px; }
+
+  .bottom-tabbar-wrap {
+    position:fixed; left:0; right:0; bottom:0; z-index:500;
+    display:flex; justify-content:center; pointer-events:none;
+  }
+  .bottom-tabbar {
+    width:100%; max-width:480px; display:flex; pointer-events:auto;
+    background:rgba(10,16,12,.96); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
+    border-top:1px solid rgba(255,255,255,.08); border-radius:16px 16px 0 0;
+    padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px));
+  }
+  .bottom-tab { flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; padding:7px 2px; border-radius:10px; color:#52665c; font-family:'Montserrat',sans-serif; font-weight:700; font-size:9.5px; }
+  .bottom-tab .ic { font-size:18px; }
+  .bottom-tab.active { color:#f5a623; background:rgba(245,166,35,.08); }
+
+  .loader { text-align:center; padding:40px 12px; color:#475569; font-size:12px; }
+  .note { max-width:480px; margin:14px auto 0; text-align:center; font-size:11px; color:#475569; padding:0 20px; }
+</style>
+</head>
+<body>
+
+<div class="app-container">
+  <div class="live-banner" id="liveBanner"><span class="live-dot"></span> EN VIVO — Solo lectura</div>
+  <div class="offline-banner" id="offlineBanner">📅 Sin partido en vivo ahora mismo</div>
+
+  <div class="match-header">
+    <span class="readonly-tag">👁️ HERGAR LIVE</span>
+    <div class="match-meta" id="matchMeta">Cargando...</div>
+    <div class="scoreboard-row">
+      <div class="scoreboard-team hergar">HERGAR</div>
+      <div class="scoreboard-goals" id="scoreLocal">-</div>
+      <div class="scoreboard-goals" style="color:#64748b;">—</div>
+      <div class="scoreboard-goals" id="scoreRival">-</div>
+      <div class="scoreboard-team" id="rivalName">RIVAL</div>
+    </div>
+    <div class="timer-row"><span class="timer-display" id="timerDisplay">⏱ --:-- </span></div>
+  </div>
+
+  <div id="notifBanner" style="display:flex; align-items:center; justify-content:space-between; gap:8px; background:rgba(245,166,35,.12); border:1px solid rgba(245,166,35,.4); border-radius:10px; padding:10px 12px; margin:8px 8px 0;">
+    <span style="color:#f5a623; font-weight:700; font-size:12px;">🔔 Recibe un aviso cuando marquemos gol</span>
+    <button onclick="activarNotificacionesGol()" style="background:#f5a623; color:#0a0e14; border:none; padding:7px 12px; border-radius:8px; font-weight:800; font-family:'Montserrat',sans-serif; font-size:11px; flex-shrink:0;">ACTIVAR</button>
+  </div>
+  <div id="notifOkBanner" style="display:none; align-items:center; justify-content:center; gap:6px; background:rgba(46,213,115,.12); border:1px solid rgba(46,213,115,.4); border-radius:10px; padding:8px 12px; margin:8px 8px 0; color:#2ed573; font-weight:700; font-size:12px;">
+    ✅ Notificaciones de gol activadas
+  </div>
+
+  <div class="content">
+    <div class="tabs-header">
+      <div class="tab-btn active" onclick="showTab('partido')">⚽ Partido</div>
+      <div class="tab-btn" onclick="showTab('envivo')">📊 En vivo</div>
+      <div class="tab-btn" onclick="showTab('temporada')">🏆 Temp.</div>
+      <div class="tab-btn" onclick="showTab('liga')">📋 Liga</div>
+    </div>
+
+    <!-- PARTIDO -->
+    <div id="partido" class="panel active">
+      <div class="card">
+        <div class="card-title" id="formacionTitulo">Formación en el campo</div>
+        <div class="campo" id="campoContainer">
+          <div class="linea-medio"></div>
+          <div class="circulo-medio"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Últimos eventos</div>
+        <div id="eventosLista"><div class="loader">Esperando datos del partido...</div></div>
+      </div>
+    </div>
+
+    <!-- EN VIVO -->
+    <div id="envivo" class="panel">
+      <div class="stat-grid" id="statGrid">
+        <div class="stat-box"><div class="v">-</div><div class="l">Disparos</div></div>
+        <div class="stat-box"><div class="v">-</div><div class="l">A puerta</div></div>
+        <div class="stat-box"><div class="v">-</div><div class="l">Faltas</div></div>
+        <div class="stat-box"><div class="v">-</div><div class="l">🟨 Amar.</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Momentum</div>
+        <canvas id="momentumCanvas" width="420" height="90" style="width:100%; height:90px; border-radius:8px; background:#0f172a;"></canvas>
+      </div>
+      <div class="card">
+        <div class="card-title">⭐ Jugadores — ordenado por impacto ponderado</div>
+        <table class="player-table">
+          <thead><tr><th>Jugador</th><th>Min</th><th>⚽</th><th>👟</th><th>🛡️</th><th>Impac.</th><th>Pond.</th></tr></thead>
+          <tbody id="tablaJugadoresLive"><tr><td colspan="7" class="loader">Cargando...</td></tr></tbody>
+        </table>
+        <div class="sub-caption">🛡️ Acciones defensivas · Pond. = impacto normalizado a 70 min</div>
+        <div class="sub-caption" style="text-align:left; margin-top:2px;">👆 Toca un jugador para ver su Perfil</div>
+      </div>
+
+      <div class="card" style="display:none;">
+        <div class="card-title">🗺️ Geo — zonas de acción del partido</div>
+        <canvas id="geoCanvas" width="360" height="480" style="width:100%; border-radius:10px;"></canvas>
+        <div id="geoStats" class="sub-caption" style="text-align:center; margin-top:6px;"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">💤 Rotación — tiempo en banquillo</div>
+        <div id="rotacionLista"><div class="loader">Sin suplentes en banquillo</div></div>
+      </div>
+    </div>
+
+    <!-- TEMPORADA -->
+    <div id="temporada" class="panel">
+      <div class="subtabs">
+        <div class="subtab-btn active" onclick="showSub(event,'subRanking')">📈 Ranking</div>
+        <div class="subtab-btn" onclick="showSub(event,'subPartidos')">📅 Partidos</div>
+        <div class="subtab-btn" onclick="showSub(event,'subSinergias')">🔗 Sinergias</div>
+        <div class="subtab-btn" onclick="showSub(event,'subRachas')">🔥 Rachas</div>
+        <div class="subtab-btn" onclick="showSub(event,'subComparativa')">📊 Comp.</div>
+        <div class="subtab-btn" style="display:none;" onclick="showSub(event,'subHeatmap')">🗺️ Heatmap</div>
+        <div class="subtab-btn" onclick="showSub(event,'subOnceIdeal')">🏅 Once</div>
+      </div>
+
+      <div id="subRanking" class="sub-panel active">
+        <div class="card">
+          <div class="card-title">Ranking de temporada</div>
+          <select id="rankingCriterioSelect" onchange="rerenderRanking()" style="width:100%; padding:8px; border-radius:8px; background:#0f172a; color:#e2e8f0; border:1px solid rgba(255,255,255,.1); margin-bottom:10px; font-size:12px;">
+            <option value="pond">⭐ Impacto (x70min)</option>
+            <option value="goles">⚽ Goles</option>
+            <option value="asistencias">👟 Asistencias</option>
+            <option value="minutos">⏱ Minutos</option>
+            <option value="partidos">📋 Partidos</option>
+            <option value="notaIA">🤖 Nota IA</option>
+          </select>
+          <div id="rankingLista"><div class="loader">Cargando temporada...</div></div>
+        </div>
+      </div>
+
+      <div id="subPartidos" class="sub-panel">
+        <div class="card">
+          <div class="card-title">Historial de partidos</div>
+          <div id="partidosLista"><div class="loader">Cargando...</div></div>
+        </div>
+      </div>
+
+      <div id="subSinergias" class="sub-panel">
+        <div class="card">
+          <div class="card-title">🔗 Conexiones tácticas — parejas por impacto ponderado</div>
+          <div id="sinergiasLista"><div class="loader">Cargando...</div></div>
+        </div>
+      </div>
+      <div id="subRachas" class="sub-panel">
+        <div class="card">
+          <div class="card-title">🔥 Rachas de la temporada</div>
+          <div id="rachasLista"><div class="loader">Cargando...</div></div>
+        </div>
+      </div>
+      <div id="subComparativa" class="sub-panel">
+        <div class="card">
+          <div class="card-title">📊 Top 5 de la temporada</div>
+          <select id="comparativaStatSelect" onchange="rerenderComparativa()" style="width:100%; padding:8px; border-radius:8px; background:#0f172a; color:#e2e8f0; border:1px solid rgba(255,255,255,.1); margin-bottom:10px; font-size:12px;">
+            <option value="impactoAcum">Impacto acumulado</option>
+            <option value="goles">Goles</option>
+            <option value="asistencias">Asistencias</option>
+            <option value="accionesDef">Acciones defensivas</option>
+            <option value="minutos">Minutos</option>
+          </select>
+          <div id="comparativaLista"><div class="loader">Cargando...</div></div>
+        </div>
+      </div>
+      <div id="subHeatmap" class="sub-panel">
+        <div class="card">
+          <div class="card-title">🗺️ Heatmap de temporada</div>
+          <div style="display:flex; gap:5px; margin-bottom:8px;">
+            <select id="heatmapFiltroSelect" onchange="rerenderHeatmap()" style="flex:1; padding:6px; border-radius:8px; background:#0f172a; color:#e2e8f0; border:1px solid rgba(255,255,255,.1); font-size:11px;">
+              <option value="todo">Todo</option>
+              <option value="ofensivo">Ofensivas</option>
+              <option value="defensivo">Defensivas</option>
+            </select>
+            <select id="heatmapRivalSelect" onchange="rerenderHeatmap()" style="flex:1; padding:6px; border-radius:8px; background:#0f172a; color:#e2e8f0; border:1px solid rgba(255,255,255,.1); font-size:11px;">
+              <option value="todos">Todos los partidos</option>
+            </select>
+          </div>
+          <canvas id="heatmapCanvas" width="360" height="480" style="width:100%; border-radius:10px;"></canvas>
+          <div id="heatmapStats" class="sub-caption" style="text-align:center; margin-top:6px;"></div>
+        </div>
+      </div>
+      <div id="subOnceIdeal" class="sub-panel">
+        <div class="card">
+          <div class="card-title">🏅 Once ideal de la temporada</div>
+          <select id="onceIdealFormacionSelect" onchange="rerenderOnceIdeal()" style="width:100%; padding:8px; border-radius:8px; background:#0f172a; color:#e2e8f0; border:1px solid rgba(255,255,255,.1); margin-bottom:10px; font-size:12px;">
+            <option value="4-3-3">1-4-3-3</option>
+            <option value="4-4-2">1-4-4-2</option>
+            <option value="4-2-3-1">1-4-2-3-1</option>
+            <option value="3-5-2">1-3-5-2</option>
+            <option value="3-4-3">1-3-4-3</option>
+          </select>
+          <div id="onceIdealLista"><div class="loader">Cargando...</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LIGA -->
+    <div id="liga" class="panel">
+      <div class="subtabs">
+        <div class="subtab-btn active" onclick="showSub(event,'subLigaEquipos')">👥 Equipos</div>
+        <div class="subtab-btn" onclick="showSub(event,'subLigaPartidos')">📅 Partidos</div>
+        <div class="subtab-btn" onclick="showSub(event,'subLigaClasif')">📈 Clasif.</div>
+        <div class="subtab-btn" onclick="showSub(event,'subLigaEvol')">📉 Evolución</div>
+      </div>
+
+      <div id="subLigaEquipos" class="sub-panel active">
+        <div class="card">
+          <div class="card-title" id="ligaTituloGrupo">Equipos del grupo</div>
+          <div id="ligaEquiposLista"><div class="loader">Cargando...</div></div>
+        </div>
+      </div>
+
+      <div id="subLigaPartidos" class="sub-panel">
+        <div class="card">
+          <div class="liga-vuelta-select">
+            <div class="liga-vuelta-chip active" onclick="cambiarVueltaLigaViewer(1,this)">1ª VUELTA</div>
+            <div class="liga-vuelta-chip" onclick="cambiarVueltaLigaViewer(2,this)">2ª VUELTA</div>
+            <div class="liga-vuelta-chip" onclick="cambiarVueltaLigaViewer(3,this)">3ª VUELTA</div>
+          </div>
+          <div class="liga-jornada-nav">
+            <button onclick="cambiarJornadaLigaViewer(-1)">‹</button>
+            <div class="liga-jn-label" id="ligaViewerJnLabel">JORNADA 1</div>
+            <button onclick="cambiarJornadaLigaViewer(1)">›</button>
+          </div>
+          <div class="liga-jornada-fecha" id="ligaViewerJnFecha"></div>
+          <div id="ligaViewerPartidos"><div class="loader">Cargando...</div></div>
+        </div>
+      </div>
+
+      <div id="subLigaClasif" class="sub-panel">
+        <div class="card">
+          <div class="card-title">Clasificación</div>
+          <div style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
+            <table class="liga-clasif">
+              <thead>
+                <tr><th>#</th><th>Equipo</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th><th>DG</th><th>Pts</th></tr>
+              </thead>
+              <tbody id="ligaViewerClasifBody"><tr><td colspan="10" class="loader">Cargando...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="subLigaEvol" class="sub-panel">
+        <div class="card">
+          <div class="card-title">📉 Evolución en la clasificación</div>
+          <div style="font-size:10px; color:#64748b; font-weight:700; margin-bottom:8px;">TOCA UN EQUIPO PARA AÑADIRLO/QUITARLO</div>
+          <div id="ligaEvolChipsViewer" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;"></div>
+          <div style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
+            <canvas id="ligaEvolCanvasViewer" height="240"></canvas>
+          </div>
+          <div id="ligaEvolNotaViewer" class="sub-caption" style="text-align:center;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="bottom-tabbar-wrap">
+<div class="bottom-tabbar">
+  <div class="bottom-tab active" onclick="showTab('partido')"><span class="ic">⚽</span>Partido</div>
+  <div class="bottom-tab" onclick="showTab('envivo')"><span class="ic">📊</span>En vivo</div>
+  <div class="bottom-tab" onclick="showTab('temporada')"><span class="ic">🏆</span>Temporada</div>
+  <div class="bottom-tab" onclick="showTab('liga')"><span class="ic">📋</span>Liga</div>
+</div>
+</div>
+
+<p class="note">HERGAR Live — visor de solo lectura para familias del club.</p>
+
+<div id="perfilModal" style="display:none; position:fixed; inset:0; z-index:900; background:rgba(0,0,0,.85); align-items:center; justify-content:center; padding:20px;">
+  <div style="background:linear-gradient(145deg,#111827,#0f172a); border-radius:20px; padding:20px; max-width:340px; width:100%; border:1px solid rgba(255,255,255,.08);">
+    <div id="perfilContenido"></div>
+    <button onclick="document.getElementById('perfilModal').style.display='none';" style="margin-top:14px; width:100%; padding:11px; background:rgba(255,255,255,.06); color:#e2e8f0; border:none; border-radius:10px; font-weight:700; font-family:'Montserrat',sans-serif;">CERRAR</button>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
+  import { getDatabase, ref, onValue, get } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBtCX0v3z5GTCv-X_5VBtWzXMSGQubL7O8",
+    authDomain: "hergar-fut-11-live.firebaseapp.com",
+    databaseURL: "https://hergar-fut-11-live-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "hergar-fut-11-live",
+    storageBucket: "hergar-fut-11-live.firebasestorage.app",
+    messagingSenderId: "1082733772828",
+    appId: "1:1082733772828:web:60603a24a5528df1fe5fd9"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  const COORDENADAS_FORMACIONES = {
+    "4-3-3":   [{x: 50, y: 93}, {x: 15, y: 75}, {x: 38, y: 77}, {x: 62, y: 77}, {x: 85, y: 75}, {x: 50, y: 57}, {x: 28, y: 47}, {x: 72, y: 47}, {x: 18, y: 22}, {x: 50, y: 15}, {x: 82, y: 22}],
+    "4-4-2":   [{x: 50, y: 93}, {x: 15, y: 75}, {x: 38, y: 77}, {x: 62, y: 77}, {x: 85, y: 75}, {x: 10, y: 47}, {x: 36, y: 50}, {x: 64, y: 50}, {x: 90, y: 47}, {x: 35, y: 17}, {x: 65, y: 17}],
+    "4-2-3-1": [{x: 50, y: 93}, {x: 15, y: 75}, {x: 38, y: 77}, {x: 62, y: 77}, {x: 85, y: 75}, {x: 35, y: 57}, {x: 65, y: 57}, {x: 10, y: 34}, {x: 50, y: 34}, {x: 90, y: 34}, {x: 50, y: 14}],
+    "3-5-2":   [{x: 50, y: 93}, {x: 25, y: 75}, {x: 50, y: 77}, {x: 75, y: 75}, {x: 10, y: 47}, {x: 31, y: 50}, {x: 50, y: 44}, {x: 69, y: 50}, {x: 90, y: 47}, {x: 35, y: 17}, {x: 65, y: 17}],
+    "3-4-3":   [{x: 50, y: 93}, {x: 25, y: 75}, {x: 50, y: 77}, {x: 75, y: 75}, {x: 10, y: 50}, {x: 36, y: 52}, {x: 64, y: 52}, {x: 90, y: 50}, {x: 17, y: 19}, {x: 50, y: 14}, {x: 83, y: 19}]
+  };
+
+  function formatMinuto(min, parte, running, finished) {
+    if (finished) return `⏱ Final · ${min}'`;
+    if (!running) return `⏱ ${min}' · pausado`;
+    return `⏱ ${min}' · ${parte === 2 ? '2ª parte' : '1ª parte'}`;
+  }
+
+  function pintarCampo(matchData) {
+    const container = document.getElementById('campoContainer');
+    container.querySelectorAll('.jugador-wrap').forEach(el => el.remove());
+    const formacion = matchData.formacion || '4-3-3';
+    const coords = COORDENADAS_FORMACIONES[formacion] || COORDENADAS_FORMACIONES['4-3-3'];
+    const onField = matchData.onFieldIds || [];
+    const jugadores = matchData.jugadores || {};
+    document.getElementById('formacionTitulo').textContent = `Formación en el campo — 1-${formacion}`;
+
+    onField.forEach((id, i) => {
+      const p = jugadores[id];
+      if (!p || !coords[i]) return;
+      const wrap = document.createElement('div');
+      wrap.className = 'jugador-wrap';
+      wrap.style.left = coords[i].x + '%';
+      wrap.style.top = coords[i].y + '%';
+      wrap.innerHTML = `
+        <div class="jugador ${i === 0 ? 'gk' : ''}">${p.dorsal}</div>
+        <div class="jugador-nombre">${(p.name || '').split(' ')[0]}</div>`;
+      container.appendChild(wrap);
+    });
+  }
+
+  function pintarEventos(matchData) {
+    const cont = document.getElementById('eventosLista');
+    const eventos = (matchData.eventos || []).slice().reverse();
+    if (eventos.length === 0) { cont.innerHTML = '<div class="loader">Sin eventos todavía</div>'; return; }
+    cont.innerHTML = eventos.map(ev => `<div class="timeline-item"><span class="timeline-text">${ev}</span></div>`).join('');
+  }
+
+  function pintarStatsGrid(matchData) {
+    const grid = document.getElementById('statGrid');
+    const disparos = (matchData.tirosNuestrosPuerta || 0) + (matchData.tirosNuestrosFuera || 0);
+    grid.innerHTML = `
+      <div class="stat-box"><div class="v">${disparos}</div><div class="l">Disparos</div></div>
+      <div class="stat-box"><div class="v">${matchData.tirosNuestrosPuerta || 0}</div><div class="l">A puerta</div></div>
+      <div class="stat-box"><div class="v">${(matchData.faltasFavor||0)+(matchData.faltasContra||0)}</div><div class="l">Faltas</div></div>
+      <div class="stat-box"><div class="v">${Object.values(matchData.jugadores||{}).reduce((s,p)=>s+(p.amarillas||0),0)}</div><div class="l">🟨 Amar.</div></div>`;
+  }
+
+  function pintarTablaJugadores(matchData) {
+    const jugadores = Object.entries(matchData.jugadores || {});
+    jugadores.sort((a,b) => (b[1].impactoPond||0) - (a[1].impactoPond||0));
+    const tbody = document.getElementById('tablaJugadoresLive');
+    if (jugadores.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="loader">Sin jugadores todavía</td></tr>'; return; }
+    tbody.innerHTML = jugadores.map(([id,p]) => `
+      <tr onclick="abrirPerfilJugador('${id}')" style="cursor:pointer;">
+        <td class="nombre"><span class="dorsal-mini">${p.dorsal}</span>${(p.name||'').split(' ')[0]}</td>
+        <td>${p.minutos}'</td>
+        <td>${p.goles}</td>
+        <td>${p.asistencias}</td>
+        <td>${p.accionesDef}</td>
+        <td class="impacto">${(p.impacto||0).toFixed(2)}</td>
+        <td class="pond">${(p.impactoPond||0).toFixed(2)}</td>
+      </tr>`).join('');
+  }
+
+  function pintarGeo(matchData) {
+    const canvas = document.getElementById('geoCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle = '#1a5c32'; ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(0,H/2); ctx.lineTo(W,H/2); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,.2)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0,H/3); ctx.lineTo(W,H/3); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,2*H/3); ctx.lineTo(W,2*H/3); ctx.stroke();
+    const zonasEquipo = matchData.zonasEquipo || { of:{}, def:{} };
+    const of = zonasEquipo.of || {}, def = zonasEquipo.def || {};
+    const zonas = {};
+    Object.keys(ZONAS_COORD_PCT).forEach(z => { zonas[z] = (parseInt(of[z])||0) + (parseInt(def[z])||0); });
+    const maxVal = Math.max(...Object.values(zonas), 1);
+    let total = 0;
+    Object.keys(ZONAS_COORD_PCT).forEach(zStr => {
+      const z = parseInt(zStr);
+      const val = zonas[z] || 0;
+      if (val === 0) return;
+      total += val;
+      const intensidad = val / maxVal;
+      const pos = { x: W*ZONAS_COORD_PCT[z].x/100, y: H*ZONAS_COORD_PCT[z].y/100 };
+      const r = 30 * (0.5 + 0.5*intensidad);
+      const grad = ctx.createRadialGradient(pos.x,pos.y,0,pos.x,pos.y,r);
+      grad.addColorStop(0, `rgba(255, ${Math.round(200*(1-intensidad))}, 0, ${0.5+0.45*intensidad})`);
+      grad.addColorStop(1, 'rgba(255,100,0,0)');
+      ctx.beginPath(); ctx.arc(pos.x,pos.y,r,0,2*Math.PI); ctx.fillStyle = grad; ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.font = `bold ${8+Math.round(3*intensidad)}px Inter`; ctx.textAlign='center';
+      ctx.fillText(val, pos.x, pos.y+3);
+    });
+    const statsEl = document.getElementById('geoStats');
+    if (statsEl) statsEl.textContent = total > 0 ? `${total} acciones registradas` : 'Sin acciones registradas todavía';
+  }
+
+  function pintarRotacion(matchData) {
+    const cont = document.getElementById('rotacionLista');
+    if (!cont) return;
+    const bench = matchData.benchIds || [];
+    const sitting = matchData.benchSittingTime || {};
+    const jugadores = matchData.jugadores || {};
+    if (bench.length === 0) { cont.innerHTML = '<div class="loader">Sin suplentes en banquillo</div>'; return; }
+    const filas = bench.map(id => {
+      const p = jugadores[id];
+      if (!p) return '';
+      const segs = sitting[id] || 0;
+      const mins = Math.floor(segs / 60);
+      return `<div class="rank-row"><div class="rank-name">${(p.name||'').split(' ')[0]}</div><div class="rank-val" style="color:#94a3b8;">${mins}' en banquillo</div></div>`;
+    }).join('');
+    cont.innerHTML = filas || '<div class="loader">Sin datos</div>';
+  }
+
+  // ── Perfil (cromo en vivo) ──────────────────────────────────────────
+  const MIN_MINUTOS_PERFIL = 20;
+  function clamp99(v) { return Math.max(40, Math.min(99, Math.round(v))); }
+  function calcularAtributosCromo(s) {
+    const rit = clamp99(40 + (Math.min(90, s.minutos) / 90) * 59);
+    const tirosTotales = (s.disparosPuerta||0) + (s.disparosFuera||0);
+    const precision = tirosTotales > 0 ? s.disparosPuerta / tirosTotales : 0.5;
+    const tir = clamp99(40 + precision*30 + Math.min(29, (s.goles||0)*6));
+    const pasVal = (s.pasesClave||0)*3 + (s.pasesArea||0) + (s.asistencias||0)*3;
+    const pas = clamp99(40 + Math.min(59, pasVal*2));
+    const regVal = (s.asistencias||0)*5 + (s.pasesClave||0)*3 + (s.goles||0)*2;
+    const reg = clamp99(40 + Math.min(59, regVal));
+    let def, defLabel;
+    if (s.esPortero) { def = clamp99(40 + Math.min(59, (s.paradas||0)*4 + (s.paradasDificiles||0)*9)); defLabel='PAR'; }
+    else { def = clamp99(40 + Math.min(59, (s.accionesDef||0)*4)); defLabel='DEF'; }
+    const fis = clamp99(40 + Math.min(59, (s.impactoPond||0)*9));
+    const rating = Math.round((rit+tir+pas+reg+def+fis)/6);
+    let tier = 'bronce';
+    if (rating >= 85) tier = 'especial'; else if (rating >= 75) tier = 'oro'; else if (rating >= 65) tier = 'plata';
+    return { rit, tir, pas, reg, def, defLabel, fis, rating, tier };
+  }
+  const CROMO_COLORES = {
+    bronce: '#d99a52', plata: '#dbe4e8', oro: '#f5a623', especial: '#c299f5'
+  };
+
+  window.abrirPerfilJugador = (id) => {
+    if (!ultimoMatchData) return;
+    const p = ultimoMatchData.jugadores?.[id];
+    const cont = document.getElementById('perfilContenido');
+    if (!p) return;
+    if ((p.minutos||0) < MIN_MINUTOS_PERFIL) {
+      cont.innerHTML = `
+        <div style="text-align:center; padding:20px 10px;">
+          <div style="font-size:28px; margin-bottom:8px;">⏳</div>
+          <div style="font-weight:800; color:#e2e8f0; margin-bottom:4px;">${(p.name||'').split(' ')[0]}</div>
+          <div style="font-size:12px; color:#64748b;">Aún sin los ${MIN_MINUTOS_PERFIL} minutos mínimos para generar su Perfil (lleva ${p.minutos||0}')</div>
+        </div>`;
+    } else {
+      const attrs = calcularAtributosCromo(p);
+      const color = CROMO_COLORES[attrs.tier];
+      cont.innerHTML = `
+        <div style="text-align:center;">
+          <div style="font-size:42px; font-weight:900; font-family:'Montserrat',sans-serif; color:${color};">${attrs.rating}</div>
+          <div style="font-size:10px; letter-spacing:2px; color:${color}; text-transform:uppercase; font-weight:800; margin-bottom:4px;">${attrs.tier}</div>
+          <div style="font-size:15px; font-weight:800; color:#e2e8f0; margin-bottom:2px;">#${p.dorsal} ${(p.name||'').split(' ')[0]}</div>
+          <div style="font-size:11px; color:#64748b; margin-bottom:14px;">${p.minutos}' jugados</div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+          ${[['RIT',attrs.rit],['TIR',attrs.tir],['PAS',attrs.pas],['REG',attrs.reg],[attrs.defLabel,attrs.def],['FÍS',attrs.fis]].map(([label,val]) => `
+            <div style="background:rgba(255,255,255,.04); border-radius:8px; padding:8px; display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:10px; color:#94a3b8; font-weight:700;">${label}</span>
+              <span style="font-size:16px; font-weight:900; color:${color}; font-family:'Montserrat',sans-serif;">${val}</span>
+            </div>`).join('')}
+        </div>`;
+    }
+    document.getElementById('perfilModal').style.display = 'flex';
+  };
+
+  let ultimoMatchData = null;
+  function actualizarVistaPartido(matchData) {
+    if (!matchData) return;
+    ultimoMatchData = matchData;
+    document.getElementById('scoreLocal').textContent = matchData.golesLocal ?? 0;
+    document.getElementById('scoreRival').textContent = matchData.golesRival ?? 0;
+    document.getElementById('rivalName').textContent = (matchData.rival || 'RIVAL').toUpperCase();
+    document.getElementById('timerDisplay').textContent = formatMinuto(matchData.minuto || 0, matchData.parte, matchData.matchRunning, matchData.matchFinished);
+    document.getElementById('matchMeta').textContent = matchData.matchFinished ? 'Partido finalizado' : (matchData.matchRunning ? 'Partido en juego' : 'Partido en pausa');
+
+    const liveBanner = document.getElementById('liveBanner');
+    const offlineBanner = document.getElementById('offlineBanner');
+    if (matchData.matchRunning) {
+      liveBanner.style.display = 'flex'; offlineBanner.style.display = 'none';
+    } else {
+      liveBanner.style.display = 'none'; offlineBanner.style.display = matchData.matchFinished ? 'none' : 'flex';
+    }
+
+    pintarCampo(matchData);
+    pintarEventos(matchData);
+    pintarStatsGrid(matchData);
+    pintarTablaJugadores(matchData);
+    pintarMomentum(matchData);
+    pintarGeo(matchData);
+    pintarRotacion(matchData);
+  }
+
+  function pintarRanking(temporada) {
+    const jugadores = Object.values(temporada.jugadores || {});
+    jugadores.forEach(j => {
+      j._pond = j.minutos > 0 ? (j.impactoAcum / j.minutos * 70) : 0;
+      j._notaIA = (j.notaIApartidos > 0) ? (j.notaIAacum / j.notaIApartidos) : null;
+    });
+    const criterio = document.getElementById('rankingCriterioSelect')?.value || 'pond';
+    const valorPorCriterio = {
+      pond: j => j._pond,
+      goles: j => j.goles || 0,
+      asistencias: j => j.asistencias || 0,
+      minutos: j => j.minutos || 0,
+      partidos: j => j.partidos || 0,
+      notaIA: j => j._notaIA !== null ? j._notaIA : -1,
+    };
+    const getVal = valorPorCriterio[criterio] || valorPorCriterio.pond;
+    jugadores.sort((a,b) => getVal(b) - getVal(a));
+    const cont = document.getElementById('rankingLista');
+    if (jugadores.length === 0) { cont.innerHTML = '<div class="loader">Sin datos de temporada todavía</div>'; return; }
+    const etiquetaVal = {
+      pond: j => j._pond.toFixed(2),
+      goles: j => j.goles || 0,
+      asistencias: j => j.asistencias || 0,
+      minutos: j => `${j.minutos || 0}'`,
+      partidos: j => j.partidos || 0,
+      notaIA: j => j._notaIA !== null ? j._notaIA.toFixed(1) : '—',
+    };
+    const getEtiqueta = etiquetaVal[criterio] || etiquetaVal.pond;
+    cont.innerHTML = jugadores.slice(0, 15).map((j, i) => `
+      <div class="rank-row">
+        <div class="rank-pos">${i+1}</div>
+        <div class="rank-name">${(j.name||'').split(' ')[0]}</div>
+        ${(criterio !== 'notaIA' && j._notaIA !== null) ? `<div class="rank-notaia" title="Nota IA media">🤖 ${j._notaIA.toFixed(1)}</div>` : ''}
+        <div class="rank-val">${getEtiqueta(j)}</div>
+      </div>`).join('');
+  }
+
+  function pintarPartidos(temporada) {
+    const partidos = (temporada.partidos || []).slice().reverse();
+    const cont = document.getElementById('partidosLista');
+    if (partidos.length === 0) { cont.innerHTML = '<div class="loader">Sin partidos todavía</div>'; return; }
+    cont.innerHTML = partidos.slice(0, 15).map(p => {
+      const chipClass = p.resultado === 'V' ? 'streak-win' : p.resultado === 'D' ? 'streak-loss' : 'streak-draw';
+      const icon = p.resultado === 'V' ? '✅' : p.resultado === 'D' ? '❌' : '➖';
+      return `<div class="rank-row">
+        <div class="rank-name">${p.fecha || ''} · vs ${p.rival}</div>
+        <div class="streak-chip ${chipClass}">${p.golesLocal}–${p.golesRival} ${icon}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function pintarMomentum(matchData) {
+    const canvas = document.getElementById('momentumCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+    const datos = matchData.momentumData || [];
+    if (datos.length < 2) {
+      ctx.fillStyle = '#334155'; ctx.font = '11px Inter'; ctx.textAlign = 'center';
+      ctx.fillText('Sin datos suficientes todavía', W/2, H/2);
+      return;
+    }
+    // Línea cero central
+    ctx.strokeStyle = 'rgba(255,255,255,.1)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, H/2); ctx.lineTo(W, H/2); ctx.stroke();
+
+    const maxAbs = Math.max(...datos.map(d => Math.abs(d.acum)), 1);
+    const stepX = W / (datos.length - 1);
+    const yFor = (acum) => H/2 - (acum / maxAbs) * (H/2 - 8);
+
+    ctx.beginPath();
+    datos.forEach((d, i) => {
+      const x = i * stepX, y = yFor(d.acum);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = '#2ed573'; ctx.lineWidth = 2; ctx.stroke();
+
+    // Relleno degradado bajo la línea
+    ctx.lineTo(W, H/2); ctx.lineTo(0, H/2); ctx.closePath();
+    const grad = ctx.createLinearGradient(0,0,0,H);
+    grad.addColorStop(0, 'rgba(46,213,115,.25)'); grad.addColorStop(1, 'rgba(46,213,115,0)');
+    ctx.fillStyle = grad; ctx.fill();
+  }
+
+  function pintarSinergias(t) {
+    const cont = document.getElementById('sinergiasLista');
+    if (!cont) return;
+    const sinergias = t.sinergias || {};
+    const nombres = {};
+    Object.values(t.jugadores || {}).forEach(j => nombres[j.id] = `${(j.name||'').split(' ')[0]}`);
+    const filas = Object.entries(sinergias).map(([clave, data]) => {
+      const [idA, idB] = clave.split('_').map(Number);
+      const mins = Math.floor((data.segs || 0) / 60);
+      const impPond = mins > 0 ? (data.impactoAcum / mins * 70) : 0;
+      return { idA, idB, mins, impPond };
+    }).filter(d => d.mins > 0).sort((a,b) => b.impPond - a.impPond);
+    if (filas.length === 0) { cont.innerHTML = '<div class="loader">Sin datos aún</div>'; return; }
+    const maxImp = Math.max(...filas.map(f => f.impPond), 0.01);
+    cont.innerHTML = filas.slice(0, 12).map(f => {
+      const pct = Math.round((f.impPond / maxImp) * 100);
+      const nomA = nombres[f.idA] || `ID${f.idA}`, nomB = nombres[f.idB] || `ID${f.idB}`;
+      return `<div style="padding:8px 0; border-bottom:1px solid rgba(255,255,255,.04);">
+        <div style="display:flex; justify-content:space-between; font-size:11.5px; color:#cbd5e1; margin-bottom:4px;">
+          <span>${nomA} ↔ ${nomB}</span><span style="color:#64748b;">${f.mins}' juntos</span>
+        </div>
+        <div style="background:#0d1f17; border-radius:3px; height:5px;">
+          <div style="width:${pct}%; height:100%; background:#2ed573; border-radius:3px;"></div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function pintarRachas(t) {
+    const cont = document.getElementById('rachasLista');
+    if (!cont) return;
+    const partidos = t.partidos || [];
+    if (partidos.length === 0) { cont.innerHTML = '<div class="loader">Sin datos aún</div>'; return; }
+    const V = partidos.filter(p=>p.resultado==='V').length;
+    const E = partidos.filter(p=>p.resultado==='E').length;
+    const D = partidos.filter(p=>p.resultado==='D').length;
+    const GF = partidos.reduce((s,p)=>s+p.golesLocal,0);
+    const GC = partidos.reduce((s,p)=>s+p.golesRival,0);
+    let jugadores = Object.values(t.jugadores || {}).filter(j => j.partidos > 0);
+    jugadores.sort((a,b) => (b.rachaActualTitular||0) - (a.rachaActualTitular||0));
+    const filasJugadores = jugadores.slice(0, 10).map(j => `
+      <div class="rank-row">
+        <div class="rank-name">${(j.name||'').split(' ')[0]}</div>
+        <div class="rank-val">${j.rachaActualTitular||0} 🔥</div>
+      </div>`).join('');
+    cont.innerHTML = `
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-bottom:12px;">
+        <div class="stat-box"><div class="v" style="color:#2ed573;">${V}</div><div class="l">VICTORIAS</div></div>
+        <div class="stat-box"><div class="v" style="color:#f5a623;">${E}</div><div class="l">EMPATES</div></div>
+        <div class="stat-box"><div class="v" style="color:#ff4757;">${D}</div><div class="l">DERROTAS</div></div>
+      </div>
+      <div style="font-size:11.5px; color:#cbd5e1; margin-bottom:10px;">${partidos.length} partidos · GF: <strong style="color:#2ed573;">${GF}</strong> · GC: <strong style="color:#ff4757;">${GC}</strong></div>
+      <div class="card-title" style="margin-top:6px;">🔥 Racha de titularidad por jugador</div>
+      ${filasJugadores || '<div class="loader">Sin datos</div>'}`;
+  }
+
+  const COMPARATIVA_STATS = { impactoAcum: 'Impacto', goles: 'Goles', asistencias: 'Asistencias', accionesDef: 'Acc. defensivas', minutos: 'Minutos' };
+  function pintarComparativa(t) {
+    const sel = document.getElementById('comparativaStatSelect');
+    if (!sel) return;
+    const stat = sel.value || 'impactoAcum';
+    const jugadores = Object.values(t.jugadores || {});
+    const cont = document.getElementById('comparativaLista');
+    if (jugadores.length === 0) { cont.innerHTML = '<div class="loader">Sin datos aún</div>'; return; }
+    const sorted = jugadores.slice().sort((a,b) => (b[stat]||0) - (a[stat]||0)).slice(0, 5);
+    const medals = ['🥇','🥈','🥉','4️⃣','5️⃣'];
+    cont.innerHTML = sorted.map((j,i) => `
+      <div class="rank-row">
+        <div class="rank-pos">${medals[i]}</div>
+        <div class="rank-name">${(j.name||'').split(' ')[0]}</div>
+        <div class="rank-val">${(j[stat]||0).toFixed ? (j[stat]||0).toFixed(stat==='impactoAcum'?2:0) : j[stat]||0}</div>
+      </div>`).join('');
+  }
+
+  const ZONAS_COORD_PCT = {
+    1:{x:83,y:90}, 4:{x:83,y:73}, 7:{x:83,y:57}, 10:{x:83,y:40}, 13:{x:83,y:23},
+    2:{x:50,y:90}, 5:{x:50,y:73}, 8:{x:50,y:57}, 11:{x:50,y:40}, 14:{x:50,y:23},
+    3:{x:17,y:90}, 6:{x:17,y:73}, 9:{x:17,y:57}, 12:{x:17,y:40}, 15:{x:17,y:23}
+  };
+  function dibujarHeatmapViewer(zonasData) {
+    const canvas = document.getElementById('heatmapCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle = '#1a5c32'; ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(0,H/2); ctx.lineTo(W,H/2); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,.2)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0,H/3); ctx.lineTo(W,H/3); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,2*H/3); ctx.lineTo(W,2*H/3); ctx.stroke();
+    const maxVal = Math.max(...Object.values(zonasData).map(v => parseInt(v)||0), 1);
+    let total = 0;
+    Object.keys(ZONAS_COORD_PCT).forEach(zStr => {
+      const z = parseInt(zStr);
+      const val = parseInt(zonasData[z]) || 0;
+      if (val === 0) return;
+      total += val;
+      const intensidad = val / maxVal;
+      const pos = { x: W*ZONAS_COORD_PCT[z].x/100, y: H*ZONAS_COORD_PCT[z].y/100 };
+      const r = 30 * (0.5 + 0.5*intensidad);
+      const grad = ctx.createRadialGradient(pos.x,pos.y,0,pos.x,pos.y,r);
+      grad.addColorStop(0, `rgba(255, ${Math.round(200*(1-intensidad))}, 0, ${0.5+0.45*intensidad})`);
+      grad.addColorStop(1, 'rgba(255,100,0,0)');
+      ctx.beginPath(); ctx.arc(pos.x,pos.y,r,0,2*Math.PI); ctx.fillStyle = grad; ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.font = `bold ${8+Math.round(3*intensidad)}px Inter`; ctx.textAlign='center';
+      ctx.fillText(val, pos.x, pos.y+3);
+    });
+    const statsEl = document.getElementById('heatmapStats');
+    if (statsEl) statsEl.textContent = total > 0 ? `${total} acciones registradas` : 'Sin acciones registradas aún';
+  }
+  function pintarHeatmap(t) {
+    const filtro = document.getElementById('heatmapFiltroSelect')?.value || 'todo';
+    const rivalSel = document.getElementById('heatmapRivalSelect');
+    if (rivalSel && rivalSel.options.length <= 1) {
+      const rivales = [...new Set((t.partidos||[]).map(p => p.rival))];
+      rivalSel.innerHTML = '<option value="todos">Todos los partidos</option>' + rivales.map(r => `<option value="${r}">${r}</option>`).join('');
+    }
+    const rivalFiltro = rivalSel?.value || 'todos';
+    let base = (rivalFiltro !== 'todos' && t.zonasPorRival?.[rivalFiltro]) ? t.zonasPorRival[rivalFiltro] : (t.zonasEquipo || {of:{},def:{}});
+    const of = base.of || {}, def = base.def || {};
+    let zonas = {};
+    if (filtro === 'todo') { Object.keys(ZONAS_COORD_PCT).forEach(z => { zonas[z] = (of[z]||0)+(def[z]||0); }); }
+    else if (filtro === 'ofensivo') zonas = {...of};
+    else zonas = {...def};
+    dibujarHeatmapViewer(zonas);
+  }
+
+  function obtenerCuposFormacion(formacion) {
+    const esquema = formacion.split('-').map(Number);
+    const cupos = { portero: 1, defensa: esquema[0], centrocampista: 0, delantero: 0 };
+    if (esquema.length === 4) { cupos.centrocampista = esquema[1]+esquema[2]; cupos.delantero = esquema[3]; }
+    else { cupos.centrocampista = esquema[1]; cupos.delantero = esquema[2]; }
+    return cupos;
+  }
+  const MIN_MINUTOS_ONCE_IDEAL = 20;
+  function calcularMejorOnce(t, formacion) {
+    const cupos = obtenerCuposFormacion(formacion);
+    const posiciones = ['portero','defensa','centrocampista','delantero'];
+    const candidatosPorJugador = {};
+    Object.values(t.jugadores || {}).forEach(j => {
+      const mpp = j.minutosPorPosicion || {}, ipp = j.impactoPorPosicion || {};
+      const opciones = [];
+      posiciones.forEach(pos => {
+        const mins = mpp[pos] || 0;
+        if (mins >= MIN_MINUTOS_ONCE_IDEAL) {
+          opciones.push({ id: j.id, nombre: j.name, dorsal: j.dorsal, pos, impPond: (ipp[pos]||0)/mins*70, mins });
+        }
+      });
+      if (opciones.length > 0) { opciones.sort((a,b)=>b.impPond-a.impPond); candidatosPorJugador[j.id] = opciones; }
+    });
+    const asignados = { portero:[], defensa:[], centrocampista:[], delantero:[] };
+    function intentarColocar(jugadorId, visitados) {
+      const opciones = candidatosPorJugador[jugadorId] || [];
+      for (const opcion of opciones) {
+        const pos = opcion.pos;
+        if (visitados.has(pos)) continue;
+        visitados.add(pos);
+        if (asignados[pos].length < cupos[pos]) { asignados[pos].push(opcion); return true; }
+        for (const ocupante of asignados[pos]) {
+          if (ocupante.id === jugadorId) continue;
+          if (intentarColocar(ocupante.id, visitados)) {
+            asignados[pos] = asignados[pos].filter(c => c.id !== ocupante.id);
+            asignados[pos].push(opcion);
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+    const orden = Object.keys(candidatosPorJugador).sort((a,b) => candidatosPorJugador[b][0].impPond - candidatosPorJugador[a][0].impPond);
+    orden.forEach(id => intentarColocar(id, new Set()));
+    return { cupos, asignados };
+  }
+  function pintarOnceIdeal(t) {
+    const cont = document.getElementById('onceIdealLista');
+    const formacion = document.getElementById('onceIdealFormacionSelect')?.value || '4-3-3';
+    if (!cont) return;
+    if (Object.keys(t.jugadores || {}).length === 0) { cont.innerHTML = '<div class="loader">Sin datos aún</div>'; return; }
+    const { cupos, asignados } = calcularMejorOnce(t, formacion);
+    const posLabels = { portero:'🧤 Portero', defensa:'🛡️ Defensas', centrocampista:'⚙️ Centrocampistas', delantero:'⚽ Delanteros' };
+    const orden = ['delantero','centrocampista','defensa','portero'];
+    cont.innerHTML = orden.map(pos => {
+      const filas = asignados[pos].map(c => `
+        <div class="rank-row"><div class="rank-pos">${c.dorsal}</div><div class="rank-name">${(c.nombre||'').split(' ')[0]}</div><div class="rank-val">${c.impPond.toFixed(1)}</div></div>`).join('');
+      const vacios = cupos[pos] - asignados[pos].length;
+      const filasVacias = vacios > 0 ? Array.from({length:vacios}).map(()=> `<div class="rank-row" style="opacity:.4;"><div class="rank-name">Sin datos suficientes</div></div>`).join('') : '';
+      return `<div style="margin-bottom:10px;"><div class="card-title">${posLabels[pos]} (${asignados[pos].length}/${cupos[pos]})</div>${filas}${filasVacias}</div>`;
+    }).join('');
+  }
+
+  function showTab(id){
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    const map = {partido:0, envivo:1, temporada:2, liga:3};
+    document.querySelectorAll('.content .tabs-header .tab-btn').forEach((b,i)=>b.classList.toggle('active', i===map[id]));
+    document.querySelectorAll('.bottom-tab').forEach((b,i)=>b.classList.toggle('active', i===map[id]));
+  }
+  function showSub(ev, id){
+    const panel = ev.target.closest('.panel');
+    panel.querySelectorAll('.sub-panel').forEach(p=>p.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    panel.querySelectorAll('.subtab-btn').forEach(b=>b.classList.remove('active'));
+    ev.target.classList.add('active');
+  }
+  window.showTab = showTab;
+  window.showSub = showSub;
+
+  function suscribirPartido(code) {
+    onValue(ref(db, `matches/${code}`), (snap) => {
+      const data = snap.val();
+      if (data) actualizarVistaPartido(data);
+    });
+  }
+
+  // ── Arranque: URL ?m=CODIGO tiene prioridad, si no, último partido conocido ──
+  const params = new URLSearchParams(window.location.search);
+  const codeFromUrl = params.get('m');
+
+  if (codeFromUrl) {
+    suscribirPartido(codeFromUrl.toUpperCase());
+  } else {
+    get(ref(db, 'lastMatchCode')).then(snap => {
+      const data = snap.val();
+      if (data && data.code) {
+        suscribirPartido(data.code);
+      } else {
+        document.getElementById('matchMeta').textContent = 'Sin partidos registrados todavía';
+      }
+    });
+  }
+
+  // ── Temporada: siempre suscrita, esté o no en vivo un partido ──
+  let ultimaTemporada = null;
+  onValue(ref(db, 'temporada/temporada'), (snap) => {
+    const temporada = snap.val();
+    if (!temporada) return;
+    ultimaTemporada = temporada;
+    pintarRanking(temporada);
+    pintarPartidos(temporada);
+    pintarSinergias(temporada);
+    pintarRachas(temporada);
+    pintarComparativa(temporada);
+    pintarHeatmap(temporada);
+    pintarOnceIdeal(temporada);
+  });
+
+  window.rerenderComparativa = () => { if (ultimaTemporada) pintarComparativa(ultimaTemporada); };
+  window.rerenderHeatmap = () => { if (ultimaTemporada) pintarHeatmap(ultimaTemporada); };
+  window.rerenderOnceIdeal = () => { if (ultimaTemporada) pintarOnceIdeal(ultimaTemporada); };
+  window.rerenderRanking = () => { if (ultimaTemporada) pintarRanking(ultimaTemporada); };
+
+  // ── Liga: siempre suscrita, esté o no en vivo un partido ──
+  let ultimaLiga = null;
+  onValue(ref(db, 'liga/liga'), (snap) => {
+    const liga = snap.val();
+    if (!liga || !liga.equipos) return;
+    ultimaLiga = liga;
+    pintarLigaEquipos(liga);
+    renderLigaViewerJornada();
+    pintarLigaClasificacion(liga);
+    renderLigaEvolChipsViewer();
+    renderLigaEvolucionViewer();
+  }, (err) => {
+    // Antes esto fallaba en silencio (p.ej. permisos de Firebase) y la pantalla se
+    // quedaba en "Cargando..." para siempre sin ninguna pista de qué había pasado.
+    console.error('Firebase liga read error:', err);
+    const mensaje = `⚠️ No se pudo cargar la Liga: ${err && err.message ? err.message : err}`;
+    const equiposCont = document.getElementById('ligaEquiposLista');
+    if (equiposCont) equiposCont.innerHTML = `<div class="loader" style="color:#ff4757;">${mensaje}</div>`;
+    const partidosCont = document.getElementById('ligaViewerPartidos');
+    if (partidosCont) partidosCont.innerHTML = `<div class="loader" style="color:#ff4757;">${mensaje}</div>`;
+    const clasifCont = document.getElementById('ligaViewerClasifBody');
+    if (clasifCont) clasifCont.innerHTML = `<tr><td colspan="10" class="loader" style="color:#ff4757;">${mensaje}</td></tr>`;
+  });
+
+  function pintarLigaEquipos(liga) {
+    const cont = document.getElementById('ligaEquiposLista');
+    if (!cont) return;
+    cont.innerHTML = liga.equipos.map(eq => `
+      <div class="liga-equipo-row">
+        <div class="liga-equipo-dot ${eq.esHergar?'hergar':''}"></div>
+        <div class="liga-equipo-nombre ${eq.esHergar?'hergar':''}">${eq.nombre}</div>
+      </div>`).join('');
+  }
+
+  let ligaViewerVuelta = 1, ligaViewerJornada = 1;
+  window.cambiarVueltaLigaViewer = (v, el) => {
+    ligaViewerVuelta = v; ligaViewerJornada = 1;
+    document.querySelectorAll('#subLigaPartidos .liga-vuelta-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    renderLigaViewerJornada();
+  };
+  window.cambiarJornadaLigaViewer = (delta) => {
+    ligaViewerJornada = Math.min(9, Math.max(1, ligaViewerJornada + delta));
+    renderLigaViewerJornada();
+  };
+
+  function nombreEquipoLigaViewer(liga, id) {
+    const eq = liga.equipos.find(e => e.id === id);
+    return eq ? eq.nombre : '(equipo eliminado)';
+  }
+  function esHergarLigaViewer(liga, id) {
+    const eq = liga.equipos.find(e => e.id === id);
+    return eq ? !!eq.esHergar : false;
+  }
+
+  function renderLigaViewerJornada() {
+    if (!ultimaLiga) return;
+    const liga = ultimaLiga;
+    const numGlobal = (ligaViewerVuelta - 1) * 9 + ligaViewerJornada;
+    document.getElementById('ligaViewerJnLabel').textContent = `JORNADA ${numGlobal}`;
+    const partidosJornada = liga.partidos.filter(p => p.vuelta === ligaViewerVuelta && p.jornada === ligaViewerJornada);
+    document.getElementById('ligaViewerJnFecha').textContent = partidosJornada.length ? partidosJornada[0].fecha : '';
+    const cont = document.getElementById('ligaViewerPartidos');
+    cont.innerHTML = partidosJornada.map(p => {
+      const localEs = esHergarLigaViewer(liga, p.local), visEs = esHergarLigaViewer(liga, p.visitante);
+      const jugado = p.golesLocal !== null && p.golesVisitante !== null;
+      const marcador = jugado
+        ? `<div class="liga-marcador">${p.golesLocal} - ${p.golesVisitante}</div>`
+        : `<div class="liga-marcador pendiente">vs</div>`;
+      return `
+      <div class="liga-partido-row">
+        <span class="liga-equipo-name local ${localEs?'hergar-team':''}">${nombreEquipoLigaViewer(liga, p.local)}</span>
+        ${marcador}
+        <span class="liga-equipo-name ${visEs?'hergar-team':''}">${nombreEquipoLigaViewer(liga, p.visitante)}</span>
+      </div>`;
+    }).join('');
+  }
+
+  function pintarLigaClasificacion(liga) {
+    const tabla = {};
+    liga.equipos.forEach(eq => tabla[eq.id] = { pj:0,pg:0,pe:0,pp:0,gf:0,gc:0,pts:0 });
+    liga.partidos.forEach(p => {
+      if (p.golesLocal === null || p.golesVisitante === null) return;
+      if (!tabla[p.local] || !tabla[p.visitante]) return;
+      const gl = p.golesLocal, gv = p.golesVisitante;
+      tabla[p.local].pj++; tabla[p.visitante].pj++;
+      tabla[p.local].gf += gl; tabla[p.local].gc += gv;
+      tabla[p.visitante].gf += gv; tabla[p.visitante].gc += gl;
+      if (gl > gv) { tabla[p.local].pg++; tabla[p.local].pts+=3; tabla[p.visitante].pp++; }
+      else if (gl < gv) { tabla[p.visitante].pg++; tabla[p.visitante].pts+=3; tabla[p.local].pp++; }
+      else { tabla[p.local].pe++; tabla[p.visitante].pe++; tabla[p.local].pts++; tabla[p.visitante].pts++; }
+    });
+    const filas = liga.equipos.map(eq => ({ id:eq.id, nombre:eq.nombre, esHergar:eq.esHergar, ...tabla[eq.id], dg: tabla[eq.id].gf - tabla[eq.id].gc }));
+    filas.sort((a,b) => b.pts-a.pts || b.dg-a.dg || b.gf-a.gf);
+    const body = document.getElementById('ligaViewerClasifBody');
+    if (!body) return;
+    body.innerHTML = filas.map((f,i) => `
+      <tr class="${f.esHergar?'liga-fila-hergar':''}">
+        <td>${i+1}</td><td>${f.nombre}</td><td>${f.pj}</td><td>${f.pg}</td><td>${f.pe}</td>
+        <td>${f.pp}</td><td>${f.gf}</td><td>${f.gc}</td><td>${f.dg>0?'+':''}${f.dg}</td><td>${f.pts}</td>
+      </tr>`).join('');
+  }
+
+  // ── Evolución ──
+  const LIGA_EVOL_COLORES = ['#3498db','#f5a623','#8e44ad','#1abc9c','#e67e22','#2ecc71','#e74c3c','#9b59b6','#f39c12'];
+  let ligaEvolSeleccionViewer = null;
+
+  function colorEquipoLigaViewer(liga, id) {
+    const eq = liga.equipos.find(e => e.id === id);
+    if (eq && eq.esHergar) return '#ff3b5c';
+    const noHergar = liga.equipos.filter(e => !e.esHergar);
+    const idx = noHergar.findIndex(e => e.id === id);
+    return LIGA_EVOL_COLORES[idx % LIGA_EVOL_COLORES.length];
+  }
+
+  function renderLigaEvolChipsViewer() {
+    if (!ultimaLiga) return;
+    const liga = ultimaLiga;
+    if (!ligaEvolSeleccionViewer) {
+      ligaEvolSeleccionViewer = new Set(liga.equipos.filter(eq => eq.esHergar).map(eq => eq.id));
+    }
+    const cont = document.getElementById('ligaEvolChipsViewer');
+    if (!cont) return;
+    cont.innerHTML = liga.equipos.map(eq => {
+      const activo = ligaEvolSeleccionViewer.has(eq.id);
+      const color = colorEquipoLigaViewer(liga, eq.id);
+      return `<div class="liga-evol-chip" onclick="toggleEquipoEvolLigaViewer('${eq.id}')"
+        style="background:${activo ? color+'22' : 'rgba(255,255,255,.04)'}; border-color:${activo ? color : 'rgba(255,255,255,.08)'}; color:${activo ? color : '#64748b'};">${eq.nombre}</div>`;
+    }).join('');
+  }
+  window.toggleEquipoEvolLigaViewer = (id) => {
+    if (ligaEvolSeleccionViewer.has(id)) ligaEvolSeleccionViewer.delete(id); else ligaEvolSeleccionViewer.add(id);
+    renderLigaEvolChipsViewer();
+    renderLigaEvolucionViewer();
+  };
+
+  function calcularEvolucionLigaViewer(liga) {
+    const porJornada = {};
+    liga.partidos.forEach(p => {
+      const g = (p.vuelta - 1) * 9 + p.jornada;
+      (porJornada[g] = porJornada[g] || []).push(p);
+    });
+    const jornadasConDatos = Object.keys(porJornada).map(Number).filter(g =>
+      porJornada[g].some(p => p.golesLocal !== null && p.golesVisitante !== null)
+    );
+    if (!jornadasConDatos.length) return { jornadas: [], posiciones: {} };
+    const maxJornada = Math.max(...jornadasConDatos);
+    const tabla = {};
+    liga.equipos.forEach(eq => tabla[eq.id] = { pj:0,pts:0,gf:0,gc:0 });
+    const posiciones = {};
+    liga.equipos.forEach(eq => posiciones[eq.id] = []);
+    const jornadas = [];
+    for (let g = 1; g <= maxJornada; g++) {
+      (porJornada[g] || []).forEach(p => {
+        if (p.golesLocal === null || p.golesVisitante === null) return;
+        if (!tabla[p.local] || !tabla[p.visitante]) return;
+        const gl = p.golesLocal, gv = p.golesVisitante;
+        tabla[p.local].pj++; tabla[p.visitante].pj++;
+        tabla[p.local].gf += gl; tabla[p.local].gc += gv;
+        tabla[p.visitante].gf += gv; tabla[p.visitante].gc += gl;
+        if (gl > gv) tabla[p.local].pts += 3;
+        else if (gl < gv) tabla[p.visitante].pts += 3;
+        else { tabla[p.local].pts++; tabla[p.visitante].pts++; }
+      });
+      const ranking = liga.equipos.map(eq => ({ id: eq.id, ...tabla[eq.id], dg: tabla[eq.id].gf - tabla[eq.id].gc }));
+      ranking.sort((a,b) => b.pts-a.pts || b.dg-a.dg || b.gf-a.gf);
+      ranking.forEach((f, i) => posiciones[f.id].push(i + 1));
+      jornadas.push(g);
+    }
+    return { jornadas, posiciones };
+  }
+
+  function renderLigaEvolucionViewer() {
+    if (!ultimaLiga) return;
+    const liga = ultimaLiga;
+    const { jornadas, posiciones } = calcularEvolucionLigaViewer(liga);
+    const nota = document.getElementById('ligaEvolNotaViewer');
+    const canvas = document.getElementById('ligaEvolCanvasViewer');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    if (!jornadas.length) {
+      canvas.width = canvas.clientWidth || 300;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      nota.textContent = 'Aún no hay resultados metidos.';
+      return;
+    }
+    nota.textContent = '';
+
+    const numEquipos = liga.equipos.length;
+    const seleccion = Array.from(ligaEvolSeleccionViewer).filter(id => liga.equipos.some(e => e.id === id));
+    const padding = { top: 16, bottom: 26, left: 26, right: 14 };
+    const anchoPorJornada = 34;
+    const W = Math.max(canvas.parentElement.clientWidth - 16, padding.left + padding.right + jornadas.length * anchoPorJornada);
+    const H = canvas.height || 240;
+    canvas.width = W;
+    const chartW = W - padding.left - padding.right;
+    const chartH = H - padding.top - padding.bottom;
+    ctx.clearRect(0, 0, W, H);
+
+    const xDe = (i) => padding.left + (jornadas.length === 1 ? chartW/2 : (i / (jornadas.length - 1)) * chartW);
+    const yDe = (pos) => padding.top + ((pos - 1) / Math.max(1, numEquipos - 1)) * chartH;
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.lineWidth = 1;
+    ctx.font = '9px sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.textAlign = 'right';
+    for (let pos = 1; pos <= numEquipos; pos++) {
+      const y = yDe(pos);
+      ctx.beginPath(); ctx.moveTo(padding.left, y); ctx.lineTo(W - padding.right, y); ctx.stroke();
+      ctx.fillText(pos, padding.left - 6, y + 3);
+    }
+
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.font = '8px sans-serif';
+    ctx.textAlign = 'center';
+    jornadas.forEach((g, i) => {
+      if (jornadas.length > 15 && i % 2 !== 0 && i !== jornadas.length - 1) return;
+      ctx.fillText('J' + g, xDe(i), H - padding.bottom + 12);
+    });
+
+    seleccion.forEach(id => {
+      const color = colorEquipoLigaViewer(liga, id);
+      const serie = posiciones[id];
+      if (!serie) return;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      serie.forEach((pos, i) => {
+        const x = xDe(i), y = yDe(pos);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+      serie.forEach((pos, i) => {
+        const x = xDe(i), y = yDe(pos);
+        ctx.fillStyle = color;
+        ctx.beginPath(); ctx.arc(x, y, 8, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#0a0e14';
+        ctx.font = '8px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(pos, x, y + 3);
+      });
+    });
+  }
+
+  // ── Notificaciones de gol (OneSignal) ──────────────────────────────
+  window.activarNotificacionesGol = async () => {
+    try {
+      await OneSignal.Notifications.requestPermission();
+      actualizarEstadoNotificaciones();
+    } catch (e) { console.error('Error activando notificaciones:', e); }
+  };
+
+  function actualizarEstadoNotificaciones() {
+    const banner = document.getElementById('notifBanner');
+    const ok = document.getElementById('notifOkBanner');
+    if (!banner || !ok) return;
+    if (!('Notification' in window)) { banner.style.display = 'none'; ok.style.display = 'none'; return; }
+    const permiso = Notification.permission; // 'granted' | 'denied' | 'default'
+    if (permiso === 'granted') {
+      banner.style.display = 'none'; ok.style.display = 'flex';
+    } else if (permiso === 'denied') {
+      ok.style.display = 'none';
+      banner.style.display = 'flex';
+      banner.innerHTML = `<span style="color:#ff4757; font-size:11.5px; line-height:1.4;">🔕 Las notificaciones están bloqueadas para esta web. Actívalas desde los ajustes de tu navegador (icono ⓘ junto a la URL → Permisos → Notificaciones → Permitir).</span>`;
+    } else {
+      banner.style.display = 'flex'; ok.style.display = 'none';
+    }
+  }
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function() { actualizarEstadoNotificaciones(); });
+
+  // Registro del service worker para instalabilidad (PWA)
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  }
+</script>
+</body>
+</html>

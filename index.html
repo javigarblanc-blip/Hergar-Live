@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>HERGAR Live</title>
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 <script>
@@ -212,6 +212,41 @@
 
   .loader { text-align:center; padding:40px 12px; color:#475569; font-size:12px; }
   .note { max-width:480px; margin:14px auto 0; text-align:center; font-size:11px; color:#475569; padding:0 20px; }
+
+  /* ── FICHA DE DATOS (igualada con la app principal) ── */
+  .fd-tabs { display:flex; gap:6px; margin-bottom:12px; }
+  .fd-tabs button {
+    flex:1; padding:9px 4px; border-radius:9px; border:1px solid rgba(255,255,255,.08);
+    background: rgba(255,255,255,.03); color:#8da499; font-family:'Montserrat',sans-serif;
+    font-weight:700; font-size:11px; cursor:pointer;
+  }
+  .fd-tabs button.fd-active { background: linear-gradient(135deg, #2ed573, #27ae60); color:#0a0e14; border-color:transparent; }
+  .fd-header { display:flex; align-items:center; gap:12px; padding:14px; margin-bottom:10px; background: rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06); border-radius:14px; }
+  .fd-avatar { width:46px; height:46px; border-radius:50%; flex-shrink:0; background: linear-gradient(145deg, #1a2332, #0f1620); border: 2px solid rgba(46,213,115,.35); display:flex; align-items:center; justify-content:center; font-family:'Montserrat',sans-serif; font-weight:900; font-size:16px; color:#2ed573; }
+  .fd-header.fd-portero .fd-avatar { border-color: rgba(52,152,219,.5); color:#3498db; }
+  .fd-header .fd-info { flex:1; min-width:0; }
+  .fd-header .fd-nombre { font-family:'Montserrat',sans-serif; font-weight:800; font-size:14px; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .fd-header .fd-meta { font-size:11px; color:#8da499; margin-top:2px; }
+  .fd-resumen-row { display:grid; grid-template-columns: repeat(3,1fr); gap:6px; margin-bottom:10px; }
+  .fd-resumen-box { background: rgba(15,23,42,.6); border:1px solid rgba(255,255,255,.05); border-radius:10px; padding:9px 6px; text-align:center; }
+  .fd-resumen-box .v { font-family:'Montserrat',sans-serif; font-weight:900; font-size:15px; color:#e2e8f0; }
+  .fd-resumen-box .l { font-size:8.5px; color:#52665c; font-weight:700; letter-spacing:.03em; text-transform:uppercase; margin-top:2px; }
+  .fd-impacto { display:flex; align-items:center; justify-content:space-between; background: linear-gradient(135deg, rgba(46,213,115,.12), rgba(39,174,96,.05)); border:1px solid rgba(46,213,115,.25); border-radius:12px; padding:10px 13px; margin-bottom:12px; }
+  .fd-impacto .txt { font-size:11px; color:#8da499; font-weight:600; }
+  .fd-impacto .txt small { display:block; font-size:9px; color:#52665c; margin-top:1px; }
+  .fd-impacto .num { font-family:'Montserrat',sans-serif; font-weight:900; font-size:22px; color:#2ed573; }
+  .fd-stat-list { display:flex; flex-direction:column; gap:6px; }
+  .fd-stat-row { display:flex; align-items:center; gap:10px; background: rgba(255,255,255,.025); border:1px solid rgba(255,255,255,.05); border-radius:10px; padding:9px 11px; }
+  .fd-stat-row .ic { font-size:16px; width:20px; text-align:center; flex-shrink:0; }
+  .fd-stat-row .label { flex:1; min-width:0; }
+  .fd-stat-row .label .nom { font-size:11.5px; font-weight:700; color:#e2e8f0; }
+  .fd-stat-row .label .ratio { font-size:10px; color:#8da499; margin-top:1px; }
+  .fd-stat-row .label .ratio.fd-poca-muestra { color:#52665c; font-style:italic; }
+  .fd-stat-row .total { font-family:'Montserrat',sans-serif; font-weight:900; font-size:14px; color:#f5a623; min-width:24px; text-align:right; }
+  .fd-tarjetas-row { display:flex; gap:6px; margin-top:8px; }
+  .fd-tarjeta-box { flex:1; display:flex; align-items:center; justify-content:center; gap:6px; background: rgba(255,255,255,.025); border:1px solid rgba(255,255,255,.05); border-radius:10px; padding:8px; }
+  .fd-tarjeta-box .cuad { width:11px; height:15px; border-radius:2px; }
+  .fd-tarjeta-box .num { font-family:'Montserrat',sans-serif; font-weight:900; font-size:13px; color:#e2e8f0; }
 </style>
 </head>
 <body>
@@ -348,11 +383,17 @@
         <div class="card">
           <div class="card-title">📊 Top 5 de la temporada</div>
           <select id="comparativaStatSelect" onchange="rerenderComparativa()" style="width:100%; padding:8px; border-radius:8px; background:#0f172a; color:#e2e8f0; border:1px solid rgba(255,255,255,.1); margin-bottom:10px; font-size:12px;">
-            <option value="impactoAcum">Impacto acumulado</option>
-            <option value="goles">Goles</option>
-            <option value="asistencias">Asistencias</option>
-            <option value="accionesDef">Acciones defensivas</option>
-            <option value="minutos">Minutos</option>
+            <option value="goles">⚽ Goles</option>
+            <option value="asistencias">👟 Asistencias</option>
+            <option value="minutos">⏱ Minutos</option>
+            <option value="impactoAcum">⭐ Impacto Total</option>
+            <option value="impactoPorPartido">📊 Impacto x Partido</option>
+            <option value="pasesArea">📯 Pases al Área</option>
+            <option value="pasesClave">🔑 Pases Clave</option>
+            <option value="accionesDef">🛡️ Acciones Def.</option>
+            <option value="partidos">📋 Partidos</option>
+            <option value="amarillas">🟨 Amarillas</option>
+            <option value="rojas">🟥 Rojas</option>
           </select>
           <div id="comparativaLista"><div class="loader">Cargando...</div></div>
         </div>
@@ -463,8 +504,13 @@
 <p class="note">HERGAR Live — visor de solo lectura para familias del club.</p>
 
 <div id="perfilModal" style="display:none; position:fixed; inset:0; z-index:900; background:rgba(0,0,0,.85); align-items:center; justify-content:center; padding:20px;">
-  <div style="background:linear-gradient(145deg,#111827,#0f172a); border-radius:20px; padding:20px; max-width:340px; width:100%; border:1px solid rgba(255,255,255,.08);">
+  <div style="background:linear-gradient(145deg,#111827,#0f172a); border-radius:20px; padding:20px; max-width:340px; width:100%; border:1px solid rgba(255,255,255,.08); max-height:88vh; overflow-y:auto;">
+    <div class="fd-tabs">
+      <button id="perfilCromoTabBtn" class="fd-active" onclick="mostrarPestanaPerfil('cromo')">🎴 Cromo</button>
+      <button id="perfilDatosTabBtn" onclick="mostrarPestanaPerfil('datos')">📊 Datos</button>
+    </div>
     <div id="perfilContenido"></div>
+    <div id="perfilDatosContenido" style="display:none;"></div>
     <button onclick="document.getElementById('perfilModal').style.display='none';" style="margin-top:14px; width:100%; padding:11px; background:rgba(255,255,255,.06); color:#e2e8f0; border:none; border-radius:10px; font-weight:700; font-family:'Montserrat',sans-serif;">CERRAR</button>
   </div>
 </div>
@@ -611,21 +657,23 @@
     cont.innerHTML = filas || '<div class="loader">Sin datos</div>';
   }
 
-  // ── Perfil (cromo en vivo) ──────────────────────────────────────────
+  // ── Perfil (cromo) — fórmula igualada con la app principal (hergar_f11) ──
   const MIN_MINUTOS_PERFIL = 20;
+  // FIX: constantes recalibradas — reciben MEDIA POR PARTIDO (temporada) o el dato de UN
+  // partido (en vivo / partido suelto), nunca el acumulado de toda la temporada sin dividir.
   function clamp99(v) { return Math.max(40, Math.min(99, Math.round(v))); }
   function calcularAtributosCromo(s) {
     const rit = clamp99(40 + (Math.min(90, s.minutos) / 90) * 59);
     const tirosTotales = (s.disparosPuerta||0) + (s.disparosFuera||0);
     const precision = tirosTotales > 0 ? s.disparosPuerta / tirosTotales : 0.5;
-    const tir = clamp99(40 + precision*30 + Math.min(29, (s.goles||0)*6));
-    const pasVal = (s.pasesClave||0)*3 + (s.pasesArea||0) + (s.asistencias||0)*3;
-    const pas = clamp99(40 + Math.min(59, pasVal*2));
-    const regVal = (s.asistencias||0)*5 + (s.pasesClave||0)*3 + (s.goles||0)*2;
+    const tir = clamp99(40 + precision*30 + Math.min(29, (s.goles||0)*60));
+    const pasVal = (s.pasesClave||0)*12 + (s.pasesArea||0)*4 + (s.asistencias||0)*12;
+    const pas = clamp99(40 + Math.min(59, pasVal));
+    const regVal = (s.asistencias||0)*20 + (s.pasesClave||0)*12 + (s.goles||0)*8;
     const reg = clamp99(40 + Math.min(59, regVal));
     let def, defLabel;
-    if (s.esPortero) { def = clamp99(40 + Math.min(59, (s.paradas||0)*4 + (s.paradasDificiles||0)*9)); defLabel='PAR'; }
-    else { def = clamp99(40 + Math.min(59, (s.accionesDef||0)*4)); defLabel='DEF'; }
+    if (s.esPortero) { def = clamp99(40 + Math.min(59, (s.paradas||0)*7 + (s.paradasDificiles||0)*16)); defLabel='PAR'; }
+    else { def = clamp99(40 + Math.min(59, (s.accionesDef||0)*10)); defLabel='DEF'; }
     const fis = clamp99(40 + Math.min(59, (s.impactoPond||0)*9));
     const rating = Math.round((rit+tir+pas+reg+def+fis)/6);
     let tier = 'bronce';
@@ -634,6 +682,65 @@
   }
   const CROMO_COLORES = {
     bronce: '#d99a52', plata: '#dbe4e8', oro: '#f5a623', especial: '#c299f5'
+  };
+
+  // ── FICHA DE DATOS — estadísticas reales medias, igualada con la app ──
+  const FD_UMBRAL_MINUTOS = 10;
+  function fdFormatRatio(cantidadTotal, minutosTotal) {
+    if (minutosTotal < FD_UMBRAL_MINUTOS) return { texto: `Menos de ${FD_UMBRAL_MINUTOS} min jugados — dato aún poco fiable`, pocaMuestra: true };
+    if (!cantidadTotal || cantidadTotal <= 0) return { texto: 'Aún sin estrenar', pocaMuestra: false };
+    return { texto: `Cada ${(minutosTotal/cantidadTotal).toFixed(1)} min`, pocaMuestra: false };
+  }
+  function fdStatRow(icono, nombre, cantidadTotal, minutosTotal) {
+    const r = fdFormatRatio(cantidadTotal, minutosTotal);
+    return `<div class="fd-stat-row">
+      <div class="ic">${icono}</div>
+      <div class="label"><div class="nom">${nombre}</div><div class="ratio${r.pocaMuestra ? ' fd-poca-muestra' : ''}">${r.texto}</div></div>
+      <div class="total">${cantidadTotal || 0}</div>
+    </div>`;
+  }
+  function renderFichaDatosHTML(stats) {
+    const t = stats.totales;
+    const minutosTotal = stats.minutosTotal || 0;
+    const partidosLabel = stats.esPartidoSuelto ? 'Este partido' : 'Partidos';
+    const statsFilas = stats.esPortero
+      ? fdStatRow('🥅', 'Goles recibidos', t.golesRecibidos, minutosTotal)
+        + fdStatRow('🧤', 'Paradas', t.paradas, minutosTotal)
+        + fdStatRow('✋', 'Paradas difíciles', t.paradasDificiles, minutosTotal)
+      : fdStatRow('⚽', 'Goles', t.goles, minutosTotal)
+        + fdStatRow('👟', 'Asistencias', t.asistencias, minutosTotal)
+        + fdStatRow('📯', 'Pases al área', t.pasesArea, minutosTotal)
+        + fdStatRow('🔑', 'Pases clave', t.pasesClave, minutosTotal)
+        + fdStatRow('🛡️', 'Acciones defensivas', t.accionesDef, minutosTotal);
+    return `
+      <div class="fd-header${stats.esPortero ? ' fd-portero' : ''}">
+        <div class="fd-avatar">${stats.dorsal}</div>
+        <div class="fd-info">
+          <div class="fd-nombre">${stats.nombre}</div>
+          <div class="fd-meta">#${stats.dorsal} · ${stats.esPortero ? 'Portero' : 'Jugador'}</div>
+        </div>
+      </div>
+      <div class="fd-resumen-row">
+        <div class="fd-resumen-box"><div class="v">${stats.partidos}</div><div class="l">${partidosLabel}</div></div>
+        <div class="fd-resumen-box"><div class="v">${minutosTotal}'</div><div class="l">Minutos</div></div>
+        <div class="fd-resumen-box"><div class="v">${Math.round(stats.minsPromedio)}'</div><div class="l">Media/partido</div></div>
+      </div>
+      <div class="fd-impacto">
+        <div class="txt">Impacto medio<small>normalizado a 70 min</small></div>
+        <div class="num">${(stats.impactoPond||0).toFixed(1)}</div>
+      </div>
+      <div class="fd-stat-list">${statsFilas}</div>
+      <div class="fd-tarjetas-row">
+        <div class="fd-tarjeta-box"><div class="cuad" style="background:#f5c518;"></div><div class="num">${t.amarillas || 0}</div></div>
+        <div class="fd-tarjeta-box"><div class="cuad" style="background:#e74c3c;"></div><div class="num">${t.rojas || 0}</div></div>
+      </div>`;
+  }
+  window.mostrarPestanaPerfil = function(cual) {
+    const esCromo = cual === 'cromo';
+    document.getElementById('perfilContenido').style.display = esCromo ? 'block' : 'none';
+    document.getElementById('perfilDatosContenido').style.display = esCromo ? 'none' : 'block';
+    document.getElementById('perfilCromoTabBtn').classList.toggle('fd-active', esCromo);
+    document.getElementById('perfilDatosTabBtn').classList.toggle('fd-active', !esCromo);
   };
 
   window.abrirPerfilJugador = (id) => {
@@ -666,6 +773,87 @@
             </div>`).join('')}
         </div>`;
     }
+    // FICHA DE DATOS del partido en vivo (un solo partido = el que está en juego)
+    const statsDatos = {
+      nombre: p.name, dorsal: p.dorsal, esPortero: !!p.esPortero, esPartidoSuelto: true,
+      partidos: 1, minutosTotal: p.minutos || 0, minsPromedio: p.minutos || 0,
+      impactoPond: p.impactoPond || 0,
+      totales: {
+        goles: p.goles||0, asistencias: p.asistencias||0, pasesArea: p.pasesArea||0, pasesClave: p.pasesClave||0,
+        accionesDef: p.accionesDef||0, paradas: p.paradas||0, paradasDificiles: p.paradasDificiles||0,
+        golesRecibidos: p.golesRecibidos||0, amarillas: p.amarillas||0, rojas: p.roja?1:0
+      }
+    };
+    document.getElementById('perfilDatosContenido').innerHTML = renderFichaDatosHTML(statsDatos);
+    mostrarPestanaPerfil('cromo'); // el modal siempre abre en la pestaña del cromo
+    document.getElementById('perfilModal').style.display = 'flex';
+  };
+
+  // ── Posición del jugador en temporada, a partir de minutosPorPosicion (mismo criterio que la app) ──
+  function posicionTemporada(j) {
+    const mp = j.minutosPorPosicion || {};
+    const orden = ['portero', 'defensa', 'centrocampista', 'delantero', 'suplente'];
+    let mejor = 'suplente', max = -1;
+    orden.forEach(k => { if ((mp[k]||0) > max) { max = mp[k]||0; mejor = k; } });
+    return mejor;
+  }
+
+  // ── Perfil de temporada: para verse aunque no haya partido en juego (tocando el ranking) ──
+  window.abrirPerfilJugadorTemporada = (id) => {
+    if (!ultimaTemporada) return;
+    const j = ultimaTemporada.jugadores?.[id];
+    if (!j) return;
+    const posKey = posicionTemporada(j);
+    const esPortero = posKey === 'portero';
+    const pj = j.partidos > 0 ? j.partidos : 1;
+    const statsAttrs = {
+      minutos: j.partidos > 0 ? j.minutos / j.partidos : 0,
+      goles: (j.goles||0)/pj, asistencias: (j.asistencias||0)/pj,
+      pasesArea: (j.pasesArea||0)/pj, pasesClave: (j.pasesClave||0)/pj,
+      accionesDef: (j.accionesDef||0)/pj,
+      paradas: (j.paradas||0)/pj, paradasDificiles: (j.paradasDificiles||0)/pj,
+      disparosPuerta: (j.disparosPuerta||0)/pj, disparosFuera: (j.disparosFuera||0)/pj,
+      impactoPond: j._pond || (j.partidos > 0 ? j.impactoAcum / j.partidos : 0),
+      esPortero
+    };
+    const cont = document.getElementById('perfilContenido');
+    if ((j.minutos||0) < MIN_MINUTOS_PERFIL) {
+      cont.innerHTML = `
+        <div style="text-align:center; padding:20px 10px;">
+          <div style="font-size:28px; margin-bottom:8px;">⏳</div>
+          <div style="font-weight:800; color:#e2e8f0; margin-bottom:4px;">${(j.name||'').split(' ')[0]}</div>
+          <div style="font-size:12px; color:#64748b;">Aún sin los ${MIN_MINUTOS_PERFIL} minutos mínimos para generar su Perfil (lleva ${j.minutos||0}')</div>
+        </div>`;
+    } else {
+      const attrs = calcularAtributosCromo(statsAttrs);
+      const color = CROMO_COLORES[attrs.tier];
+      cont.innerHTML = `
+        <div style="text-align:center;">
+          <div style="font-size:42px; font-weight:900; font-family:'Montserrat',sans-serif; color:${color};">${attrs.rating}</div>
+          <div style="font-size:10px; letter-spacing:2px; color:${color}; text-transform:uppercase; font-weight:800; margin-bottom:4px;">${attrs.tier}</div>
+          <div style="font-size:15px; font-weight:800; color:#e2e8f0; margin-bottom:2px;">#${j.dorsal} ${(j.name||'').split(' ')[0]}</div>
+          <div style="font-size:11px; color:#64748b; margin-bottom:14px;">${j.partidos||0} partidos esta temporada</div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+          ${[['RIT',attrs.rit],['TIR',attrs.tir],['PAS',attrs.pas],['REG',attrs.reg],[attrs.defLabel,attrs.def],['FÍS',attrs.fis]].map(([label,val]) => `
+            <div style="background:rgba(255,255,255,.04); border-radius:8px; padding:8px; display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:10px; color:#94a3b8; font-weight:700;">${label}</span>
+              <span style="font-size:16px; font-weight:900; color:${color}; font-family:'Montserrat',sans-serif;">${val}</span>
+            </div>`).join('')}
+        </div>`;
+    }
+    const statsDatos = {
+      nombre: j.name, dorsal: j.dorsal, esPortero, esPartidoSuelto: false,
+      partidos: j.partidos||0, minutosTotal: j.minutos||0, minsPromedio: statsAttrs.minutos,
+      impactoPond: statsAttrs.impactoPond,
+      totales: {
+        goles: j.goles||0, asistencias: j.asistencias||0, pasesArea: j.pasesArea||0, pasesClave: j.pasesClave||0,
+        accionesDef: j.accionesDef||0, paradas: j.paradas||0, paradasDificiles: j.paradasDificiles||0,
+        golesRecibidos: j.golesRecibidos||0, amarillas: j.amarillas||0, rojas: j.rojas||0
+      }
+    };
+    document.getElementById('perfilDatosContenido').innerHTML = renderFichaDatosHTML(statsDatos);
+    mostrarPestanaPerfil('cromo');
     document.getElementById('perfilModal').style.display = 'flex';
   };
 
@@ -725,7 +913,7 @@
     };
     const getEtiqueta = etiquetaVal[criterio] || etiquetaVal.pond;
     cont.innerHTML = jugadores.slice(0, 15).map((j, i) => `
-      <div class="rank-row">
+      <div class="rank-row" onclick="abrirPerfilJugadorTemporada('${j.id}')" style="cursor:pointer;">
         <div class="rank-pos">${i+1}</div>
         <div class="rank-name">${(j.name||'').split(' ')[0]}</div>
         ${(criterio !== 'notaIA' && j._notaIA !== null) ? `<div class="rank-notaia" title="Nota IA media">🤖 ${j._notaIA.toFixed(1)}</div>` : ''}
@@ -837,12 +1025,17 @@
       ${filasJugadores || '<div class="loader">Sin datos</div>'}`;
   }
 
-  const COMPARATIVA_STATS = { impactoAcum: 'Impacto', goles: 'Goles', asistencias: 'Asistencias', accionesDef: 'Acc. defensivas', minutos: 'Minutos' };
+  const COMPARATIVA_STATS = { goles: 'Goles', asistencias: 'Asistencias', minutos: 'Minutos', impactoAcum: 'Impacto', impactoPorPartido: 'Imp. x partido', pasesArea: 'Pases al área', pasesClave: 'Pases clave', accionesDef: 'Acc. defensivas', partidos: 'Partidos', amarillas: 'Amarillas', rojas: 'Rojas' };
+  // Estadísticas que se muestran con 2 decimales; el resto son enteras.
+  const COMPARATIVA_DECIMALES = new Set(['impactoAcum', 'impactoPorPartido']);
   function pintarComparativa(t) {
     const sel = document.getElementById('comparativaStatSelect');
     if (!sel) return;
-    const stat = sel.value || 'impactoAcum';
-    const jugadores = Object.values(t.jugadores || {});
+    const stat = sel.value || 'goles';
+    const jugadores = Object.values(t.jugadores || {}).map(j => {
+      const impactoPorPartido = j.partidos > 0 ? (j.impactoAcum || 0) / j.partidos : 0;
+      return { ...j, impactoPorPartido };
+    });
     const cont = document.getElementById('comparativaLista');
     if (jugadores.length === 0) { cont.innerHTML = '<div class="loader">Sin datos aún</div>'; return; }
     const sorted = jugadores.slice().sort((a,b) => (b[stat]||0) - (a[stat]||0)).slice(0, 5);
@@ -851,7 +1044,7 @@
       <div class="rank-row">
         <div class="rank-pos">${medals[i]}</div>
         <div class="rank-name">${(j.name||'').split(' ')[0]}</div>
-        <div class="rank-val">${(j[stat]||0).toFixed ? (j[stat]||0).toFixed(stat==='impactoAcum'?2:0) : j[stat]||0}</div>
+        <div class="rank-val">${(j[stat]||0).toFixed(COMPARATIVA_DECIMALES.has(stat)?2:0)}</div>
       </div>`).join('');
   }
 
@@ -1044,6 +1237,17 @@
     pintarLigaClasificacion(liga);
     renderLigaEvolChipsViewer();
     renderLigaEvolucionViewer();
+  }, (err) => {
+    // Antes esto fallaba en silencio (p.ej. permisos de Firebase) y la pantalla se
+    // quedaba en "Cargando..." para siempre sin ninguna pista de qué había pasado.
+    console.error('Firebase liga read error:', err);
+    const mensaje = `⚠️ No se pudo cargar la Liga: ${err && err.message ? err.message : err}`;
+    const equiposCont = document.getElementById('ligaEquiposLista');
+    if (equiposCont) equiposCont.innerHTML = `<div class="loader" style="color:#ff4757;">${mensaje}</div>`;
+    const partidosCont = document.getElementById('ligaViewerPartidos');
+    if (partidosCont) partidosCont.innerHTML = `<div class="loader" style="color:#ff4757;">${mensaje}</div>`;
+    const clasifCont = document.getElementById('ligaViewerClasifBody');
+    if (clasifCont) clasifCont.innerHTML = `<tr><td colspan="10" class="loader" style="color:#ff4757;">${mensaje}</td></tr>`;
   });
 
   function pintarLigaEquipos(liga) {

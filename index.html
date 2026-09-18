@@ -975,9 +975,18 @@
     cont.innerHTML = partidos.slice(0, 15).map(p => {
       const chipClass = p.resultado === 'V' ? 'streak-win' : p.resultado === 'D' ? 'streak-loss' : 'streak-draw';
       const icon = p.resultado === 'V' ? '✅' : p.resultado === 'D' ? '❌' : '➖';
-      return `<div class="rank-row">
-        <div class="rank-name">${p.fecha || ''} · vs ${p.rival}</div>
-        <div class="streak-chip ${chipClass}">${p.golesLocal}–${p.golesRival} ${icon}</div>
+      const extras = [];
+      if (p.goleadores && p.goleadores !== '-') extras.push(`⚽ ${p.goleadores}`);
+      if (p.mvp && p.mvp !== '-') extras.push(`⭐ MVP: ${p.mvp}`);
+      const extrasHtml = extras.length ? `<div style="font-size:10px; color:#8da499; margin-top:2px;">${extras.join(' · ')}</div>` : '';
+      const statsHtml = (p.tirosNuestrosPuerta != null) ? `<div style="font-size:9px; color:#64748b; margin-top:4px; padding-top:4px; border-top:1px solid rgba(255,255,255,0.06);">🎯 ${(p.tirosNuestrosPuerta||0)+(p.tirosNuestrosFuera||0)}(${p.tirosNuestrosPuerta||0}) — ${(p.tirosRivalesPuerta||0)+(p.tirosRivalesFuera||0)}(${p.tirosRivalesPuerta||0}) · 🟨 ${p.faltasFavor||0}/${p.faltasContra||0} · ⛳ ${p.cornersFavor||0}/${p.cornersContra||0}</div>` : '';
+      return `<div class="rank-row" style="flex-direction:column; align-items:stretch; gap:2px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div class="rank-name">${p.fecha || ''} · vs ${p.rival}</div>
+          <div class="streak-chip ${chipClass}">${p.golesLocal}–${p.golesRival} ${icon}</div>
+        </div>
+        ${extrasHtml}
+        ${statsHtml}
       </div>`;
     }).join('');
   }

@@ -1347,7 +1347,7 @@
     const cont = document.getElementById('ligaViewerPartidos');
     cont.innerHTML = partidosJornada.map(p => {
       const localEs = esHergarLigaViewer(liga, p.local), visEs = esHergarLigaViewer(liga, p.visitante);
-      const jugado = p.golesLocal !== null && p.golesVisitante !== null;
+      const jugado = p.golesLocal != null && p.golesVisitante != null;
       const marcador = jugado
         ? `<div class="liga-marcador">${p.golesLocal} - ${p.golesVisitante}</div>`
         : `<div class="liga-marcador pendiente">vs</div>`;
@@ -1364,7 +1364,7 @@
     const tabla = {};
     liga.equipos.forEach(eq => tabla[eq.id] = { pj:0,pg:0,pe:0,pp:0,gf:0,gc:0,pts:0 });
     liga.partidos.forEach(p => {
-      if (p.golesLocal === null || p.golesVisitante === null) return;
+      if (p.golesLocal == null || p.golesVisitante == null) return;
       if (!tabla[p.local] || !tabla[p.visitante]) return;
       const gl = p.golesLocal, gv = p.golesVisitante;
       tabla[p.local].pj++; tabla[p.visitante].pj++;
@@ -1425,7 +1425,7 @@
       (porJornada[g] = porJornada[g] || []).push(p);
     });
     const jornadasConDatos = Object.keys(porJornada).map(Number).filter(g =>
-      porJornada[g].some(p => p.golesLocal !== null && p.golesVisitante !== null)
+      porJornada[g].some(p => p.golesLocal != null && p.golesVisitante != null)
     );
     if (!jornadasConDatos.length) return { jornadas: [], posiciones: {} };
     const maxJornada = Math.max(...jornadasConDatos);
@@ -1436,7 +1436,7 @@
     const jornadas = [];
     for (let g = 1; g <= maxJornada; g++) {
       (porJornada[g] || []).forEach(p => {
-        if (p.golesLocal === null || p.golesVisitante === null) return;
+        if (p.golesLocal == null || p.golesVisitante == null) return;
         if (!tabla[p.local] || !tabla[p.visitante]) return;
         const gl = p.golesLocal, gv = p.golesVisitante;
         tabla[p.local].pj++; tabla[p.visitante].pj++;

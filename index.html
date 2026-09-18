@@ -286,6 +286,12 @@
 
     <!-- PARTIDO -->
     <div id="partido" class="panel active">
+      <div class="card" id="informeIACard" style="display:none;">
+        <div class="card-title">🤖 Informe del partido (IA)</div>
+        <div id="informeResumenIA" style="display:none; font-style:italic; color:#a855f7; font-size:12.5px; line-height:1.5; padding:10px; background:rgba(168,85,247,.08); border:1px solid rgba(168,85,247,.25); border-radius:10px; margin-bottom:10px;"></div>
+        <div id="informeNotasIA"></div>
+        <div id="informeAnalisisIA" style="display:none; font-size:12px; line-height:1.6; color:#cbd5e1; white-space:pre-wrap; margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,.06);"></div>
+      </div>
       <div class="card">
         <div class="card-title" id="formacionTitulo">Formación en el campo</div>
         <div class="campo" id="campoContainer">
@@ -875,6 +881,7 @@
       liveBanner.style.display = 'none'; offlineBanner.style.display = matchData.matchFinished ? 'none' : 'flex';
     }
 
+    pintarInformeIA(matchData);
     pintarCampo(matchData);
     pintarEventos(matchData);
     pintarStatsGrid(matchData);
@@ -882,6 +889,46 @@
     pintarMomentum(matchData);
     pintarGeo(matchData);
     pintarRotacion(matchData);
+  }
+
+  function pintarInformeIA(matchData) {
+    const card = document.getElementById('informeIACard');
+    if (!card) return;
+    if (!matchData.matchFinished || !matchData.analisisIA) { card.style.display = 'none'; return; }
+    card.style.display = 'block';
+
+    const resumenEl = document.getElementById('informeResumenIA');
+    if (matchData.resumenIA) {
+      resumenEl.style.display = 'block';
+      resumenEl.textContent = `🤖 "${matchData.resumenIA}"`;
+    } else {
+      resumenEl.style.display = 'none';
+    }
+
+    const notasEl = document.getElementById('informeNotasIA');
+    const notas = matchData.notasIA || {};
+    const jugadores = matchData.jugadores || {};
+    const filas = Object.keys(notas).map(id => {
+      const j = jugadores[id] || {};
+      return { dorsal: j.dorsal ?? '', nombre: (j.name || `ID${id}`).split(' ')[0], nota: parseFloat(notas[id].nota) || 0, comentario: notas[id].comentario || '' };
+    }).sort((a, b) => b.nota - a.nota);
+    notasEl.innerHTML = filas.map(f => {
+      const color = f.nota >= 8 ? '#2ed573' : f.nota >= 6 ? '#f5a623' : '#ff4757';
+      return `<div style="display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid rgba(255,255,255,.04);">
+        <span style="color:#f5a623; font-weight:900; font-size:11px; width:20px; text-align:right;">${f.dorsal}</span>
+        <span style="color:#e2e8f0; font-size:12px; font-weight:700; flex:1;">${f.nombre}</span>
+        <span style="color:${color}; font-weight:900; font-size:15px; width:30px; text-align:right;">${f.nota.toFixed(1)}</span>
+        <span style="color:#64748b; font-size:10px; flex:1.4; text-align:right;">${f.comentario}</span>
+      </div>`;
+    }).join('');
+
+    const analisisEl = document.getElementById('informeAnalisisIA');
+    if (matchData.analisisIA) {
+      analisisEl.style.display = 'block';
+      analisisEl.textContent = matchData.analisisIA;
+    } else {
+      analisisEl.style.display = 'none';
+    }
   }
 
   function pintarRanking(temporada) {

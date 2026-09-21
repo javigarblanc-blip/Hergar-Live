@@ -522,6 +522,13 @@
 </div>
 
 <script type="module">
+  // v2 · Interruptor de notas IA: false = no se muestran notas de jugadores (ni en el partido ni en el ranking).
+  // Para volver a mostrarlas: cambiar a true.
+  const MOSTRAR_NOTAS_IA = false;
+  if (!MOSTRAR_NOTAS_IA) {
+    document.querySelector('#rankingCriterioSelect option[value="notaIA"]')?.remove();
+  }
+
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
   import { getDatabase, ref, onValue, get } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js";
 
@@ -906,7 +913,7 @@
     }
 
     const notasEl = document.getElementById('informeNotasIA');
-    const notas = matchData.notasIA || {};
+    const notas = MOSTRAR_NOTAS_IA ? (matchData.notasIA || {}) : {};
     const jugadores = matchData.jugadores || {};
     const filas = Object.keys(notas).map(id => {
       const j = jugadores[id] || {};
@@ -935,7 +942,7 @@
     const jugadores = Object.values(temporada.jugadores || {});
     jugadores.forEach(j => {
       j._pond = j.minutos > 0 ? (j.impactoAcum / j.minutos * 70) : 0;
-      j._notaIA = (j.notaIApartidos > 0) ? (j.notaIAacum / j.notaIApartidos) : null;
+      j._notaIA = (MOSTRAR_NOTAS_IA && j.notaIApartidos > 0) ? (j.notaIAacum / j.notaIApartidos) : null;
     });
     const criterio = document.getElementById('rankingCriterioSelect')?.value || 'pond';
     const valorPorCriterio = {

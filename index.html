@@ -247,6 +247,31 @@
   .fd-tarjeta-box { flex:1; display:flex; align-items:center; justify-content:center; gap:6px; background: rgba(255,255,255,.025); border:1px solid rgba(255,255,255,.05); border-radius:10px; padding:8px; }
   .fd-tarjeta-box .cuad { width:11px; height:15px; border-radius:2px; }
   .fd-tarjeta-box .num { font-family:'Montserrat',sans-serif; font-weight:900; font-size:13px; color:#e2e8f0; }
+  /* ── Hergar vs Rival (pestaña En vivo) ── */
+  .vs-head { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px;
+    font-family:'Montserrat',sans-serif; font-weight:800; font-size:12px; }
+  .vs-head .h { color:#2ed573; }
+  .vs-head .r { color:#94a3b8; text-align:right; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .vs-row { margin-bottom:12px; }
+  .vs-vals { display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
+  .vs-num { font-family:'Montserrat',sans-serif; font-weight:900; font-size:17px; min-width:30px; }
+  .vs-num.h { color:#2ed573; text-align:left; }
+  .vs-num.r { color:#94a3b8; text-align:right; }
+  .vs-label { flex:1; text-align:center; font-size:11px; font-weight:700; color:#cbd5e1; }
+  .vs-bar { display:flex; height:6px; margin-top:5px; border-radius:3px; overflow:hidden; background:rgba(255,255,255,.06); }
+  .vs-bar .h { background:#2ed573; }
+  .vs-bar .r { background:#64748b; }
+
+  /* ── Aviso de gol dentro de la página ── */
+  #golBanner { display:none; position:fixed; left:12px; right:12px; top:calc(10px + env(safe-area-inset-top,0px));
+    max-width:456px; margin:0 auto; z-index:990; text-align:center; padding:14px 16px; border-radius:16px;
+    background:#2ed573; color:#06210f; box-shadow:0 14px 40px -8px rgba(46,213,115,.55); cursor:pointer; }
+  #golBanner.visible { display:block; animation:golEntra .35s ease-out; }
+  #golBanner .gol-titulo { font-family:'Montserrat',sans-serif; font-weight:900; font-size:19px; letter-spacing:.3px; }
+  #golBanner .gol-marcador { font-family:'Montserrat',sans-serif; font-weight:800; font-size:13px; margin-top:3px; }
+  #golBanner .gol-detalle { font-size:12px; font-weight:700; margin-top:3px; }
+  @keyframes golEntra { from { transform:translateY(-130%); opacity:0; } to { transform:none; opacity:1; } }
+  @media (prefers-reduced-motion: reduce) { #golBanner.visible { animation:none; } }
 </style>
 </head>
 <body>
@@ -311,12 +336,7 @@
 
     <!-- EN VIVO -->
     <div id="envivo" class="panel">
-      <div class="stat-grid" id="statGrid">
-        <div class="stat-box"><div class="v">-</div><div class="l">Disparos</div></div>
-        <div class="stat-box"><div class="v">-</div><div class="l">A puerta</div></div>
-        <div class="stat-box"><div class="v">-</div><div class="l">Faltas</div></div>
-        <div class="stat-box"><div class="v">-</div><div class="l">🟨 Amar.</div></div>
-      </div>
+      <div class="card" id="statGrid"><div class="loader" style="padding:20px 12px;">Esperando datos del partido...</div></div>
       <div class="card">
         <div class="card-title">Momentum</div>
         <canvas id="momentumCanvas" width="420" height="90" style="width:100%; height:90px; border-radius:8px; background:#0f172a;"></canvas>
@@ -446,13 +466,13 @@
     <!-- LIGA -->
     <div id="liga" class="panel">
       <div class="subtabs">
-        <div class="subtab-btn active" onclick="showSub(event,'subLigaEquipos')">👥 Equipos</div>
+        <div class="subtab-btn active" onclick="showSub(event,'subLigaClasif')">📈 Clasif.</div>
         <div class="subtab-btn" onclick="showSub(event,'subLigaPartidos')">📅 Partidos</div>
-        <div class="subtab-btn" onclick="showSub(event,'subLigaClasif')">📈 Clasif.</div>
         <div class="subtab-btn" onclick="showSub(event,'subLigaEvol')">📉 Evolución</div>
+        <div class="subtab-btn" onclick="showSub(event,'subLigaEquipos')">👥 Equipos</div>
       </div>
 
-      <div id="subLigaEquipos" class="sub-panel active">
+      <div id="subLigaEquipos" class="sub-panel">
         <div class="card">
           <div class="card-title" id="ligaTituloGrupo">Equipos del grupo</div>
           <div id="ligaEquiposLista"><div class="loader">Cargando...</div></div>
@@ -476,7 +496,7 @@
         </div>
       </div>
 
-      <div id="subLigaClasif" class="sub-panel">
+      <div id="subLigaClasif" class="sub-panel active">
         <div class="card">
           <div class="card-title">Clasificación</div>
           <div style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
@@ -516,6 +536,12 @@
 
 <p class="note">HERGAR Live — visor de solo lectura para familias del club.</p>
 
+<div id="golBanner" role="status" aria-live="polite" onclick="ocultarGolBanner()">
+  <div class="gol-titulo">⚽ ¡GOOOL DE HERGAR!</div>
+  <div class="gol-marcador" id="golMarcador"></div>
+  <div class="gol-detalle" id="golDetalle"></div>
+</div>
+
 <div id="perfilModal" style="display:none; position:fixed; inset:0; z-index:900; background:rgba(0,0,0,.85); align-items:center; justify-content:center; padding:20px;">
   <div style="background:linear-gradient(145deg,#111827,#0f172a); border-radius:20px; padding:20px; max-width:340px; width:100%; border:1px solid rgba(255,255,255,.08); max-height:88vh; overflow-y:auto;">
     <div class="fd-tabs">
@@ -540,6 +566,7 @@
 </div>
 
 <script type="module">
+  // v43 · Visor: comparativa Hergar vs rival en En vivo, aviso de gol en pantalla, Liga abre en Clasificación y en la jornada en curso.
   // v42 · Sinergias: impacto que suman los dos mientras coinciden. v41 · Reglas del impacto (las publica la app), ranking con mínimo de minutos, regates y defensa clave.
   // v2 · Interruptor de notas IA: false = no se muestran notas de jugadores (ni en el partido ni en el ranking).
   // Para volver a mostrarlas: cambiar a true.
@@ -640,14 +667,29 @@
     cont.innerHTML = eventos.map(ev => `<div class="timeline-item"><span class="timeline-text">${ev}</span></div>`).join('');
   }
 
+  function escHtml(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  // v43: Hergar vs Rival — barras enfrentadas con los datos que ya publica la app
   function pintarStatsGrid(matchData) {
-    const grid = document.getElementById('statGrid');
-    const disparos = (matchData.tirosNuestrosPuerta || 0) + (matchData.tirosNuestrosFuera || 0);
-    grid.innerHTML = `
-      <div class="stat-box"><div class="v">${disparos}</div><div class="l">Disparos</div></div>
-      <div class="stat-box"><div class="v">${matchData.tirosNuestrosPuerta || 0}</div><div class="l">A puerta</div></div>
-      <div class="stat-box"><div class="v">${(matchData.faltasFavor||0)+(matchData.faltasContra||0)}</div><div class="l">Faltas</div></div>
-      <div class="stat-box"><div class="v">${Object.values(matchData.jugadores||{}).reduce((s,p)=>s+(p.amarillas||0),0)}</div><div class="l">🟨 Amar.</div></div>`;
+    const cont = document.getElementById('statGrid');
+    if (!cont) return;
+    const n = (v) => Number(v) || 0;
+    // "Falta en contra" la comete Hergar; "falta a favor" la comete el rival
+    const filas = [
+      ['Disparos',         n(matchData.tirosNuestrosPuerta) + n(matchData.tirosNuestrosFuera), n(matchData.tirosRivalesPuerta) + n(matchData.tirosRivalesFuera)],
+      ['A puerta',         n(matchData.tirosNuestrosPuerta), n(matchData.tirosRivalesPuerta)],
+      ['Córners',          n(matchData.cornersFavor), n(matchData.cornersContra)],
+      ['Faltas cometidas', n(matchData.faltasContra), n(matchData.faltasFavor)]
+    ];
+    const amarillas = Object.values(matchData.jugadores || {}).reduce((sum, p) => sum + (p.amarillas || 0), 0);
+    cont.innerHTML = `
+      <div class="vs-head"><span class="h">HERGAR</span><span class="r">${escHtml((matchData.rival || 'RIVAL').toUpperCase())}</span></div>
+      ${filas.map(([label, h, r]) => `
+        <div class="vs-row">
+          <div class="vs-vals"><span class="vs-num h">${h}</span><span class="vs-label">${label}</span><span class="vs-num r">${r}</span></div>
+          <div class="vs-bar" style="gap:${h > 0 && r > 0 ? 3 : 0}px;"><div class="h" style="flex:${h};"></div><div class="r" style="flex:${r};"></div></div>
+        </div>`).join('')}
+      <div class="sub-caption" style="margin-top:2px;">🟨 Amarillas de Hergar: ${amarillas}</div>`;
   }
 
   function pintarTablaJugadores(matchData) {
@@ -924,9 +966,53 @@
   };
 
   let ultimoMatchData = null;
+  // ── v43 · Aviso de gol dentro de la página (las notificaciones push cubren el segundo plano) ──
+  let golCodigoVisto = null, golesPrevios = 0, jugadoresPrevios = {}, golBannerTimer = null;
+  function ocultarGolBanner() {
+    const b = document.getElementById('golBanner');
+    if (b) b.classList.remove('visible');
+    clearTimeout(golBannerTimer);
+  }
+  window.ocultarGolBanner = ocultarGolBanner;
+  function fotoJugadoresGol(matchData) {
+    const o = {};
+    Object.entries(matchData.jugadores || {}).forEach(([id, p]) => { o[id] = { g: p.goles || 0, a: p.asistencias || 0, n: (p.name || '').split(' ')[0] }; });
+    return o;
+  }
+  function avisarGolSiProcede(matchData) {
+    const goles = Number(matchData.golesLocal) || 0;
+    const foto = fotoJugadoresGol(matchData);
+    // Primera carga de un partido: se toma como punto de partida, sin avisar
+    if (golCodigoVisto !== codigoPartidoActual) {
+      golCodigoVisto = codigoPartidoActual; golesPrevios = goles; jugadoresPrevios = foto;
+      return;
+    }
+    const subio = goles > golesPrevios && !matchData.matchFinished;
+    const antes = jugadoresPrevios;
+    golesPrevios = goles; jugadoresPrevios = foto;
+    if (!subio) return;
+
+    const marcan = [], asisten = [];
+    Object.entries(foto).forEach(([id, p]) => {
+      const prev = antes[id] || { g: 0, a: 0 };
+      if (p.g > prev.g) marcan.push(p.n);
+      if (p.a > prev.a) asisten.push(p.n);
+    });
+    const detalle = [marcan.length ? `⚽ ${marcan.join(', ')}` : '', asisten.length ? `👟 ${asisten.join(', ')}` : ''].filter(Boolean).join('  ·  ');
+    document.getElementById('golMarcador').textContent = `HERGAR ${goles} – ${Number(matchData.golesRival) || 0} ${(matchData.rival || 'RIVAL').toUpperCase()}`;
+    const det = document.getElementById('golDetalle');
+    det.textContent = detalle; det.style.display = detalle ? 'block' : 'none';
+    const b = document.getElementById('golBanner');
+    b.classList.remove('visible'); void b.offsetWidth; b.classList.add('visible');
+    clearTimeout(golBannerTimer);
+    golBannerTimer = setTimeout(ocultarGolBanner, 7000);
+    try { if (navigator.vibrate && document.visibilityState === 'visible') navigator.vibrate([180, 80, 180]); } catch (e) {}
+  }
+
   function actualizarVistaPartido(matchData) {
     if (!matchData) return;
     ultimoMatchData = matchData;
+    try { avisarGolSiProcede(matchData); } catch (e) { console.error('Aviso de gol:', e); }
     // v3: PREVIA = alineación publicada antes de empezar el partido
     const previa = matchData.previa === true && !matchData.matchFinished && !matchData.matchRunning;
     document.getElementById('scoreLocal').textContent = previa ? '-' : (matchData.golesLocal ?? 0);
@@ -1477,6 +1563,14 @@
     const liga = snap.val();
     if (!liga || !liga.equipos) return;
     ultimaLiga = liga;
+    if (!ligaViewerJornadaFijada) {
+      const actual = jornadaActualLiga(liga);
+      if (actual) {
+        ligaViewerVuelta = actual.vuelta; ligaViewerJornada = actual.jornada;
+        document.querySelectorAll('#subLigaPartidos .liga-vuelta-chip').forEach((c, i) => c.classList.toggle('active', i === actual.vuelta - 1));
+        ligaViewerJornadaFijada = true;
+      }
+    }
     pintarLigaEquipos(liga);
     renderLigaViewerJornada();
     pintarLigaClasificacion(liga);
@@ -1505,7 +1599,34 @@
       </div>`).join('');
   }
 
-  let ligaViewerVuelta = 1, ligaViewerJornada = 1;
+  let ligaViewerVuelta = 1, ligaViewerJornada = 1, ligaViewerJornadaFijada = false;
+
+  // v43: la jornada "en curso" es la primera cuyo último día es hoy o futuro (fines de semana tipo "19-20/09/2026" o días sueltos "04/10/2026").
+  // Si las fechas no se pueden leer, se usa la primera jornada con algún partido sin resultado.
+  function fechaFinJornadaLiga(txt) {
+    const m = /(\d{1,2})(?:\s*[-–]\s*(\d{1,2}))?\/(\d{1,2})\/(\d{4})/.exec(txt || '');
+    return m ? new Date(+m[4], +m[3] - 1, +(m[2] || m[1])) : null;
+  }
+  function jornadaActualLiga(liga) {
+    const porJornada = {};
+    (liga.partidos || []).forEach(p => { const k = p.vuelta * 100 + p.jornada; (porJornada[k] = porJornada[k] || []).push(p); });
+    const claves = Object.keys(porJornada).map(Number).sort((a, b) => a - b);
+    if (!claves.length) return null;
+    const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+    let hayFechas = false, elegida = null;
+    for (const k of claves) {
+      const fin = fechaFinJornadaLiga(porJornada[k][0].fecha);
+      if (!fin) continue;
+      hayFechas = true;
+      if (fin >= hoy) { elegida = k; break; }
+    }
+    if (elegida === null) {
+      elegida = hayFechas
+        ? claves[claves.length - 1]
+        : (claves.find(k => porJornada[k].some(p => p.golesLocal == null || p.golesVisitante == null)) ?? claves[claves.length - 1]);
+    }
+    return { vuelta: Math.floor(elegida / 100), jornada: elegida % 100 };
+  }
   window.cambiarVueltaLigaViewer = (v, el) => {
     ligaViewerVuelta = v; ligaViewerJornada = 1;
     document.querySelectorAll('#subLigaPartidos .liga-vuelta-chip').forEach(c => c.classList.remove('active'));

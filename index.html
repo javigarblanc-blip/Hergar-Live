@@ -299,6 +299,10 @@
           <div class="circulo-medio"></div>
         </div>
       </div>
+      <div class="card" id="banquilloPreviaCard" style="display:none;">
+        <div class="card-title">🪑 Banquillo</div>
+        <div id="banquilloPreviaLista" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+      </div>
       <div class="card">
         <div class="card-title">Últimos eventos</div>
         <div id="eventosLista"><div class="loader">Esperando datos del partido...</div></div>
@@ -580,6 +584,23 @@
         <div class="jugador-nombre">${(p.name || '').split(' ')[0]}</div>`;
       container.appendChild(wrap);
     });
+  }
+
+  function pintarBanquilloPrevia(matchData, previa) {
+    const card = document.getElementById('banquilloPreviaCard');
+    if (!card) return;
+    if (!previa) { card.style.display = 'none'; return; }
+    const formacion = matchData.formacion || '4-3-3';
+    document.getElementById('formacionTitulo').textContent = `Alineación prevista — 1-${formacion}`;
+    const jugadores = matchData.jugadores || {};
+    const bench = matchData.benchIds || [];
+    const cont = document.getElementById('banquilloPreviaLista');
+    cont.innerHTML = bench.map(id => jugadores[id]).filter(Boolean).map(p =>
+      `<div style="display:flex; align-items:center; gap:6px; background:#0f172a; border:1px solid rgba(255,255,255,.06); border-radius:8px; padding:6px 10px;">
+         <span style="color:#f5a623; font-weight:900; font-size:12px;">${p.dorsal}</span>
+         <span style="color:#e2e8f0; font-size:12px; font-weight:700;">${(p.name || '').split(' ')[0]}</span>
+       </div>`).join('') || '<div class="loader">Sin suplentes</div>';
+    card.style.display = 'block';
   }
 
   function pintarEventos(matchData) {
@@ -874,22 +895,25 @@
   function actualizarVistaPartido(matchData) {
     if (!matchData) return;
     ultimoMatchData = matchData;
-    document.getElementById('scoreLocal').textContent = matchData.golesLocal ?? 0;
-    document.getElementById('scoreRival').textContent = matchData.golesRival ?? 0;
+    // v3: PREVIA = alineación publicada antes de empezar el partido
+    const previa = matchData.previa === true && !matchData.matchFinished && !matchData.matchRunning;
+    document.getElementById('scoreLocal').textContent = previa ? '-' : (matchData.golesLocal ?? 0);
+    document.getElementById('scoreRival').textContent = previa ? '-' : (matchData.golesRival ?? 0);
     document.getElementById('rivalName').textContent = (matchData.rival || 'RIVAL').toUpperCase();
-    document.getElementById('timerDisplay').textContent = formatMinuto(matchData.minuto || 0, matchData.parte, matchData.matchRunning, matchData.matchFinished);
-    document.getElementById('matchMeta').textContent = matchData.matchFinished ? 'Partido finalizado' : (matchData.matchRunning ? 'Partido en juego' : 'Partido en pausa');
+    document.getElementById('timerDisplay').textContent = previa ? '🕐 Alineación prevista' : formatMinuto(matchData.minuto || 0, matchData.parte, matchData.matchRunning, matchData.matchFinished);
+    document.getElementById('matchMeta').textContent = previa ? 'El partido aún no ha empezado' : (matchData.matchFinished ? 'Partido finalizado' : (matchData.matchRunning ? 'Partido en juego' : 'Partido en pausa'));
 
     const liveBanner = document.getElementById('liveBanner');
     const offlineBanner = document.getElementById('offlineBanner');
     if (matchData.matchRunning) {
       liveBanner.style.display = 'flex'; offlineBanner.style.display = 'none';
     } else {
-      liveBanner.style.display = 'none'; offlineBanner.style.display = matchData.matchFinished ? 'none' : 'flex';
+      liveBanner.style.display = 'none'; offlineBanner.style.display = (matchData.matchFinished || previa) ? 'none' : 'flex';
     }
 
     pintarInformeIA(matchData);
     pintarCampo(matchData);
+    pintarBanquilloPrevia(matchData, previa);
     pintarEventos(matchData);
     pintarStatsGrid(matchData);
     pintarTablaJugadores(matchData);
@@ -1245,8 +1269,12 @@
   window.showTab = showTab;
   window.showSub = showSub;
 
+  let unsubPartido = null;
+  let codigoPartidoActual = null;
   function suscribirPartido(code) {
-    onValue(ref(db, `matches/${code}`), (snap) => {
+    if (unsubPartido) { unsubPartido(); unsubPartido = null; }
+    codigoPartidoActual = code;
+    unsubPartido = onValue(ref(db, `matches/${code}`), (snap) => {
       const data = snap.val();
       if (data) actualizarVistaPartido(data);
     });
@@ -1259,11 +1287,12 @@
   if (codeFromUrl) {
     suscribirPartido(codeFromUrl.toUpperCase());
   } else {
-    get(ref(db, 'lastMatchCode')).then(snap => {
+    // v3: se sigue en vivo el último partido publicado; si aparece uno nuevo (p. ej. la previa del siguiente), se cambia solo
+    onValue(ref(db, 'lastMatchCode'), (snap) => {
       const data = snap.val();
       if (data && data.code) {
-        suscribirPartido(data.code);
-      } else {
+        if (data.code !== codigoPartidoActual) suscribirPartido(data.code);
+      } else if (!codigoPartidoActual) {
         document.getElementById('matchMeta').textContent = 'Sin partidos registrados todavía';
       }
     });

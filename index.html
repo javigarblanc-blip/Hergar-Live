@@ -366,6 +366,7 @@
             <option value="partidos">📋 Partidos</option>
             <option value="notaIA">🤖 Nota IA</option>
           </select>
+          <button onclick="abrirComoSeCalcula()" style="width:100%; margin:0 0 8px; padding:10px 12px; border-radius:10px; border:1px solid rgba(245,166,35,.4); background:rgba(245,166,35,.08); color:#f5a623; font-family:'Montserrat',sans-serif; font-weight:800; font-size:12px; text-align:left; cursor:pointer;">❔ ¿Cómo se calcula el impacto?</button>
           <div id="rankingLista"><div class="loader">Cargando temporada...</div></div>
         </div>
       </div>
@@ -397,7 +398,9 @@
             <option value="asistencias">👟 Asistencias</option>
             <option value="minutos">⏱ Minutos</option>
             <option value="impactoAcum">⭐ Impacto Total</option>
-            <option value="impactoPorPartido">📊 Impacto x Partido</option>
+            <option value="impactoPorPartido">📊 Impacto (x70min)</option>
+            <option value="regates">🌀 Regates</option>
+            <option value="accionesDefClave">🛡️⭐ Acciones def. clave</option>
             <option value="pasesArea">📯 Pases al Área</option>
             <option value="pasesClave">🔑 Pases Clave</option>
             <option value="accionesDef">🛡️ Acciones Def.</option>
@@ -525,7 +528,19 @@
   </div>
 </div>
 
+<div id="comoSeCalculaModal" style="display:none; position:fixed; inset:0; z-index:950; background:rgba(0,0,0,.85); align-items:flex-start; justify-content:center; padding:20px; overflow-y:auto; overscroll-behavior:contain;">
+  <div style="background:linear-gradient(145deg,#111827,#0f172a); border-radius:20px; padding:18px; max-width:380px; width:100%; border:1px solid rgba(255,255,255,.08); margin:auto 0;">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">
+      <div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:15px; color:#f5a623;">❔ ¿Cómo se calcula el impacto?</div>
+      <button onclick="cerrarComoSeCalcula()" aria-label="Cerrar" style="flex:0 0 36px; width:36px; height:36px; border-radius:10px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.06); color:#e2e8f0; font-size:16px; cursor:pointer;">✕</button>
+    </div>
+    <div id="comoSeCalculaContenido"></div>
+    <button onclick="cerrarComoSeCalcula()" style="margin-top:14px; width:100%; padding:11px; background:rgba(255,255,255,.06); color:#e2e8f0; border:none; border-radius:10px; font-weight:700; font-family:'Montserrat',sans-serif; cursor:pointer;">Cerrar</button>
+  </div>
+</div>
+
 <script type="module">
+  // v42 · Sinergias: impacto que suman los dos mientras coinciden. v41 · Reglas del impacto (las publica la app), ranking con mínimo de minutos, regates y defensa clave.
   // v2 · Interruptor de notas IA: false = no se muestran notas de jugadores (ni en el partido ni en el ranking).
   // Para volver a mostrarlas: cambiar a true.
   const MOSTRAR_NOTAS_IA = false;
@@ -548,6 +563,21 @@
 
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
+
+  // ── Reglas del impacto ───────────────────────────────────────────────
+  // La app las publica junto con la temporada (temporada/reglas). Si aún no han llegado, se usan estas,
+  // que son las mismas que trae la app.
+  const REGLAS_POR_DEFECTO = {
+    version: 2, minMinutosRanking: 35, minMinutosSinergia: 20, minMinutosMVP: 10, suelo: -5,
+    acciones: { gol: 0.75, golExtraDefensa: 1.25, golExtraMedio: 0.15, asistencia: 0.40, paseClave: 0.25, paseArea: 0.15,
+      disparoPuerta: 0.30, disparoFuera: 0.10, regate: 0.05, defensa: 0.30, defensaClave: 1.00,
+      parada: 0.30, paradaDificil: 1.00, fallo: -0.20, falloImportante: -0.50 },
+    equipo: { golFavor: 1.00, golContra: -1.00, tiroRivalPuerta: -0.15, tiroRivalFuera: -0.05, desdeQuintoGol: 0.30 },
+    porteriaCero: { portero: 1.50, defensa: 1.25, centrocampista: 0.60, delantero: 0 },
+    penaltis: { marca: 0.50, falla: -0.75, provocado: 0.40, contraGolCampo: -0.50, paradoPortero: 1.00 }
+  };
+  let reglasImpacto = REGLAS_POR_DEFECTO;
+  const minMinutosRanking = () => (reglasImpacto && reglasImpacto.minMinutosRanking) || 35;
 
   const COORDENADAS_FORMACIONES = {
     "4-3-3":   [{x: 50, y: 93}, {x: 15, y: 75}, {x: 38, y: 77}, {x: 62, y: 77}, {x: 85, y: 75}, {x: 50, y: 57}, {x: 28, y: 47}, {x: 72, y: 47}, {x: 18, y: 22}, {x: 50, y: 15}, {x: 82, y: 22}],
@@ -745,7 +775,9 @@
         + fdStatRow('👟', 'Asistencias', t.asistencias, minutosTotal)
         + fdStatRow('📯', 'Pases al área', t.pasesArea, minutosTotal)
         + fdStatRow('🔑', 'Pases clave', t.pasesClave, minutosTotal)
-        + fdStatRow('🛡️', 'Acciones defensivas', t.accionesDef, minutosTotal);
+        + fdStatRow('🛡️', 'Acciones defensivas', t.accionesDef, minutosTotal)
+        + fdStatRow('🛡️⭐', 'Acciones def. clave', t.accionesDefClave, minutosTotal)
+        + fdStatRow('🌀', 'Regates / jugadas individuales', t.regates, minutosTotal);
     return `
       <div class="fd-header${stats.esPortero ? ' fd-portero' : ''}">
         <div class="fd-avatar">${stats.dorsal}</div>
@@ -814,7 +846,7 @@
       impactoPond: p.impactoPond || 0,
       totales: {
         goles: p.goles||0, asistencias: p.asistencias||0, pasesArea: p.pasesArea||0, pasesClave: p.pasesClave||0,
-        accionesDef: p.accionesDef||0, paradas: p.paradas||0, paradasDificiles: p.paradasDificiles||0,
+        accionesDef: p.accionesDef||0, accionesDefClave: p.accionesDefClave||0, regates: p.regates||0, paradas: p.paradas||0, paradasDificiles: p.paradasDificiles||0,
         golesRecibidos: p.golesRecibidos||0, amarillas: p.amarillas||0, rojas: p.roja?1:0
       }
     };
@@ -882,7 +914,7 @@
       impactoPond: statsAttrs.impactoPond,
       totales: {
         goles: j.goles||0, asistencias: j.asistencias||0, pasesArea: j.pasesArea||0, pasesClave: j.pasesClave||0,
-        accionesDef: j.accionesDef||0, paradas: j.paradas||0, paradasDificiles: j.paradasDificiles||0,
+        accionesDef: j.accionesDef||0, accionesDefClave: j.accionesDefClave||0, regates: j.regates||0, paradas: j.paradas||0, paradasDificiles: j.paradasDificiles||0,
         golesRecibidos: j.golesRecibidos||0, amarillas: j.amarillas||0, rojas: j.rojas||0
       }
     };
@@ -978,7 +1010,12 @@
       notaIA: j => j._notaIA !== null ? j._notaIA : -1,
     };
     const getVal = valorPorCriterio[criterio] || valorPorCriterio.pond;
-    jugadores.sort((a,b) => getVal(b) - getVal(a));
+    // v41: el ranking de impacto exige un mínimo de minutos; quien no llega aparece aparte, en observación
+    const esImpacto = criterio === 'pond';
+    const minRanking = minMinutosRanking();
+    const lista = esImpacto ? jugadores.filter(j => (j.minutos || 0) >= minRanking) : jugadores;
+    const enObservacion = esImpacto ? jugadores.filter(j => (j.minutos || 0) < minRanking).sort((a,b) => (b.minutos || 0) - (a.minutos || 0)) : [];
+    lista.sort((a,b) => getVal(b) - getVal(a));
     const cont = document.getElementById('rankingLista');
     if (jugadores.length === 0) { cont.innerHTML = '<div class="loader">Sin datos de temporada todavía</div>'; return; }
     const etiquetaVal = {
@@ -990,13 +1027,28 @@
       notaIA: j => j._notaIA !== null ? j._notaIA.toFixed(1) : '—',
     };
     const getEtiqueta = etiquetaVal[criterio] || etiquetaVal.pond;
-    cont.innerHTML = jugadores.slice(0, 15).map((j, i) => `
+    cont.innerHTML = lista.slice(0, 15).map((j, i) => `
       <div class="rank-row" onclick="abrirPerfilJugadorTemporada('${j.id}')" style="cursor:pointer;">
         <div class="rank-pos">${i+1}</div>
         <div class="rank-name">${(j.name||'').split(' ')[0]}</div>
         ${(criterio !== 'notaIA' && j._notaIA !== null) ? `<div class="rank-notaia" title="Nota IA media">🤖 ${j._notaIA.toFixed(1)}</div>` : ''}
+        ${esImpacto ? `<div style="font-size:10px; color:#64748b; margin-right:6px;">${j.minutos || 0}'</div>` : ''}
         <div class="rank-val">${getEtiqueta(j)}</div>
       </div>`).join('');
+    if (esImpacto && lista.length === 0) {
+      cont.innerHTML = `<div class="loader">Aún nadie llega a ${minRanking} minutos acumulados</div>`;
+    }
+    if (esImpacto && enObservacion.length > 0) {
+      cont.innerHTML += `<div style="margin-top:12px; padding:10px 12px; border:1px dashed rgba(255,255,255,.18); border-radius:12px;">
+        <div style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:11px; letter-spacing:.06em; color:#e2e8f0;">EN OBSERVACIÓN</div>
+        <div style="font-size:10.5px; color:#94a3b8; margin:2px 0 4px;">Menos de ${minRanking} minutos acumulados</div>
+        ${enObservacion.map(j => `<div class="rank-row" onclick="abrirPerfilJugadorTemporada('${j.id}')" style="cursor:pointer;">
+          <div class="rank-name">${(j.name||'').split(' ')[0]}</div>
+          <div style="font-size:10px; color:#94a3b8; margin-right:6px;">${j.minutos || 0}'</div>
+          <div class="rank-val" style="color:#94a3b8;">—</div>
+        </div>`).join('')}
+      </div>`;
+    }
   }
 
   function pintarPartidos(temporada) {
@@ -1059,29 +1111,47 @@
   function pintarSinergias(t) {
     const cont = document.getElementById('sinergiasLista');
     if (!cont) return;
+    // v42: impacto que suman los dos jugadores mientras coinciden en el campo, por 70' juntos
+    const R = (reglasImpacto && reglasImpacto.minMinutosSinergia) || 20;
     const sinergias = t.sinergias || {};
     const nombres = {};
     Object.values(t.jugadores || {}).forEach(j => nombres[j.id] = `${(j.name||'').split(' ')[0]}`);
-    const filas = Object.entries(sinergias).map(([clave, data]) => {
+    const lista = Object.entries(sinergias).map(([clave, data]) => {
       const [idA, idB] = clave.split('_').map(Number);
-      const mins = Math.floor((data.segs || 0) / 60);
-      const impPond = mins > 0 ? (data.impactoAcum / mins * 70) : 0;
-      return { idA, idB, mins, impPond };
-    }).filter(d => d.mins > 0).sort((a,b) => b.impPond - a.impPond);
-    if (filas.length === 0) { cont.innerHTML = '<div class="loader">Sin datos aún</div>'; return; }
-    const maxImp = Math.max(...filas.map(f => f.impPond), 0.01);
-    cont.innerHTML = filas.slice(0, 12).map(f => {
-      const pct = Math.round((f.impPond / maxImp) * 100);
-      const nomA = nombres[f.idA] || `ID${f.idA}`, nomB = nombres[f.idB] || `ID${f.idB}`;
-      return `<div style="padding:8px 0; border-bottom:1px solid rgba(255,255,255,.04);">
-        <div style="display:flex; justify-content:space-between; font-size:11.5px; color:#cbd5e1; margin-bottom:4px;">
-          <span>${nomA} ↔ ${nomB}</span><span style="color:#64748b;">${f.mins}' juntos</span>
-        </div>
-        <div style="background:#0d1f17; border-radius:3px; height:5px;">
-          <div style="width:${pct}%; height:100%; background:#2ed573; border-radius:3px;"></div>
-        </div>
+      const minsN = (data.segsN || 0) / 60;
+      const impPond = minsN > 0 ? (data.impN || 0) / minsN * 70 : 0;
+      return { idA, idB, minsN, minsTot: Math.floor((data.segs || 0) / 60), impPond };
+    }).filter(d => d.minsTot > 0 || d.minsN >= 1);
+    if (lista.length === 0) { cont.innerHTML = '<div class="loader">Sin datos aún</div>'; return; }
+    const medidas = lista.filter(d => d.minsN >= R).sort((a,b) => b.impPond - a.impPond);
+    const observ = lista.filter(d => d.minsN < R).sort((a,b) => b.minsTot - a.minsTot);
+    const nom = (id) => nombres[id] || `ID${id}`;
+    let html = `<div style="font-size:11px; line-height:1.5; color:#94a3b8; margin-bottom:8px;">Impacto que suman los dos mientras coinciden en el campo, por 70 minutos juntos. Hacen falta ${R}' juntos para entrar.</div>`;
+    if (medidas.length === 0) {
+      html += `<div class="loader">Aún ninguna pareja llega a ${R}' juntos</div>`;
+    } else {
+      const maxImp = Math.max(...medidas.map(f => f.impPond), 0.01);
+      html += medidas.slice(0, 12).map(f => {
+        const pct = Math.round((Math.max(0, f.impPond) / maxImp) * 100);
+        const col = f.impPond < 0 ? '#ff6b7a' : '#2ed573';
+        return `<div style="padding:8px 0; border-bottom:1px solid rgba(255,255,255,.04);">
+          <div style="display:flex; justify-content:space-between; font-size:11.5px; color:#cbd5e1; margin-bottom:4px;">
+            <span>${nom(f.idA)} ↔ ${nom(f.idB)}</span><span style="color:#64748b;">${Math.floor(f.minsN)}' juntos · <strong style="color:${col};">${f.impPond.toFixed(1)}</strong></span>
+          </div>
+          <div style="background:#0d1f17; border-radius:3px; height:5px;">
+            <div style="width:${pct}%; height:100%; background:${col}; border-radius:3px;"></div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+    if (observ.length > 0) {
+      html += `<div style="margin-top:12px; padding:10px 12px; border:1px dashed rgba(255,255,255,.18); border-radius:12px;">
+        <div style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:11px; letter-spacing:.06em; color:#e2e8f0;">EN OBSERVACIÓN</div>
+        <div style="font-size:10.5px; color:#94a3b8; margin:2px 0 4px;">Menos de ${R}' juntos medidos</div>
+        ${observ.slice(0, 8).map(d => `<div style="display:flex; justify-content:space-between; padding:6px 0; border-top:1px solid rgba(255,255,255,.05); font-size:11.5px; color:#cbd5e1;"><span>${nom(d.idA)} ↔ ${nom(d.idB)}</span><span style="color:#94a3b8;">${d.minsTot}' · —</span></div>`).join('')}
       </div>`;
-    }).join('');
+    }
+    cont.innerHTML = html;
   }
 
   function pintarRachas(t) {
@@ -1112,19 +1182,28 @@
       ${filasJugadores || '<div class="loader">Sin datos</div>'}`;
   }
 
-  const COMPARATIVA_STATS = { goles: 'Goles', asistencias: 'Asistencias', minutos: 'Minutos', impactoAcum: 'Impacto', impactoPorPartido: 'Imp. x partido', pasesArea: 'Pases al área', pasesClave: 'Pases clave', accionesDef: 'Acc. defensivas', partidos: 'Partidos', amarillas: 'Amarillas', rojas: 'Rojas' };
+  const COMPARATIVA_STATS = { goles: 'Goles', asistencias: 'Asistencias', minutos: 'Minutos', impactoAcum: 'Impacto', impactoPorPartido: 'Imp. x 70 min', pasesArea: 'Pases al área', pasesClave: 'Pases clave', accionesDef: 'Acc. defensivas', regates: 'Regates', accionesDefClave: 'Acc. def. clave', partidos: 'Partidos', amarillas: 'Amarillas', rojas: 'Rojas' };
   // Estadísticas que se muestran con 2 decimales; el resto son enteras.
   const COMPARATIVA_DECIMALES = new Set(['impactoAcum', 'impactoPorPartido']);
   function pintarComparativa(t) {
     const sel = document.getElementById('comparativaStatSelect');
     if (!sel) return;
     const stat = sel.value || 'goles';
-    const jugadores = Object.values(t.jugadores || {}).map(j => {
-      const impactoPorPartido = j.partidos > 0 ? (j.impactoAcum || 0) / j.partidos : 0;
-      return { ...j, impactoPorPartido };
-    });
+    // v41: "Impacto x70min" solo cuenta a quien llega al mínimo de minutos
+    const minRankingC = minMinutosRanking();
+    const jugadores = Object.values(t.jugadores || {})
+      .filter(j => stat !== 'impactoPorPartido' || (j.minutos || 0) >= minRankingC)
+      .map(j => {
+        const impactoPorPartido = (j.minutos || 0) > 0 ? (j.impactoAcum || 0) / j.minutos * 70 : 0;
+        return { ...j, impactoPorPartido };
+      });
     const cont = document.getElementById('comparativaLista');
-    if (jugadores.length === 0) { cont.innerHTML = '<div class="loader">Sin datos aún</div>'; return; }
+    if (jugadores.length === 0) {
+      cont.innerHTML = stat === 'impactoPorPartido'
+        ? `<div class="loader">Aún nadie llega a ${minRankingC} minutos acumulados</div>`
+        : '<div class="loader">Sin datos aún</div>';
+      return;
+    }
     const sorted = jugadores.slice().sort((a,b) => (b[stat]||0) - (a[stat]||0)).slice(0, 5);
     const medals = ['🥇','🥈','🥉','4️⃣','5️⃣'];
     cont.innerHTML = sorted.map((j,i) => `
@@ -1312,6 +1391,80 @@
     pintarHeatmap(temporada);
     pintarOnceIdeal(temporada);
   });
+
+  // Las reglas del impacto viajan con la temporada (temporada/reglas): así app y visor muestran siempre los mismos números
+  onValue(ref(db, 'temporada/reglas'), (snap) => {
+    const r = snap.val();
+    if (r && r.acciones && r.equipo && r.porteriaCero) {
+      reglasImpacto = r;
+      if (ultimaTemporada) { pintarRanking(ultimaTemporada); pintarComparativa(ultimaTemporada); }
+    }
+  }, (err) => { console.error('Firebase reglas read error:', err); });
+
+  // ── ¿Cómo se calcula el impacto? — versión para familias (sin penalizaciones por fallos individuales) ──
+  const fmtPts = (n) => !n ? '0' : (n > 0 ? '+' : '−') + Math.abs(n).toFixed(2).replace('.', ',');
+  function csFila(label, valorTxt, positivo, detalle) {
+    const color = positivo === null ? '#94a3b8' : (positivo ? '#2ed573' : '#ff6b7a');
+    return `<div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:9px 0; border-top:1px solid rgba(255,255,255,.06);">
+      <div style="flex:1; min-width:0;">
+        <div style="font-size:13px; font-weight:600; color:#e2e8f0;">${label}</div>
+        ${detalle ? `<div style="font-size:11px; line-height:1.4; color:#94a3b8; margin-top:2px;">${detalle}</div>` : ''}
+      </div>
+      <div style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:14px; white-space:nowrap; color:${color};">${valorTxt}</div>
+    </div>`;
+  }
+  function csTarjeta(titulo, filasHtml, nota, destacada) {
+    return `<div style="background:rgba(255,255,255,.03); border:1px solid ${destacada ? 'rgba(245,166,35,.4)' : 'rgba(255,255,255,.07)'}; border-radius:14px; padding:12px 14px; margin-top:10px;">
+      <div style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:11px; letter-spacing:.05em; color:#94a3b8; text-transform:uppercase; margin-bottom:4px;">${titulo}</div>
+      ${filasHtml}
+      ${nota ? `<div style="margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,.06); font-size:11px; line-height:1.5; color:#94a3b8;">${nota}</div>` : ''}
+    </div>`;
+  }
+  function renderComoSeCalculaViewer() {
+    const R = reglasImpacto, a = R.acciones, e = R.equipo, pc = R.porteriaCero;
+    const cont = document.getElementById('comoSeCalculaContenido');
+    if (!cont) return;
+    const suma = [
+      csFila('Gol', fmtPts(a.gol), true, `Un gol de defensa vale más: ${fmtPts(a.gol + a.golExtraDefensa)}.`),
+      csFila('Asistencia', fmtPts(a.asistencia), true),
+      csFila('Pase clave', fmtPts(a.paseClave), true),
+      csFila('Pase al área', fmtPts(a.paseArea), true),
+      csFila('Disparo a puerta', fmtPts(a.disparoPuerta), true),
+      csFila('Disparo fuera / sin peligro', fmtPts(a.disparoFuera), true),
+      csFila('Regate / jugada individual', fmtPts(a.regate), true, 'Supera a un rival sin acabar en tiro ni pase.'),
+      csFila('Acción defensiva', fmtPts(a.defensa), true),
+      csFila('Acción defensiva clave', fmtPts(a.defensaClave), true, 'Un despeje o una entrada que evita una ocasión clara.'),
+      csFila('Paradas del portero', `${fmtPts(a.parada)} / ${fmtPts(a.paradaDificil)}`, true, 'Parada normal / parada difícil.')
+    ].join('');
+    const juego = [
+      csFila('Gol a favor', fmtPts(e.golFavor), true, 'Suma a todos los que están en el campo.'),
+      csFila('Gol en contra', fmtPts(e.golContra), false, 'Resta a todos los que están en el campo.'),
+      csFila('Tiros del rival', `${fmtPts(e.tiroRivalFuera)} a ${fmtPts(e.tiroRivalPuerta)}`, false, 'Restan un poco a los que están en el campo.')
+    ].join('');
+    const porteria = [
+      csFila('Portero', fmtPts(pc.portero), true),
+      csFila('Defensas', fmtPts(pc.defensa), true),
+      csFila('Centrocampistas', fmtPts(pc.centrocampista), true)
+    ].join('');
+    cont.innerHTML =
+      `<div style="font-size:12px; line-height:1.5; color:#94a3b8;">El impacto resume lo que aporta cada jugador: sus acciones y lo que ocurre mientras está en el campo.</div>`
+      + csTarjeta('Lo que suma un jugador', suma)
+      + csTarjeta('Lo que pasa mientras juega', juego)
+      + csTarjeta('Portería a cero', porteria, 'Se aplica si el equipo no encaja ningún gol mientras el jugador está en el campo. Es proporcional a sus minutos.', true)
+      + csTarjeta('Sinergias', `<div style="font-size:12.5px; line-height:1.55; color:#e2e8f0; padding-top:6px;">Impacto que suman los dos jugadores de una pareja mientras coinciden en el campo, por cada 70 minutos juntos. Hacen falta ${R.minMinutosSinergia || 20} minutos juntos para entrar en la lista.</div>`)
+      + csTarjeta('Cómo se ordena la clasificación',
+        `<div style="font-size:12.5px; line-height:1.55; color:#e2e8f0; padding-top:6px;">
+          <p style="margin:0 0 8px;">Se usa el impacto por 70 minutos, para poder comparar a quien juega más con quien juega menos.</p>
+          <p style="margin:0;">Hacen falta ${R.minMinutosRanking} minutos acumulados para entrar en la clasificación. Hasta entonces, el jugador aparece en observación.</p>
+        </div>`);
+  }
+  window.abrirComoSeCalcula = () => {
+    renderComoSeCalculaViewer();
+    document.getElementById('comoSeCalculaModal').style.display = 'flex';
+  };
+  window.cerrarComoSeCalcula = () => {
+    document.getElementById('comoSeCalculaModal').style.display = 'none';
+  };
 
   window.rerenderComparativa = () => { if (ultimaTemporada) pintarComparativa(ultimaTemporada); };
   window.rerenderHeatmap = () => { if (ultimaTemporada) pintarHeatmap(ultimaTemporada); };

@@ -311,6 +311,7 @@
 
     <!-- PARTIDO -->
     <div id="partido" class="panel active">
+      <div class="card" id="proximoPartidoCard" style="display:none;"></div>
       <div class="card" id="informeIACard" style="display:none;">
         <div class="card-title">🤖 Informe del partido (IA)</div>
         <div id="informeResumenIA" style="display:none; font-style:italic; color:#a855f7; font-size:12.5px; line-height:1.5; padding:10px; background:rgba(168,85,247,.08); border:1px solid rgba(168,85,247,.25); border-radius:10px; margin-bottom:10px;"></div>
@@ -566,6 +567,7 @@
 </div>
 
 <script type="module">
+  // v72 (app) · Tarjeta de próximo partido (Partido): fecha y hora, clasificación y enfrentamientos anteriores. Sustituye al informe IA hasta que la app la oculte o empiece el partido.
   // v71 (app) · Informe IA guardado en cada partido de la temporada: se abre desde la lista de Partidos.
   // v70 (app) · Eficacia de tiro (goles / tiros totales): fila en la ficha de cada jugador con goles y línea de equipo en Rachas. Los partidos manuales no cuentan.
   // v44 · Ranking y Partidos de temporada: salen todos (antes cortaban en 15).
@@ -1066,6 +1068,7 @@
     }
 
     pintarInformeIA(matchData);
+    pintarProximoPartido();
     pintarCampo(matchData);
     pintarBanquilloPrevia(matchData, previa);
     pintarEventos(matchData);
@@ -1076,9 +1079,117 @@
     pintarRotacion(matchData);
   }
 
+  // ── v72 · TARJETA DE PRÓXIMO PARTIDO ──────────────────────────────────────────
+  // Todo sale de la Liga que publica la app: liga.proximoPublicado = { id } marca qué partido se enseña.
+  function ligaClasifViewer(liga) {
+    const tabla = {};
+    liga.equipos.forEach(eq => tabla[eq.id] = { pj: 0, pts: 0, gf: 0, gc: 0 });
+    (liga.partidos || []).forEach(p => {
+      if (p.golesLocal == null || p.golesVisitante == null) return;
+      if (!tabla[p.local] || !tabla[p.visitante]) return;
+      const gl = p.golesLocal, gv = p.golesVisitante;
+      tabla[p.local].pj++; tabla[p.visitante].pj++;
+      tabla[p.local].gf += gl; tabla[p.local].gc += gv;
+      tabla[p.visitante].gf += gv; tabla[p.visitante].gc += gl;
+      if (gl > gv) tabla[p.local].pts += 3; else if (gl < gv) tabla[p.visitante].pts += 3; else { tabla[p.local].pts++; tabla[p.visitante].pts++; }
+    });
+    const filas = liga.equipos.map(eq => ({ id: eq.id, ...tabla[eq.id], dg: tabla[eq.id].gf - tabla[eq.id].gc }));
+    filas.sort((a, b) => b.pts - a.pts || b.dg - a.dg || b.gf - a.gf);
+    filas.forEach((f, i) => { f.pos = i + 1; });
+    return filas;
+  }
+  function numJornadaGlobalViewer(liga, p) {
+    const porVuelta = Math.max(1, ...liga.partidos.filter(x => x.vuelta === 1).map(x => x.jornada));
+    return (p.vuelta - 1) * porVuelta + p.jornada;
+  }
+  function inicialesEquipoViewer(nombre) {
+    const limpio = String(nombre || '').replace(/^(C\.D\.F\.|C\.D\.|C\.F\.|D\.)\s*/i, '');
+    const letras = limpio.split(/\s+/).map(w => w.replace(/['"]/g, '')[0]).filter(Boolean).join('');
+    return (letras || '?').slice(0, 2).toUpperCase();
+  }
+  function fechaHoraProximoViewer(p) {
+    const f = p.fechaPartido || p.fecha || '';
+    const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(f);
+    let txt;
+    if (m) {
+      const dia = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1])).toLocaleDateString('es-ES', { weekday: 'long' });
+      txt = `${dia.charAt(0).toUpperCase() + dia.slice(1)} ${f}`;
+    } else if (f && !/confirmar/i.test(f)) txt = f;
+    else txt = 'Fecha por confirmar';
+    return `${txt} · ${p.hora ? p.hora : 'Hora por confirmar'}`;
+  }
+  function proximoPartidoActual() {
+    const liga = ultimaLiga;
+    const pub = liga && liga.proximoPublicado;
+    if (!pub || !liga.equipos || !liga.partidos) return null;
+    if (ultimoMatchData && ultimoMatchData.matchRunning) return null; // si hay partido en juego, manda el directo
+    const p = liga.partidos.find(x => x.id === pub.id);
+    if (!p || (p.golesLocal != null && p.golesVisitante != null)) return null;
+    const hergar = liga.equipos.find(e => e.esHergar);
+    if (!hergar || (p.local !== hergar.id && p.visitante !== hergar.id)) return null;
+    const esCasa = p.local === hergar.id;
+    const rival = liga.equipos.find(e => e.id === (esCasa ? p.visitante : p.local));
+    if (!rival) return null;
+    return { liga, p, hergar, rival, esCasa };
+  }
+  function pintarProximoPartido() {
+    const card = document.getElementById('proximoPartidoCard');
+    if (!card) return;
+    const d = proximoPartidoActual();
+    if (!d) {
+      card.style.display = 'none'; card.innerHTML = '';
+      if (ultimoMatchData) pintarInformeIA(ultimoMatchData); // sin tarjeta, vuelve el informe IA si toca
+      return;
+    }
+    const { liga, p, hergar, rival, esCasa } = d;
+    const filas = ligaClasifViewer(liga);
+    const fila = (eq) => filas.find(f => f.id === eq.id) || { pos: '-', pj: 0, pts: 0, gf: 0, gc: 0 };
+    const fh = fila(hergar), fr = fila(rival);
+    const previos = liga.partidos
+      .filter(x => x.id !== p.id && x.golesLocal != null && x.golesVisitante != null &&
+        ((x.local === hergar.id && x.visitante === rival.id) || (x.local === rival.id && x.visitante === hergar.id)))
+      .sort((a, b) => a.vuelta - b.vuelta || a.jornada - b.jornada);
+    const cara = previos.length ? previos.map(x => {
+      const gH = x.local === hergar.id ? x.golesLocal : x.golesVisitante;
+      const gR = x.local === hergar.id ? x.golesVisitante : x.golesLocal;
+      const color = gH > gR ? '#2ed573' : gH < gR ? '#ff4757' : '#f5a623';
+      return `<div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.04); border-radius:8px; padding:8px 10px; font-size:13px; margin-bottom:6px;">
+        <span style="color:#cbd5e1;">J${numJornadaGlobalViewer(liga, x)} · ${escHtml(nombreEquipoLigaViewer(liga, x.local))} – ${escHtml(nombreEquipoLigaViewer(liga, x.visitante))}</span>
+        <span style="font-weight:700; color:${color};">${x.golesLocal} – ${x.golesVisitante}</span>
+      </div>`;
+    }).join('') : `<div style="font-size:12.5px; color:#64748b; padding:2px 0;">Primer enfrentamiento de la temporada.</div>`;
+    const escudo = (eq, esH) => `<div style="width:42px; height:42px; border-radius:50%; background:${esH ? 'rgb(180,20,56)' : '#1a2332'}; margin:0 auto 6px; display:flex; align-items:center; justify-content:center; font-family:'Montserrat',sans-serif; font-weight:800; font-size:14px; color:${esH ? '#fff' : '#94a3b8'};">${escHtml(inicialesEquipoViewer(eq.nombre))}</div>`;
+    const celda = 'padding:7px 0; border-top:1px solid rgba(255,255,255,0.06);';
+    card.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <span style="font-size:11px; background:rgba(46,213,115,0.14); color:#2ed573; border-radius:6px; padding:3px 9px; font-weight:700;">📣 Próximo partido</span>
+        <span style="font-size:11.5px; color:#8da499;">Jornada ${numJornadaGlobalViewer(liga, p)} · ${esCasa ? 'Casa' : 'Fuera'}</span>
+      </div>
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:12px;">
+        <div style="flex:1; text-align:center;">${escudo(esCasa ? hergar : rival, esCasa)}<div style="font-size:13px; font-weight:700; color:#e2e8f0;">${escHtml(esCasa ? hergar.nombre : rival.nombre)}</div></div>
+        <div style="font-size:12px; color:#52665c;">vs</div>
+        <div style="flex:1; text-align:center;">${escudo(esCasa ? rival : hergar, !esCasa)}<div style="font-size:13px; font-weight:700; color:#e2e8f0;">${escHtml(esCasa ? rival.nombre : hergar.nombre)}</div></div>
+      </div>
+      <div style="text-align:center; font-size:14px; font-weight:600; color:#e2e8f0; padding:9px 0; border-top:1px solid rgba(255,255,255,0.08); border-bottom:1px solid rgba(255,255,255,0.08); margin-bottom:12px;">🗓️ ${escHtml(fechaHoraProximoViewer(p))}</div>
+      <div style="font-size:11.5px; color:#8da499; margin-bottom:6px;">Clasificación</div>
+      <table style="width:100%; border-collapse:collapse; font-size:13px; margin-bottom:12px; text-align:center;">
+        <thead><tr style="color:#52665c; font-size:11px;"><th style="text-align:left; font-weight:600; padding:3px 0;">Equipo</th><th style="font-weight:600;">Pos</th><th style="font-weight:600;">PJ</th><th style="font-weight:600;">Pts</th><th style="font-weight:600;">GF–GC</th></tr></thead>
+        <tbody>
+          <tr><td style="text-align:left; ${celda} color:#2ed573; font-weight:600;">${escHtml(hergar.nombre)}</td><td style="${celda}">${fh.pos}º</td><td style="${celda}">${fh.pj}</td><td style="${celda}">${fh.pts}</td><td style="${celda}">${fh.gf}–${fh.gc}</td></tr>
+          <tr><td style="text-align:left; ${celda} color:#e2e8f0;">${escHtml(rival.nombre)}</td><td style="${celda}">${fr.pos}º</td><td style="${celda}">${fr.pj}</td><td style="${celda}">${fr.pts}</td><td style="${celda}">${fr.gf}–${fr.gc}</td></tr>
+        </tbody>
+      </table>
+      <div style="font-size:11.5px; color:#8da499; margin-bottom:6px;">Enfrentamientos anteriores</div>
+      ${cara}`;
+    card.style.display = 'block';
+    const informe = document.getElementById('informeIACard');
+    if (informe) informe.style.display = 'none'; // la tarjeta sustituye al informe IA
+  }
+
   function pintarInformeIA(matchData) {
     const card = document.getElementById('informeIACard');
     if (!card) return;
+    if (proximoPartidoActual()) { card.style.display = 'none'; return; } // v72: mientras esté la tarjeta del próximo partido, no se enseña el informe
     if (!matchData.matchFinished || !matchData.analisisIA) { card.style.display = 'none'; return; }
     card.style.display = 'block';
 
@@ -1611,6 +1722,7 @@
     const liga = snap.val();
     if (!liga || !liga.equipos) return;
     ultimaLiga = liga;
+    pintarProximoPartido(); // v72
     if (!ligaViewerJornadaFijada) {
       const actual = jornadaActualLiga(liga);
       if (actual) {
@@ -1709,12 +1821,13 @@
       const marcador = jugado
         ? `<div class="liga-marcador">${p.golesLocal} - ${p.golesVisitante}</div>`
         : `<div class="liga-marcador pendiente">vs</div>`;
+      const cuando = (p.fechaPartido || p.hora) ? `<div style="text-align:center; font-size:10.5px; color:#8da499; margin:-4px 0 8px;">${escHtml([p.fechaPartido, p.hora].filter(Boolean).join(' · '))}</div>` : '';
       return `
       <div class="liga-partido-row">
         <span class="liga-equipo-name local ${localEs?'hergar-team':''}">${nombreEquipoLigaViewer(liga, p.local)}</span>
         ${marcador}
         <span class="liga-equipo-name ${visEs?'hergar-team':''}">${nombreEquipoLigaViewer(liga, p.visitante)}</span>
-      </div>`;
+      </div>${cuando}`;
     }).join('');
   }
 

@@ -566,6 +566,7 @@
 </div>
 
 <script type="module">
+  // v44 · Ranking y Partidos de temporada: salen todos (antes cortaban en 15).
   // v43 · Visor: comparativa Hergar vs rival en En vivo, aviso de gol en pantalla, Liga abre en Clasificación y en la jornada en curso.
   // v42 · Sinergias: impacto que suman los dos mientras coinciden. v41 · Reglas del impacto (las publica la app), ranking con mínimo de minutos, regates y defensa clave.
   // v2 · Interruptor de notas IA: false = no se muestran notas de jugadores (ni en el partido ni en el ranking).
@@ -1113,7 +1114,7 @@
       notaIA: j => j._notaIA !== null ? j._notaIA.toFixed(1) : '—',
     };
     const getEtiqueta = etiquetaVal[criterio] || etiquetaVal.pond;
-    cont.innerHTML = lista.slice(0, 15).map((j, i) => `
+    cont.innerHTML = lista.map((j, i) => `
       <div class="rank-row" onclick="abrirPerfilJugadorTemporada('${j.id}')" style="cursor:pointer;">
         <div class="rank-pos">${i+1}</div>
         <div class="rank-name">${(j.name||'').split(' ')[0]}</div>
@@ -1141,7 +1142,7 @@
     const partidos = (temporada.partidos || []).slice().reverse();
     const cont = document.getElementById('partidosLista');
     if (partidos.length === 0) { cont.innerHTML = '<div class="loader">Sin partidos todavía</div>'; return; }
-    cont.innerHTML = partidos.slice(0, 15).map(p => {
+    cont.innerHTML = partidos.map(p => {
       const chipClass = p.resultado === 'V' ? 'streak-win' : p.resultado === 'D' ? 'streak-loss' : 'streak-draw';
       const icon = p.resultado === 'V' ? '✅' : p.resultado === 'D' ? '❌' : '➖';
       const extras = [];

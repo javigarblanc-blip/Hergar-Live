@@ -566,6 +566,7 @@
 </div>
 
 <script type="module">
+  // v71 (app) · Informe IA guardado en cada partido de la temporada: se abre desde la lista de Partidos.
   // v70 (app) · Eficacia de tiro (goles / tiros totales): fila en la ficha de cada jugador con goles y línea de equipo en Rachas. Los partidos manuales no cuentan.
   // v44 · Ranking y Partidos de temporada: salen todos (antes cortaban en 15).
   // v43 · Visor: comparativa Hergar vs rival en En vivo, aviso de gol en pantalla, Liga abre en Clasificación y en la jornada en curso.
@@ -1191,8 +1192,18 @@
         </div>
         ${extrasHtml}
         ${statsHtml}
+        ${informeIAPartidoHtml(p)}
       </div>`;
     }).join('');
+  }
+
+  function informeIAPartidoHtml(p) {
+    if (!p || !p.analisisIA) return '';
+    return `<details style="margin-top:6px; padding-top:6px; border-top:1px solid rgba(255,255,255,0.06);">
+      <summary style="color:#a855f7; font-size:11px; font-weight:700; cursor:pointer;">🤖 Informe IA</summary>
+      ${p.resumenIA ? `<div style="font-style:italic; color:#a855f7; font-size:12px; line-height:1.5; margin-top:6px;">"${escHtml(p.resumenIA)}"</div>` : ''}
+      <div style="white-space:pre-wrap; color:#cbd5e1; font-size:12px; line-height:1.6; margin-top:6px;">${escHtml(p.analisisIA)}</div>
+    </details>`;
   }
 
   function pintarMomentum(matchData) {

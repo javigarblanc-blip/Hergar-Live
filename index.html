@@ -872,6 +872,34 @@
     return `<div style="font-size:42px; font-weight:900; font-family:'Montserrat',sans-serif; color:${CROMO_COLOR};">#${dorsal}</div>`;
   }
 
+  // Abre el cromo del MVP de un partido ya jugado, a partir del snapshot que guarda la app
+  // con ese partido (mvpId + mvpStats). La foto es la actual del jugador, no la de aquel día.
+  window.abrirCromoMvpGuardado = (partidoIndex) => {
+    if (!ultimaTemporada) return;
+    const partidos = (ultimaTemporada.partidos || []).slice().reverse();
+    const p = partidos[partidoIndex];
+    if (!p || !p.mvpId || !p.mvpStats) return;
+    ultimoPerfilAbiertoId = partidoIndex; ultimoPerfilAbiertoOrigen = 'mvp-guardado';
+    const s = p.mvpStats;
+    const cont = document.getElementById('perfilContenido');
+    cont.innerHTML = `
+      <div style="text-align:center;">
+        ${avatarPerfilHTML(p.mvpId, s.dorsal)}
+        <div style="font-size:15px; font-weight:800; color:#e2e8f0; margin-bottom:2px;">${(s.name||'').split(' ')[0]}</div>
+        <div style="font-size:11px; color:#f5a623; margin-bottom:14px;">⭐ MVP vs ${escHtml(p.rival)} · ${escHtml(p.fecha||'')}</div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+        ${[['MINUTOS',s.minutos||0],['GOLES',s.goles||0],['ASISTENCIAS',s.asistencias||0],['RESULTADO',`${p.golesLocal}-${p.golesRival}`]].map(([label,val]) => `
+          <div style="background:rgba(255,255,255,.04); border-radius:8px; padding:8px; display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:10px; color:#94a3b8; font-weight:700;">${label}</span>
+            <span style="font-size:16px; font-weight:900; color:${CROMO_COLOR}; font-family:'Montserrat',sans-serif;">${val}</span>
+          </div>`).join('')}
+      </div>`;
+    document.getElementById('perfilDatosContenido').innerHTML = `<div style="text-align:center; padding:20px 10px; color:#64748b; font-size:12px;">Este cromo es de un partido ya jugado — la ficha de datos detallada solo está disponible para el partido en directo o el perfil de temporada.</div>`;
+    mostrarPestanaPerfil('cromo');
+    document.getElementById('perfilModal').style.display = 'flex';
+  };
+
   window.abrirPerfilJugador = (id) => {
     if (!ultimoMatchData) return;
     const p = ultimoMatchData.jugadores?.[id];
@@ -1284,12 +1312,15 @@
     const partidos = (temporada.partidos || []).slice().reverse();
     const cont = document.getElementById('partidosLista');
     if (partidos.length === 0) { cont.innerHTML = '<div class="loader">Sin partidos todavía</div>'; return; }
-    cont.innerHTML = partidos.map(p => {
+    cont.innerHTML = partidos.map((p, i) => {
       const chipClass = p.resultado === 'V' ? 'streak-win' : p.resultado === 'D' ? 'streak-loss' : 'streak-draw';
       const icon = p.resultado === 'V' ? '✅' : p.resultado === 'D' ? '❌' : '➖';
       const extras = [];
       if (p.goleadores && p.goleadores !== '-') extras.push(`⚽ ${p.goleadores}`);
-      if (p.mvp && p.mvp !== '-') extras.push(`⭐ MVP: ${p.mvp}`);
+      let mvpLine = '';
+      if (p.mvp && p.mvp !== '-') {
+        mvpLine = `<div style="display:flex; align-items:center; justify-content:space-between; gap:6px; font-size:10px; color:#8da499; margin-top:2px;"><span>⭐ MVP: ${p.mvp}</span>${p.mvpId ? `<button onclick="abrirCromoMvpGuardado(${i})" style="background:rgba(245,166,35,0.14); border:1px solid rgba(245,166,35,0.4); color:#f5a623; border-radius:6px; padding:2px 8px; font-size:10px; font-weight:700; white-space:nowrap;">🎴 Cromo</button>` : ''}</div>`;
+      }
       const extrasHtml = extras.length ? `<div style="font-size:10px; color:#8da499; margin-top:2px;">${extras.join(' · ')}</div>` : '';
       const statsHtml = (p.tirosNuestrosPuerta != null) ? `<div style="font-size:9px; color:#64748b; margin-top:4px; padding-top:4px; border-top:1px solid rgba(255,255,255,0.06);">🎯 ${(p.tirosNuestrosPuerta||0)+(p.tirosNuestrosFuera||0)}(${p.tirosNuestrosPuerta||0}) — ${(p.tirosRivalesPuerta||0)+(p.tirosRivalesFuera||0)}(${p.tirosRivalesPuerta||0}) · 🟨 ${p.faltasFavor||0}/${p.faltasContra||0} · ⛳ ${p.cornersFavor||0}/${p.cornersContra||0}</div>` : '';
       return `<div class="rank-row" style="flex-direction:column; align-items:stretch; gap:2px;">
@@ -1298,6 +1329,7 @@
           <div class="streak-chip ${chipClass}">${p.golesLocal}–${p.golesRival} ${icon}</div>
         </div>
         ${extrasHtml}
+        ${mvpLine}
         ${statsHtml}
         ${informeIAPartidoHtml(p)}
       </div>`;
@@ -1650,6 +1682,7 @@
   function reabrirPerfilActual() {
     if (ultimoPerfilAbiertoOrigen === 'live') window.abrirPerfilJugador(ultimoPerfilAbiertoId);
     else if (ultimoPerfilAbiertoOrigen === 'temporada') window.abrirPerfilJugadorTemporada(ultimoPerfilAbiertoId);
+    else if (ultimoPerfilAbiertoOrigen === 'mvp-guardado') window.abrirCromoMvpGuardado(ultimoPerfilAbiertoId);
   }
   onValue(ref(db, 'plantilla_fotos'), (snap) => {
     fotosJugadores = snap.val() || {};

@@ -768,32 +768,9 @@
     cont.innerHTML = filas || '<div class="loader">Sin datos</div>';
   }
 
-  // ── Perfil (cromo) — fórmula igualada con la app principal (hergar_f11) ──
+  // ── Perfil (cromo) — datos reales, sin atributos inventados ──
   const MIN_MINUTOS_PERFIL = 20;
-  // FIX: constantes recalibradas — reciben MEDIA POR PARTIDO (temporada) o el dato de UN
-  // partido (en vivo / partido suelto), nunca el acumulado de toda la temporada sin dividir.
-  function clamp99(v) { return Math.max(40, Math.min(99, Math.round(v))); }
-  function calcularAtributosCromo(s) {
-    const rit = clamp99(40 + (Math.min(90, s.minutos) / 90) * 59);
-    const tirosTotales = (s.disparosPuerta||0) + (s.disparosFuera||0);
-    const precision = tirosTotales > 0 ? s.disparosPuerta / tirosTotales : 0.5;
-    const tir = clamp99(40 + precision*30 + Math.min(29, (s.goles||0)*60));
-    const pasVal = (s.pasesClave||0)*12 + (s.pasesArea||0)*4 + (s.asistencias||0)*12;
-    const pas = clamp99(40 + Math.min(59, pasVal));
-    const regVal = (s.asistencias||0)*20 + (s.pasesClave||0)*12 + (s.goles||0)*8;
-    const reg = clamp99(40 + Math.min(59, regVal));
-    let def, defLabel;
-    if (s.esPortero) { def = clamp99(40 + Math.min(59, (s.paradas||0)*7 + (s.paradasDificiles||0)*16)); defLabel='PAR'; }
-    else { def = clamp99(40 + Math.min(59, (s.accionesDef||0)*10)); defLabel='DEF'; }
-    const fis = clamp99(40 + Math.min(59, (s.impactoPond||0)*9));
-    const rating = Math.round((rit+tir+pas+reg+def+fis)/6);
-    let tier = 'bronce';
-    if (rating >= 85) tier = 'especial'; else if (rating >= 75) tier = 'oro'; else if (rating >= 65) tier = 'plata';
-    return { rit, tir, pas, reg, def, defLabel, fis, rating, tier };
-  }
-  const CROMO_COLORES = {
-    bronce: '#d99a52', plata: '#dbe4e8', oro: '#f5a623', especial: '#c299f5'
-  };
+  const CROMO_COLOR = '#f5a623';
 
   // ── FICHA DE DATOS — estadísticas reales medias, igualada con la app ──
   const FD_UMBRAL_MINUTOS = 10;
@@ -887,11 +864,20 @@
     document.getElementById('perfilDatosTabBtn').classList.toggle('fd-active', !esCromo);
   };
 
+  function avatarPerfilHTML(id, dorsal) {
+    const f = fotosJugadores[id];
+    if (f && f.foto) {
+      return `<img src="${f.foto}" style="width:96px; height:96px; border-radius:50%; object-fit:cover; border:2px solid ${CROMO_COLOR}; margin-bottom:2px;">`;
+    }
+    return `<div style="font-size:42px; font-weight:900; font-family:'Montserrat',sans-serif; color:${CROMO_COLOR};">#${dorsal}</div>`;
+  }
+
   window.abrirPerfilJugador = (id) => {
     if (!ultimoMatchData) return;
     const p = ultimoMatchData.jugadores?.[id];
     const cont = document.getElementById('perfilContenido');
     if (!p) return;
+    ultimoPerfilAbiertoId = id; ultimoPerfilAbiertoOrigen = 'live';
     if ((p.minutos||0) < MIN_MINUTOS_PERFIL) {
       cont.innerHTML = `
         <div style="text-align:center; padding:20px 10px;">
@@ -900,17 +886,15 @@
           <div style="font-size:12px; color:#64748b;">Aún sin los ${MIN_MINUTOS_PERFIL} minutos mínimos para generar su Perfil (lleva ${p.minutos||0}')</div>
         </div>`;
     } else {
-      const attrs = calcularAtributosCromo(p);
-      const color = CROMO_COLORES[attrs.tier];
+      const color = CROMO_COLOR;
       cont.innerHTML = `
         <div style="text-align:center;">
-          <div style="font-size:42px; font-weight:900; font-family:'Montserrat',sans-serif; color:${color};">${attrs.rating}</div>
-          <div style="font-size:10px; letter-spacing:2px; color:${color}; text-transform:uppercase; font-weight:800; margin-bottom:4px;">${attrs.tier}</div>
-          <div style="font-size:15px; font-weight:800; color:#e2e8f0; margin-bottom:2px;">#${p.dorsal} ${(p.name||'').split(' ')[0]}</div>
+          ${avatarPerfilHTML(id, p.dorsal)}
+          <div style="font-size:15px; font-weight:800; color:#e2e8f0; margin-bottom:2px;">${(p.name||'').split(' ')[0]}</div>
           <div style="font-size:11px; color:#64748b; margin-bottom:14px;">${p.minutos}' jugados</div>
         </div>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-          ${[['RIT',attrs.rit],['TIR',attrs.tir],['PAS',attrs.pas],['REG',attrs.reg],[attrs.defLabel,attrs.def],['FÍS',attrs.fis]].map(([label,val]) => `
+          ${[['PARTIDOS',1],['MINUTOS',p.minutos||0],['GOLES',p.goles||0],['ASISTENCIAS',p.asistencias||0]].map(([label,val]) => `
             <div style="background:rgba(255,255,255,.04); border-radius:8px; padding:8px; display:flex; justify-content:space-between; align-items:center;">
               <span style="font-size:10px; color:#94a3b8; font-weight:700;">${label}</span>
               <span style="font-size:16px; font-weight:900; color:${color}; font-family:'Montserrat',sans-serif;">${val}</span>
@@ -948,6 +932,7 @@
     if (!ultimaTemporada) return;
     const j = ultimaTemporada.jugadores?.[id];
     if (!j) return;
+    ultimoPerfilAbiertoId = id; ultimoPerfilAbiertoOrigen = 'temporada';
     const posKey = posicionTemporada(j);
     const esPortero = posKey === 'portero';
     const pj = j.partidos > 0 ? j.partidos : 1;
@@ -970,17 +955,15 @@
           <div style="font-size:12px; color:#64748b;">Aún sin los ${MIN_MINUTOS_PERFIL} minutos mínimos para generar su Perfil (lleva ${j.minutos||0}')</div>
         </div>`;
     } else {
-      const attrs = calcularAtributosCromo(statsAttrs);
-      const color = CROMO_COLORES[attrs.tier];
+      const color = CROMO_COLOR;
       cont.innerHTML = `
         <div style="text-align:center;">
-          <div style="font-size:42px; font-weight:900; font-family:'Montserrat',sans-serif; color:${color};">${attrs.rating}</div>
-          <div style="font-size:10px; letter-spacing:2px; color:${color}; text-transform:uppercase; font-weight:800; margin-bottom:4px;">${attrs.tier}</div>
-          <div style="font-size:15px; font-weight:800; color:#e2e8f0; margin-bottom:2px;">#${j.dorsal} ${(j.name||'').split(' ')[0]}</div>
+          ${avatarPerfilHTML(id, j.dorsal)}
+          <div style="font-size:15px; font-weight:800; color:#e2e8f0; margin-bottom:2px;">${(j.name||'').split(' ')[0]}</div>
           <div style="font-size:11px; color:#64748b; margin-bottom:14px;">${j.partidos||0} partidos esta temporada</div>
         </div>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-          ${[['RIT',attrs.rit],['TIR',attrs.tir],['PAS',attrs.pas],['REG',attrs.reg],[attrs.defLabel,attrs.def],['FÍS',attrs.fis]].map(([label,val]) => `
+          ${[['PARTIDOS',j.partidos||0],['MINUTOS',j.minutos||0],['GOLES',j.goles||0],['ASISTENCIAS',j.asistencias||0]].map(([label,val]) => `
             <div style="background:rgba(255,255,255,.04); border-radius:8px; padding:8px; display:flex; justify-content:space-between; align-items:center;">
               <span style="font-size:10px; color:#94a3b8; font-weight:700;">${label}</span>
               <span style="font-size:16px; font-weight:900; color:${color}; font-family:'Montserrat',sans-serif;">${val}</span>
@@ -1645,6 +1628,20 @@
       if (ultimaTemporada) { pintarRanking(ultimaTemporada); pintarComparativa(ultimaTemporada); }
     }
   }, (err) => { console.error('Firebase reglas read error:', err); });
+
+  // ── Fotos de jugadores: en un path aparte, así solo se transmiten cuando cambian de verdad
+  // (y no en cada actualización del partido en vivo, que sería carísimo en datos) ──
+  let fotosJugadores = {};
+  let ultimoPerfilAbiertoId = null;
+  let ultimoPerfilAbiertoOrigen = null; // 'live' | 'temporada'
+  function reabrirPerfilActual() {
+    if (ultimoPerfilAbiertoOrigen === 'live') window.abrirPerfilJugador(ultimoPerfilAbiertoId);
+    else if (ultimoPerfilAbiertoOrigen === 'temporada') window.abrirPerfilJugadorTemporada(ultimoPerfilAbiertoId);
+  }
+  onValue(ref(db, 'plantilla_fotos'), (snap) => {
+    fotosJugadores = snap.val() || {};
+    if (ultimoPerfilAbiertoId != null) reabrirPerfilActual();
+  }, (err) => { console.error('Firebase fotos read error:', err); });
 
   // ── ¿Cómo se calcula el impacto? — versión para familias (sin penalizaciones por fallos individuales) ──
   const fmtPts = (n) => !n ? '0' : (n > 0 ? '+' : '−') + Math.abs(n).toFixed(2).replace('.', ',');

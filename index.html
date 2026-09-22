@@ -368,6 +368,7 @@
     <div id="temporada" class="panel">
       <div class="subtabs">
         <div class="subtab-btn active" onclick="showSub(event,'subRanking')">📈 Ranking</div>
+        <div class="subtab-btn" onclick="showSub(event,'subPlantilla')">👥 Plantilla</div>
         <div class="subtab-btn" onclick="showSub(event,'subPartidos')">📅 Partidos</div>
         <div class="subtab-btn" onclick="showSub(event,'subSinergias')">🔗 Sinergias</div>
         <div class="subtab-btn" onclick="showSub(event,'subRachas')">🔥 Rachas</div>
@@ -396,6 +397,13 @@
         <div class="card">
           <div class="card-title">Historial de partidos</div>
           <div id="partidosLista"><div class="loader">Cargando...</div></div>
+        </div>
+      </div>
+
+      <div id="subPlantilla" class="sub-panel">
+        <div class="card">
+          <div class="card-title">👥 Plantilla completa</div>
+          <div id="plantillaTablaLista"><div class="loader">Cargando...</div></div>
         </div>
       </div>
 
@@ -958,8 +966,14 @@
   // ── Perfil de temporada: para verse aunque no haya partido en juego (tocando el ranking) ──
   window.abrirPerfilJugadorTemporada = (id) => {
     if (!ultimaTemporada) return;
-    const j = ultimaTemporada.jugadores?.[id];
-    if (!j) return;
+    let j = ultimaTemporada.jugadores?.[id];
+    if (!j) {
+      const pl = (ultimaPlantilla || []).find(x => String(x.id) === String(id));
+      if (!pl) return;
+      j = { id: pl.id, name: pl.name, dorsal: pl.dorsal, partidos: 0, minutos: 0, goles: 0, asistencias: 0,
+            pasesArea: 0, pasesClave: 0, accionesDef: 0, paradas: 0, paradasDificiles: 0,
+            disparosPuerta: 0, disparosFuera: 0, impactoAcum: 0 };
+    }
     ultimoPerfilAbiertoId = id; ultimoPerfilAbiertoOrigen = 'temporada';
     const posKey = posicionTemporada(j);
     const esPortero = posKey === 'portero';
@@ -1307,6 +1321,58 @@
       </div>`;
     }
   }
+
+  // ── PLANTILLA COMPLETA: incluye a quien aún no ha jugado, tocar abre su perfil ──
+  const ESTADO_COLOR_VIEWER = { disponible: '#2ed573', lesionado: '#ff4757', sancionado: '#f5a623', no_disponible: '#94a3b8' };
+  const ESTADO_LABEL_VIEWER = { disponible: 'Disponible', lesionado: 'Lesionado', sancionado: 'Sancionado', no_disponible: 'No disponible' };
+  function pintarPlantillaTabla() {
+    const cont = document.getElementById('plantillaTablaLista');
+    if (!cont) return;
+    if (!ultimaPlantilla || ultimaPlantilla.length === 0) {
+      cont.innerHTML = '<div class="loader">Aún no hay jugadores en la plantilla</div>';
+      return;
+    }
+    const jTemp = (ultimaTemporada && ultimaTemporada.jugadores) || {};
+    const filas = ultimaPlantilla.map(p => {
+      const j = jTemp[p.id] || {};
+      const impacto = (j.minutos || 0) > 0 ? (j.impactoAcum || 0) / j.minutos * 70 : 0;
+      return { p, j, impacto };
+    }).sort((a, b) => (a.p.dorsal || 99) - (b.p.dorsal || 99));
+    const filaHtml = filas.map(({p, j, impacto}) => {
+      const color = ESTADO_COLOR_VIEWER[p.estado] || '#94a3b8';
+      const label = ESTADO_LABEL_VIEWER[p.estado] || 'Disponible';
+      const impStr = (j.minutos || 0) > 0 ? impacto.toFixed(1) : '—';
+      return `<tr onclick="abrirPerfilJugadorTemporada('${p.id}')" style="cursor:pointer; border-bottom:1px solid rgba(255,255,255,.05);">
+        <td style="padding:9px 8px; color:#8da499; font-weight:700;">${p.dorsal}</td>
+        <td style="padding:9px 8px; color:#e7efe9; font-weight:700; white-space:nowrap;">${escHtml((p.name||'').split(' ')[0])}</td>
+        <td style="padding:9px 8px; color:${color}; font-size:11px; white-space:nowrap;">${label}</td>
+        <td style="padding:9px 8px; text-align:center;">${j.partidos || 0}</td>
+        <td style="padding:9px 8px; text-align:center;">${j.minutos || 0}'</td>
+        <td style="padding:9px 8px; text-align:center;">${j.goles || 0}</td>
+        <td style="padding:9px 8px; text-align:center;">${j.asistencias || 0}</td>
+        <td style="padding:9px 8px; text-align:center; color:#2ed573; font-weight:800;">${impStr}</td>
+      </tr>`;
+    }).join('');
+    cont.innerHTML = `
+      <div style="overflow-x:auto; -webkit-overflow-scrolling:touch; border-radius:12px; border:1px solid rgba(255,255,255,.06);">
+        <table style="width:100%; min-width:520px; border-collapse:collapse; font-size:12px;">
+          <thead>
+            <tr style="color:#8da499; text-align:left; background:rgba(255,255,255,.03);">
+              <th style="padding:9px 8px;">#</th>
+              <th style="padding:9px 8px;">Jugador</th>
+              <th style="padding:9px 8px;">Estado</th>
+              <th style="padding:9px 8px; text-align:center;">PJ</th>
+              <th style="padding:9px 8px; text-align:center;">Min</th>
+              <th style="padding:9px 8px; text-align:center;">G</th>
+              <th style="padding:9px 8px; text-align:center;">A</th>
+              <th style="padding:9px 8px; text-align:center;">Imp/70</th>
+            </tr>
+          </thead>
+          <tbody>${filaHtml}</tbody>
+        </table>
+      </div>`;
+  }
+
 
   function pintarPartidos(temporada) {
     const partidos = (temporada.partidos || []).slice().reverse();
@@ -1663,6 +1729,7 @@
     pintarComparativa(temporada);
     pintarHeatmap(temporada);
     pintarOnceIdeal(temporada);
+    pintarPlantillaTabla();
   });
 
   // Las reglas del impacto viajan con la temporada (temporada/reglas): así app y visor muestran siempre los mismos números
@@ -1673,6 +1740,14 @@
       if (ultimaTemporada) { pintarRanking(ultimaTemporada); pintarComparativa(ultimaTemporada); }
     }
   }, (err) => { console.error('Firebase reglas read error:', err); });
+
+  // Plantilla completa (incluye a quien aún no ha jugado): va aparte de temporada/temporada
+  // porque no es parte del JSON de estadísticas, solo la lista del club.
+  let ultimaPlantilla = [];
+  onValue(ref(db, 'temporada/plantilla'), (snap) => {
+    ultimaPlantilla = snap.val() || [];
+    pintarPlantillaTabla();
+  }, (err) => { console.error('Firebase plantilla read error:', err); });
 
   // ── Fotos de jugadores: en un path aparte, así solo se transmiten cuando cambian de verdad
   // (y no en cada actualización del partido en vivo, que sería carísimo en datos) ──

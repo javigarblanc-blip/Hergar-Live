@@ -1113,7 +1113,7 @@
     const esCasa = p.local === hergar.id;
     const rival = liga.equipos.find(e => e.id === (esCasa ? p.visitante : p.local));
     if (!rival) return null;
-    return { liga, p, hergar, rival, esCasa };
+    return { liga, pub, p, hergar, rival, esCasa };
   }
   function pintarProximoPartido() {
     const card = document.getElementById('proximoPartidoCard');
@@ -1124,7 +1124,7 @@
       if (ultimoMatchData) pintarInformeIA(ultimoMatchData); // sin tarjeta, vuelve el informe IA si toca
       return;
     }
-    const { liga, p, hergar, rival, esCasa } = d;
+    const { liga, pub, p, hergar, rival, esCasa } = d;
     const filas = ligaClasifViewer(liga);
     const fila = (eq) => filas.find(f => f.id === eq.id) || { pos: '-', pj: 0, pts: 0, gf: 0, gc: 0 };
     const fh = fila(hergar), fr = fila(rival);
@@ -1141,6 +1141,18 @@
         <span style="font-weight:700; color:${color};">${x.golesLocal} – ${x.golesVisitante}</span>
       </div>`;
     }).join('') : `<div style="font-size:12.5px; color:#64748b; padding:2px 0;">Primer enfrentamiento de la temporada.</div>`;
+    const convocados = (pub.convocados || []).slice().sort((a, b) => (a.dorsal || 99) - (b.dorsal || 99));
+    const convocatoriaHTML = convocados.length ? `
+      <div style="font-size:11.5px; color:#8da499; margin:14px 0 8px;">Convocados (${convocados.length})</div>
+      <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px;">
+        ${convocados.map(c => {
+          const f = fotosJugadores[c.id];
+          const avatar = (f && f.foto)
+            ? `<img src="${f.foto}" style="width:52px; height:52px; border-radius:50%; object-fit:cover; border:2px solid #f5a623;">`
+            : `<div style="width:52px; height:52px; border-radius:50%; background:#1a2332; border:2px solid #f5a623; display:flex; align-items:center; justify-content:center; font-family:'Montserrat',sans-serif; font-weight:800; font-size:16px; color:#f5a623;">#${c.dorsal ?? '?'}</div>`;
+          return `<div style="text-align:center;">${avatar}<div style="font-size:10.5px; color:#cbd5e1; margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escHtml((c.name || '').split(' ')[0])}</div></div>`;
+        }).join('')}
+      </div>` : '';
     const escudo = (eq, esH) => `<div style="width:42px; height:42px; border-radius:50%; background:${esH ? 'rgb(180,20,56)' : '#1a2332'}; margin:0 auto 6px; display:flex; align-items:center; justify-content:center; font-family:'Montserrat',sans-serif; font-weight:800; font-size:14px; color:${esH ? '#fff' : '#94a3b8'};">${escHtml(inicialesEquipoViewer(eq.nombre))}</div>`;
     const celda = 'padding:7px 0; border-top:1px solid rgba(255,255,255,0.06);';
     card.innerHTML = `
@@ -1163,7 +1175,8 @@
         </tbody>
       </table>
       <div style="font-size:11.5px; color:#8da499; margin-bottom:6px;">Enfrentamientos anteriores</div>
-      ${cara}`;
+      ${cara}
+      ${convocatoriaHTML}`;
     card.style.display = 'block';
     const informe = document.getElementById('informeIACard');
     if (informe) informe.style.display = 'none'; // la tarjeta sustituye al informe IA
@@ -1641,6 +1654,7 @@
   onValue(ref(db, 'plantilla_fotos'), (snap) => {
     fotosJugadores = snap.val() || {};
     if (ultimoPerfilAbiertoId != null) reabrirPerfilActual();
+    if (typeof pintarProximoPartido === 'function') pintarProximoPartido();
   }, (err) => { console.error('Firebase fotos read error:', err); });
 
   // ── ¿Cómo se calcula el impacto? — versión para familias (sin penalizaciones por fallos individuales) ──

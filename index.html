@@ -367,8 +367,8 @@
     <!-- TEMPORADA -->
     <div id="temporada" class="panel">
       <div class="subtabs">
-        <div class="subtab-btn active" onclick="showSub(event,'subRanking')">📈 Ranking</div>
-        <div class="subtab-btn" onclick="showSub(event,'subPlantilla')">👥 Plantilla</div>
+        <div class="subtab-btn active" onclick="showSub(event,'subPlantilla')">👥 Plantilla</div>
+        <div class="subtab-btn" onclick="showSub(event,'subRanking')">📈 Ranking</div>
         <div class="subtab-btn" onclick="showSub(event,'subPartidos')">📅 Partidos</div>
         <div class="subtab-btn" onclick="showSub(event,'subSinergias')">🔗 Sinergias</div>
         <div class="subtab-btn" onclick="showSub(event,'subRachas')">🔥 Rachas</div>
@@ -377,7 +377,7 @@
         <div class="subtab-btn" onclick="showSub(event,'subOnceIdeal')">🏅 Once</div>
       </div>
 
-      <div id="subRanking" class="sub-panel active">
+      <div id="subRanking" class="sub-panel">
         <div class="card">
           <div class="card-title">Ranking de temporada</div>
           <select id="rankingCriterioSelect" onchange="rerenderRanking()" style="width:100%; padding:8px; border-radius:8px; background:#0f172a; color:#e2e8f0; border:1px solid rgba(255,255,255,.1); margin-bottom:10px; font-size:12px;">
@@ -400,7 +400,7 @@
         </div>
       </div>
 
-      <div id="subPlantilla" class="sub-panel">
+      <div id="subPlantilla" class="sub-panel active">
         <div class="card">
           <div class="card-title">👥 Plantilla completa</div>
           <div id="plantillaTablaLista"><div class="loader">Cargando...</div></div>
@@ -1345,12 +1345,12 @@
       return `<tr onclick="abrirPerfilJugadorTemporada('${p.id}')" style="cursor:pointer; border-bottom:1px solid rgba(255,255,255,.05);">
         <td style="padding:9px 8px; color:#8da499; font-weight:700;">${p.dorsal}</td>
         <td style="padding:9px 8px; color:#e7efe9; font-weight:700; white-space:nowrap;">${escHtml((p.name||'').split(' ')[0])}</td>
-        <td style="padding:9px 8px; color:${color}; font-size:11px; white-space:nowrap;">${label}</td>
         <td style="padding:9px 8px; text-align:center;">${j.partidos || 0}</td>
         <td style="padding:9px 8px; text-align:center;">${j.minutos || 0}'</td>
         <td style="padding:9px 8px; text-align:center;">${j.goles || 0}</td>
         <td style="padding:9px 8px; text-align:center;">${j.asistencias || 0}</td>
         <td style="padding:9px 8px; text-align:center; color:#2ed573; font-weight:800;">${impStr}</td>
+        <td style="padding:9px 8px; color:${color}; font-size:11px; white-space:nowrap;">${label}</td>
       </tr>`;
     }).join('');
     cont.innerHTML = `
@@ -1360,12 +1360,12 @@
             <tr style="color:#8da499; text-align:left; background:rgba(255,255,255,.03);">
               <th style="padding:9px 8px;">#</th>
               <th style="padding:9px 8px;">Jugador</th>
-              <th style="padding:9px 8px;">Estado</th>
               <th style="padding:9px 8px; text-align:center;">PJ</th>
               <th style="padding:9px 8px; text-align:center;">Min</th>
               <th style="padding:9px 8px; text-align:center;">G</th>
               <th style="padding:9px 8px; text-align:center;">A</th>
               <th style="padding:9px 8px; text-align:center;">Imp/70</th>
+              <th style="padding:9px 8px;">Estado</th>
             </tr>
           </thead>
           <tbody>${filaHtml}</tbody>

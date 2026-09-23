@@ -684,6 +684,16 @@
   <div class="gol-detalle" id="golDetalle"></div>
 </div>
 
+<div id="fichaRivalModal" style="display:none; position:fixed; inset:0; z-index:960; background:rgba(0,0,0,.9); overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; padding:14px 12px 30px;" onclick="if (event.target === this) cerrarFichaRival()">
+  <div style="max-width:460px; margin:0 auto;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <span style="font-size:12px; color:#94a3b8; font-weight:700;">Liga · Ficha del equipo</span>
+      <button type="button" onclick="cerrarFichaRival()" aria-label="Cerrar ficha" style="width:42px; height:42px; border-radius:10px; border:1px solid rgba(255,255,255,.12); background:#111827; color:#94a3b8; font-size:16px; font-weight:800;">✕</button>
+    </div>
+    <div id="fichaRivalContenido"></div>
+  </div>
+</div>
+
 <div id="recordBanner" role="status" aria-live="polite" onclick="ocultarRecordBanner()">
   <div class="t" id="recordTitulo">🏆 ¡NUEVO RÉCORD!</div>
   <div class="x" id="recordTexto"></div>
@@ -1442,6 +1452,172 @@
     </div>`;
   }
 
+  // ── FICHA DEL RIVAL / CARA A CARA (mismo código en app y visor) ──
+  // Junta la Liga (resultados, fechas) con la temporada (goles con minuto, tiros, córners).
+  function normEquipoFR(n) {
+    return String(n || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, ' ').trim()
+      .replace(/^(?:[a-z] )+/, '').replace(/^(?:cdf|cd|cf|ud|ad|sd|ue) /, '').trim();
+  }
+  // ¿El texto "rival" de un partido de la temporada es este equipo de la Liga? (sin confundir B con C)
+  function esMismoEquipoFR(liga, eq, nombreRival) {
+    const n = normEquipoFR(nombreRival);
+    if (!n) return false;
+    const exacto = liga.equipos.find(e => normEquipoFR(e.nombre) === n);
+    if (exacto) return exacto.id === eq.id;
+    const parecidos = liga.equipos.filter(e => { const x = normEquipoFR(e.nombre); return x && (x.includes(n) || n.includes(x)); });
+    return parecidos.length === 1 && parecidos[0].id === eq.id;
+  }
+  function clasifFR(liga) {
+    const tabla = {};
+    liga.equipos.forEach(e => tabla[e.id] = { id: e.id, pj: 0, pts: 0, gf: 0, gc: 0 });
+    (liga.partidos || []).forEach(p => {
+      if (p.golesLocal == null || p.golesVisitante == null || !tabla[p.local] || !tabla[p.visitante]) return;
+      const a = tabla[p.local], b = tabla[p.visitante];
+      a.pj++; b.pj++; a.gf += p.golesLocal; a.gc += p.golesVisitante; b.gf += p.golesVisitante; b.gc += p.golesLocal;
+      if (p.golesLocal > p.golesVisitante) a.pts += 3; else if (p.golesLocal < p.golesVisitante) b.pts += 3; else { a.pts++; b.pts++; }
+    });
+    const filas = Object.values(tabla).sort((x, y) => y.pts - x.pts || (y.gf - y.gc) - (x.gf - x.gc) || y.gf - x.gf);
+    filas.forEach((f, i) => f.pos = i + 1);
+    return filas;
+  }
+  function jornadaGlobalFR(liga, p) {
+    const porVuelta = Math.max(1, ...(liga.partidos || []).filter(x => x.vuelta === 1).map(x => x.jornada));
+    return (p.vuelta - 1) * porVuelta + p.jornada;
+  }
+  function fichaRivalHTML(liga, temporada, eqId, escudoFn) {
+    const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const eq = (liga.equipos || []).find(e => e.id === eqId);
+    if (!eq) return '<div style="padding:20px; color:#94a3b8;">Equipo no encontrado.</div>';
+    const hergar = liga.equipos.find(e => e.esHergar);
+    const nombreDe = (id) => { const e = liga.equipos.find(x => x.id === id); return e ? e.nombre : '¿?'; };
+    const orden = (a, b) => a.vuelta - b.vuelta || a.jornada - b.jornada;
+    const jugado = (p) => p.golesLocal != null && p.golesVisitante != null;
+    const fila = clasifFR(liga).find(f => f.id === eq.id) || { pos: '-', pts: 0, pj: 0, gf: 0, gc: 0 };
+    const caja = 'background:#111827; border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:14px 16px; margin-bottom:12px;';
+    const titulo = (t) => `<div style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:11px; letter-spacing:2px; color:#94a3b8; margin-bottom:10px;">${t}</div>`;
+    const chip = (t, c, bg) => `<span style="background:${bg}; color:${c}; border-radius:8px; padding:4px 10px; font-size:12px; font-weight:800;">${t}</span>`;
+    const dec = (n) => (Math.round(n * 10) / 10).toFixed(1).replace('.', ',');
+    const cuando = (p) => [p.fechaPartido || p.fecha, p.hora].filter(Boolean).join(' · ');
+
+    // Cabecera
+    let html = `<div style="${caja} display:flex; flex-direction:column; align-items:center; gap:8px;">
+      ${escudoFn(eq, 96)}
+      <div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:20px; text-align:center; color:#e2e8f0;">${esc(eq.nombre)}</div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center;">${chip(fila.pos + 'º', '#f5a623', 'rgba(245,166,35,.14)')}${chip(fila.pts + ' pts', '#e2e8f0', 'rgba(255,255,255,.06)')}${chip(fila.pj + ' PJ', '#e2e8f0', 'rgba(255,255,255,.06)')}</div>
+    </div>`;
+
+    // Su forma
+    const suyos = (liga.partidos || []).filter(p => jugado(p) && (p.local === eq.id || p.visitante === eq.id)).sort(orden);
+    const res = (p) => { const casa = p.local === eq.id; const a = casa ? p.golesLocal : p.golesVisitante, b = casa ? p.golesVisitante : p.golesLocal; return a > b ? 'V' : a < b ? 'D' : 'E'; };
+    const colRes = { V: ['#2ed573', 'rgba(46,213,115,.18)'], E: ['#f5a623', 'rgba(245,166,35,.18)'], D: ['#ff4757', 'rgba(255,71,87,.18)'] };
+    const ult5 = suyos.slice(-5);
+    const balance = (lista) => { const c = { V: 0, E: 0, D: 0 }; lista.forEach(p => c[res(p)]++); return `${c.V}V · ${c.E}E · ${c.D}D`; };
+    const mini = (k, v, col) => `<div style="background:rgba(255,255,255,.04); border-radius:10px; padding:10px;"><div style="font-size:11px; color:#94a3b8;">${k}</div><div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:${col ? 20 : 14}px; color:${col || '#e2e8f0'};">${v}</div></div>`;
+    html += `<div style="${caja}">${titulo(eq.esHergar ? 'FORMA' : 'SU FORMA')}
+      ${suyos.length ? `
+      <div style="display:flex; align-items:center; gap:7px; margin-bottom:12px; flex-wrap:wrap;">
+        <span style="font-size:12px; color:#94a3b8; margin-right:4px;">Últimos ${ult5.length}</span>
+        ${ult5.map(p => { const r = res(p); return `<span title="J${jornadaGlobalFR(liga, p)} · ${esc(nombreDe(p.local))} ${p.golesLocal}-${p.golesVisitante} ${esc(nombreDe(p.visitante))}" style="width:30px; height:30px; border-radius:50%; background:${colRes[r][1]}; color:${colRes[r][0]}; display:inline-flex; align-items:center; justify-content:center; font-weight:900; font-size:12px;">${r}</span>`; }).join('')}
+        <span style="font-size:10px; color:#64748b;">→ más reciente</span>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px;">
+        ${mini('Goles a favor / partido', dec(fila.gf / Math.max(1, fila.pj)), '#2ed573')}
+        ${mini('Goles en contra / partido', dec(fila.gc / Math.max(1, fila.pj)), '#ff4757')}
+        ${mini('En casa', balance(suyos.filter(p => p.local === eq.id)))}
+        ${mini('Fuera', balance(suyos.filter(p => p.visitante === eq.id)))}
+      </div>` : '<div style="font-size:12px; color:#64748b;">Aún no ha jugado ningún partido con resultado metido.</div>'}
+    </div>`;
+
+    if (eq.esHergar || !hergar) return html;
+
+    // Contra el Hergar
+    const entre = (liga.partidos || []).filter(p => (p.local === eq.id && p.visitante === hergar.id) || (p.visitante === eq.id && p.local === hergar.id)).sort(orden);
+    const jugados = entre.filter(jugado), pendientes = entre.filter(p => !jugado(p));
+    const nuestros = (p) => p.local === hergar.id ? p.golesLocal : p.golesVisitante;
+    const suyosG = (p) => p.local === hergar.id ? p.golesVisitante : p.golesLocal;
+    // Emparejar cada partido de Liga con su partido de la temporada (mismo rival y mismo resultado)
+    const tempRival = ((temporada && temporada.partidos) || []).filter(tp => esMismoEquipoFR(liga, eq, tp.rival));
+    const usados = new Set();
+    const tempDe = (p) => {
+      const k = tempRival.findIndex((tp, i) => !usados.has(i) && tp.golesLocal === nuestros(p) && tp.golesRival === suyosG(p));
+      if (k < 0) return null;
+      usados.add(k); return tempRival[k];
+    };
+    const pares = jugados.map(p => ({ p, tp: tempDe(p) }));
+    const c = { V: 0, E: 0, D: 0 }; let gfH = 0, gcH = 0;
+    jugados.forEach(p => { const a = nuestros(p), b = suyosG(p); gfH += a; gcH += b; c[a > b ? 'V' : a < b ? 'D' : 'E']++; });
+    const etiqueta = (a, b) => a > b ? chip('VICTORIA', '#2ed573', 'rgba(46,213,115,.14)') : a < b ? chip('DERROTA', '#ff4757', 'rgba(255,71,87,.14)') : chip('EMPATE', '#f5a623', 'rgba(245,166,35,.14)');
+    const golesTP = (tp) => {
+      if (!tp) return '';
+      const g = Array.isArray(tp.goles) ? tp.goles : [];
+      if (g.some(x => x.min != null)) {
+        return `<div style="display:flex; flex-direction:column; gap:4px; font-size:12px; margin-top:8px;">${g.slice().sort((a, b) => (a.min == null ? 999 : a.min) - (b.min == null ? 999 : b.min)).map(x => x.equipo === 'rival'
+          ? `<div style="display:flex; gap:8px; color:#94a3b8;"><b style="width:28px; flex-shrink:0;">${x.min != null ? x.min + "'" : '–'}</b><span>Gol del ${esc(eq.nombre)}${x.penalti ? ' (penalti)' : ''}</span></div>`
+          : `<div style="display:flex; gap:8px; color:#e2e8f0;"><b style="width:28px; flex-shrink:0; color:#2ed573;">${x.min != null ? x.min + "'" : '–'}</b><span>${esc(x.nombre || '¿?')}${x.penalti ? ' (penalti)' : ''}${x.asistente ? ' · asistencia de ' + esc(x.asistente) : ''}</span></div>`).join('')}</div>`;
+      }
+      return tp.goleadores && tp.goleadores !== '-' ? `<div style="font-size:12px; color:#8da499; margin-top:8px;">⚽ ${esc(tp.goleadores)}</div>` : '';
+    };
+    html += `<div style="${caja}">${titulo('CONTRA EL HERGAR')}
+      ${jugados.length ? `<div style="display:flex; justify-content:center; gap:12px; font-size:12.5px; font-weight:700; margin-bottom:10px;"><span style="color:#2ed573;">${c.V} V</span><span style="color:#f5a623;">${c.E} E</span><span style="color:#ff4757;">${c.D} D</span><span style="color:#94a3b8;">· goles ${gfH}–${gcH}</span></div>` : ''}
+      ${pares.map(({ p, tp }) => `
+        <div style="background:rgba(255,255,255,.04); border-radius:12px; padding:12px; margin-bottom:8px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+            <span style="font-size:12px; color:#94a3b8;">J${jornadaGlobalFR(liga, p)}${cuando(p) ? ' · ' + esc(cuando(p)) : ''} · ${p.local === hergar.id ? 'En casa' : 'Fuera'}</span>${etiqueta(nuestros(p), suyosG(p))}
+          </div>
+          <div style="display:flex; align-items:center; justify-content:center; gap:12px; margin-top:8px;">
+            ${escudoFn(liga.equipos.find(e => e.id === p.local), 30)}
+            <span style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:22px; color:#e2e8f0;">${p.golesLocal} – ${p.golesVisitante}</span>
+            ${escudoFn(liga.equipos.find(e => e.id === p.visitante), 30)}
+          </div>
+          ${golesTP(tp)}
+        </div>`).join('')}
+      ${pendientes.map(p => `
+        <div style="background:rgba(46,213,115,.07); border:1px dashed rgba(46,213,115,.45); border-radius:12px; padding:12px; margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; gap:10px;">
+          <div style="display:flex; flex-direction:column; gap:2px;">
+            <span style="font-size:11px; color:#2ed573; font-weight:800;">PENDIENTE · J${jornadaGlobalFR(liga, p)}</span>
+            <span style="font-size:13px; font-weight:700; color:#e2e8f0;">${esc(nombreDe(p.local))} – ${esc(nombreDe(p.visitante))}</span>
+            <span style="font-size:12px; color:#94a3b8;">${esc(cuando(p) || 'Fecha por confirmar')} · ${p.local === hergar.id ? 'En casa' : 'Fuera'}</span>
+          </div>
+        </div>`).join('')}
+      ${!entre.length ? '<div style="font-size:12px; color:#64748b;">No hay partidos contra este equipo en el calendario.</div>' : ''}
+    </div>`;
+
+    // Datos del cara a cara (solo partidos en directo emparejados)
+    const directos = pares.map(x => x.tp).filter(tp => tp && !tp.manual && tp.tirosNuestrosPuerta != null);
+    const goleadores = {};
+    pares.forEach(({ tp }) => { if (!tp) return; const re = /([^,(]+?)\s*\((\d+)\)/g; let m; while ((m = re.exec(tp.goleadores || ''))) goleadores[m[1].trim()] = (goleadores[m[1].trim()] || 0) + parseInt(m[2]); });
+    const listaGol = Object.entries(goleadores).sort((a, b) => b[1] - a[1]).map(([n, k]) => `${esc(n)} (${k})`).join(', ');
+    if (directos.length || listaGol) {
+      const sum = (f) => directos.reduce((s, tp) => s + (Number(f(tp)) || 0), 0);
+      const filasS = [
+        ['Tiros', sum(tp => (tp.tirosNuestrosPuerta || 0) + (tp.tirosNuestrosFuera || 0)), sum(tp => (tp.tirosRivalesPuerta || 0) + (tp.tirosRivalesFuera || 0))],
+        ['Tiros a puerta', sum(tp => tp.tirosNuestrosPuerta), sum(tp => tp.tirosRivalesPuerta)],
+        ['Córners', sum(tp => tp.cornersFavor), sum(tp => tp.cornersContra)]
+      ];
+      html += `<div style="${caja}">${titulo('DATOS DEL CARA A CARA')}
+        ${directos.length ? `<div style="display:flex; justify-content:space-between; font-size:11px; font-weight:800; color:#94a3b8; margin-bottom:8px;"><span>HERGAR</span><span>${esc(eq.nombre).toUpperCase()}</span></div>
+        ${filasS.map(([l, a, b]) => `<div style="margin-bottom:10px;"><div style="display:flex; justify-content:space-between; font-size:13px; color:#e2e8f0;"><b>${a}</b><span style="color:#cbd5e1;">${l}</span><b style="color:#94a3b8;">${b}</b></div>
+          <div style="display:flex; height:8px; border-radius:4px; overflow:hidden; background:#334155; margin-top:4px;"><div style="width:${Math.round(a / Math.max(1, a + b) * 100)}%; background:#b41438;"></div></div></div>`).join('')}` : ''}
+        ${listaGol ? `<div style="font-size:12.5px; color:#e2e8f0;">Nuestros goles contra ellos: <b>${listaGol}</b></div>` : ''}
+        ${directos.length ? `<div style="font-size:10.5px; color:#64748b; margin-top:6px;">Tiros y córners: ${directos.length === 1 ? 'el partido jugado' : 'los ' + directos.length + ' partidos jugados'} en directo (los manuales no los tienen).</div>` : ''}
+      </div>`;
+    }
+    return html;
+  }
+
+  window.abrirFichaRival = function (id) {
+    if (!ultimaLiga) return;
+    document.getElementById('fichaRivalContenido').innerHTML = fichaRivalHTML(ultimaLiga, ultimaTemporada, id, (eq, px) => escudoEquipoVisorHTML(eq, px));
+    const m = document.getElementById('fichaRivalModal');
+    m.style.display = 'block'; m.scrollTop = 0;
+    document.body.style.overflow = 'hidden';
+  };
+  window.cerrarFichaRival = function () {
+    document.getElementById('fichaRivalModal').style.display = 'none';
+    document.body.style.overflow = '';
+  };
+
   // ── RÉCORDS DE LA TEMPORADA (visor) ─────────────────────────────────────────
   // Todo sale de temporada.partidos (y de los goles con minuto que guarda la app desde la v84).
   function fechaCortaRec(f) { return String(f || '').replace(/\/\d{4}$/, ''); }
@@ -2102,6 +2278,7 @@
       </table>
       <div style="font-size:11.5px; color:#8da499; margin-bottom:6px;">Enfrentamientos anteriores</div>
       ${cara}
+      <button type="button" onclick="abrirFichaRival('${rival.id}')" style="width:100%; margin-top:10px; background:rgba(46,213,115,.1); color:#2ed573; border:1px solid rgba(46,213,115,.45); border-radius:10px; padding:10px; font-weight:800; font-size:12.5px;">🔎 Ver ficha del rival</button>
       ${convocatoriaHTML}`;
     card.style.display = 'block';
     const informe = document.getElementById('informeIACard');
@@ -2764,7 +2941,7 @@
     const cont = document.getElementById('ligaEquiposLista');
     if (!cont) return;
     cont.innerHTML = liga.equipos.map(eq => `
-      <div class="liga-equipo-row">
+      <div class="liga-equipo-row" onclick="abrirFichaRival('${eq.id}')" style="cursor:pointer;">
         ${escudoEquipoVisorHTML(eq, 30)}
         <div class="liga-equipo-nombre ${eq.esHergar?'hergar':''}">${eq.nombre}</div>
       </div>`).join('');
@@ -2835,11 +3012,11 @@
       const cuando = (p.fechaPartido || p.hora) ? `<div style="text-align:center; font-size:10.5px; color:#8da499; margin:-4px 0 8px;">${escHtml([p.fechaPartido, p.hora].filter(Boolean).join(' · '))}</div>` : '';
       return `
       <div class="liga-partido-row">
-        <span class="liga-equipo-name local ${localEs?'hergar-team':''}">${nombreEquipoLigaViewer(liga, p.local)}</span>
-        ${escudoLigaVisorPorId(liga, p.local, 22)}
+        <span class="liga-equipo-name local ${localEs?'hergar-team':''}" onclick="abrirFichaRival('${p.local}')" style="cursor:pointer;">${nombreEquipoLigaViewer(liga, p.local)}</span>
+        <span onclick="abrirFichaRival('${p.local}')" style="cursor:pointer; display:inline-flex;">${escudoLigaVisorPorId(liga, p.local, 22)}</span>
         ${marcador}
-        ${escudoLigaVisorPorId(liga, p.visitante, 22)}
-        <span class="liga-equipo-name ${visEs?'hergar-team':''}">${nombreEquipoLigaViewer(liga, p.visitante)}</span>
+        <span onclick="abrirFichaRival('${p.visitante}')" style="cursor:pointer; display:inline-flex;">${escudoLigaVisorPorId(liga, p.visitante, 22)}</span>
+        <span class="liga-equipo-name ${visEs?'hergar-team':''}" onclick="abrirFichaRival('${p.visitante}')" style="cursor:pointer;">${nombreEquipoLigaViewer(liga, p.visitante)}</span>
       </div>${cuando}`;
     }).join('');
   }
@@ -2863,7 +3040,7 @@
     const body = document.getElementById('ligaViewerClasifBody');
     if (!body) return;
     body.innerHTML = filas.map((f,i) => `
-      <tr class="${f.esHergar?'liga-fila-hergar':''}">
+      <tr class="${f.esHergar?'liga-fila-hergar':''}" onclick="abrirFichaRival('${f.id}')" style="cursor:pointer;">
         <td>${i+1}</td><td style="text-align:left;"><span style="display:inline-flex; align-items:center; gap:6px;">${escudoLigaVisorPorId(liga, f.id, 18)}<span>${f.nombre}</span></span></td><td>${f.pj}</td><td>${f.pg}</td><td>${f.pe}</td>
         <td>${f.pp}</td><td>${f.gf}</td><td>${f.gc}</td><td>${f.dg>0?'+':''}${f.dg}</td><td>${f.pts}</td>
       </tr>`).join('');

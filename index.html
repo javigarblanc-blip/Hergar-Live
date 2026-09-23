@@ -1251,6 +1251,40 @@
     try { tvAlActualizarPartido(matchData); } catch (e) { console.error('Modo TV:', e); }
   }
 
+  // ── Escudos de los equipos de la Liga (los sube la app a plantilla_fotos/escudo_<id>) ──
+  function claveEscudoVisor(id) { return 'escudo_' + String(id).replace(/[.#$\[\]\/]/g, '_'); }
+  function escudoSrcVisor(eq) {
+    if (!eq) return null;
+    if (eq.esHergar) return ESCUDO_HERGAR_SRC;
+    const f = fotosJugadores[claveEscudoVisor(eq.id)];
+    return f && f.foto ? f.foto : null;
+  }
+  function normNombreEquipo(n) {
+    // "C.D. Villamayor", "CD Villamayor" y "Villamayor" cuentan como el mismo equipo
+    return String(n || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, ' ').trim()
+      .replace(/^(?:[a-z] )+/, '').replace(/^(?:cdf|cd|cf|ud|ad|sd|ue) /, '').trim();
+  }
+  // El rival del directo viene escrito como texto: se busca su equipo en la Liga por el nombre
+  function equipoLigaPorNombre(nombre) {
+    const eqs = (ultimaLiga && ultimaLiga.equipos) || [];
+    const n = normNombreEquipo(nombre);
+    if (!n) return null;
+    const exacto = eqs.find(e => normNombreEquipo(e.nombre) === n);
+    if (exacto) return exacto;
+    // Coincidencia parcial solo si no hay duda (p. ej. no confundir "Santa Marta" con "Santa Marta B")
+    const parecidos = eqs.filter(e => { const x = normNombreEquipo(e.nombre); return x && (x.includes(n) || n.includes(x)); });
+    return parecidos.length === 1 ? parecidos[0] : null;
+  }
+  // Escudo redondo: imagen si la hay, si no las iniciales como hasta ahora
+  function escudoEquipoVisorHTML(eq, px, nombreAlt) {
+    const src = escudoSrcVisor(eq);
+    if (src) return `<img src="${src}" alt="" style="width:${px}px; height:${px}px; border-radius:50%; object-fit:cover; background:#fff; flex-shrink:0; vertical-align:middle;">`;
+    const ini = inicialesEquipoViewer(eq ? eq.nombre : nombreAlt);
+    return `<span style="width:${px}px; height:${px}px; border-radius:50%; background:#1a2332; border:1px solid rgba(255,255,255,.12); color:#94a3b8; display:inline-flex; align-items:center; justify-content:center; font-family:'Montserrat',sans-serif; font-weight:800; font-size:${Math.max(8, Math.round(px * 0.36))}px; flex-shrink:0; vertical-align:middle;">${escHtml(ini)}</span>`;
+  }
+  function escudoLigaVisorPorId(liga, id, px) { return escudoEquipoVisorHTML((liga.equipos || []).find(e => e.id === id), px); }
+
   // ── RÉCORDS DE LA TEMPORADA (visor) ─────────────────────────────────────────
   // Todo sale de temporada.partidos (y de los goles con minuto que guarda la app desde la v84).
   function fechaCortaRec(f) { return String(f || '').replace(/\/\d{4}$/, ''); }
@@ -1481,6 +1515,8 @@
 
   function tvEscudo(nombre, esH) {
     if (esH) return `<div class="tv-escudo h"><img src="${ESCUDO_HERGAR_SRC}" alt="C.D. Hergar"></div>`;
+    const src = escudoSrcVisor(equipoLigaPorNombre(nombre));
+    if (src) return `<div class="tv-escudo h"><img src="${src}" alt=""></div>`;
     return `<div class="tv-escudo r">${escHtml(inicialesEquipoViewer(nombre))}</div>`;
   }
   function tvStats(m) {
@@ -1578,7 +1614,7 @@
     return `
       <div class="tv-centro">
         <div class="tv-titulo" style="color:${estado === 'final' ? '#2ed573' : '#f5a623'};">${estado === 'final' ? 'FINAL DEL PARTIDO' : 'DESCANSO'}</div>
-        <div class="tv-grande">${tvEscudo('HERGAR', true).replace('class="tv-escudo h"', 'class="tv-escudo h" style="width:72px; height:72px;"')}<span class="e">HERGAR</span><span class="g">${m.golesLocal ?? 0} – ${m.golesRival ?? 0}</span><span class="e" style="color:#94a3b8; font-size:${rival.length > 16 ? 30 : 42}px;">${escHtml(rival)}</span></div>
+        <div class="tv-grande">${tvEscudo('HERGAR', true).replace('class="tv-escudo h"', 'class="tv-escudo h" style="width:72px; height:72px;"')}<span class="e">HERGAR</span><span class="g">${m.golesLocal ?? 0} – ${m.golesRival ?? 0}</span><span class="e" style="color:#94a3b8; font-size:${rival.length > 16 ? 30 : 42}px;">${escHtml(rival)}</span>${tvEscudo(m.rival, false).replace(/class="tv-escudo (h|r)"/, 'class="tv-escudo $1" style="width:72px; height:72px;"')}</div>
         <div class="tv-dos">
           <div class="tv-card" style="padding:22px 28px; gap:14px;"><div class="tv-card-t"><span>${estado === 'final' ? 'EL PARTIDO' : 'PRIMERA PARTE'}</span></div>
             ${lista.length ? lista.map(e => `<div class="tv-ev"><b>${e.min}'</b><span>${escHtml(e.texto)}</span></div>`).join('') : '<div class="tv-nota" style="text-align:left;">Sin jugadas destacadas</div>'}
@@ -1606,7 +1642,7 @@
     const ult = previos.sort((a, b) => a.vuelta - b.vuelta || a.jornada - b.jornada).pop();
     const bloque = (eq, esH) => `
       <div style="display:flex; flex-direction:column; align-items:center; gap:12px; width:380px;">
-        <div class="tv-escudo ${esH ? 'h' : 'r'}" style="width:130px; height:130px; font-size:42px;">${esH ? `<img src="${ESCUDO_HERGAR_SRC}" alt="C.D. Hergar">` : escHtml(inicialesEquipoViewer(eq.nombre))}</div>
+        <div class="tv-escudo ${(esH || escudoSrcVisor(eq)) ? 'h' : 'r'}" style="width:130px; height:130px; font-size:42px;">${(esH || escudoSrcVisor(eq)) ? `<img src="${escudoSrcVisor(eq) || ESCUDO_HERGAR_SRC}" alt="">` : escHtml(inicialesEquipoViewer(eq.nombre))}</div>
         <div class="tv-mont" style="font-weight:900; font-size:34px; text-align:center; line-height:1.15;">${escHtml(eq.nombre)}</div>
         <div style="font-size:20px; color:#94a3b8;">${fila(eq).pos}º · ${fila(eq).pts} pts</div>
       </div>`;
@@ -1886,7 +1922,7 @@
           return `<div style="text-align:center;">${avatar}<div style="font-size:10.5px; color:#cbd5e1; margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escHtml((c.name || '').split(' ')[0])}</div></div>`;
         }).join('')}
       </div>` : '';
-    const escudo = (eq, esH) => esH ? `<img src="${ESCUDO_HERGAR_SRC}" alt="C.D. Hergar" style="width:42px; height:42px; border-radius:50%; object-fit:cover; background:#fff; display:block; margin:0 auto 6px;">` : `<div style="width:42px; height:42px; border-radius:50%; background:${esH ? 'rgb(180,20,56)' : '#1a2332'}; margin:0 auto 6px; display:flex; align-items:center; justify-content:center; font-family:'Montserrat',sans-serif; font-weight:800; font-size:14px; color:${esH ? '#fff' : '#94a3b8'};">${escHtml(inicialesEquipoViewer(eq.nombre))}</div>`;
+    const escudo = (eq, esH) => (esH || escudoSrcVisor(eq)) ? `<img src="${escudoSrcVisor(eq) || ESCUDO_HERGAR_SRC}" alt="" style="width:42px; height:42px; border-radius:50%; object-fit:cover; background:#fff; display:block; margin:0 auto 6px;">` : `<div style="width:42px; height:42px; border-radius:50%; background:${esH ? 'rgb(180,20,56)' : '#1a2332'}; margin:0 auto 6px; display:flex; align-items:center; justify-content:center; font-family:'Montserrat',sans-serif; font-weight:800; font-size:14px; color:${esH ? '#fff' : '#94a3b8'};">${escHtml(inicialesEquipoViewer(eq.nombre))}</div>`;
     const celda = 'padding:7px 0; border-top:1px solid rgba(255,255,255,0.06);';
     card.innerHTML = `
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
@@ -2457,6 +2493,7 @@
     fotosJugadores = snap.val() || {};
     if (ultimoPerfilAbiertoId != null) reabrirPerfilActual();
     if (typeof pintarProximoPartido === 'function') pintarProximoPartido();
+    if (ultimaLiga) { try { pintarLigaEquipos(ultimaLiga); renderLigaViewerJornada(); pintarLigaClasificacion(ultimaLiga); } catch (e) {} }
     if (tvActivo) tvRender();
   }, (err) => { console.error('Firebase fotos read error:', err); });
 
@@ -2569,7 +2606,7 @@
     if (!cont) return;
     cont.innerHTML = liga.equipos.map(eq => `
       <div class="liga-equipo-row">
-        <div class="liga-equipo-dot ${eq.esHergar?'hergar':''}"></div>
+        ${escudoEquipoVisorHTML(eq, 30)}
         <div class="liga-equipo-nombre ${eq.esHergar?'hergar':''}">${eq.nombre}</div>
       </div>`).join('');
   }
@@ -2640,7 +2677,9 @@
       return `
       <div class="liga-partido-row">
         <span class="liga-equipo-name local ${localEs?'hergar-team':''}">${nombreEquipoLigaViewer(liga, p.local)}</span>
+        ${escudoLigaVisorPorId(liga, p.local, 22)}
         ${marcador}
+        ${escudoLigaVisorPorId(liga, p.visitante, 22)}
         <span class="liga-equipo-name ${visEs?'hergar-team':''}">${nombreEquipoLigaViewer(liga, p.visitante)}</span>
       </div>${cuando}`;
     }).join('');
@@ -2666,7 +2705,7 @@
     if (!body) return;
     body.innerHTML = filas.map((f,i) => `
       <tr class="${f.esHergar?'liga-fila-hergar':''}">
-        <td>${i+1}</td><td>${f.nombre}</td><td>${f.pj}</td><td>${f.pg}</td><td>${f.pe}</td>
+        <td>${i+1}</td><td style="text-align:left;"><span style="display:inline-flex; align-items:center; gap:6px;">${escudoLigaVisorPorId(liga, f.id, 18)}<span>${f.nombre}</span></span></td><td>${f.pj}</td><td>${f.pg}</td><td>${f.pe}</td>
         <td>${f.pp}</td><td>${f.gf}</td><td>${f.gc}</td><td>${f.dg>0?'+':''}${f.dg}</td><td>${f.pts}</td>
       </tr>`).join('');
   }

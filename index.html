@@ -272,6 +272,91 @@
   #golBanner .gol-detalle { font-size:12px; font-weight:700; margin-top:3px; }
   @keyframes golEntra { from { transform:translateY(-130%); opacity:0; } to { transform:none; opacity:1; } }
   @media (prefers-reduced-motion: reduce) { #golBanner.visible { animation:none; } }
+  /* ── Modo TV (visor) ─────────────────────────────────────────── */
+  .btn-modo-tv { display:inline-flex; align-items:center; gap:6px; margin-top:10px; background:rgba(46,213,115,.1); border:1px solid rgba(46,213,115,.55);
+    color:#2ed573; font-family:'Montserrat',sans-serif; font-weight:800; font-size:12px; letter-spacing:.5px; padding:8px 16px; border-radius:20px; cursor:pointer; }
+  #tvModo { display:none; position:fixed; inset:0; z-index:2000; background:#0a0e14; overflow:hidden; touch-action:none; overscroll-behavior:contain; -webkit-user-select:none; user-select:none; }
+  #tvModo.activo { display:block; }
+  #tvStage { position:absolute; left:50%; top:50%; width:1280px; height:720px; transform-origin:center center; background:#0a0e14; color:#e2e8f0;
+    font-family:'Inter',-apple-system,sans-serif; overflow:hidden; }
+  #tvBase { position:absolute; inset:0; display:flex; flex-direction:column; }
+  .tv-mont { font-family:'Montserrat',sans-serif; }
+  .tv-top { height:112px; flex-shrink:0; display:flex; align-items:center; justify-content:space-between; padding:0 32px; background:#111827; border-bottom:1px solid rgba(255,255,255,.08); }
+  .tv-estado { width:190px; flex-shrink:0; display:flex; align-items:center; gap:10px; font-family:'Montserrat',sans-serif; font-weight:800; font-size:17px; letter-spacing:2px; }
+  .tv-dot { width:12px; height:12px; border-radius:50%; background:#ff4757; animation:tvLatido 1.4s ease-in-out infinite; }
+  @keyframes tvLatido { 50% { opacity:.3; } }
+  .tv-marcador { display:flex; align-items:center; gap:18px; min-width:0; }
+  .tv-equipo { display:flex; align-items:center; gap:12px; font-family:'Montserrat',sans-serif; font-weight:900; font-size:30px; letter-spacing:.5px; }
+  .tv-equipo .nom { max-width:290px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .tv-escudo { width:54px; height:54px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-family:'Montserrat',sans-serif; font-weight:900; font-size:20px; }
+  .tv-escudo.h { background:rgb(180,20,56); color:#fff; border:2px solid #fff; }
+  .tv-escudo.r { background:#334155; color:#e2e8f0; border:2px solid #94a3b8; }
+  .tv-goles { font-family:'Montserrat',sans-serif; font-weight:900; font-size:58px; line-height:1; background:#0a0e14; padding:6px 22px; border-radius:10px; border:1px solid rgba(255,255,255,.1); white-space:nowrap; }
+  .tv-reloj { font-family:'Montserrat',sans-serif; font-weight:800; font-size:18px; color:#2ed573; text-align:center; margin-top:4px; white-space:nowrap; }
+  .tv-centro-marc { flex-shrink:0; }
+  .tv-info { width:190px; flex-shrink:0; text-align:right; font-size:15px; color:#94a3b8; line-height:1.4; }
+  .tv-medio { flex-grow:1; display:flex; gap:22px; padding:20px 32px; min-height:0; }
+  .tv-campo { position:relative; width:830px; flex-shrink:0; background:#14432f; border-radius:14px; border:1px solid rgba(255,255,255,.08); overflow:hidden; }
+  .tv-campo svg { position:absolute; inset:0; width:100%; height:100%; }
+  .tv-jug { position:absolute; width:96px; margin-left:-48px; margin-top:-24px; display:flex; flex-direction:column; align-items:center; gap:4px; transition:left .6s, top .6s; }
+  .tv-jug .c { width:46px; height:46px; border-radius:50%; background:rgb(180,20,56); border:2px solid #fff; display:flex; align-items:center; justify-content:center; font-family:'Montserrat',sans-serif; font-weight:900; font-size:19px; color:#fff; }
+  .tv-jug.gk .c { background:#f5a623; color:#0a0e14; }
+  .tv-jug .n { font-size:15px; font-weight:700; color:#fff; background:rgba(10,14,20,.72); padding:1px 8px; border-radius:6px; white-space:nowrap; max-width:96px; overflow:hidden; text-overflow:ellipsis; }
+  .tv-form { position:absolute; right:14px; bottom:10px; font-size:14px; font-weight:700; color:rgba(255,255,255,.55); }
+  .tv-lado { flex-grow:1; display:flex; flex-direction:column; gap:14px; min-width:0; }
+  .tv-card { background:#111827; border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:16px 20px; display:flex; flex-direction:column; gap:10px; }
+  .tv-card-t { font-family:'Montserrat',sans-serif; font-weight:800; font-size:14px; letter-spacing:2px; color:#94a3b8; display:flex; justify-content:space-between; }
+  .tv-fila { display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:19px; font-weight:700; }
+  .tv-fila .min { color:#2ed573; flex-shrink:0; }
+  .tv-fila.rival { color:#94a3b8; }
+  .tv-fila.rival .min { color:#94a3b8; }
+  .tv-stat { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .tv-stat .v { font-family:'Montserrat',sans-serif; font-weight:900; font-size:24px; width:36px; }
+  .tv-stat .v.r { text-align:right; color:#94a3b8; }
+  .tv-stat .l { font-size:16px; color:#cbd5e1; text-align:center; flex-grow:1; }
+  .tv-cinta { height:62px; flex-shrink:0; display:flex; align-items:center; background:#111827; border-top:1px solid rgba(255,255,255,.08); overflow:hidden; }
+  .tv-cinta-t { height:100%; padding:0 20px; display:flex; align-items:center; background:rgb(180,20,56); font-family:'Montserrat',sans-serif; font-weight:900; font-size:15px; letter-spacing:2px; color:#fff; flex-shrink:0; }
+  .tv-cinta-e { display:flex; align-items:center; gap:34px; padding:0 24px; font-size:19px; white-space:nowrap; overflow:hidden; }
+  .tv-cinta-e b { color:#2ed573; }
+  .tv-centro { flex-grow:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:28px; padding:30px 60px; }
+  .tv-titulo { font-family:'Montserrat',sans-serif; font-weight:800; font-size:20px; letter-spacing:6px; }
+  .tv-grande { display:flex; align-items:center; gap:30px; font-family:'Montserrat',sans-serif; font-weight:900; }
+  .tv-grande .g { font-size:88px; line-height:1; background:#111827; padding:6px 30px; border-radius:14px; border:1px solid rgba(255,255,255,.1); }
+  .tv-grande .e { font-size:42px; max-width:380px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .tv-dos { width:100%; display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:26px; }
+  .tv-ev { display:flex; gap:16px; font-size:22px; }
+  .tv-ev b { color:#2ed573; width:52px; flex-shrink:0; }
+  .tv-barra { display:flex; height:10px; border-radius:5px; overflow:hidden; background:#334155; }
+  .tv-barra div { background:rgb(180,20,56); }
+  .tv-chip { background:#111827; border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:16px 26px; text-align:center; }
+  .tv-chip .k { font-size:14px; color:#94a3b8; letter-spacing:2px; font-weight:700; }
+  .tv-chip .val { font-family:'Montserrat',sans-serif; font-weight:800; font-size:26px; margin-top:4px; }
+  .tv-nota { font-size:17px; color:#94a3b8; text-align:center; }
+  /* Rótulos */
+  #tvRotulo { position:absolute; inset:0; display:none; pointer-events:none; }
+  #tvRotulo.visible { display:block; }
+  .tv-gol { position:absolute; inset:0; background:rgb(180,20,56); color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:24px; animation:tvGolEntra .45s ease-out; overflow:hidden; }
+  @keyframes tvGolEntra { from { transform:scale(1.15); opacity:0; } to { transform:none; opacity:1; } }
+  .tv-gol .grito { font-family:'Montserrat',sans-serif; font-weight:900; font-size:150px; line-height:.9; letter-spacing:12px; }
+  .tv-gol .quien { display:flex; align-items:center; gap:30px; }
+  .tv-gol .foto { width:170px; height:170px; border-radius:50%; border:5px solid #fff; object-fit:cover; background:#7a0d26; display:flex; align-items:center; justify-content:center; font-family:'Montserrat',sans-serif; font-weight:900; font-size:56px; }
+  .tv-gol .nombre { font-family:'Montserrat',sans-serif; font-weight:900; font-size:72px; line-height:1; }
+  .tv-gol .det { font-size:26px; font-weight:600; margin-top:8px; }
+  .tv-gol .marc { background:rgba(10,14,20,.55); padding:12px 30px; border-radius:14px; font-family:'Montserrat',sans-serif; font-weight:900; font-size:34px; }
+  .tv-confeti { position:absolute; top:-20px; width:14px; height:7px; background:#fff; opacity:.8; animation:tvCae linear forwards; }
+  @keyframes tvCae { to { transform:translateY(780px) rotate(540deg); } }
+  .tv-cambio-velo { position:absolute; inset:0; background:rgba(10,14,20,.45); }
+  .tv-cambio { position:absolute; left:140px; right:140px; bottom:86px; display:flex; border-radius:16px; overflow:hidden; border:1px solid rgba(255,255,255,.15); animation:tvSube .4s ease-out; }
+  @keyframes tvSube { from { transform:translateY(60px); opacity:0; } to { transform:none; opacity:1; } }
+  .tv-cambio .izq { width:190px; background:rgb(180,20,56); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; color:#fff; padding:18px 0; }
+  .tv-cambio .der { flex-grow:1; background:#111827; display:flex; flex-direction:column; justify-content:center; gap:12px; padding:20px 34px; }
+  .tv-cambio .par { display:flex; align-items:center; gap:28px; font-family:'Montserrat',sans-serif; font-weight:900; font-size:30px; }
+  .tv-cambio .ent { color:#2ed573; } .tv-cambio .sal { color:#ff6b7a; font-size:26px; }
+  #tvSalir { position:absolute; top:18px; right:18px; display:none; align-items:center; gap:12px; z-index:5; }
+  #tvSalir.visible { display:flex; }
+  #tvSalir button { width:64px; height:64px; border-radius:50%; background:rgba(17,24,39,.92); border:2px solid rgba(255,255,255,.5); color:#fff; font-size:30px; font-weight:700; cursor:pointer; }
+  #tvSalir span { background:rgba(17,24,39,.92); padding:8px 14px; border-radius:10px; font-size:16px; color:#e2e8f0; }
+  @media (prefers-reduced-motion: reduce) { .tv-gol, .tv-cambio, .tv-dot { animation:none; } .tv-confeti { display:none; } }
 </style>
 </head>
 <body>
@@ -291,6 +376,7 @@
       <div class="scoreboard-team" id="rivalName">RIVAL</div>
     </div>
     <div class="timer-row"><span class="timer-display" id="timerDisplay">⏱ --:-- </span></div>
+    <div style="text-align:center;"><button type="button" class="btn-modo-tv" onclick="abrirModoTV()">📺 Modo TV</button></div>
   </div>
 
   <div id="notifBanner" style="display:flex; align-items:center; justify-content:space-between; gap:8px; background:rgba(245,166,35,.12); border:1px solid rgba(245,166,35,.4); border-radius:10px; padding:10px 12px; margin:8px 8px 0;">
@@ -551,6 +637,14 @@
   <div class="gol-detalle" id="golDetalle"></div>
 </div>
 
+<div id="tvModo" onclick="tvToque()" aria-label="Modo TV">
+  <div id="tvStage">
+    <div id="tvBase"></div>
+    <div id="tvRotulo" aria-live="polite"></div>
+    <div id="tvSalir"><span>Salir del modo TV</span><button type="button" onclick="cerrarModoTV(event)" aria-label="Salir del modo TV">✕</button></div>
+  </div>
+</div>
+
 <div id="perfilModal" style="display:none; position:fixed; inset:0; z-index:900; background:rgba(0,0,0,.85); align-items:center; justify-content:center; padding:20px;">
   <div style="background:linear-gradient(145deg,#111827,#0f172a); border-radius:20px; padding:20px; max-width:340px; width:100%; border:1px solid rgba(255,255,255,.08); max-height:88vh; overflow-y:auto;">
     <div class="fd-tabs">
@@ -575,6 +669,7 @@
 </div>
 
 <script type="module">
+  // Visor · Modo TV: pantalla completa en horizontal (marcador, campo, estadísticas, cinta de eventos, rótulos de gol y cambio, descanso y previa).
   // v72 (app) · Tarjeta de próximo partido (Partido): fecha y hora, clasificación y enfrentamientos anteriores. Sustituye al informe IA hasta que la app la oculte o empiece el partido.
   // v71 (app) · Informe IA guardado en cada partido de la temporada: se abre desde la lista de Partidos.
   // v70 (app) · Eficacia de tiro (goles / tiros totales): fila en la ficha de cada jugador con goles y línea de equipo en Rachas. Los partidos manuales no cuentan.
@@ -1055,12 +1150,20 @@
     golesPrevios = goles; jugadoresPrevios = foto;
     if (!subio) return;
 
-    const marcan = [], asisten = [];
+    const marcan = [], asisten = [], marcanIds = [];
     Object.entries(foto).forEach(([id, p]) => {
       const prev = antes[id] || { g: 0, a: 0 };
-      if (p.g > prev.g) marcan.push(p.n);
+      if (p.g > prev.g) { marcan.push(p.n); marcanIds.push(id); }
       if (p.a > prev.a) asisten.push(p.n);
     });
+    // Modo TV: rótulo de gol a pantalla completa
+    try {
+      const idG = marcanIds[0];
+      const jg = idG != null ? (matchData.jugadores || {})[idG] : null;
+      tvEncolar({ tipo: 'gol', id: idG, nombre: marcan.length ? marcan.join(' y ') : 'HERGAR', dorsal: jg ? jg.dorsal : null,
+        asisten: asisten.join(' y '), minuto: `${Number(matchData.minuto) || 0}'`,
+        marcador: `HERGAR ${goles} – ${Number(matchData.golesRival) || 0} ${(matchData.rival || 'RIVAL').toUpperCase()}` });
+    } catch (e) { console.error('Modo TV gol:', e); }
     const detalle = [marcan.length ? `⚽ ${marcan.join(', ')}` : '', asisten.length ? `👟 ${asisten.join(', ')}` : ''].filter(Boolean).join('  ·  ');
     document.getElementById('golMarcador').textContent = `HERGAR ${goles} – ${Number(matchData.golesRival) || 0} ${(matchData.rival || 'RIVAL').toUpperCase()}`;
     const det = document.getElementById('golDetalle');
@@ -1102,7 +1205,370 @@
     pintarMomentum(matchData);
     pintarGeo(matchData);
     pintarRotacion(matchData);
+    try { tvAlActualizarPartido(matchData); } catch (e) { console.error('Modo TV:', e); }
   }
+
+  // ── MODO TV (visor) ──────────────────────────────────────────────────────────
+  // Pantalla completa en horizontal para seguir el partido en una tablet o en la tele.
+  // Solo lee lo que ya publica la app: no hace falta tocar la app del banquillo.
+  const TV_W = 1280, TV_H = 720;
+  let tvActivo = false, tvWakeLock = null, tvTick = null, tvSalirTimer = null, tvFullscreen = false;
+  let tvEventosCodigo = null, tvEventosVistos = new Set();
+  let tvCola = [], tvRotuloEnCurso = false;
+
+  function tvPrimerNombre(n) { return String(n || '').split(' ')[0]; }
+  function tvNombreDe(t) { const m = /#\S+\s+([^\s(—]+)/.exec(t); return m ? m[1] : ''; }
+
+  // Traduce una línea de la cronología de la app ("[12'] ⚽ Gol #9 Leo (Z8)") a algo legible en la tele
+  function tvParseEvento(linea) {
+    const m = /^\[(\d+)'\]\s*(.*)$/.exec(String(linea || ''));
+    if (!m) return null;
+    const min = Number(m[1]);
+    const t = m[2].replace(/\s*\(Z\d+\)/g, '').replace(/\s+[+-]\d+(?:[.,]\d+)?$/, '').trim();
+    const c = /🔄 Sale #(\S+) (\S+) ➡️ Entra #(\S+) (\S+)/.exec(t);
+    if (c) return { min, tipo: 'cambio', texto: `Cambio: entra ${c[4]}, sale ${c[2]}`, sale: { d: c[1], n: c[2] }, entra: { d: c[3], n: c[4] } };
+    if (t.startsWith('⚽ Gol de penalti')) return { min, tipo: 'gol', nombre: tvNombreDe(t), texto: `GOL de ${tvNombreDe(t)} (penalti)` };
+    if (t.startsWith('⚽ Gol')) return { min, tipo: 'gol', nombre: tvNombreDe(t), texto: `GOL de ${tvNombreDe(t)}` };
+    if (t.startsWith('🥅 Gol rival')) return { min, tipo: 'golRival', texto: /penalti/.test(t) ? 'Gol del rival (penalti)' : 'Gol del rival' };
+    if (t.startsWith('👟 Asistencia')) return { min, tipo: 'otro', texto: `Asistencia de ${tvNombreDe(t)}` };
+    if (t.startsWith('🟨')) return { min, tipo: 'tarjeta', texto: /ROJA/.test(t) ? `Doble amarilla a ${tvNombreDe(t)}` : `Amarilla a ${tvNombreDe(t)}` };
+    if (t.startsWith('🟥')) return { min, tipo: 'tarjeta', texto: `Roja a ${tvNombreDe(t)}` };
+    if (t.startsWith('🧤 Portería a cero')) return { min, tipo: 'otro', texto: 'Portería a cero' };
+    if (t.startsWith('🧤 Penalti parado #')) return { min, tipo: 'otro', texto: `Penalti parado por ${tvNombreDe(t)}` };
+    if (t.startsWith('🧤 Penalti rival parado')) return { min, tipo: 'otro', texto: 'Penalti del rival parado' };
+    if (t.startsWith('🧤 Parada difícil')) return { min, tipo: 'otro', texto: `Paradón de ${tvNombreDe(t)}` };
+    if (t.startsWith('🧤 Parada')) return { min, tipo: 'otro', texto: `Parada de ${tvNombreDe(t)}` };
+    if (t.startsWith('🎯 Disparo a puerta')) return { min, tipo: 'otro', texto: `Disparo a puerta de ${tvNombreDe(t)}` };
+    return null; // pases, faltas, córners, etc. no salen en la tele
+  }
+  function tvEventos(m) { return (m.eventos || []).map(tvParseEvento).filter(Boolean); }
+
+  function tvEstado(m) {
+    if (!m) return proximoPartidoActual() ? 'previaLiga' : 'espera';
+    if (m.matchRunning) return 'juego';
+    if (proximoPartidoActual()) return 'previaLiga';
+    if (m.matchFinished) return 'final';
+    if (m.previa === true) return 'alineacion';
+    if (m.parte === 2 && (Number(m.minuto) || 0) <= 35) return 'descanso';
+    return 'pausa';
+  }
+
+  // La app publica el minuto con cada acción; entre acción y acción el visor lo adelanta con el reloj
+  function tvMinuto(m) {
+    let min = Number(m.minuto) || 0;
+    if (m.matchRunning && m.actualizado) {
+      const extra = Math.floor((Date.now() - m.actualizado) / 60000);
+      if (extra > 0 && extra < 60) min += extra;
+    }
+    const tope = m.parte === 2 ? 70 : 35;
+    return min > tope ? `${tope}+'` : `${min}'`;
+  }
+  function tvTextoReloj(m, estado) {
+    if (estado === 'juego') return `${m.parte === 2 ? '2ª' : '1ª'} PARTE · ${tvMinuto(m)}`;
+    if (estado === 'pausa') return `PAUSA · ${tvMinuto(m)}`;
+    if (estado === 'alineacion') return 'ALINEACIÓN PREVISTA';
+    if (estado === 'descanso') return 'DESCANSO';
+    if (estado === 'final') return 'FINAL';
+    return '';
+  }
+
+  function tvEscudo(nombre, esH) {
+    return `<div class="tv-escudo ${esH ? 'h' : 'r'}">${escHtml(esH ? 'H' : inicialesEquipoViewer(nombre))}</div>`;
+  }
+  function tvStats(m) {
+    const n = (v) => Number(v) || 0;
+    return [
+      ['Disparos a puerta', n(m.tirosNuestrosPuerta), n(m.tirosRivalesPuerta)],
+      ['Disparos fuera', n(m.tirosNuestrosFuera), n(m.tirosRivalesFuera)],
+      ['Córners', n(m.cornersFavor), n(m.cornersContra)],
+      ['Faltas cometidas', n(m.faltasContra), n(m.faltasFavor)]
+    ];
+  }
+  function tvListaGoles(m) {
+    const evs = tvEventos(m).filter(e => e.tipo === 'gol' || e.tipo === 'golRival');
+    const nuestros = evs.filter(e => e.tipo === 'gol').length;
+    if (nuestros >= (Number(m.golesLocal) || 0)) return evs.map(e => ({ texto: e.tipo === 'gol' ? e.nombre + (/penalti/.test(e.texto) ? ' (p)' : '') : 'Rival', min: `${e.min}'`, rival: e.tipo === 'golRival' }));
+    // La cronología publicada solo trae los últimos eventos: si faltan goles, se tiran de los jugadores
+    const lista = Object.values(m.jugadores || {}).filter(p => p.goles > 0)
+      .map(p => ({ texto: tvPrimerNombre(p.name), min: p.goles > 1 ? `×${p.goles}` : '', rival: false }));
+    return lista.concat(evs.filter(e => e.tipo === 'golRival').map(e => ({ texto: 'Rival', min: `${e.min}'`, rival: true })));
+  }
+
+  function tvCabecera(m, estado) {
+    const previa = estado === 'alineacion';
+    const rival = (m.rival || 'RIVAL').toUpperCase();
+    const vivo = estado === 'juego';
+    return `
+      <div class="tv-top">
+        <div class="tv-estado" style="color:${vivo ? '#ff4757' : '#f5a623'};">${vivo ? '<span class="tv-dot"></span>EN DIRECTO' : (estado === 'final' ? 'FINALIZADO' : (previa ? 'PREVIA' : 'EN PAUSA'))}</div>
+        <div class="tv-marcador">
+          <div class="tv-equipo"><span class="nom">HERGAR</span>${tvEscudo('HERGAR', true)}</div>
+          <div class="tv-centro-marc"><div class="tv-goles">${previa ? '– –' : `${m.golesLocal ?? 0} – ${m.golesRival ?? 0}`}</div><div class="tv-reloj" id="tvReloj">${tvTextoReloj(m, estado)}</div></div>
+          <div class="tv-equipo">${tvEscudo(m.rival, false)}<span class="nom" style="font-size:${rival.length > 16 ? 22 : rival.length > 11 ? 26 : 30}px;">${escHtml(rival)}</span></div>
+        </div>
+        <div class="tv-info">HERGAR LIVE</div>
+      </div>`;
+  }
+
+  function tvCampo(m) {
+    const formacion = m.formacion || '4-3-3';
+    const coords = COORDENADAS_FORMACIONES[formacion] || COORDENADAS_FORMACIONES['4-3-3'];
+    const jug = m.jugadores || {};
+    // En el visor vertical el rival está arriba; en la tele Hergar ataca hacia la derecha
+    const puntos = (m.onFieldIds || []).map((id, i) => {
+      const p = jug[id]; const c = coords[i];
+      if (!p || !c) return '';
+      const left = Math.max(6, Math.min(94, 100 - c.y)), top = Math.max(8, Math.min(90, c.x));
+      return `<div class="tv-jug ${i === 0 ? 'gk' : ''}" style="left:${left}%; top:${top}%;"><div class="c">${escHtml(p.dorsal)}</div><div class="n">${escHtml(tvPrimerNombre(p.name))}</div></div>`;
+    }).join('');
+    return `
+      <div class="tv-campo">
+        <svg viewBox="0 0 830 488" preserveAspectRatio="none"><g fill="none" stroke="rgba(255,255,255,.35)" stroke-width="2">
+          <rect x="10" y="10" width="810" height="468"></rect><line x1="415" y1="10" x2="415" y2="478"></line><circle cx="415" cy="244" r="60"></circle>
+          <rect x="10" y="124" width="110" height="240"></rect><rect x="10" y="189" width="40" height="110"></rect>
+          <rect x="710" y="124" width="110" height="240"></rect><rect x="780" y="189" width="40" height="110"></rect></g></svg>
+        ${puntos}
+        <div class="tv-form">1-${escHtml(formacion)}</div>
+      </div>`;
+  }
+
+  function tvPantallaPartido(m, estado) {
+    const rival = (m.rival || 'RIVAL').toUpperCase();
+    let lado;
+    if (estado === 'alineacion') {
+      const jug = m.jugadores || {};
+      const bench = (m.benchIds || []).map(id => jug[id]).filter(Boolean);
+      lado = `<div class="tv-card" style="flex-grow:1;"><div class="tv-card-t"><span>SUPLENTES</span></div>
+        ${bench.length ? bench.map(p => `<div class="tv-fila"><span>${escHtml(tvPrimerNombre(p.name))}</span><span class="min" style="color:#f5a623;">${escHtml(p.dorsal)}</span></div>`).join('') : '<div class="tv-nota">Sin suplentes</div>'}
+      </div>`;
+    } else {
+      const goles = tvListaGoles(m);
+      lado = `
+        <div class="tv-card"><div class="tv-card-t"><span>GOLES</span></div>
+          ${goles.length ? goles.map(g => `<div class="tv-fila ${g.rival ? 'rival' : ''}"><span>${escHtml(g.texto)}</span><span class="min">${escHtml(g.min)}</span></div>`).join('') : '<div class="tv-nota" style="text-align:left;">Aún sin goles</div>'}
+        </div>
+        <div class="tv-card" style="flex-grow:1;"><div class="tv-card-t"><span>HERGAR</span><span style="max-width:170px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escHtml(rival)}</span></div>
+          ${tvStats(m).map(([l, a, b]) => `<div class="tv-stat"><span class="v">${a}</span><span class="l">${l}</span><span class="v r">${b}</span></div>`).join('')}
+        </div>`;
+    }
+    const ultimos = tvEventos(m).slice(-6).reverse();
+    const cinta = ultimos.length ? ultimos.map(e => `<span><b>${e.min}'</b> ${escHtml(e.texto)}</span>`).join('')
+      : `<span style="color:#94a3b8;">${estado === 'alineacion' ? 'El partido aún no ha empezado' : 'Sin eventos todavía'}</span>`;
+    return `${tvCabecera(m, estado)}
+      <div class="tv-medio">${tvCampo(m)}<div class="tv-lado">${lado}</div></div>
+      <div class="tv-cinta"><div class="tv-cinta-t">ÚLTIMO</div><div class="tv-cinta-e">${cinta}</div></div>`;
+  }
+
+  function tvPantallaResumen(m, estado) {
+    const rival = (m.rival || 'RIVAL').toUpperCase();
+    const evs = tvEventos(m).filter(e => estado === 'final' || e.min <= 35);
+    // Primero los goles, luego lo demás, sin pasar de 7 líneas
+    const principales = evs.filter(e => e.tipo === 'gol' || e.tipo === 'golRival' || e.tipo === 'tarjeta');
+    const resto = evs.filter(e => !principales.includes(e));
+    const lista = principales.concat(resto.slice(-Math.max(0, 7 - principales.length))).sort((a, b) => a.min - b.min).slice(-7);
+    const stats = tvStats(m);
+    return `
+      <div class="tv-centro">
+        <div class="tv-titulo" style="color:${estado === 'final' ? '#2ed573' : '#f5a623'};">${estado === 'final' ? 'FINAL DEL PARTIDO' : 'DESCANSO'}</div>
+        <div class="tv-grande"><span class="e">HERGAR</span><span class="g">${m.golesLocal ?? 0} – ${m.golesRival ?? 0}</span><span class="e" style="color:#94a3b8; font-size:${rival.length > 16 ? 30 : 42}px;">${escHtml(rival)}</span></div>
+        <div class="tv-dos">
+          <div class="tv-card" style="padding:22px 28px; gap:14px;"><div class="tv-card-t"><span>${estado === 'final' ? 'EL PARTIDO' : 'PRIMERA PARTE'}</span></div>
+            ${lista.length ? lista.map(e => `<div class="tv-ev"><b>${e.min}'</b><span>${escHtml(e.texto)}</span></div>`).join('') : '<div class="tv-nota" style="text-align:left;">Sin jugadas destacadas</div>'}
+          </div>
+          <div class="tv-card" style="padding:22px 28px; gap:16px;"><div class="tv-card-t"><span>HERGAR</span><span>${escHtml(rival)}</span></div>
+            ${stats.map(([l, a, b]) => { const t = a + b; const pct = t ? Math.round(a / t * 100) : 50; return `
+              <div style="display:flex; flex-direction:column; gap:6px;">
+                <div style="display:flex; justify-content:space-between; font-size:20px;"><b class="tv-mont">${a}</b><span style="color:#cbd5e1;">${l}</span><b class="tv-mont" style="color:#94a3b8;">${b}</b></div>
+                <div class="tv-barra"><div style="width:${pct}%;"></div></div>
+              </div>`; }).join('')}
+          </div>
+        </div>
+        ${estado === 'descanso' ? '<div class="tv-nota">La segunda parte sale sola en cuanto se reanude el crono</div>' : ''}
+      </div>`;
+  }
+
+  function tvPantallaPrevia() {
+    const d = proximoPartidoActual();
+    if (!d) return tvPantallaEspera();
+    const { liga, p, hergar, rival, esCasa } = d;
+    const filas = ligaClasifViewer(liga);
+    const fila = (eq) => filas.find(f => f.id === eq.id) || { pos: '-', pts: 0 };
+    const previos = liga.partidos.filter(x => x.id !== p.id && x.golesLocal != null && x.golesVisitante != null &&
+      ((x.local === hergar.id && x.visitante === rival.id) || (x.local === rival.id && x.visitante === hergar.id)));
+    const ult = previos.sort((a, b) => a.vuelta - b.vuelta || a.jornada - b.jornada).pop();
+    const bloque = (eq, esH) => `
+      <div style="display:flex; flex-direction:column; align-items:center; gap:12px; width:380px;">
+        <div class="tv-escudo ${esH ? 'h' : 'r'}" style="width:120px; height:120px; font-size:42px;">${escHtml(esH ? 'H' : inicialesEquipoViewer(eq.nombre))}</div>
+        <div class="tv-mont" style="font-weight:900; font-size:34px; text-align:center; line-height:1.15;">${escHtml(eq.nombre)}</div>
+        <div style="font-size:20px; color:#94a3b8;">${fila(eq).pos}º · ${fila(eq).pts} pts</div>
+      </div>`;
+    const local = esCasa ? hergar : rival, visit = esCasa ? rival : hergar;
+    return `
+      <div class="tv-centro">
+        <div class="tv-titulo" style="color:#2ed573;">PRÓXIMO PARTIDO</div>
+        <div style="display:flex; align-items:center; gap:40px;">${bloque(local, esCasa)}<div class="tv-mont" style="font-weight:900; font-size:46px; color:#64748b;">VS</div>${bloque(visit, !esCasa)}</div>
+        <div style="display:flex; gap:20px;">
+          <div class="tv-chip"><div class="k">CUÁNDO</div><div class="val">${escHtml(fechaHoraProximoViewer(p))}</div></div>
+          <div class="tv-chip"><div class="k">JORNADA</div><div class="val">${numJornadaGlobalViewer(liga, p)} · ${esCasa ? 'En casa' : 'Fuera'}</div></div>
+          ${ult ? `<div class="tv-chip"><div class="k">ANTERIOR</div><div class="val">${escHtml(nombreEquipoLigaViewer(liga, ult.local))} ${ult.golesLocal} – ${ult.golesVisitante} ${escHtml(nombreEquipoLigaViewer(liga, ult.visitante))}</div></div>` : ''}
+        </div>
+        <div class="tv-nota">Esta pantalla pasa sola al directo cuando empiece el partido</div>
+      </div>`;
+  }
+
+  function tvPantallaEspera() {
+    return `<div class="tv-centro">
+      <div class="tv-escudo h" style="width:130px; height:130px; font-size:48px;">H</div>
+      <div class="tv-mont" style="font-weight:900; font-size:52px;">HERGAR LIVE</div>
+      <div class="tv-nota" style="font-size:22px;">Esperando al próximo partido…</div></div>`;
+  }
+
+  function tvRender() {
+    if (!tvActivo) return;
+    const base = document.getElementById('tvBase');
+    const m = ultimoMatchData;
+    const estado = tvEstado(m);
+    let html;
+    if (estado === 'espera') html = tvPantallaEspera();
+    else if (estado === 'previaLiga') html = tvPantallaPrevia();
+    else if (estado === 'descanso' || estado === 'final') html = tvPantallaResumen(m, estado);
+    else html = tvPantallaPartido(m, estado);
+    base.innerHTML = html;
+  }
+  function tvActualizarReloj() {
+    const el = document.getElementById('tvReloj');
+    if (el && ultimoMatchData) el.textContent = tvTextoReloj(ultimoMatchData, tvEstado(ultimoMatchData));
+  }
+
+  // ── Rótulos (gol y cambio): uno detrás de otro ──
+  function tvEncolar(r) {
+    if (!tvActivo) return;
+    tvCola.push(r);
+    if (!tvRotuloEnCurso) tvSiguienteRotulo();
+  }
+  function tvSiguienteRotulo() {
+    const cont = document.getElementById('tvRotulo');
+    const r = tvCola.shift();
+    if (!r || !tvActivo) { tvRotuloEnCurso = false; cont.classList.remove('visible'); cont.innerHTML = ''; return; }
+    tvRotuloEnCurso = true;
+    let dur;
+    if (r.tipo === 'gol') {
+      const f = r.id != null ? fotosJugadores[r.id] : null;
+      const foto = f && f.foto ? `<img class="foto" src="${f.foto}" alt="">` : `<div class="foto">${escHtml(r.dorsal ?? '')}</div>`;
+      let confeti = '';
+      for (let i = 0; i < 40; i++) {
+        const left = Math.round(Math.random() * 1280), delay = (Math.random() * 1.2).toFixed(2), durc = (2.4 + Math.random() * 2).toFixed(2);
+        const col = i % 3 === 0 ? '#f5a623' : '#ffffff';
+        confeti += `<span class="tv-confeti" style="left:${left}px; background:${col}; animation-duration:${durc}s; animation-delay:${delay}s;"></span>`;
+      }
+      cont.innerHTML = `<div class="tv-gol">${confeti}
+        <div class="grito">¡GOL!</div>
+        <div class="quien">${foto}<div><div class="nombre">${escHtml(r.nombre.toUpperCase())}${r.dorsal != null ? ` <span style="opacity:.75;">· ${escHtml(r.dorsal)}</span>` : ''}</div>
+          <div class="det">Minuto ${escHtml(r.minuto)}${r.asisten ? ` · Asistencia de ${escHtml(r.asisten)}` : ''}</div></div></div>
+        <div class="marc">${escHtml(r.marcador)}</div></div>`;
+      dur = 6500;
+    } else {
+      cont.innerHTML = `<div class="tv-cambio-velo"></div><div class="tv-cambio">
+        <div class="izq"><div class="tv-mont" style="font-weight:900; font-size:24px; letter-spacing:3px;">${r.pares.length > 1 ? 'CAMBIOS' : 'CAMBIO'}</div><div class="tv-mont" style="font-weight:800; font-size:32px;">${r.min}'</div></div>
+        <div class="der">${r.pares.slice(0, 3).map(c => `<div class="par"><span class="ent">▲ ${escHtml(c.entra.n)} · ${escHtml(c.entra.d)}</span><span class="sal">▼ ${escHtml(c.sale.n)} · ${escHtml(c.sale.d)}</span></div>`).join('')}</div>
+      </div>`;
+      dur = 5000;
+    }
+    cont.classList.add('visible');
+    setTimeout(tvSiguienteRotulo, dur);
+  }
+
+  // Detecta cambios nuevos en la cronología (al cargar un partido se toma lo que haya como ya visto)
+  function tvRevisarEventos(m) {
+    const lineas = m.eventos || [];
+    if (tvEventosCodigo !== codigoPartidoActual) {
+      tvEventosCodigo = codigoPartidoActual; tvEventosVistos = new Set(lineas);
+      return;
+    }
+    const nuevos = lineas.filter(l => !tvEventosVistos.has(l));
+    lineas.forEach(l => tvEventosVistos.add(l));
+    const cambios = nuevos.map(tvParseEvento).filter(e => e && e.tipo === 'cambio');
+    if (cambios.length && !m.matchFinished) tvEncolar({ tipo: 'cambio', min: cambios[cambios.length - 1].min, pares: cambios });
+  }
+
+  function tvAlActualizarPartido(m) {
+    try { tvRevisarEventos(m); } catch (e) { console.error('Modo TV eventos:', e); }
+    if (tvActivo) tvRender();
+  }
+
+  function tvAjustarEscala() {
+    const stage = document.getElementById('tvStage');
+    if (!stage) return;
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const vertical = vh > vw; // si el móvil sigue en vertical, la pantalla se gira sola
+    const W = vertical ? vh : vw, H = vertical ? vw : vh;
+    const s = Math.min(W / TV_W, H / TV_H) * 0.98;
+    stage.style.transform = `translate(-50%, -50%) rotate(${vertical ? 90 : 0}deg) scale(${s})`;
+  }
+
+  async function tvPedirWakeLock() {
+    try { if ('wakeLock' in navigator && !tvWakeLock) { tvWakeLock = await navigator.wakeLock.request('screen'); tvWakeLock.addEventListener('release', () => { tvWakeLock = null; }); } } catch (e) {}
+  }
+  function tvMostrarSalir(ms) {
+    const s = document.getElementById('tvSalir');
+    s.classList.add('visible');
+    clearTimeout(tvSalirTimer);
+    tvSalirTimer = setTimeout(() => s.classList.remove('visible'), ms || 4000);
+  }
+
+  window.abrirModoTV = async function () {
+    if (tvActivo) return;
+    tvActivo = true;
+    document.getElementById('tvModo').classList.add('activo');
+    document.body.style.overflow = 'hidden';
+    tvAjustarEscala();
+    tvRender();
+    tvMostrarSalir(4500);
+    tvTick = setInterval(tvActualizarReloj, 10000);
+    const el = document.documentElement;
+    try {
+      if (el.requestFullscreen) await el.requestFullscreen({ navigationUI: 'hide' });
+      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    } catch (e) {}
+    try { if (screen.orientation && screen.orientation.lock) await screen.orientation.lock('landscape'); } catch (e) {}
+    tvPedirWakeLock();
+    setTimeout(tvAjustarEscala, 300);
+  };
+
+  window.cerrarModoTV = function (ev) {
+    if (ev) ev.stopPropagation();
+    if (!tvActivo) return;
+    tvActivo = false; tvFullscreen = false;
+    tvCola = []; tvRotuloEnCurso = false;
+    clearInterval(tvTick); tvTick = null;
+    const cont = document.getElementById('tvRotulo'); cont.classList.remove('visible'); cont.innerHTML = '';
+    document.getElementById('tvModo').classList.remove('activo');
+    document.body.style.overflow = '';
+    try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch (e) {}
+    try {
+      if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen();
+      else if (document.webkitFullscreenElement && document.webkitExitFullscreen) document.webkitExitFullscreen();
+    } catch (e) {}
+    try { if (tvWakeLock) { tvWakeLock.release(); tvWakeLock = null; } } catch (e) {}
+  };
+
+  window.tvToque = function () { if (tvActivo) tvMostrarSalir(4000); };
+
+  function tvCambioFullscreen() {
+    const dentro = !!(document.fullscreenElement || document.webkitFullscreenElement);
+    if (dentro) tvFullscreen = true;
+    else if (tvActivo && tvFullscreen) window.cerrarModoTV(); // salir de pantalla completa (botón atrás) cierra el modo TV
+    setTimeout(tvAjustarEscala, 150);
+  }
+  document.addEventListener('fullscreenchange', tvCambioFullscreen);
+  document.addEventListener('webkitfullscreenchange', tvCambioFullscreen);
+  window.addEventListener('resize', () => { if (tvActivo) tvAjustarEscala(); });
+  window.addEventListener('orientationchange', () => { if (tvActivo) setTimeout(tvAjustarEscala, 200); });
+  document.addEventListener('visibilitychange', () => {
+    if (!tvActivo || document.visibilityState !== 'visible') return;
+    tvPedirWakeLock(); tvRender();
+  });
+  document.addEventListener('keydown', (e) => { if (tvActivo && e.key === 'Escape') window.cerrarModoTV(); });
 
   // ── v72 · TARJETA DE PRÓXIMO PARTIDO ──────────────────────────────────────────
   // Todo sale de la Liga que publica la app: liga.proximoPublicado = { id } marca qué partido se enseña.
@@ -1763,6 +2229,7 @@
     fotosJugadores = snap.val() || {};
     if (ultimoPerfilAbiertoId != null) reabrirPerfilActual();
     if (typeof pintarProximoPartido === 'function') pintarProximoPartido();
+    if (tvActivo) tvRender();
   }, (err) => { console.error('Firebase fotos read error:', err); });
 
   // ── ¿Cómo se calcula el impacto? — versión para familias (sin penalizaciones por fallos individuales) ──
@@ -1842,6 +2309,7 @@
     if (!liga || !liga.equipos) return;
     ultimaLiga = liga;
     pintarProximoPartido(); // v72
+    if (tvActivo) tvRender();
     if (!ligaViewerJornadaFijada) {
       const actual = jornadaActualLiga(liga);
       if (actual) {

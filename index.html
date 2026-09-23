@@ -272,6 +272,34 @@
   #golBanner .gol-detalle { font-size:12px; font-weight:700; margin-top:3px; }
   @keyframes golEntra { from { transform:translateY(-130%); opacity:0; } to { transform:none; opacity:1; } }
   @media (prefers-reduced-motion: reduce) { #golBanner.visible { animation:none; } }
+  /* ── Récords ── */
+  .rec-cab { display:flex; align-items:center; gap:12px; background:#111827; border:1px solid rgba(245,166,35,.35); border-radius:14px; padding:12px 14px; margin-bottom:12px; }
+  .rec-cab img { width:48px; height:48px; border-radius:50%; background:#fff; object-fit:cover; }
+  .rec-cab-t { font-family:'Montserrat',sans-serif; font-weight:900; font-size:16px; color:#e2e8f0; }
+  .rec-cab-s { font-size:11px; color:#94a3b8; margin-top:2px; }
+  .rec-sec { font-family:'Montserrat',sans-serif; font-weight:800; font-size:11px; letter-spacing:2px; color:#94a3b8; margin:12px 0 8px; }
+  .rec-grid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; }
+  .rec-card { background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.06); border-radius:12px; padding:10px; display:flex; flex-direction:column; gap:4px; }
+  .rec-top { display:flex; align-items:center; justify-content:space-between; }
+  .rec-ico { font-size:18px; }
+  .rec-vivo { font-size:9px; font-weight:800; color:#2ed573; background:rgba(46,213,115,.12); border-radius:6px; padding:2px 6px; letter-spacing:.3px; }
+  .rec-t { font-size:11px; color:#cbd5e1; font-weight:600; line-height:1.3; }
+  .rec-v { font-family:'Montserrat',sans-serif; font-weight:900; font-size:20px; color:#fff; line-height:1.15; }
+  .rec-d { font-size:10.5px; color:#94a3b8; line-height:1.3; }
+  .rec-lista { display:flex; flex-direction:column; gap:8px; }
+  .rec-fila { display:flex; align-items:center; gap:10px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.06); border-radius:12px; padding:10px 12px; font-size:12px; color:#e2e8f0; }
+  .rec-dorsal { width:40px; height:40px; flex-shrink:0; border-radius:50%; background:#1a2332; border:2px solid #f5a623; display:flex; align-items:center; justify-content:center; font-family:'Montserrat',sans-serif; font-weight:900; font-size:14px; color:#f5a623; }
+  #recordBanner { display:none; position:fixed; left:12px; right:12px; top:calc(10px + env(safe-area-inset-top,0px)); max-width:456px; margin:0 auto; z-index:991; text-align:center;
+    padding:14px 16px; border-radius:16px; background:#f5a623; color:#0a0e14; box-shadow:0 12px 30px rgba(0,0,0,.5); }
+  #recordBanner.visible { display:block; animation:golEntra .35s ease-out; }
+  #recordBanner .t { font-family:'Montserrat',sans-serif; font-weight:900; font-size:18px; }
+  #recordBanner .x { font-size:13.5px; font-weight:700; margin-top:3px; }
+  #recordBanner .d { font-size:11.5px; font-weight:600; margin-top:3px; }
+  /* Rótulo de récord en el Modo TV */
+  .tv-record { position:absolute; inset:0; background:#0a0e14; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:24px; animation:tvGolEntra .45s ease-out; }
+  .tv-record::before, .tv-record::after { content:''; position:absolute; left:0; right:0; height:12px; background:#f5a623; }
+  .tv-record::before { top:0; } .tv-record::after { bottom:0; }
+  @media (prefers-reduced-motion: reduce) { #recordBanner.visible, .tv-record { animation:none; } }
   /* ── Modo TV (visor) ─────────────────────────────────────────── */
   .btn-modo-tv { display:inline-flex; align-items:center; gap:6px; margin-top:10px; background:rgba(46,213,115,.1); border:1px solid rgba(46,213,115,.55);
     color:#2ed573; font-family:'Montserrat',sans-serif; font-weight:800; font-size:12px; letter-spacing:.5px; padding:8px 16px; border-radius:20px; cursor:pointer; }
@@ -459,6 +487,7 @@
         <div class="subtab-btn" onclick="showSub(event,'subPartidos')">📅 Partidos</div>
         <div class="subtab-btn" onclick="showSub(event,'subSinergias')">🔗 Sinergias</div>
         <div class="subtab-btn" onclick="showSub(event,'subRachas')">🔥 Rachas</div>
+        <div class="subtab-btn" onclick="showSub(event,'subRecords')">🏆 Récords</div>
         <div class="subtab-btn" onclick="showSub(event,'subComparativa')">📊 Comp.</div>
         <div class="subtab-btn" style="display:none;" onclick="showSub(event,'subHeatmap')">🗺️ Heatmap</div>
         <div class="subtab-btn" onclick="showSub(event,'subOnceIdeal')">🏅 Once</div>
@@ -504,6 +533,12 @@
         <div class="card">
           <div class="card-title">🔥 Rachas de la temporada</div>
           <div id="rachasLista"><div class="loader">Cargando...</div></div>
+        </div>
+      </div>
+      <div id="subRecords" class="sub-panel">
+        <div class="card">
+          <div class="card-title">🏆 Récords de la temporada</div>
+          <div id="recordsLista"><div class="loader">Cargando...</div></div>
         </div>
       </div>
       <div id="subComparativa" class="sub-panel">
@@ -636,6 +671,12 @@
   <div class="gol-titulo">⚽ ¡GOOOL DE HERGAR!</div>
   <div class="gol-marcador" id="golMarcador"></div>
   <div class="gol-detalle" id="golDetalle"></div>
+</div>
+
+<div id="recordBanner" role="status" aria-live="polite" onclick="ocultarRecordBanner()">
+  <div class="t" id="recordTitulo">🏆 ¡NUEVO RÉCORD!</div>
+  <div class="x" id="recordTexto"></div>
+  <div class="d" id="recordDetalle"></div>
 </div>
 
 <div id="tvModo" onclick="tvToque()" aria-label="Modo TV">
@@ -1165,6 +1206,7 @@
         asisten: asisten.join(' y '), minuto: `${Number(matchData.minuto) || 0}'`,
         marcador: `HERGAR ${goles} – ${Number(matchData.golesRival) || 0} ${(matchData.rival || 'RIVAL').toUpperCase()}` });
     } catch (e) { console.error('Modo TV gol:', e); }
+    try { avisarRecordsSiProcede(matchData, goles, foto, marcanIds); } catch (e) { console.error('Récords:', e); }
     const detalle = [marcan.length ? `⚽ ${marcan.join(', ')}` : '', asisten.length ? `👟 ${asisten.join(', ')}` : ''].filter(Boolean).join('  ·  ');
     document.getElementById('golMarcador').textContent = `HERGAR ${goles} – ${Number(matchData.golesRival) || 0} ${(matchData.rival || 'RIVAL').toUpperCase()}`;
     const det = document.getElementById('golDetalle');
@@ -1208,6 +1250,167 @@
     pintarRotacion(matchData);
     try { tvAlActualizarPartido(matchData); } catch (e) { console.error('Modo TV:', e); }
   }
+
+  // ── RÉCORDS DE LA TEMPORADA (visor) ─────────────────────────────────────────
+  // Todo sale de temporada.partidos (y de los goles con minuto que guarda la app desde la v84).
+  function fechaCortaRec(f) { return String(f || '').replace(/\/\d{4}$/, ''); }
+  function goleadoresDePartido(p) {
+    const out = []; const re = /([^,(]+?)\s*\((\d+)\)/g; let m;
+    while ((m = re.exec(p.goleadores || ''))) out.push({ nombre: m[1].trim(), n: parseInt(m[2]) });
+    return out;
+  }
+  function recordsTemporada(t) {
+    const ps = (t && t.partidos) || [];
+    const R = { n: ps.length, equipo: [], jugadores: [], hattricks: [], raw: {} };
+    if (!ps.length) return R;
+    const vs = (p) => `vs ${escHtml(p.rival || 'rival')}${p.fecha ? ' · ' + fechaCortaRec(p.fecha) : ''}`;
+    const jugs = Object.values((t && t.jugadores) || {});
+    const dorsalDe = (nombre) => { const j = jugs.find(x => (x.name || '').split(' ')[0] === nombre); return j ? j.dorsal : null; };
+    function racha(cond) {
+      let max = 0, cur = 0, ini = -1, mIni = -1, mFin = -1;
+      ps.forEach((p, i) => { if (cond(p)) { if (cur === 0) ini = i; cur++; if (cur > max) { max = cur; mIni = ini; mFin = i; } } else cur = 0; });
+      return { max, cur, mIni, mFin, vivo: max > 0 && cur === max };
+    }
+    const detRacha = (r) => r.max === 1 ? vs(ps[r.mIni]) : (r.vivo ? `Desde el ${fechaCortaRec(ps[r.mIni].fecha)}` : `Del ${fechaCortaRec(ps[r.mIni].fecha)} al ${fechaCortaRec(ps[r.mFin].fecha)}`);
+    const plural = (n, s, pl) => `${n} ${n === 1 ? s : pl}`;
+
+    // Mayor victoria y más goles
+    let mv = null, mg = null;
+    ps.forEach(p => {
+      const d = (p.golesLocal || 0) - (p.golesRival || 0);
+      if (d > 0 && (!mv || d > mv.d || (d === mv.d && p.golesLocal > mv.p.golesLocal))) mv = { d, p };
+      if ((p.golesLocal || 0) > 0 && (!mg || p.golesLocal > mg.p.golesLocal)) mg = { p };
+    });
+    R.equipo.push(mv ? { ico: '🏆', t: 'Mayor victoria', v: `${mv.p.golesLocal} – ${mv.p.golesRival}`, det: vs(mv.p) } : { ico: '🏆', t: 'Mayor victoria', v: '—', det: 'Aún sin victorias' });
+    if (mv) R.raw.mayorVictoria = { valor: mv.d, det: `${mv.p.golesLocal}–${mv.p.golesRival} ${vs(mv.p)}` };
+    R.equipo.push(mg ? { ico: '⚽', t: 'Más goles en un partido', v: plural(mg.p.golesLocal, 'gol', 'goles'), det: vs(mg.p) } : { ico: '⚽', t: 'Más goles en un partido', v: '—', det: 'Aún sin goles' });
+    if (mg) R.raw.masGoles = { valor: mg.p.golesLocal, det: vs(mg.p) };
+
+    // Rachas del equipo
+    const rv = racha(p => p.resultado === 'V'), rs = racha(p => p.resultado !== 'D'), rm = racha(p => (p.golesLocal || 0) > 0), rc = racha(p => (p.golesRival || 0) === 0);
+    R.equipo.push({ ico: '🔥', t: 'Victorias seguidas', v: plural(rv.max, 'partido', 'partidos'), det: rv.max ? detRacha(rv) : 'Aún sin victorias', vivo: rv.vivo });
+    R.equipo.push({ ico: '🛡️', t: 'Partidos sin perder', v: plural(rs.max, 'partido', 'partidos'), det: rs.max ? detRacha(rs) : '—', vivo: rs.vivo });
+    R.equipo.push({ ico: '🎯', t: 'Partidos seguidos marcando', v: plural(rm.max, 'partido', 'partidos'), det: rm.max ? detRacha(rm) : '—', vivo: rm.vivo });
+    const ceros = ps.filter(p => (p.golesRival || 0) === 0).length;
+    R.equipo.push({ ico: '🧤', t: 'Porterías a cero', v: `${ceros} en total`, det: rc.max ? `Racha máxima: ${plural(rc.max, 'seguida', 'seguidas')}` : 'Aún ninguna', vivo: rc.vivo && rc.max > 1 });
+
+    // Disparos a puerta (solo partidos en directo)
+    let md = null;
+    ps.forEach(p => { if (!p.manual && p.tirosNuestrosPuerta != null && (!md || p.tirosNuestrosPuerta > md.p.tirosNuestrosPuerta)) md = { p }; });
+    if (md && md.p.tirosNuestrosPuerta > 0) R.equipo.push({ ico: '💥', t: 'Más disparos a puerta', v: `${md.p.tirosNuestrosPuerta}`, det: vs(md.p) });
+
+    // Gol más rápido (necesita goles con minuto)
+    let gr = null;
+    ps.forEach(p => (Array.isArray(p.goles) ? p.goles : []).forEach(g => {
+      if (g.equipo === 'hergar' && g.min != null && (!gr || g.min < gr.g.min)) gr = { g, p };
+    }));
+    R.equipo.push(gr ? { ico: '⚡', t: 'Gol más rápido', v: `Minuto ${gr.g.min}`, det: `${escHtml(gr.g.nombre || '¿?')} ${vs(gr.p)}` } : { ico: '⚡', t: 'Gol más rápido', v: '—', det: 'Falta el minuto de los goles' });
+    if (gr) R.raw.golRapido = { valor: gr.g.min, det: `${gr.g.nombre || ''} ${vs(gr.p)}` };
+
+    // Jugadores: goles en un partido y hat-tricks
+    let jg = null;
+    ps.forEach(p => goleadoresDePartido(p).forEach(x => {
+      if (!jg || x.n > jg.x.n) jg = { x, p };
+      if (x.n >= 3) R.hattricks.push({ nombre: x.nombre, n: x.n, det: vs(p) });
+    }));
+    if (jg) {
+      R.jugadores.push({ ico: '⚽', dorsal: dorsalDe(jg.x.nombre), t: 'Más goles en un partido', v: `${escHtml(jg.x.nombre)} · ${plural(jg.x.n, 'gol', 'goles')}`, det: vs(jg.p) });
+      R.raw.jugGoles = { valor: jg.x.n, det: `${jg.x.nombre} ${vs(jg.p)}` };
+    }
+    // Partidos seguidos marcando (por jugador)
+    const nombres = [...new Set(ps.flatMap(p => goleadoresDePartido(p).map(x => x.nombre)))];
+    let jr = null;
+    nombres.forEach(n => {
+      const r = racha(p => goleadoresDePartido(p).some(x => x.nombre === n));
+      if (r.max >= 2 && (!jr || r.max > jr.r.max)) jr = { n, r };
+    });
+    if (jr) R.jugadores.push({ ico: '🔥', dorsal: dorsalDe(jr.n), t: 'Partidos seguidos marcando', v: `${escHtml(jr.n)} · ${jr.r.max} partidos`, det: detRacha(jr.r), vivo: jr.r.vivo });
+    // Asistencias en un partido (necesita goles con minuto)
+    let ja = null;
+    ps.forEach(p => {
+      const c = {};
+      (Array.isArray(p.goles) ? p.goles : []).forEach(g => { if (g.equipo === 'hergar' && g.asistente) c[g.asistente] = (c[g.asistente] || 0) + 1; });
+      Object.entries(c).forEach(([n, k]) => { if (!ja || k > ja.k) ja = { n, k, p }; });
+    });
+    R.jugadores.push(ja ? { ico: '👟', dorsal: dorsalDe(ja.n), t: 'Más asistencias en un partido', v: `${escHtml(ja.n)} · ${plural(ja.k, 'asistencia', 'asistencias')}`, det: vs(ja.p) }
+      : { ico: '👟', dorsal: null, t: 'Más asistencias en un partido', v: '—', det: 'Se registran desde que la app guarda el detalle de los goles' });
+    // Titular seguido
+    let jt = null;
+    jugs.forEach(j => { const mx = j.rachaMaxTitular || 0; if (mx >= 2 && (!jt || mx > (jt.rachaMaxTitular || 0))) jt = j; });
+    if (jt) R.jugadores.push({ ico: '🧱', dorsal: jt.dorsal, t: 'Más partidos seguidos de titular', v: `${escHtml((jt.name || '').split(' ')[0])} · ${jt.rachaMaxTitular} partidos`, det: 'Esta temporada', vivo: (jt.rachaActualTitular || 0) === jt.rachaMaxTitular });
+    return R;
+  }
+
+  function pintarRecords(t) {
+    const cont = document.getElementById('recordsLista');
+    if (!cont) return;
+    const R = recordsTemporada(t);
+    if (!R.n) { cont.innerHTML = '<div class="loader">Aún no hay partidos en la temporada</div>'; return; }
+    const vivo = '<span class="rec-vivo">EN CURSO</span>';
+    cont.innerHTML = `
+      <div class="rec-cab"><img src="${ESCUDO_HERGAR_SRC}" alt="C.D. Hergar"><div><div class="rec-cab-t">Récords del Hergar</div><div class="rec-cab-s">${R.n} ${R.n === 1 ? 'partido' : 'partidos'} · se actualizan solos</div></div></div>
+      <div class="rec-sec">EQUIPO</div>
+      <div class="rec-grid">${R.equipo.map(r => `
+        <div class="rec-card"><div class="rec-top"><span class="rec-ico">${r.ico}</span>${r.vivo ? vivo : ''}</div>
+          <div class="rec-t">${r.t}</div><div class="rec-v">${r.v}</div><div class="rec-d">${r.det}</div></div>`).join('')}
+      </div>
+      ${R.jugadores.length ? `<div class="rec-sec">JUGADORES</div>
+      <div class="rec-lista">${R.jugadores.map(r => `
+        <div class="rec-fila"><div class="rec-dorsal">${r.dorsal != null ? escHtml(r.dorsal) : r.ico}</div>
+          <div style="flex:1; min-width:0;"><div class="rec-t">${r.t} ${r.vivo ? vivo : ''}</div><div class="rec-v" style="font-size:16px;">${r.v}</div><div class="rec-d">${r.det}</div></div></div>`).join('')}
+      </div>` : ''}
+      ${R.hattricks.length ? `<div class="rec-sec">HAT-TRICKS</div>
+      <div class="rec-lista">${R.hattricks.map(h => `<div class="rec-fila" style="justify-content:space-between;"><span style="font-weight:700;">⭐ ${escHtml(h.nombre)} · ${h.n} goles</span><span class="rec-d">${h.det}</span></div>`).join('')}</div>` : ''}
+      <div class="sub-caption" style="margin-top:10px; text-align:center;">Los partidos cargados a mano cuentan para resultados y rachas, no para disparos.</div>`;
+  }
+
+  // Goles con minuto en la lista de Partidos
+  function golesPartidoHtml(p) {
+    const goles = Array.isArray(p.goles) ? p.goles : [];
+    if (!goles.some(g => g.min != null)) return '';
+    return `<div style="display:flex; flex-direction:column; gap:3px; margin-top:4px;">${goles.map(g => {
+      const riv = g.equipo === 'rival';
+      const min = g.min != null ? `${g.min}'` : '–';
+      const txt = riv ? `Gol del rival${g.penalti ? ' (penalti)' : ''}` : `${escHtml(g.nombre || '¿?')}${g.penalti ? ' (penalti)' : ''}${g.asistente ? ` · asistencia de ${escHtml(g.asistente)}` : ''}`;
+      return `<div style="display:flex; gap:8px; font-size:11px; color:${riv ? '#94a3b8' : '#e2e8f0'};"><b style="width:26px; flex-shrink:0; color:${riv ? '#94a3b8' : '#2ed573'};">${min}</b><span>${riv ? '🥅' : '⚽'} ${txt}</span></div>`;
+    }).join('')}</div>`;
+  }
+
+  // ── Aviso de récord batido en directo (visor + Modo TV) ──
+  let recordsCodigo = null, recordsAvisados = new Set(), recordCola = [], recordMostrando = false, recordTimer = null;
+  function avisarRecordsSiProcede(m, goles, foto, marcanIds) {
+    if (recordsCodigo !== codigoPartidoActual) { recordsCodigo = codigoPartidoActual; recordsAvisados = new Set(); }
+    const R = recordsTemporada(ultimaTemporada);
+    if (!R.n) return;
+    const raw = R.raw, golesR = Number(m.golesRival) || 0, min = Number(m.minuto) || 0;
+    const marcador = `HERGAR ${goles} – ${golesR} ${(m.rival || 'RIVAL').toUpperCase()}`;
+    const avisos = [];
+    const nuevo = (clave, a) => { if (recordsAvisados.has(clave)) return; recordsAvisados.add(clave); avisos.push(Object.assign({ marcador, minuto: `${min}'` }, a)); };
+    if (raw.masGoles && goles > raw.masGoles.valor) nuevo('goles', { titulo: 'Partido con más goles de la temporada', ahora: goles, antes: raw.masGoles.valor, antesDet: raw.masGoles.det });
+    if (raw.mayorVictoria && goles - golesR > raw.mayorVictoria.valor) nuevo('dif', { titulo: 'Mayor diferencia de goles de la temporada', ahora: `+${goles - golesR}`, antes: `+${raw.mayorVictoria.valor}`, antesDet: raw.mayorVictoria.det });
+    if (goles === 1 && raw.golRapido && min < raw.golRapido.valor) nuevo('rapido', { titulo: 'Gol más rápido de la temporada', ahora: `${min}'`, antes: `${raw.golRapido.valor}'`, antesDet: raw.golRapido.det });
+    marcanIds.forEach(id => {
+      const f = foto[id]; if (!f) return;
+      if (f.g === 3) nuevo('hat' + id, { hattrick: true, titulo: `¡Hat-trick de ${f.n}!`, ahora: 3, antes: null });
+      if (raw.jugGoles && f.g > raw.jugGoles.valor) nuevo('jug' + id, { titulo: `${f.n}: más goles de un jugador en un partido`, ahora: f.g, antes: raw.jugGoles.valor, antesDet: raw.jugGoles.det });
+    });
+    avisos.forEach(a => { recordCola.push(a); tvEncolar(Object.assign({ tipo: 'record' }, a)); });
+    if (avisos.length && !recordMostrando) setTimeout(mostrarSiguienteRecord, 7300); // después del aviso de gol
+  }
+  function mostrarSiguienteRecord() {
+    const b = document.getElementById('recordBanner');
+    const a = recordCola.shift();
+    if (!a) { recordMostrando = false; b.classList.remove('visible'); return; }
+    recordMostrando = true;
+    document.getElementById('recordTitulo').textContent = a.hattrick ? '⭐ ¡HAT-TRICK!' : '🏆 ¡NUEVO RÉCORD!';
+    document.getElementById('recordTexto').textContent = a.hattrick ? a.titulo.replace(/^¡Hat-trick de (.+)!$/, '$1 marca tres goles') : a.titulo;
+    const det = a.antes != null ? `Ahora ${a.ahora} · antes ${a.antes}${a.antesDet ? ' (' + a.antesDet.replace(/<[^>]+>/g, '') + ')' : ''}` : a.marcador;
+    document.getElementById('recordDetalle').textContent = det;
+    b.classList.remove('visible'); void b.offsetWidth; b.classList.add('visible');
+    clearTimeout(recordTimer);
+    recordTimer = setTimeout(mostrarSiguienteRecord, 6500);
+  }
+  window.ocultarRecordBanner = function () { clearTimeout(recordTimer); mostrarSiguienteRecord(); };
 
   // ── MODO TV (visor) ──────────────────────────────────────────────────────────
   // Pantalla completa en horizontal para seguir el partido en una tablet o en la tele.
@@ -1470,6 +1673,21 @@
         <div class="quien">${foto}<div><div class="nombre">${escHtml(r.nombre.toUpperCase())}${r.dorsal != null ? ` <span style="opacity:.75;">· ${escHtml(r.dorsal)}</span>` : ''}</div>
           <div class="det">Minuto ${escHtml(r.minuto)}${r.asisten ? ` · Asistencia de ${escHtml(r.asisten)}` : ''}</div></div></div>
         <div class="marc" style="display:flex; align-items:center; gap:16px;"><span class="tv-escudo h" style="width:48px; height:48px;"><img src="${ESCUDO_HERGAR_SRC}" alt=""></span>${escHtml(r.marcador)}</div></div>`;
+      dur = 6500;
+    } else if (r.tipo === 'record') {
+      const copa = '<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#f5a623" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4zM17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"></path></svg>';
+      cont.innerHTML = `<div class="tv-record">
+        <div style="display:flex; align-items:center; gap:18px;">${copa}<div class="tv-mont" style="font-weight:900; font-size:84px; letter-spacing:6px; color:#f5a623;">${r.hattrick ? '¡HAT-TRICK!' : 'NUEVO RÉCORD'}</div></div>
+        <div class="tv-mont" style="font-weight:800; font-size:40px; text-align:center; max-width:1100px;">${escHtml(r.hattrick ? r.titulo.replace(/^¡Hat-trick de (.+)!$/, '$1 marca tres goles') : r.titulo)}</div>
+        ${r.antes != null ? `<div style="display:flex; align-items:center; gap:40px;">
+          <div style="display:flex; flex-direction:column; align-items:center; gap:4px;"><div style="font-size:18px; color:#94a3b8; font-weight:700; letter-spacing:2px;">AHORA</div><div class="tv-mont" style="font-weight:900; font-size:130px; line-height:1;">${escHtml(r.ahora)}</div></div>
+          <div style="width:2px; height:130px; background:rgba(255,255,255,.15);"></div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:4px;"><div style="font-size:18px; color:#94a3b8; font-weight:700; letter-spacing:2px;">ANTES</div><div class="tv-mont" style="font-weight:900; font-size:80px; line-height:1; color:#64748b;">${escHtml(r.antes)}</div><div style="font-size:16px; color:#94a3b8; max-width:360px; text-align:center;">${r.antesDet || ''}</div></div>
+        </div>` : ''}
+        <div style="display:flex; align-items:center; gap:16px; background:#111827; border:1px solid rgba(255,255,255,.1); padding:12px 28px; border-radius:14px;" class="tv-mont">
+          <span class="tv-escudo h" style="width:48px; height:48px;"><img src="${ESCUDO_HERGAR_SRC}" alt=""></span>
+          <span style="font-weight:900; font-size:32px;">${escHtml(r.marcador)}</span><span style="font-size:20px; color:#2ed573; font-weight:800;">${escHtml(r.minuto)}</span></div>
+      </div>`;
       dur = 6500;
     } else {
       cont.innerHTML = `<div class="tv-cambio-velo"></div><div class="tv-cambio">
@@ -1854,7 +2072,8 @@
       const chipClass = p.resultado === 'V' ? 'streak-win' : p.resultado === 'D' ? 'streak-loss' : 'streak-draw';
       const icon = p.resultado === 'V' ? '✅' : p.resultado === 'D' ? '❌' : '➖';
       const extras = [];
-      if (p.goleadores && p.goleadores !== '-') extras.push(`⚽ ${p.goleadores}`);
+      const golesMin = golesPartidoHtml(p);
+      if (!golesMin && p.goleadores && p.goleadores !== '-') extras.push(`⚽ ${p.goleadores}`);
       let mvpLine = '';
       if (p.mvp && p.mvp !== '-') {
         mvpLine = `<div style="display:flex; align-items:center; justify-content:space-between; gap:6px; font-size:10px; color:#8da499; margin-top:2px;"><span>⭐ MVP: ${p.mvp}</span>${p.mvpId ? `<button onclick="abrirCromoMvpGuardado(${i})" style="background:rgba(245,166,35,0.14); border:1px solid rgba(245,166,35,0.4); color:#f5a623; border-radius:6px; padding:2px 8px; font-size:10px; font-weight:700; white-space:nowrap;">🎴 Cromo</button>` : ''}</div>`;
@@ -1867,6 +2086,7 @@
           <div class="streak-chip ${chipClass}">${p.golesLocal}–${p.golesRival} ${icon}</div>
         </div>
         ${extrasHtml}
+        ${golesMin}
         ${mvpLine}
         ${statsHtml}
         ${informeIAPartidoHtml(p)}
@@ -2198,6 +2418,7 @@
     pintarPartidos(temporada);
     pintarSinergias(temporada);
     pintarRachas(temporada);
+    pintarRecords(temporada);
     pintarComparativa(temporada);
     pintarHeatmap(temporada);
     pintarOnceIdeal(temporada);

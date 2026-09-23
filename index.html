@@ -1298,7 +1298,7 @@
     const tirosDe = (p) => (Number(p.tirosNuestrosPuerta) || 0) + (Number(p.tirosNuestrosFuera) || 0);
     let md = null;
     ps.forEach(p => { if (!p.manual && p.tirosNuestrosPuerta != null && (!md || tirosDe(p) > tirosDe(md.p))) md = { p }; });
-    if (md && tirosDe(md.p) > 0) R.equipo.push({ ico: '💥', t: 'Más tiros en un partido', v: `${tirosDe(md.p)}`, det: `${md.p.tirosNuestrosPuerta || 0} a puerta · ${md.p.tirosNuestrosFuera || 0} fuera · ${vs(md.p)}` });
+    if (md && tirosDe(md.p) > 0) R.equipo.push({ ico: '💥', t: 'Más tiros en un partido', v: `${tirosDe(md.p)}`, det: `${md.p.tirosNuestrosPuerta || 0} tiros a puerta · ${md.p.tirosNuestrosFuera || 0} otros · ${vs(md.p)}` });
 
     // Gol más rápido (necesita goles con minuto)
     let gr = null;

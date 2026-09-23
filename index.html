@@ -275,7 +275,7 @@
   /* ── Modo TV (visor) ─────────────────────────────────────────── */
   .btn-modo-tv { display:inline-flex; align-items:center; gap:6px; margin-top:10px; background:rgba(46,213,115,.1); border:1px solid rgba(46,213,115,.55);
     color:#2ed573; font-family:'Montserrat',sans-serif; font-weight:800; font-size:12px; letter-spacing:.5px; padding:8px 16px; border-radius:20px; cursor:pointer; }
-  #tvModo { display:none; position:fixed; inset:0; z-index:2000; background:#0a0e14; overflow:hidden; touch-action:none; overscroll-behavior:contain; -webkit-user-select:none; user-select:none; }
+  #tvModo { display:none; position:fixed; inset:0; z-index:2000; background:#0a0e14; overflow:hidden; touch-action:manipulation; overscroll-behavior:contain; -webkit-user-select:none; user-select:none; }
   #tvModo.activo { display:block; }
   #tvStage { position:absolute; left:50%; top:50%; width:1280px; height:720px; transform-origin:center center; background:#0a0e14; color:#e2e8f0;
     font-family:'Inter',-apple-system,sans-serif; overflow:hidden; }
@@ -1521,6 +1521,7 @@
     tvActivo = true;
     document.getElementById('tvModo').classList.add('activo');
     document.body.style.overflow = 'hidden';
+    document.documentElement.style.overscrollBehaviorY = 'contain'; // zoom y desplazamiento con dos dedos sí; recargar la página sin querer, no
     tvAjustarEscala();
     tvRender();
     tvMostrarSalir(4500);
@@ -1544,6 +1545,7 @@
     const cont = document.getElementById('tvRotulo'); cont.classList.remove('visible'); cont.innerHTML = '';
     document.getElementById('tvModo').classList.remove('activo');
     document.body.style.overflow = '';
+    document.documentElement.style.overscrollBehaviorY = '';
     try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch (e) {}
     try {
       if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen();

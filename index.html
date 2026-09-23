@@ -1294,10 +1294,11 @@
     const ceros = ps.filter(p => (p.golesRival || 0) === 0).length;
     R.equipo.push({ ico: '🧤', t: 'Porterías a cero', v: `${ceros} en total`, det: rc.max ? `Racha máxima: ${plural(rc.max, 'seguida', 'seguidas')}` : 'Aún ninguna', vivo: rc.vivo && rc.max > 1 });
 
-    // Disparos a puerta (solo partidos en directo)
+    // Tiros en un partido: a puerta + fuera/sin peligro (solo partidos en directo)
+    const tirosDe = (p) => (Number(p.tirosNuestrosPuerta) || 0) + (Number(p.tirosNuestrosFuera) || 0);
     let md = null;
-    ps.forEach(p => { if (!p.manual && p.tirosNuestrosPuerta != null && (!md || p.tirosNuestrosPuerta > md.p.tirosNuestrosPuerta)) md = { p }; });
-    if (md && md.p.tirosNuestrosPuerta > 0) R.equipo.push({ ico: '💥', t: 'Más disparos a puerta', v: `${md.p.tirosNuestrosPuerta}`, det: vs(md.p) });
+    ps.forEach(p => { if (!p.manual && p.tirosNuestrosPuerta != null && (!md || tirosDe(p) > tirosDe(md.p))) md = { p }; });
+    if (md && tirosDe(md.p) > 0) R.equipo.push({ ico: '💥', t: 'Más tiros en un partido', v: `${tirosDe(md.p)}`, det: `${md.p.tirosNuestrosPuerta || 0} a puerta · ${md.p.tirosNuestrosFuera || 0} fuera · ${vs(md.p)}` });
 
     // Gol más rápido (necesita goles con minuto)
     let gr = null;
@@ -1361,7 +1362,7 @@
       </div>` : ''}
       ${R.hattricks.length ? `<div class="rec-sec">HAT-TRICKS</div>
       <div class="rec-lista">${R.hattricks.map(h => `<div class="rec-fila" style="justify-content:space-between;"><span style="font-weight:700;">⭐ ${escHtml(h.nombre)} · ${h.n} goles</span><span class="rec-d">${h.det}</span></div>`).join('')}</div>` : ''}
-      <div class="sub-caption" style="margin-top:10px; text-align:center;">Los partidos cargados a mano cuentan para resultados y rachas, no para disparos.</div>`;
+      <div class="sub-caption" style="margin-top:10px; text-align:center;">Los partidos cargados a mano cuentan para resultados y rachas, no para tiros.</div>`;
   }
 
   // Goles con minuto en la lista de Partidos

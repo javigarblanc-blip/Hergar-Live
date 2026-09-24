@@ -611,6 +611,7 @@
         <div class="subtab-btn active" onclick="showSub(event,'subLigaClasif')">📈 Clasif.</div>
         <div class="subtab-btn" onclick="showSub(event,'subLigaPartidos')">📅 Partidos</div>
         <div class="subtab-btn" onclick="showSub(event,'subLigaEvol')">📉 Evolución</div>
+        <div class="subtab-btn" onclick="showSub(event,'subLigaPron'); window.pintarPronosticoViewer && window.pintarPronosticoViewer()">🔮 Pronóstico</div>
         <div class="subtab-btn" onclick="showSub(event,'subLigaEquipos')">👥 Equipos</div>
       </div>
 
@@ -663,6 +664,10 @@
           <div id="ligaEvolNotaViewer" class="sub-caption" style="text-align:center;"></div>
         </div>
       </div>
+
+      <div id="subLigaPron" class="sub-panel">
+        <div id="ligaPronViewer"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -682,16 +687,6 @@
   <div class="gol-titulo">⚽ ¡GOOOL DE HERGAR!</div>
   <div class="gol-marcador" id="golMarcador"></div>
   <div class="gol-detalle" id="golDetalle"></div>
-</div>
-
-<div id="fichaRivalModal" style="display:none; position:fixed; inset:0; z-index:960; background:rgba(0,0,0,.9); overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; padding:14px 12px 30px;" onclick="if (event.target === this) cerrarFichaRival()">
-  <div style="max-width:460px; margin:0 auto;">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-      <span style="font-size:12px; color:#94a3b8; font-weight:700;">Liga · Ficha del equipo</span>
-      <button type="button" onclick="cerrarFichaRival()" aria-label="Cerrar ficha" style="width:42px; height:42px; border-radius:10px; border:1px solid rgba(255,255,255,.12); background:#111827; color:#94a3b8; font-size:16px; font-weight:800;">✕</button>
-    </div>
-    <div id="fichaRivalContenido"></div>
-  </div>
 </div>
 
 <div id="recordBanner" role="status" aria-live="polite" onclick="ocultarRecordBanner()">
@@ -733,6 +728,9 @@
 
 <script type="module">
   // Visor · Modo TV: pantalla completa en horizontal (marcador, campo, estadísticas, cinta de eventos, rótulos de gol y cambio, descanso y previa).
+  // v91 (app) · Pronóstico con tres botones: Ascenso (+ lo que necesitas para ser campeón), Calendario (dificultad de lo que queda) y Nivel (ranking por cómo juegan).
+  // v90 (app) · Pronóstico: "el partido que también te interesa" elige por impacto real, muestra lo probable de cada resultado y solo recomienda lo que puede pasar.
+  // v89 (app) · Liga → 🔮 Pronóstico: opciones de ascenso (solo sube el campeón), próximo partido, partido que interesa, carrera, evolución y mapa de puestos. Mismo código que la app.
   // v72 (app) · Tarjeta de próximo partido (Partido): fecha y hora, clasificación y enfrentamientos anteriores. Sustituye al informe IA hasta que la app la oculte o empiece el partido.
   // v71 (app) · Informe IA guardado en cada partido de la temporada: se abre desde la lista de Partidos.
   // v70 (app) · Eficacia de tiro (goles / tiros totales): fila en la ficha de cada jugador con goles y línea de equipo en Rachas. Los partidos manuales no cuentan.
@@ -1452,172 +1450,6 @@
     </div>`;
   }
 
-  // ── FICHA DEL RIVAL / CARA A CARA (mismo código en app y visor) ──
-  // Junta la Liga (resultados, fechas) con la temporada (goles con minuto, tiros, córners).
-  function normEquipoFR(n) {
-    return String(n || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, ' ').trim()
-      .replace(/^(?:[a-z] )+/, '').replace(/^(?:cdf|cd|cf|ud|ad|sd|ue) /, '').trim();
-  }
-  // ¿El texto "rival" de un partido de la temporada es este equipo de la Liga? (sin confundir B con C)
-  function esMismoEquipoFR(liga, eq, nombreRival) {
-    const n = normEquipoFR(nombreRival);
-    if (!n) return false;
-    const exacto = liga.equipos.find(e => normEquipoFR(e.nombre) === n);
-    if (exacto) return exacto.id === eq.id;
-    const parecidos = liga.equipos.filter(e => { const x = normEquipoFR(e.nombre); return x && (x.includes(n) || n.includes(x)); });
-    return parecidos.length === 1 && parecidos[0].id === eq.id;
-  }
-  function clasifFR(liga) {
-    const tabla = {};
-    liga.equipos.forEach(e => tabla[e.id] = { id: e.id, pj: 0, pts: 0, gf: 0, gc: 0 });
-    (liga.partidos || []).forEach(p => {
-      if (p.golesLocal == null || p.golesVisitante == null || !tabla[p.local] || !tabla[p.visitante]) return;
-      const a = tabla[p.local], b = tabla[p.visitante];
-      a.pj++; b.pj++; a.gf += p.golesLocal; a.gc += p.golesVisitante; b.gf += p.golesVisitante; b.gc += p.golesLocal;
-      if (p.golesLocal > p.golesVisitante) a.pts += 3; else if (p.golesLocal < p.golesVisitante) b.pts += 3; else { a.pts++; b.pts++; }
-    });
-    const filas = Object.values(tabla).sort((x, y) => y.pts - x.pts || (y.gf - y.gc) - (x.gf - x.gc) || y.gf - x.gf);
-    filas.forEach((f, i) => f.pos = i + 1);
-    return filas;
-  }
-  function jornadaGlobalFR(liga, p) {
-    const porVuelta = Math.max(1, ...(liga.partidos || []).filter(x => x.vuelta === 1).map(x => x.jornada));
-    return (p.vuelta - 1) * porVuelta + p.jornada;
-  }
-  function fichaRivalHTML(liga, temporada, eqId, escudoFn) {
-    const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-    const eq = (liga.equipos || []).find(e => e.id === eqId);
-    if (!eq) return '<div style="padding:20px; color:#94a3b8;">Equipo no encontrado.</div>';
-    const hergar = liga.equipos.find(e => e.esHergar);
-    const nombreDe = (id) => { const e = liga.equipos.find(x => x.id === id); return e ? e.nombre : '¿?'; };
-    const orden = (a, b) => a.vuelta - b.vuelta || a.jornada - b.jornada;
-    const jugado = (p) => p.golesLocal != null && p.golesVisitante != null;
-    const fila = clasifFR(liga).find(f => f.id === eq.id) || { pos: '-', pts: 0, pj: 0, gf: 0, gc: 0 };
-    const caja = 'background:#111827; border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:14px 16px; margin-bottom:12px;';
-    const titulo = (t) => `<div style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:11px; letter-spacing:2px; color:#94a3b8; margin-bottom:10px;">${t}</div>`;
-    const chip = (t, c, bg) => `<span style="background:${bg}; color:${c}; border-radius:8px; padding:4px 10px; font-size:12px; font-weight:800;">${t}</span>`;
-    const dec = (n) => (Math.round(n * 10) / 10).toFixed(1).replace('.', ',');
-    const cuando = (p) => [p.fechaPartido || p.fecha, p.hora].filter(Boolean).join(' · ');
-
-    // Cabecera
-    let html = `<div style="${caja} display:flex; flex-direction:column; align-items:center; gap:8px;">
-      ${escudoFn(eq, 96)}
-      <div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:20px; text-align:center; color:#e2e8f0;">${esc(eq.nombre)}</div>
-      <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center;">${chip(fila.pos + 'º', '#f5a623', 'rgba(245,166,35,.14)')}${chip(fila.pts + ' pts', '#e2e8f0', 'rgba(255,255,255,.06)')}${chip(fila.pj + ' PJ', '#e2e8f0', 'rgba(255,255,255,.06)')}</div>
-    </div>`;
-
-    // Su forma
-    const suyos = (liga.partidos || []).filter(p => jugado(p) && (p.local === eq.id || p.visitante === eq.id)).sort(orden);
-    const res = (p) => { const casa = p.local === eq.id; const a = casa ? p.golesLocal : p.golesVisitante, b = casa ? p.golesVisitante : p.golesLocal; return a > b ? 'V' : a < b ? 'D' : 'E'; };
-    const colRes = { V: ['#2ed573', 'rgba(46,213,115,.18)'], E: ['#f5a623', 'rgba(245,166,35,.18)'], D: ['#ff4757', 'rgba(255,71,87,.18)'] };
-    const ult5 = suyos.slice(-5);
-    const balance = (lista) => { const c = { V: 0, E: 0, D: 0 }; lista.forEach(p => c[res(p)]++); return `${c.V}V · ${c.E}E · ${c.D}D`; };
-    const mini = (k, v, col) => `<div style="background:rgba(255,255,255,.04); border-radius:10px; padding:10px;"><div style="font-size:11px; color:#94a3b8;">${k}</div><div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:${col ? 20 : 14}px; color:${col || '#e2e8f0'};">${v}</div></div>`;
-    html += `<div style="${caja}">${titulo(eq.esHergar ? 'FORMA' : 'SU FORMA')}
-      ${suyos.length ? `
-      <div style="display:flex; align-items:center; gap:7px; margin-bottom:12px; flex-wrap:wrap;">
-        <span style="font-size:12px; color:#94a3b8; margin-right:4px;">Últimos ${ult5.length}</span>
-        ${ult5.map(p => { const r = res(p); return `<span title="J${jornadaGlobalFR(liga, p)} · ${esc(nombreDe(p.local))} ${p.golesLocal}-${p.golesVisitante} ${esc(nombreDe(p.visitante))}" style="width:30px; height:30px; border-radius:50%; background:${colRes[r][1]}; color:${colRes[r][0]}; display:inline-flex; align-items:center; justify-content:center; font-weight:900; font-size:12px;">${r}</span>`; }).join('')}
-        <span style="font-size:10px; color:#64748b;">→ más reciente</span>
-      </div>
-      <div style="display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px;">
-        ${mini('Goles a favor / partido', dec(fila.gf / Math.max(1, fila.pj)), '#2ed573')}
-        ${mini('Goles en contra / partido', dec(fila.gc / Math.max(1, fila.pj)), '#ff4757')}
-        ${mini('En casa', balance(suyos.filter(p => p.local === eq.id)))}
-        ${mini('Fuera', balance(suyos.filter(p => p.visitante === eq.id)))}
-      </div>` : '<div style="font-size:12px; color:#64748b;">Aún no ha jugado ningún partido con resultado metido.</div>'}
-    </div>`;
-
-    if (eq.esHergar || !hergar) return html;
-
-    // Contra el Hergar
-    const entre = (liga.partidos || []).filter(p => (p.local === eq.id && p.visitante === hergar.id) || (p.visitante === eq.id && p.local === hergar.id)).sort(orden);
-    const jugados = entre.filter(jugado), pendientes = entre.filter(p => !jugado(p));
-    const nuestros = (p) => p.local === hergar.id ? p.golesLocal : p.golesVisitante;
-    const suyosG = (p) => p.local === hergar.id ? p.golesVisitante : p.golesLocal;
-    // Emparejar cada partido de Liga con su partido de la temporada (mismo rival y mismo resultado)
-    const tempRival = ((temporada && temporada.partidos) || []).filter(tp => esMismoEquipoFR(liga, eq, tp.rival));
-    const usados = new Set();
-    const tempDe = (p) => {
-      const k = tempRival.findIndex((tp, i) => !usados.has(i) && tp.golesLocal === nuestros(p) && tp.golesRival === suyosG(p));
-      if (k < 0) return null;
-      usados.add(k); return tempRival[k];
-    };
-    const pares = jugados.map(p => ({ p, tp: tempDe(p) }));
-    const c = { V: 0, E: 0, D: 0 }; let gfH = 0, gcH = 0;
-    jugados.forEach(p => { const a = nuestros(p), b = suyosG(p); gfH += a; gcH += b; c[a > b ? 'V' : a < b ? 'D' : 'E']++; });
-    const etiqueta = (a, b) => a > b ? chip('VICTORIA', '#2ed573', 'rgba(46,213,115,.14)') : a < b ? chip('DERROTA', '#ff4757', 'rgba(255,71,87,.14)') : chip('EMPATE', '#f5a623', 'rgba(245,166,35,.14)');
-    const golesTP = (tp) => {
-      if (!tp) return '';
-      const g = Array.isArray(tp.goles) ? tp.goles : [];
-      if (g.some(x => x.min != null)) {
-        return `<div style="display:flex; flex-direction:column; gap:4px; font-size:12px; margin-top:8px;">${g.slice().sort((a, b) => (a.min == null ? 999 : a.min) - (b.min == null ? 999 : b.min)).map(x => x.equipo === 'rival'
-          ? `<div style="display:flex; gap:8px; color:#94a3b8;"><b style="width:28px; flex-shrink:0;">${x.min != null ? x.min + "'" : '–'}</b><span>Gol del ${esc(eq.nombre)}${x.penalti ? ' (penalti)' : ''}</span></div>`
-          : `<div style="display:flex; gap:8px; color:#e2e8f0;"><b style="width:28px; flex-shrink:0; color:#2ed573;">${x.min != null ? x.min + "'" : '–'}</b><span>${esc(x.nombre || '¿?')}${x.penalti ? ' (penalti)' : ''}${x.asistente ? ' · asistencia de ' + esc(x.asistente) : ''}</span></div>`).join('')}</div>`;
-      }
-      return tp.goleadores && tp.goleadores !== '-' ? `<div style="font-size:12px; color:#8da499; margin-top:8px;">⚽ ${esc(tp.goleadores)}</div>` : '';
-    };
-    html += `<div style="${caja}">${titulo('CONTRA EL HERGAR')}
-      ${jugados.length ? `<div style="display:flex; justify-content:center; gap:12px; font-size:12.5px; font-weight:700; margin-bottom:10px;"><span style="color:#2ed573;">${c.V} V</span><span style="color:#f5a623;">${c.E} E</span><span style="color:#ff4757;">${c.D} D</span><span style="color:#94a3b8;">· goles ${gfH}–${gcH}</span></div>` : ''}
-      ${pares.map(({ p, tp }) => `
-        <div style="background:rgba(255,255,255,.04); border-radius:12px; padding:12px; margin-bottom:8px;">
-          <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-            <span style="font-size:12px; color:#94a3b8;">J${jornadaGlobalFR(liga, p)}${cuando(p) ? ' · ' + esc(cuando(p)) : ''} · ${p.local === hergar.id ? 'En casa' : 'Fuera'}</span>${etiqueta(nuestros(p), suyosG(p))}
-          </div>
-          <div style="display:flex; align-items:center; justify-content:center; gap:12px; margin-top:8px;">
-            ${escudoFn(liga.equipos.find(e => e.id === p.local), 30)}
-            <span style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:22px; color:#e2e8f0;">${p.golesLocal} – ${p.golesVisitante}</span>
-            ${escudoFn(liga.equipos.find(e => e.id === p.visitante), 30)}
-          </div>
-          ${golesTP(tp)}
-        </div>`).join('')}
-      ${pendientes.map(p => `
-        <div style="background:rgba(46,213,115,.07); border:1px dashed rgba(46,213,115,.45); border-radius:12px; padding:12px; margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; gap:10px;">
-          <div style="display:flex; flex-direction:column; gap:2px;">
-            <span style="font-size:11px; color:#2ed573; font-weight:800;">PENDIENTE · J${jornadaGlobalFR(liga, p)}</span>
-            <span style="font-size:13px; font-weight:700; color:#e2e8f0;">${esc(nombreDe(p.local))} – ${esc(nombreDe(p.visitante))}</span>
-            <span style="font-size:12px; color:#94a3b8;">${esc(cuando(p) || 'Fecha por confirmar')} · ${p.local === hergar.id ? 'En casa' : 'Fuera'}</span>
-          </div>
-        </div>`).join('')}
-      ${!entre.length ? '<div style="font-size:12px; color:#64748b;">No hay partidos contra este equipo en el calendario.</div>' : ''}
-    </div>`;
-
-    // Datos del cara a cara (solo partidos en directo emparejados)
-    const directos = pares.map(x => x.tp).filter(tp => tp && !tp.manual && tp.tirosNuestrosPuerta != null);
-    const goleadores = {};
-    pares.forEach(({ tp }) => { if (!tp) return; const re = /([^,(]+?)\s*\((\d+)\)/g; let m; while ((m = re.exec(tp.goleadores || ''))) goleadores[m[1].trim()] = (goleadores[m[1].trim()] || 0) + parseInt(m[2]); });
-    const listaGol = Object.entries(goleadores).sort((a, b) => b[1] - a[1]).map(([n, k]) => `${esc(n)} (${k})`).join(', ');
-    if (directos.length || listaGol) {
-      const sum = (f) => directos.reduce((s, tp) => s + (Number(f(tp)) || 0), 0);
-      const filasS = [
-        ['Tiros', sum(tp => (tp.tirosNuestrosPuerta || 0) + (tp.tirosNuestrosFuera || 0)), sum(tp => (tp.tirosRivalesPuerta || 0) + (tp.tirosRivalesFuera || 0))],
-        ['Tiros a puerta', sum(tp => tp.tirosNuestrosPuerta), sum(tp => tp.tirosRivalesPuerta)],
-        ['Córners', sum(tp => tp.cornersFavor), sum(tp => tp.cornersContra)]
-      ];
-      html += `<div style="${caja}">${titulo('DATOS DEL CARA A CARA')}
-        ${directos.length ? `<div style="display:flex; justify-content:space-between; font-size:11px; font-weight:800; color:#94a3b8; margin-bottom:8px;"><span>HERGAR</span><span>${esc(eq.nombre).toUpperCase()}</span></div>
-        ${filasS.map(([l, a, b]) => `<div style="margin-bottom:10px;"><div style="display:flex; justify-content:space-between; font-size:13px; color:#e2e8f0;"><b>${a}</b><span style="color:#cbd5e1;">${l}</span><b style="color:#94a3b8;">${b}</b></div>
-          <div style="display:flex; height:8px; border-radius:4px; overflow:hidden; background:#334155; margin-top:4px;"><div style="width:${Math.round(a / Math.max(1, a + b) * 100)}%; background:#b41438;"></div></div></div>`).join('')}` : ''}
-        ${listaGol ? `<div style="font-size:12.5px; color:#e2e8f0;">Nuestros goles contra ellos: <b>${listaGol}</b></div>` : ''}
-        ${directos.length ? `<div style="font-size:10.5px; color:#64748b; margin-top:6px;">Tiros y córners: ${directos.length === 1 ? 'el partido jugado' : 'los ' + directos.length + ' partidos jugados'} en directo (los manuales no los tienen).</div>` : ''}
-      </div>`;
-    }
-    return html;
-  }
-
-  window.abrirFichaRival = function (id) {
-    if (!ultimaLiga) return;
-    document.getElementById('fichaRivalContenido').innerHTML = fichaRivalHTML(ultimaLiga, ultimaTemporada, id, (eq, px) => escudoEquipoVisorHTML(eq, px));
-    const m = document.getElementById('fichaRivalModal');
-    m.style.display = 'block'; m.scrollTop = 0;
-    document.body.style.overflow = 'hidden';
-  };
-  window.cerrarFichaRival = function () {
-    document.getElementById('fichaRivalModal').style.display = 'none';
-    document.body.style.overflow = '';
-  };
-
   // ── RÉCORDS DE LA TEMPORADA (visor) ─────────────────────────────────────────
   // Todo sale de temporada.partidos (y de los goles con minuto que guarda la app desde la v84).
   function fechaCortaRec(f) { return String(f || '').replace(/\/\d{4}$/, ''); }
@@ -2278,7 +2110,6 @@
       </table>
       <div style="font-size:11.5px; color:#8da499; margin-bottom:6px;">Enfrentamientos anteriores</div>
       ${cara}
-      <button type="button" onclick="abrirFichaRival('${rival.id}')" style="width:100%; margin-top:10px; background:rgba(46,213,115,.1); color:#2ed573; border:1px solid rgba(46,213,115,.45); border-radius:10px; padding:10px; font-weight:800; font-size:12.5px;">🔎 Ver ficha del rival</button>
       ${convocatoriaHTML}`;
     card.style.display = 'block';
     const informe = document.getElementById('informeIACard');
@@ -2903,6 +2734,464 @@
   window.rerenderOnceIdeal = () => { if (ultimaTemporada) pintarOnceIdeal(ultimaTemporada); };
   window.rerenderRanking = () => { if (ultimaTemporada) pintarRanking(ultimaTemporada); };
 
+    // ── v89 · PRONÓSTICO DE LA LIGA (v90: el partido que interesa pesa lo probable de cada resultado · v91: lo que necesitas, calendario y nivel) (mismo código en app y visor) ──
+    // Nivel de ataque/defensa de cada equipo a partir de los resultados (ajustado por rival,
+    // con más peso a lo reciente y encogido hacia la media con pocos datos) y 10.000
+    // simulaciones del resto de la Liga. Solo sube el campeón, así que lo clave es el 1º.
+    const PRON_N = 10000, PRON_N_EVO = 1500;
+    let pronEvoCache = { clave: null, datos: {} };
+    function pronRng(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+    function pronPoisson(l, r){ const L=Math.exp(-l); let k=0, p=1; do{ k++; p*=r(); }while(p>L && k<25); return k-1; }
+    function pronPmf(l){ const o=[]; let p=Math.exp(-l); for(let k=0;k<20;k++){ o.push(p); p*=l/(k+1); } return o; }
+    function pronGanaEmpata(a, b){ const A=pronPmf(a), B=pronPmf(b); let w=0, d=0; for(let i=0;i<20;i++){ d+=A[i]*B[i]; for(let j=0;j<i;j++) w+=A[i]*B[j]; } return [w, d]; }
+    function pronPct(x){ if(x<=0) return '0'; if(x<.005) return '<1'; if(x>.995 && x<1) return '>99'; return String(Math.round(x*100)); }
+    function pronEsc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+    function pronPreparar(liga){
+      const equipos = (liga && liga.equipos) || [];
+      const IDX = {}; equipos.forEach((e,i) => IDX[e.id] = i);
+      const H = equipos.findIndex(e => e.esHergar);
+      const todos = (liga.partidos || []).filter(p => p && IDX[p.local] != null && IDX[p.visitante] != null);
+      const porVuelta = Math.max(1, ...todos.filter(p => p.vuelta === 1).map(p => p.jornada || 1));
+      const P = todos.map(p => {
+        const jugado = p.golesLocal != null && p.golesVisitante != null && p.golesLocal !== '' && p.golesVisitante !== '';
+        return { jg: ((p.vuelta || 1) - 1) * porVuelta + (p.jornada || 1), l: IDX[p.local], v: IDX[p.visitante],
+                 jugado, gl: jugado ? +p.golesLocal : 0, gv: jugado ? +p.golesVisitante : 0 };
+      });
+      const nombres = equipos.map(e => e.esHergar ? 'HERGAR' : (e.abrev || e.nombre || '¿?'));
+      return { NT: equipos.length, H, P, nombres };
+    }
+
+    function pronNiveles(NT, jug, J){
+      const D = .88, K = 3; let W=0, G=0, HG=0, AG=0;
+      jug.forEach(p => { p.w = Math.pow(D, J - p.jg); W+=p.w; G+=p.w*(p.gl+p.gv); HG+=p.w*p.gl; AG+=p.w*p.gv; });
+      const mu = (G + 4*2.2) / (2*W + 4);
+      let h = Math.sqrt((HG+3)/(AG+3)); h = 1 + (h-1)*W/(W+10); h = Math.min(1.25, Math.max(.9, h));
+      let att = Array(NT).fill(1), def = Array(NT).fill(1);
+      for (let it=0; it<30; it++){
+        const na=Array(NT).fill(K*mu), da=Array(NT).fill(K*mu), nd=Array(NT).fill(K*mu), dd=Array(NT).fill(K*mu);
+        jug.forEach(p => {
+          na[p.l]+=p.w*p.gl; da[p.l]+=p.w*mu*h*def[p.v];
+          na[p.v]+=p.w*p.gv; da[p.v]+=p.w*mu/h*def[p.l];
+          nd[p.l]+=p.w*p.gv; dd[p.l]+=p.w*mu/h*att[p.v];
+          nd[p.v]+=p.w*p.gl; dd[p.v]+=p.w*mu*h*att[p.l];
+        });
+        att = na.map((x,i)=>x/da[i]); def = nd.map((x,i)=>x/dd[i]);
+        const ma = att.reduce((s,x)=>s+x,0)/NT, md = def.reduce((s,x)=>s+x,0)/NT;
+        att = att.map(x=>x/ma); def = def.map(x=>x/md);
+      }
+      return { att, def, mu, h };
+    }
+
+    // J = jornada hasta la que se tienen en cuenta resultados (lo posterior se simula)
+    function pronSimular(D, J, N, seed){
+      const { NT, H, P } = D;
+      const jug = P.filter(p => p.jugado && p.jg <= J), rest = P.filter(p => !(p.jugado && p.jg <= J));
+      const R = pronNiveles(NT, jug, J);
+      const bp=Array(NT).fill(0), bg=Array(NT).fill(0), bc=Array(NT).fill(0);
+      jug.forEach(p => { bg[p.l]+=p.gl; bc[p.l]+=p.gv; bg[p.v]+=p.gv; bc[p.v]+=p.gl;
+        if (p.gl>p.gv) bp[p.l]+=3; else if (p.gl<p.gv) bp[p.v]+=3; else { bp[p.l]++; bp[p.v]++; } });
+      const lam = rest.map(p => [R.mu*R.att[p.l]*R.def[p.v]*R.h, R.mu*R.att[p.v]*R.def[p.l]/R.h]);
+      const nextH = H < 0 ? null : rest.filter(p => p.l===H || p.v===H).sort((a,b) => a.jg-b.jg)[0] || null;
+      const keyIdx = nextH ? rest.map((p,i) => p.jg===nextH.jg ? i : -1).filter(i => i>=0) : [];
+      const cond = keyIdx.map(() => ({ L:[0,0], E:[0,0], V:[0,0] }));
+      const pos = Array.from({length:NT}, () => Array(NT).fill(0));
+      const r = pronRng(seed);
+      const nH = H < 0 ? 0 : rest.filter(p => p.l===H || p.v===H).length;
+      const winC = Array.from({length:nH+1}, () => [0,0]), ptsC = {};
+      const pts=new Array(NT), gf=new Array(NT), gc=new Array(NT), tb=new Array(NT), ord=[...Array(NT).keys()], res=new Array(rest.length);
+      for (let s=0; s<N; s++){
+        for (let i=0;i<NT;i++){ pts[i]=bp[i]; gf[i]=bg[i]; gc[i]=bc[i]; tb[i]=r(); }
+        let wH = 0;
+        for (let m=0; m<rest.length; m++){
+          const p=rest[m], a=pronPoisson(lam[m][0],r), b=pronPoisson(lam[m][1],r);
+          gf[p.l]+=a; gc[p.l]+=b; gf[p.v]+=b; gc[p.v]+=a;
+          if ((p.l===H && a>b) || (p.v===H && b>a)) wH++;
+          if (a>b){ pts[p.l]+=3; res[m]='L'; } else if (a<b){ pts[p.v]+=3; res[m]='V'; } else { pts[p.l]++; pts[p.v]++; res[m]='E'; }
+        }
+        ord.sort((x,y) => pts[y]-pts[x] || (gf[y]-gc[y])-(gf[x]-gc[x]) || gf[y]-gf[x] || tb[y]-tb[x]);
+        for (let k=0;k<NT;k++) pos[ord[k]][k]++;
+        const champ = ord[0]===H ? 1 : 0;
+        keyIdx.forEach((m,ci) => { const c=cond[ci][res[m]]; c[0]+=champ; c[1]++; });
+        if (H >= 0) { winC[wH][0]+=champ; winC[wH][1]++; const k = pts[H]; if (!ptsC[k]) ptsC[k] = [0,0]; ptsC[k][0]+=champ; ptsC[k][1]++; }
+      }
+      const expPts = [...Array(NT).keys()].map(i => { let e=bp[i]; rest.forEach((p,m) => { if (p.l!==i && p.v!==i) return;
+        const my = p.l===i ? lam[m][0] : lam[m][1], ot = p.l===i ? lam[m][1] : lam[m][0]; const [w,d] = pronGanaEmpata(my,ot); e += 3*w + d; }); return e; });
+      return { N, pos, bp, bg, bc, rest, lam, nextH, keyMatches: keyIdx.map(i => rest[i]), cond, expPts, winC, ptsC, R };
+    }
+
+    function pronEvolucion(D, J){
+      const clave = JSON.stringify(D.P.filter(p=>p.jugado).map(p=>[p.jg,p.l,p.v,p.gl,p.gv])) + '|' + D.NT;
+      if (pronEvoCache.clave !== clave) pronEvoCache = { clave, datos: {} };
+      const out = [];
+      for (let j=1; j<=J; j++){
+        if (!D.P.some(p => p.jugado && p.jg <= j)) { out.push(null); continue; }
+        if (!pronEvoCache.datos[j]) { const S = pronSimular(D, j, PRON_N_EVO, 1000+j); pronEvoCache.datos[j] = S.pos.map(r => r[0]/S.N); }
+        out.push(pronEvoCache.datos[j]);
+      }
+      return out;
+    }
+
+    function pronEstilos(){
+      if (document.getElementById('pronEstilos')) return;
+      const st = document.createElement('style'); st.id = 'pronEstilos';
+      st.textContent = `
+      .pron-card{ background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06); border-radius:14px; padding:12px; margin-bottom:10px; }
+      .pron-h2{ font-family:'Montserrat',sans-serif; font-weight:800; font-size:12.5px; color:#e2e8f0; margin-bottom:8px; }
+      .pron-hint{ font-size:10.5px; color:#64748b; line-height:1.45; }
+      .pron-warn{ margin-bottom:10px; font-size:11.5px; color:#f5a623; background:rgba(245,166,35,.08); border:1px solid rgba(245,166,35,.25); border-radius:12px; padding:9px 11px; line-height:1.4; }
+      .pron-hero{ border-color:rgba(255,85,119,.3); background:linear-gradient(160deg, rgba(180,20,56,.16), rgba(180,20,56,.03) 60%); }
+      .pron-hero-top{ display:flex; align-items:center; gap:14px; }
+      .pron-big{ font-family:'Montserrat',sans-serif; font-weight:900; font-size:52px; line-height:1; color:#ff5577; letter-spacing:-1px; }
+      .pron-big small{ font-size:25px; }
+      .pron-hero-lbl{ font-size:12.5px; font-weight:700; line-height:1.35; color:#e2e8f0; }
+      .pron-delta{ display:inline-block; margin-top:5px; font-size:10.5px; font-weight:800; padding:2px 7px; border-radius:6px; }
+      .pron-up{ color:#2ed573; background:rgba(46,213,115,.12); } .pron-down{ color:#ff4757; background:rgba(255,71,87,.12); } .pron-eq{ color:#94a3b8; background:rgba(255,255,255,.06); }
+      .pron-chips{ display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:12px; }
+      .pron-chip{ background:rgba(0,0,0,.28); border:1px solid rgba(255,255,255,.04); border-radius:10px; padding:8px 4px; text-align:center; }
+      .pron-chip .v{ font-family:'Montserrat',sans-serif; font-weight:800; font-size:16px; color:#e2e8f0; }
+      .pron-chip .l{ font-size:9.5px; color:#64748b; margin-top:2px; }
+      .pron-vs{ font-family:'Montserrat',sans-serif; font-weight:800; font-size:13px; color:#e2e8f0; }
+      .pron-vs .h{ color:#ff5577; }
+      .pron-tri{ display:flex; height:26px; border-radius:9px; overflow:hidden; margin-top:10px; font-size:10.5px; font-weight:800; font-family:'Montserrat',sans-serif; }
+      .pron-tri div{ display:flex; align-items:center; justify-content:center; min-width:0; white-space:nowrap; overflow:hidden; }
+      .pron-tri .w{ background:rgba(46,213,115,.85); color:#0a0e14; } .pron-tri .d{ background:rgba(148,163,184,.35); color:#e2e8f0; } .pron-tri .l{ background:rgba(255,71,87,.75); color:#fff; }
+      .pron-row{ display:flex; align-items:center; gap:8px; padding:7px 0; border-top:1px solid rgba(255,255,255,.06); font-size:11.5px; }
+      .pron-row .k{ width:92px; color:#94a3b8; font-weight:600; flex-shrink:0; }
+      .pron-row .k.ancho{ width:128px; }
+      .pron-row .bar{ flex:1; height:8px; background:rgba(255,255,255,.05); border-radius:5px; overflow:hidden; }
+      .pron-row .bar i{ display:block; height:100%; background:#2ed573; border-radius:5px; }
+      .pron-row .p{ width:40px; text-align:right; font-family:'Montserrat',sans-serif; font-weight:800; color:#e2e8f0; }
+      .pron-tip{ margin-top:8px; font-weight:700; font-size:12px; color:#2ed573; }
+      .pron-race{ display:grid; grid-template-columns:86px 1fr 40px; align-items:center; gap:8px; padding:5px 0; font-size:11.5px; }
+      .pron-race .n{ font-weight:700; color:#94a3b8; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      .pron-race.me .n{ color:#ff5577; }
+      .pron-race .bar{ height:10px; background:rgba(255,255,255,.04); border-radius:5px; overflow:hidden; }
+      .pron-race .bar i{ display:block; height:100%; background:#f5a623; border-radius:5px; }
+      .pron-race.me .bar i{ background:#ff5577; }
+      .pron-race .p{ text-align:right; font-family:'Montserrat',sans-serif; font-weight:800; color:#e2e8f0; }
+      .pron-legend{ display:flex; gap:12px; font-size:10.5px; color:#94a3b8; margin-top:6px; }
+      .pron-legend span i{ display:inline-block; width:14px; height:3px; border-radius:2px; margin-right:5px; vertical-align:middle; }
+      .pron-scroll{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+      table.pron-hm{ border-collapse:separate; border-spacing:1.5px; width:100%; min-width:290px; font-size:9.5px; }
+      .pron-hm th{ color:#64748b; font-weight:700; font-size:9.5px; padding:2px 0; }
+      .pron-hm th.c1{ color:#f5a623; }
+      .pron-hm td{ text-align:center; height:23px; border-radius:5px; font-weight:700; color:#0a0e14; }
+      .pron-hm td.low{ color:#94a3b8; }
+      .pron-hm td.name{ text-align:left; color:#94a3b8; font-weight:700; white-space:nowrap; padding-right:3px; max-width:70px; overflow:hidden; text-overflow:ellipsis; }
+      .pron-hm tr.me td.name{ color:#ff5577; }
+      .pron-hm td.ex{ color:#e2e8f0; font-family:'Montserrat',sans-serif; font-weight:800; }
+      .pron-como summary{ font-family:'Montserrat',sans-serif; font-weight:800; font-size:12.5px; color:#e2e8f0; cursor:pointer; }
+      .pron-como p{ font-size:11.5px; color:#94a3b8; line-height:1.55; margin-top:8px; }
+      .pron-foot{ text-align:center; font-size:10px; color:#64748b; margin:4px 0 6px; }
+      .pron-tabs{ display:grid; grid-template-columns:repeat(3,1fr); gap:5px; margin-bottom:10px; }
+      .pron-tab{ padding:9px 4px; border-radius:10px; font-family:'Montserrat',sans-serif; font-weight:800; font-size:11px; color:#94a3b8; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.06); cursor:pointer; }
+      .pron-tab.on{ color:#0a0e14; background:#f5a623; border-color:#f5a623; }
+      .pron-badge{ display:block; margin-top:10px; font-size:12px; font-weight:700; line-height:1.4; padding:9px 11px; border-radius:11px; }
+      .pron-badge.ok{ color:#2ed573; background:rgba(46,213,115,.1); border:1px solid rgba(46,213,115,.25); }
+      .pron-badge.no{ color:#f5a623; background:rgba(245,166,35,.08); border:1px solid rgba(245,166,35,.22); }
+      .pron-badge.out{ color:#94a3b8; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); }
+      .pron-esc{ display:grid; grid-template-columns:96px 1fr 40px; align-items:center; gap:8px; padding:4px 0; font-size:11.5px; }
+      .pron-esc .k{ color:#94a3b8; font-weight:600; white-space:nowrap; }
+      .pron-esc.normal .k{ color:#e2e8f0; font-weight:800; }
+      .pron-esc .bar{ height:10px; background:rgba(255,255,255,.04); border-radius:5px; overflow:hidden; }
+      .pron-esc .bar i{ display:block; height:100%; background:#ff5577; border-radius:5px; }
+      .pron-esc .p{ text-align:right; font-family:'Montserrat',sans-serif; font-weight:800; color:#e2e8f0; }
+      .pron-obj{ font-size:12px; color:#cbd5e1; line-height:1.5; margin-top:10px; }
+      .pron-obj b{ color:#e2e8f0; font-family:'Montserrat',sans-serif; }
+      .pron-strip{ display:flex; gap:3px; margin:4px 0 2px; }
+      .pron-strip i{ flex:1; height:22px; border-radius:4px; }
+      .pron-cal{ display:grid; grid-template-columns:34px 1fr auto; align-items:center; gap:8px; padding:7px 0; border-top:1px solid rgba(255,255,255,.06); font-size:12px; }
+      .pron-cal .j{ font-family:'Montserrat',sans-serif; font-weight:800; font-size:10.5px; color:#64748b; }
+      .pron-cal .n{ font-weight:700; color:#e2e8f0; }
+      .pron-cal .n small{ color:#64748b; font-weight:600; }
+      .pron-cal .e{ font-family:'Montserrat',sans-serif; font-weight:800; font-size:11px; padding:3px 8px; border-radius:7px; white-space:nowrap; }
+      .pron-f{ color:#0a0e14; background:#2ed573; } .pron-m{ color:#0a0e14; background:#f5a623; } .pron-d{ color:#fff; background:#ff4757; }
+      .pron-niv{ display:grid; grid-template-columns:18px 1fr 70px 52px; align-items:center; gap:8px; padding:8px 0; border-top:1px solid rgba(255,255,255,.06); }
+      .pron-niv .r{ font-family:'Montserrat',sans-serif; font-weight:800; font-size:11px; color:#64748b; }
+      .pron-niv .n{ font-weight:700; font-size:12px; color:#e2e8f0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      .pron-niv.me .n{ color:#ff5577; }
+      .pron-niv .tag{ display:block; font-size:9.5px; font-weight:700; margin-top:2px; white-space:normal; }
+      .pron-niv .ad{ display:grid; gap:3px; font-size:8.5px; color:#64748b; }
+      .pron-niv .ad span{ display:grid; grid-template-columns:10px 1fr; align-items:center; gap:3px; }
+      .pron-niv .ad em{ display:block; height:5px; background:rgba(255,255,255,.05); border-radius:3px; overflow:hidden; }
+      .pron-niv .ad em i{ display:block; height:100%; border-radius:3px; }
+      .pron-niv .v{ text-align:right; font-family:'Montserrat',sans-serif; font-weight:900; font-size:15px; color:#e2e8f0; }
+      .pron-niv .v small{ display:block; font-size:9.5px; font-weight:800; }`;
+      document.head.appendChild(st);
+    }
+
+    function pronEvoSVG(evo, H, riv, J, nombres){
+      const W=320, Ht=150, L=28, Rr=8, T=10, B=22, n=Math.max(J,2);
+      const x = j => L + (j-1)/(n-1)*(W-L-Rr), y = v => T + (1-v)*(Ht-T-B);
+      let g = '';
+      [0,.25,.5,.75,1].forEach(v => { g += `<line x1="${L}" x2="${W-Rr}" y1="${y(v)}" y2="${y(v)}" stroke="rgba(255,255,255,.06)"/><text x="${L-5}" y="${y(v)+3}" text-anchor="end" font-size="8" fill="#64748b">${v*100}%</text>`; });
+      const ticks = J<=9 ? [...Array(J).keys()].map(k=>k+1) : [1,9,18,27].filter(v => v<J).concat([J]);
+      ticks.forEach(j => { g += `<text x="${x(j)}" y="${Ht-6}" text-anchor="middle" font-size="8" fill="#64748b">J${j}</text>`; });
+      const linea = (i) => { let d='', on=false; evo.forEach((e,k) => { if (!e) { on=false; return; } d += (on?'L':'M') + x(k+1).toFixed(1) + ' ' + y(e[i]).toFixed(1) + ' '; on=true; }); return d; };
+      if (riv != null) g += `<path d="${linea(riv)}" fill="none" stroke="#f5a623" stroke-width="2" stroke-dasharray="4 3" opacity=".85"/>`;
+      g += `<path d="${linea(H)}" fill="none" stroke="#ff5577" stroke-width="2.5" stroke-linejoin="round"/>`;
+      const ult = evo[evo.length-1]; if (ult) g += `<circle cx="${x(J)}" cy="${y(ult[H])}" r="4" fill="#ff5577"/>`;
+      return `<svg viewBox="0 0 ${W} ${Ht}" width="100%" role="img" aria-label="Evolución de las opciones de ascenso">${g}</svg>
+        <div class="pron-legend"><span><i style="background:#ff5577"></i>${pronEsc(nombres[H])}</span>${riv!=null?`<span><i style="background:#f5a623"></i>${pronEsc(nombres[riv])}</span>`:''}</div>`;
+    }
+
+    // Pinta el pronóstico dentro de "cont". textoVacio: mensaje cuando aún no hay resultados.
+    function pronosticoLigaRender(liga, cont, textoVacio){
+      if (!cont) return;
+      pronEstilos();
+      const D = pronPreparar(liga || {});
+      if (D.NT < 2 || D.H < 0) { cont.innerHTML = `<div class="pron-card pron-hint">Para el pronóstico hace falta la Liga con sus equipos y C.D. Hergar marcado.</div>`; return; }
+      const jugados = D.P.filter(p => p.jugado);
+      if (!jugados.length) { cont.innerHTML = `<div class="pron-card pron-hint" style="text-align:center; padding:18px 12px;">🔮 ${pronEsc(textoVacio)}</div>`; return; }
+      cont.innerHTML = `<div class="pron-card pron-hint" style="text-align:center; padding:18px 12px;">🔮 Simulando el resto de la Liga…</div>`;
+      setTimeout(() => {
+        try { cont.innerHTML = pronHTML(D); }
+        catch (e) { console.error('Pronóstico:', e); cont.innerHTML = `<div class="pron-card pron-hint">No se pudo calcular el pronóstico: ${pronEsc(e.message)}</div>`; }
+      }, 30);
+    }
+
+    function pronAscensoHTML(D, S, J, champ, evo, prev){
+      const { NT, H, nombres } = D, A = i => pronEsc(nombres[i]);
+      const fr = x => x[1] ? x[0]/x[1] : 0;
+      let h = '';
+
+      // Cabecera: opciones de ascenso
+      let delta = '<span class="pron-delta pron-eq">Primera jornada</span>';
+      if (prev) { const d = Math.round((champ[H]-prev[H])*100);
+        delta = `<span class="pron-delta ${d>0?'pron-up':d<0?'pron-down':'pron-eq'}">${d>0?'▲ +'+d:d<0?'▼ '+d:'= sin cambios'}${d!==0?' desde la J'+(J-1):''}</span>`; }
+      const ordAct = [...Array(NT).keys()].sort((x,y) => S.bp[y]-S.bp[x] || (S.bg[y]-S.bc[y])-(S.bg[x]-S.bc[x]) || S.bg[y]-S.bg[x]);
+      let best = 0; S.pos[H].forEach((c,k) => { if (c > S.pos[H][best]) best = k; });
+      if (!S.rest.length) {
+        const pf = ordAct.indexOf(H) + 1;
+        return `<div class="pron-card pron-hero" style="text-align:center"><div class="pron-big" style="font-size:40px">${pf===1?'🏆':pf+'º'}</div>
+          <div class="pron-hero-lbl" style="margin-top:8px">${pf===1?'¡Campeones! Hergar sube a Segunda':'Liga terminada: Hergar acaba '+pf+'º'}</div></div>` +
+          (J >= 2 ? `<div class="pron-card"><div class="pron-h2">Cómo fueron cambiando las opciones</div>${pronEvoSVG(evo, H, ordAct.find(i => i !== H), J, nombres)}</div>` : '');
+      }
+      h += `<div class="pron-card pron-hero">
+        <div class="pron-hero-top"><div class="pron-big">${pronPct(champ[H])}<small>%</small></div>
+          <div><div class="pron-hero-lbl">de opciones de ser campeón<br>y subir a Segunda</div>${delta}</div></div>
+        <div class="pron-chips">
+          <div class="pron-chip"><div class="v">${ordAct.indexOf(H)+1}º</div><div class="l">Puesto ahora</div></div>
+          <div class="pron-chip"><div class="v">${best+1}º</div><div class="l">Más probable (${pronPct(S.pos[H][best]/S.N)}%)</div></div>
+          <div class="pron-chip"><div class="v">${Math.round(S.expPts[H])}</div><div class="l">Puntos al final</div></div>
+        </div></div>`;
+
+      h += pronNecesitasHTML(D, S);
+
+      // Próximo partido y lo que está en juego
+      if (S.nextH) {
+        const p = S.nextH, m = S.rest.indexOf(p), casa = p.l === H, riv = casa ? p.v : p.l;
+        const my = casa ? S.lam[m][0] : S.lam[m][1], ot = casa ? S.lam[m][1] : S.lam[m][0];
+        const [w, d] = pronGanaEmpata(my, ot), l = Math.max(0, 1-w-d);
+        const c = S.cond[S.keyMatches.indexOf(p)];
+        const mio = casa ? { G:c.L, E:c.E, P:c.V } : { G:c.V, E:c.E, P:c.L };
+        h += `<div class="pron-card"><div class="pron-h2">Próximo partido</div>
+          <div class="pron-vs">J${p.jg} · ${casa ? `<span class="h">${A(H)}</span> vs ${A(riv)}` : `${A(riv)} vs <span class="h">${A(H)}</span>`} <span style="color:#64748b;font-weight:600;font-size:10.5px">(${casa?'en casa':'fuera'})</span></div>
+          <div class="pron-tri"><div class="w" style="width:${w*100}%">Gana ${pronPct(w)}%</div><div class="d" style="width:${d*100}%">${pronPct(d)}%</div><div class="l" style="width:${l*100}%">${pronPct(l)}%</div></div>
+          <div class="pron-hint" style="margin:12px 0 4px">Lo que está en juego: opciones de ascenso según el resultado</div>
+          ${[['Si gana',mio.G],['Si empata',mio.E],['Si pierde',mio.P]].map(([k,x]) => `<div class="pron-row"><span class="k">${k}</span><span class="bar"><i style="width:${fr(x)*100}%"></i></span><span class="p">${x[1]?pronPct(fr(x))+'%':'–'}</span></div>`).join('')}
+        </div>`;
+
+        // El partido de otros equipos que más mueve tus opciones (v90: pesando lo probable que es cada resultado)
+        let bk = null;
+        S.keyMatches.forEach((q, qi) => { if (q === p) return; const cc = S.cond[qi];
+          const tot = cc.L[1] + cc.E[1] + cc.V[1]; if (!tot) return;
+          const res = ['L','E','V'].map(o => ({ o, prob: cc[o][1]/tot, opc: cc[o][1] ? cc[o][0]/cc[o][1] : null }));
+          const impacto = res.reduce((s, r) => s + (r.opc == null ? 0 : r.prob * Math.abs(r.opc - champ[H])), 0);
+          if (!bk || impacto > bk.impacto) bk = { q, res, impacto }; });
+        h += `<div class="pron-card"><div class="pron-h2">El partido que también te interesa</div>`;
+        if (!bk || bk.impacto < .01) h += `<div class="pron-hint">Esta jornada ningún otro partido cambia de forma clara las opciones de ${A(H)}.</div>`;
+        else {
+          const q = bk.q, nom = { L: A(q.l), V: A(q.v) };
+          const lbl = { L:'Si gana '+nom.L, E:'Si empatan', V:'Si gana '+nom.V };
+          const que = o => o === 'E' ? 'un empate' : 'que gane ' + nom[o];
+          h += `<div class="pron-vs" style="font-size:12.5px">${nom.L} vs ${nom.V}</div>
+            <div class="pron-hint" style="margin:4px 0 2px">Tus opciones de ascenso según lo que pase. Debajo, lo probable que es cada resultado.</div>` +
+            bk.res.map(r => `<div class="pron-row"><span class="k ancho">${lbl[r.o]}<br><span style="font-size:9.5px;color:#64748b;font-weight:600">pasa el ${pronPct(r.prob)}%</span></span><span class="bar"><i style="width:${(r.opc||0)*100}%;${r.prob<.15?'opacity:.45':''}"></i></span><span class="p">${r.opc==null?'–':pronPct(r.opc)+'%'}</span></div>`).join('');
+          const validos = bk.res.filter(r => r.opc != null);
+          const probables = validos.filter(r => r.prob >= .15).sort((a,b) => b.opc - a.opc);
+          const mejor = [...validos].sort((a,b) => b.opc - a.opc)[0];
+          const normal = [...validos].sort((a,b) => b.prob - a.prob)[0];
+          if (mejor.prob < .15 && probables.length && mejor.opc - probables[0].opc >= .05) {
+            h += `<div class="pron-tip">👉 Lo normal es ${que(normal.o)}; una sorpresa (${que(mejor.o)}) te vendría muy bien</div>`;
+          } else if (probables.length >= 2 && probables[0].opc - probables[probables.length-1].opc >= .02) {
+            const peor = probables[probables.length-1];
+            const empatados = probables.length === 3 && probables[0].opc - probables[1].opc < .02;
+            const txt = !empatados ? que(probables[0].o) : (peor.o === 'E' ? 'que no empaten' : 'que no gane ' + nom[peor.o]);
+            h += `<div class="pron-tip">👉 Te conviene ${txt}</div>`;
+          }
+        }
+        h += `</div>`;
+      }
+
+      // Carrera por el ascenso
+      const porC = [...Array(NT).keys()].sort((x,y) => champ[y]-champ[x]);
+      const vis = porC.filter(i => champ[i] >= .01 || i === H), mx = Math.max(...champ, .01);
+      h += `<div class="pron-card"><div class="pron-h2">Carrera por el ascenso</div>` +
+        vis.map(i => `<div class="pron-race${i===H?' me':''}"><span class="n">${A(i)}</span><span class="bar"><i style="width:${champ[i]/mx*100}%"></i></span><span class="p">${pronPct(champ[i])}%</span></div>`).join('') +
+        (vis.length < NT ? `<div class="pron-hint" style="margin-top:4px">Resto de equipos: menos del 1%</div>` : '') + `</div>`;
+
+      // Evolución
+      if (J >= 2) { const riv = porC.find(i => i !== H);
+        h += `<div class="pron-card"><div class="pron-h2">Cómo han ido cambiando las opciones</div>${pronEvoSVG(evo, H, riv, J, nombres)}</div>`; }
+
+      // Mapa de puestos
+      const expPos = i => S.pos[i].reduce((s,c,k) => s + c*k, 0) / S.N;
+      const orden = [...Array(NT).keys()].sort((x,y) => expPos(x) - expPos(y));
+      let t = '<tr><th></th>' + [...Array(NT).keys()].map(k => `<th class="${k===0?'c1':''}">${k+1}º</th>`).join('') + '<th>Pts</th></tr>';
+      orden.forEach(i => {
+        t += `<tr class="${i===H?'me':''}"><td class="name">${A(i)}</td>`;
+        S.pos[i].forEach((c,k) => { const f = c/S.N, al = f > 0 ? Math.max(.08, Math.pow(f,.55)) : 0;
+          const bg = f > 0 ? (k===0 ? `rgba(245,166,35,${al})` : `rgba(46,213,115,${al})`) : 'rgba(255,255,255,.02)';
+          t += `<td style="background:${bg}" class="${f<.25?'low':''}">${f>=.05 ? pronPct(f) : (f>0 ? '·' : '')}</td>`; });
+        t += `<td class="ex">${Math.round(S.expPts[i])}</td></tr>`;
+      });
+      h += `<div class="pron-card"><div class="pron-h2">Probabilidad de cada puesto final</div>
+        <div class="pron-hint" style="margin-bottom:8px">% de acabar en cada puesto. La columna 1º es la del ascenso. A la derecha, los puntos esperados al final.</div>
+        <div class="pron-scroll"><table class="pron-hm">${t}</table></div></div>`;
+
+      return h;
+    }
+
+    const pronNum = (x, d=1) => x.toFixed(d).replace('.', ',');
+    function pronColorEP(ep){ ep = Math.round(ep*10)/10; return ep >= 1.9 ? ['pron-f','Asequible','#2ed573'] : ep >= 1.1 ? ['pron-m','Igualado','#f5a623'] : ['pron-d','Difícil','#ff4757']; }
+
+    // Lo que necesitas para ser campeón (vista Ascenso)
+    function pronNecesitasHTML(D, S){
+      const { NT, H, nombres } = D, A = i => pronEsc(nombres[i]);
+      const R = S.winC.length - 1; if (R < 1) return '';
+      const cur = S.bp[H], hMax = cur + 3*R;
+      const riv = [...Array(NT).keys()].filter(i => i !== H).map(i => ({ i,
+        max: S.bp[i] + 3*S.rest.filter(p => (p.l===i || p.v===i) && p.l!==H && p.v!==H).length }));
+      let badge;
+      if (riv.some(r => S.bp[r.i] > hMax)) badge = `<span class="pron-badge out">Ya no se puede ser campeón: aunque lo ganes todo no llegas al líder.</span>`;
+      else {
+        const bloq = riv.filter(r => r.max >= hMax).sort((a,b) => b.max - a.max);
+        if (!bloq.length) badge = `<span class="pron-badge ok">💪 Depende de ti: si lo ganas todo eres campeón pase lo que pase.</span>`;
+        else { const ns = bloq.slice(0,2).map(r => A(r.i)); const mas = bloq.length > 2 ? ' y otros' : '';
+          badge = `<span class="pron-badge no">Aunque lo ganes todo, necesitas que ${ns.join(' o ')}${mas} ${bloq.length>1?'pierdan':'pierda'} puntos en algún partido.</span>`; }
+      }
+      // Escalera de victorias
+      const filas = [];
+      let modo = 0; S.winC.forEach((c,w) => { if (c[1] > S.winC[modo][1]) modo = w; });
+      for (let w = R; w >= 0; w--) { const c = S.winC[w]; if (c[1] < 30) continue; filas.push({ w, p: c[0]/c[1] }); }
+      let ini = filas.findIndex(f => f.p < .98); if (ini < 0) ini = filas.length - 1; ini = Math.max(0, ini - 1);
+      let fin = filas.findIndex(f => f.p < .02); if (fin < 0) fin = filas.length - 1;
+      let vis = filas.slice(ini, fin + 1); if (vis.length > 8) vis = vis.slice(0, 8);
+      const esc = vis.map(f => `<div class="pron-esc${f.w===modo?' normal':''}"><span class="k">Ganas ${f.w} de ${R}${f.w===modo?'<br><span style="font-size:9.5px;color:#f5a623;font-weight:700">lo más probable</span>':''}</span><span class="bar"><i style="width:${f.p*100}%"></i></span><span class="p">${pronPct(f.p)}%</span></div>`).join('');
+      // Puntos objetivo
+      const pAt = X => { let c=0, t=0; for (let k=X-1; k<=X+1; k++) if (S.ptsC[k]) { c+=S.ptsC[k][0]; t+=S.ptsC[k][1]; } return t >= 40 ? c/t : null; };
+      const claves = Object.keys(S.ptsC).map(Number).sort((a,b) => a-b);
+      const buscar = obj => claves.find(X => { const v = pAt(X); return v != null && v >= obj; });
+      const X50 = buscar(.5), X90 = buscar(.9);
+      let obj = '';
+      if (X90 != null) { const falta = Math.max(0, X90 - cur), vic = Math.ceil(falta/3);
+        obj = `<div class="pron-obj">${X50!=null && X50<X90 ? `Con <b>${X50} puntos</b> serías campeón la mitad de las veces; con <b>${X90}</b>, casi seguro.` : `Con <b>${X90} puntos</b> serías campeón casi seguro.`}
+          Ahora tienes ${cur}: te faltan <b>${falta} puntos</b>, unas <b>${vic} victorias en los ${R} partidos</b> que quedan.</div>`; }
+      else if (X50 != null) obj = `<div class="pron-obj">Con <b>${X50} puntos</b> serías campeón la mitad de las veces. Ahora tienes ${cur}.</div>`;
+      // Número mágico
+      const top = Math.max(...riv.map(r => r.max)), magic = top - cur + 1;
+      const mag = magic > 0 && magic <= 3*R && R <= 9 ? `<div class="pron-obj">🔢 Campeón matemático con <b>${magic} puntos más</b> (${Math.ceil(magic/3)} ${Math.ceil(magic/3)===1?'victoria':'victorias'}).</div>` : '';
+      return `<div class="pron-card"><div class="pron-h2">Lo que necesitas para ser campeón</div>
+        <div class="pron-hint" style="margin-bottom:6px">Opciones de ascenso según cuántos de los partidos que quedan ganes.</div>
+        ${esc}${obj}${mag}${badge}</div>`;
+    }
+
+    // Vista Calendario
+    function pronCalendarioHTML(D, S, champ){
+      const { NT, H, nombres } = D, A = i => pronEsc(nombres[i]);
+      const mis = S.rest.map((p,m) => ({ p, m })).filter(x => x.p.l===H || x.p.v===H).sort((a,b) => a.p.jg - b.p.jg)
+        .map(({p,m}) => { const casa = p.l===H, my = casa?S.lam[m][0]:S.lam[m][1], ot = casa?S.lam[m][1]:S.lam[m][0], [w,d] = pronGanaEmpata(my,ot);
+          return { p, casa, riv: casa?p.v:p.l, ep: 3*w + d }; });
+      if (!mis.length) return `<div class="pron-card pron-hint" style="text-align:center;padding:18px 12px">No le quedan partidos a Hergar.</div>`;
+      let h = '';
+      // Tira de todo lo que queda + próximos
+      h += `<div class="pron-card"><div class="pron-h2">Lo que te queda (${mis.length} partidos)</div>
+        <div class="pron-strip">${mis.map(x => `<i style="background:${pronColorEP(x.ep)[2]};opacity:.85" title="J${x.p.jg}"></i>`).join('')}</div>
+        <div class="pron-legend" style="margin-bottom:8px"><span><i style="background:#2ed573"></i>Asequible</span><span><i style="background:#f5a623"></i>Igualado</span><span><i style="background:#ff4757"></i>Difícil</span></div>
+        <div class="pron-hint" style="margin-bottom:4px">Próximos partidos y puntos que se esperan de cada uno (de 0 a 3):</div>` +
+        mis.slice(0,6).map(x => { const c = pronColorEP(x.ep); return `<div class="pron-cal"><span class="j">J${x.p.jg}</span><span class="n">${x.casa?'🏠':'✈️'} ${A(x.riv)} <small>${x.casa?'en casa':'fuera'}</small></span><span class="e ${c[0]}">${pronNum(x.ep)} pts</span></div>`; }).join('') + `</div>`;
+      // Tramo más duro
+      if (mis.length >= 3) { let bi = 0, bs = 1e9; for (let i=0; i+2<mis.length; i++){ const s3 = mis[i].ep+mis[i+1].ep+mis[i+2].ep; if (s3 < bs) { bs = s3; bi = i; } }
+        const t = mis.slice(bi, bi+3);
+        h += `<div class="pron-card"><div class="pron-h2">🧗 El tramo más duro</div>
+          <div class="pron-obj" style="margin-top:0">De la <b>J${t[0].p.jg}</b> a la <b>J${t[2].p.jg}</b>: ${t.map(x => A(x.riv) + (x.casa?' (casa)':' (fuera)')).join(', ')}.
+          Se esperan unos <b>${pronNum(bs)} puntos de 9</b>.</div></div>`; }
+      // Dificultad del calendario de cada equipo: puntos que sacaría un equipo medio con ese calendario
+      const R = S.R, dif = [...Array(NT).keys()].map(i => {
+        const ps = S.rest.filter(p => p.l===i || p.v===i); if (!ps.length) return { i, v: null, n: 0 };
+        let e = 0; ps.forEach(p => { const casa = p.l===i, o = casa?p.v:p.l;
+          const my = R.mu*R.def[o]*(casa?R.h:1/R.h), ot = R.mu*R.att[o]*(casa?1/R.h:R.h); const [w,d] = pronGanaEmpata(my,ot); e += 3*w + d; });
+        return { i, v: e/ps.length, n: ps.length }; }).filter(x => x.v != null).sort((a,b) => b.v - a.v);
+      const vmin = Math.min(...dif.map(x=>x.v)), vmax = Math.max(...dif.map(x=>x.v)), rango = Math.max(.05, vmax - vmin);
+      h += `<div class="pron-card"><div class="pron-h2">Calendario que le queda a cada equipo</div>
+        <div class="pron-hint" style="margin-bottom:6px">Del más fácil al más difícil. El número son los puntos por partido que sacaría un equipo normal con ese calendario.</div>` +
+        dif.map((x,k) => `<div class="pron-race${x.i===H?' me':''}" style="grid-template-columns:108px 1fr 36px"><span class="n">${k+1}. ${A(x.i)}</span><span class="bar"><i style="width:${25 + 75*(x.v-vmin)/rango}%;${x.i===H?'':'background:#64748b'}"></i></span><span class="p">${pronNum(x.v,2)}</span></div>`).join('');
+      const rv = [...Array(NT).keys()].filter(i => i !== H).sort((a,b) => champ[b]-champ[a])[0];
+      const dh = dif.find(x => x.i===H), dr = dif.find(x => x.i===rv);
+      if (dh && dr) { const d = dh.v - dr.v;
+        h += `<div class="pron-tip" style="color:${Math.abs(d)<.05?'#94a3b8':d>0?'#2ed573':'#f5a623'}">${Math.abs(d) < .05 ? `Te queda un calendario parecido al de ${A(rv)}, tu rival más directo.` : d > 0 ? `👍 Te queda un calendario más fácil que a ${A(rv)}, tu rival más directo.` : `⚠️ Te queda un calendario más difícil que a ${A(rv)}, tu rival más directo.`}</div>`; }
+      return h + `</div>`;
+    }
+
+    // Vista Nivel
+    function pronNivelHTML(D, S, J){
+      const { NT, H, nombres } = D, A = i => pronEsc(nombres[i]);
+      const ppg = (R, i) => { const [w,d] = pronGanaEmpata(R.mu*R.att[i], R.mu*R.def[i]); return 3*w + d; };
+      const R = S.R, ahora = [...Array(NT).keys()].map(i => ppg(R, i));
+      let antes = null, Jant = J - 3;
+      const jugAnt = D.P.filter(p => p.jugado && p.jg <= Jant).map(p => ({...p}));
+      if (Jant >= 2 && jugAnt.length) { const R0 = pronNiveles(NT, jugAnt, Jant); antes = [...Array(NT).keys()].map(i => ppg(R0, i)); }
+      const ordT = [...Array(NT).keys()].sort((x,y) => S.bp[y]-S.bp[x] || (S.bg[y]-S.bc[y])-(S.bg[x]-S.bc[x]) || S.bg[y]-S.bg[x]);
+      const ordN = [...Array(NT).keys()].sort((x,y) => ahora[y]-ahora[x]);
+      const maxA = Math.max(...R.att), maxD = Math.max(...R.def.map(d => 1/d));
+      let h = `<div class="pron-card"><div class="pron-h2">Ranking de nivel</div>
+        <div class="pron-hint" style="margin-bottom:4px">Cómo están jugando ahora, no los puntos que llevan. La nota son los puntos por partido que sacarían contra un equipo normal (de 0 a 3)${antes?`, y la flecha, cómo han cambiado desde la J${Jant}`:''}.</div>`;
+      ordN.forEach((i,k) => {
+        const pt = ordT.indexOf(i) + 1, dpos = pt - (k+1);
+        let tag = '';
+        if (dpos >= 2) tag = `<span class="tag" style="color:#2ed573">${pt}º en la tabla: juega mejor de lo que dicen sus puntos</span>`;
+        else if (dpos <= -2) tag = `<span class="tag" style="color:#f5a623">${pt}º en la tabla: tiene más puntos de lo que juega</span>`;
+        let fl = '';
+        if (antes) { const d = ahora[i] - antes[i]; fl = d >= .15 ? `<small style="color:#2ed573">▲ +${pronNum(d,2)}</small>` : d <= -.15 ? `<small style="color:#ff4757">▼ ${pronNum(d,2)}</small>` : `<small style="color:#64748b">= estable</small>`; }
+        h += `<div class="pron-niv${i===H?' me':''}"><span class="r">${k+1}</span><span class="n">${A(i)}${tag}</span>
+          <span class="ad"><span>A<em><i style="width:${R.att[i]/maxA*100}%;background:#2ed573"></i></em></span><span>D<em><i style="width:${(1/R.def[i])/maxD*100}%;background:#3498db"></i></em></span></span>
+          <span class="v">${pronNum(ahora[i],2)}${fl}</span></div>`;
+      });
+      return h + `<div class="pron-hint" style="margin-top:8px">A = ataque (goles que mete) · D = defensa (lo poco que encaja), comparados con el mejor del grupo.</div></div>`;
+    }
+
+    function pronHTML(D){
+      const J = Math.max(...D.P.filter(p => p.jugado).map(p => p.jg));
+      const S = pronSimular(D, J, PRON_N, 77 + J);
+      const champ = S.pos.map(r => r[0]/S.N);
+      const evo = pronEvolucion(D, J);
+      const prev = J > 1 ? evo[J-2] : null;
+      const v = window.__pronVista || 'asc';
+      const tab = (k, t) => `<button class="pron-tab${v===k?' on':''}" onclick="window.__pronVista='${k}';var r=this.closest('.pron-root');r.querySelectorAll('.pron-vista').forEach(function(x){x.style.display=x.getAttribute('data-v')==='${k}'?'':'none'});r.querySelectorAll('.pron-tab').forEach(function(b){b.classList.remove('on')});this.classList.add('on')">${t}</button>`;
+      const vista = (k, html) => `<div class="pron-vista" data-v="${k}" style="${v===k?'':'display:none'}">${html}</div>`;
+      let h = `<div class="pron-root">`;
+      if (J < 5) h += `<div class="pron-warn">⚠️ Aún hay pocas jornadas jugadas. El pronóstico es orientativo y se irá afinando cada semana.</div>`;
+      h += `<div class="pron-tabs">${tab('asc','🏆 Ascenso')}${tab('cal','📅 Calendario')}${tab('niv','📊 Nivel')}</div>`;
+      h += vista('asc', pronAscensoHTML(D, S, J, champ, evo, prev));
+      h += vista('cal', pronCalendarioHTML(D, S, champ));
+      h += vista('niv', pronNivelHTML(D, S, J));
+      h += `<details class="pron-card pron-como"><summary>¿Cómo se calcula?</summary>
+        <p>1. Con los resultados de la Liga se calcula el nivel de ataque y de defensa de cada equipo. Cuenta a quién le metiste o te metió los goles: marcarle al líder vale más que marcarle al último.</p>
+        <p>2. Los partidos recientes pesan más que los antiguos, así que un equipo que viene lanzado sube aunque empezara mal. Con pocas jornadas jugadas todos se parecen a la media, para que un resultado raro no lo descoloque todo.</p>
+        <p>3. Con esos niveles se juega el resto de la Liga 10.000 veces, con resultados al azar pero realistas, y se aplican los desempates de la clasificación (puntos, diferencia de goles y goles a favor).</p>
+        <p>4. Si un equipo acaba primero en 3.400 de esas 10.000 temporadas, sus opciones de ascenso son del 34%. Solo sube el campeón.</p></details>
+        <div class="pron-foot">10.000 temporadas simuladas · con resultados hasta la J${J}</div>`;
+      return h + `</div>`;
+    }
+
+    function pintarPronosticoViewer() {
+      if (!ultimaLiga) return;
+      pronosticoLigaRender(ultimaLiga, document.getElementById('ligaPronViewer'), 'El pronóstico aparecerá cuando haya resultados de la primera jornada.');
+    }
+    window.pintarPronosticoViewer = pintarPronosticoViewer;
+
   // ── Liga: siempre suscrita, esté o no en vivo un partido ──
   let ultimaLiga = null;
   onValue(ref(db, 'liga/liga'), (snap) => {
@@ -2924,6 +3213,7 @@
     pintarLigaClasificacion(liga);
     renderLigaEvolChipsViewer();
     renderLigaEvolucionViewer();
+    if (document.getElementById('subLigaPron')?.classList.contains('active')) pintarPronosticoViewer(); // v89
   }, (err) => {
     // Antes esto fallaba en silencio (p.ej. permisos de Firebase) y la pantalla se
     // quedaba en "Cargando..." para siempre sin ninguna pista de qué había pasado.
@@ -2941,7 +3231,7 @@
     const cont = document.getElementById('ligaEquiposLista');
     if (!cont) return;
     cont.innerHTML = liga.equipos.map(eq => `
-      <div class="liga-equipo-row" onclick="abrirFichaRival('${eq.id}')" style="cursor:pointer;">
+      <div class="liga-equipo-row">
         ${escudoEquipoVisorHTML(eq, 30)}
         <div class="liga-equipo-nombre ${eq.esHergar?'hergar':''}">${eq.nombre}</div>
       </div>`).join('');
@@ -3012,11 +3302,11 @@
       const cuando = (p.fechaPartido || p.hora) ? `<div style="text-align:center; font-size:10.5px; color:#8da499; margin:-4px 0 8px;">${escHtml([p.fechaPartido, p.hora].filter(Boolean).join(' · '))}</div>` : '';
       return `
       <div class="liga-partido-row">
-        <span class="liga-equipo-name local ${localEs?'hergar-team':''}" onclick="abrirFichaRival('${p.local}')" style="cursor:pointer;">${nombreEquipoLigaViewer(liga, p.local)}</span>
-        <span onclick="abrirFichaRival('${p.local}')" style="cursor:pointer; display:inline-flex;">${escudoLigaVisorPorId(liga, p.local, 22)}</span>
+        <span class="liga-equipo-name local ${localEs?'hergar-team':''}">${nombreEquipoLigaViewer(liga, p.local)}</span>
+        ${escudoLigaVisorPorId(liga, p.local, 22)}
         ${marcador}
-        <span onclick="abrirFichaRival('${p.visitante}')" style="cursor:pointer; display:inline-flex;">${escudoLigaVisorPorId(liga, p.visitante, 22)}</span>
-        <span class="liga-equipo-name ${visEs?'hergar-team':''}" onclick="abrirFichaRival('${p.visitante}')" style="cursor:pointer;">${nombreEquipoLigaViewer(liga, p.visitante)}</span>
+        ${escudoLigaVisorPorId(liga, p.visitante, 22)}
+        <span class="liga-equipo-name ${visEs?'hergar-team':''}">${nombreEquipoLigaViewer(liga, p.visitante)}</span>
       </div>${cuando}`;
     }).join('');
   }
@@ -3040,7 +3330,7 @@
     const body = document.getElementById('ligaViewerClasifBody');
     if (!body) return;
     body.innerHTML = filas.map((f,i) => `
-      <tr class="${f.esHergar?'liga-fila-hergar':''}" onclick="abrirFichaRival('${f.id}')" style="cursor:pointer;">
+      <tr class="${f.esHergar?'liga-fila-hergar':''}">
         <td>${i+1}</td><td style="text-align:left;"><span style="display:inline-flex; align-items:center; gap:6px;">${escudoLigaVisorPorId(liga, f.id, 18)}<span>${f.nombre}</span></span></td><td>${f.pj}</td><td>${f.pg}</td><td>${f.pe}</td>
         <td>${f.pp}</td><td>${f.gf}</td><td>${f.gc}</td><td>${f.dg>0?'+':''}${f.dg}</td><td>${f.pts}</td>
       </tr>`).join('');

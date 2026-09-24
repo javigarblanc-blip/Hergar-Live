@@ -452,6 +452,7 @@
 
     <!-- EN VIVO -->
     <div id="envivo" class="panel">
+      <div class="card" id="wpCard" style="display:none;"></div>
       <div class="card" id="statGrid"><div class="loader" style="padding:20px 12px;">Esperando datos del partido...</div></div>
       <div class="card">
         <div class="card-title">Momentum</div>
@@ -728,6 +729,8 @@
 
 <script type="module">
   // Visor · Modo TV: pantalla completa en horizontal (marcador, campo, estadísticas, cinta de eventos, rótulos de gol y cambio, descanso y previa).
+  // v93 · Tarjeta Próximo partido: pronóstico, lo que está en juego, cara a cara y a seguir (Hergar en rojo, rival en azul); sustituye a la mini clasificación.
+  // v92 (app) · En vivo: probabilidad de ganar minuto a minuto (tarjeta, gráfica, gol clave, remontadas), en el aviso de gol y en el Modo TV. La app publica los goles con minuto (golesMin).
   // v91 (app) · Pronóstico con tres botones: Ascenso (+ lo que necesitas para ser campeón), Calendario (dificultad de lo que queda) y Nivel (ranking por cómo juegan).
   // v90 (app) · Pronóstico: "el partido que también te interesa" elige por impacto real, muestra lo probable de cada resultado y solo recomienda lo que puede pasar.
   // v89 (app) · Liga → 🔮 Pronóstico: opciones de ascenso (solo sube el campeón), próximo partido, partido que interesa, carrera, evolución y mapa de puestos. Mismo código que la app.
@@ -1226,7 +1229,9 @@
         marcador: `HERGAR ${goles} – ${Number(matchData.golesRival) || 0} ${(matchData.rival || 'RIVAL').toUpperCase()}` });
     } catch (e) { console.error('Modo TV gol:', e); }
     try { avisarRecordsSiProcede(matchData, goles, foto, marcanIds); } catch (e) { console.error('Récords:', e); }
-    const detalle = [marcan.length ? `⚽ ${marcan.join(', ')}` : '', asisten.length ? `👟 ${asisten.join(', ')}` : ''].filter(Boolean).join('  ·  ');
+    let wpTxt = '';
+    try { const a = wpGanarAhora(matchData, goles - 1), b = wpGanarAhora(matchData, goles); wpTxt = `📈 Opciones de ganar: ${pronPct(a)}% → ${pronPct(b)}%`; } catch (e) {}
+    const detalle = [marcan.length ? `⚽ ${marcan.join(', ')}` : '', asisten.length ? `👟 ${asisten.join(', ')}` : '', wpTxt].filter(Boolean).join('  ·  ');
     document.getElementById('golMarcador').textContent = `HERGAR ${goles} – ${Number(matchData.golesRival) || 0} ${(matchData.rival || 'RIVAL').toUpperCase()}`;
     const det = document.getElementById('golDetalle');
     det.textContent = detalle; det.style.display = detalle ? 'block' : 'none';
@@ -1263,6 +1268,7 @@
     pintarBanquilloPrevia(matchData, previa);
     pintarEventos(matchData);
     pintarStatsGrid(matchData);
+    try { pintarWP(matchData); } catch (e) { console.error('Probabilidad en directo:', e); }
     pintarTablaJugadores(matchData);
     pintarMomentum(matchData);
     pintarGeo(matchData);
@@ -1684,6 +1690,15 @@
     if (src) return `<div class="tv-escudo h"><img src="${src}" alt=""></div>`;
     return `<div class="tv-escudo r">${escHtml(inicialesEquipoViewer(nombre))}</div>`;
   }
+  function tvWP(m, estado) {
+    if (!['juego', 'pausa', 'descanso'].includes(estado)) return 'HERGAR LIVE';
+    try {
+      const [w, d, l] = wpProb(wpContexto(m), Number(m.golesLocal) || 0, Number(m.golesRival) || 0, wpMinuto(m), false);
+      return `<div style="font-size:12px; letter-spacing:1px; color:#94a3b8;">OPCIONES DE GANAR</div>
+        <div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:34px; line-height:1.05; color:#2ed573;">${pronPct(w)}%</div>
+        <div style="display:flex; height:6px; border-radius:3px; overflow:hidden; margin-top:4px;"><div style="width:${w*100}%; background:#2ed573;"></div><div style="width:${d*100}%; background:#64748b;"></div><div style="width:${l*100}%; background:#ff4757;"></div></div>`;
+    } catch (e) { return 'HERGAR LIVE'; }
+  }
   function tvStats(m) {
     const n = (v) => Number(v) || 0;
     return [
@@ -1694,6 +1709,9 @@
     ];
   }
   function tvListaGoles(m) {
+    // v92: si la app publica los goles con minuto, salen todos, también los antiguos
+    const gm = m.golesMin ? Object.values(m.golesMin).filter(g => g && g.min != null).sort((a, b) => a.min - b.min) : [];
+    if (gm.length) return gm.map(g => ({ texto: g.equipo === 'rival' ? 'Rival' : (g.nombre || 'Hergar'), min: `${g.min}'`, rival: g.equipo === 'rival' }));
     const evs = tvEventos(m).filter(e => e.tipo === 'gol' || e.tipo === 'golRival');
     const nuestros = evs.filter(e => e.tipo === 'gol').length;
     if (nuestros >= (Number(m.golesLocal) || 0)) return evs.map(e => ({ texto: e.tipo === 'gol' ? e.nombre + (/penalti/.test(e.texto) ? ' (p)' : '') : 'Rival', min: `${e.min}'`, rival: e.tipo === 'golRival' }));
@@ -1715,7 +1733,7 @@
           <div class="tv-centro-marc"><div class="tv-goles">${previa ? '– –' : `${m.golesLocal ?? 0} – ${m.golesRival ?? 0}`}</div><div class="tv-reloj" id="tvReloj">${tvTextoReloj(m, estado)}</div></div>
           <div class="tv-equipo">${tvEscudo(m.rival, false)}<span class="nom" style="font-size:${rival.length > 16 ? 22 : rival.length > 11 ? 26 : 30}px;">${escHtml(rival)}</span></div>
         </div>
-        <div class="tv-info">HERGAR LIVE</div>
+        <div class="tv-info">${tvWP(m, estado)}</div>
       </div>`;
   }
 
@@ -2049,6 +2067,133 @@
     if (!rival) return null;
     return { liga, pub, p, hergar, rival, esCasa };
   }
+  // ── v93 · Tarjeta "Próximo partido": pronóstico, lo que está en juego, cara a cara y a seguir ──
+  // Hergar va en el rojo del club y el rival en azul. Usa el mismo motor que el Pronóstico de la Liga.
+  let proxCache = { clave: null, S: null, D: null, J: 0 };
+  function proxEstilos() {
+    if (document.getElementById('proxEstilos')) return;
+    const st = document.createElement('style'); st.id = 'proxEstilos';
+    st.textContent = `
+      .prox-sec{ background:rgba(255,255,255,.025); border:1px solid rgba(255,85,119,.2); border-radius:12px; padding:11px; margin-bottom:10px; }
+      .prox-t{ font-family:'Montserrat',sans-serif; font-weight:800; font-size:11.5px; color:#e2e8f0; margin-bottom:9px; }
+      .prox-chips{ display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+      .prox-chip{ background:rgba(0,0,0,.28); border-radius:10px; padding:8px 4px; text-align:center; }
+      .prox-chip .l{ font-size:10px; color:#94a3b8; font-weight:600; }
+      .prox-chip .v{ font-family:'Montserrat',sans-serif; font-weight:900; font-size:19px; margin-top:2px; color:#e2e8f0; }
+      .prox-chip .dl{ font-size:10px; font-weight:800; margin-top:1px; }
+      .prox-vsh{ display:flex; justify-content:space-between; font-family:'Montserrat',sans-serif; font-weight:800; font-size:11px; margin-bottom:4px; }
+      .prox-vsr{ padding:5px 0; }
+      .prox-vsv{ display:flex; justify-content:space-between; align-items:baseline; font-family:'Montserrat',sans-serif; font-weight:800; font-size:13px; color:#e2e8f0; }
+      .prox-vsl{ font-family:'Inter',sans-serif; font-weight:600; font-size:10.5px; color:#94a3b8; }
+      .prox-vsb{ display:flex; gap:3px; height:6px; margin-top:4px; }
+      .prox-vsb div{ border-radius:3px; min-width:3px; }
+      .prox-forma{ display:flex; justify-content:space-between; }
+      .prox-forma > div{ display:flex; gap:3px; }
+      .prox-bola{ width:21px; height:21px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:10px; font-weight:800; font-family:'Montserrat',sans-serif; color:#0a0e14; }
+      .prox-bola.V{ background:#2ed573; } .prox-bola.E{ background:#94a3b8; } .prox-bola.D{ background:#ff4757; color:#fff; }
+      .prox-seg{ display:flex; gap:8px; font-size:12.5px; color:#cbd5e1; line-height:1.45; padding:6px 0; border-top:1px solid rgba(255,255,255,.05); }
+      .prox-seg:first-of-type{ border-top:none; }
+      .prox-seg b{ color:#e2e8f0; }`;
+    document.head.appendChild(st);
+  }
+  function proxForma(D, i, n) {
+    return D.P.filter(p => p.jugado && (p.l === i || p.v === i)).sort((a, b) => a.jg - b.jg).slice(-n)
+      .map(p => { const gf = p.l === i ? p.gl : p.gv, gc = p.l === i ? p.gv : p.gl; return gf > gc ? 'V' : gf < gc ? 'D' : 'E'; });
+  }
+  function proxASeguir(t) {
+    const ps = (t && t.partidos) ? Object.values(t.partidos) : [], jugs = Object.values((t && t.jugadores) || {});
+    const out = []; if (!ps.length) return out;
+    const nom = j => escHtml((j.name || '').split(' ')[0]);
+    const golesDe = p => (p && p.goles) ? Object.values(p.goles).filter(Boolean) : null;
+    // Racha goleadora viva: marcó en los k últimos partidos (k >= 2)
+    const rachas = jugs.map(j => { let k = 0;
+      for (let i = ps.length - 1; i >= 0; i--) { const gs = golesDe(ps[i]); if (!gs) break;
+        if (gs.some(x => x.equipo !== 'rival' && String(x.jugadorId) === String(j.id))) k++; else break; }
+      return { j, k }; }).filter(x => x.k >= 2).sort((a, b) => b.k - a.k);
+    rachas.slice(0, 1).forEach(x => out.push({ ico: '🔥', t: `<b>${nom(x.j)}</b> ha marcado en los ${x.k} últimos partidos` }));
+    // Hito cercano: a 1 o 2 de 5, 10, 15, 20, 25, 30, 40 o 50 goles o asistencias
+    const hitos = [5, 10, 15, 20, 25, 30, 40, 50], cerca = [];
+    jugs.forEach(j => [['goles', 'gol', 'goles'], ['asistencias', 'asistencia', 'asistencias']].forEach(([k, s, pl]) => {
+      const v = Number(j[k]) || 0, h = hitos.find(x => x > v); if (v > 0 && h && h - v <= 2) cerca.push({ j, falta: h - v, h, s, pl });
+    }));
+    const ya = new Set(rachas.slice(0, 1).map(x => String(x.j.id)));
+    cerca.sort((a, b) => (ya.has(String(a.j.id)) - ya.has(String(b.j.id))) || a.falta - b.falta || b.h - a.h).slice(0, 1).forEach(c =>
+      out.push({ ico: '🎯', t: `A <b>${nom(c.j)}</b> le ${c.falta === 1 ? 'falta 1 ' + c.s : 'faltan ' + c.falta + ' ' + c.pl} para llegar a ${c.h} ${c.pl}` }));
+    // Récord de victorias seguidas a la vista
+    let max = 0, cur = 0; ps.forEach(p => { if (p.resultado === 'V') { cur++; max = Math.max(max, cur); } else cur = 0; });
+    if (cur >= 2 && cur === max) out.push({ ico: '🏆', t: `Llevan <b>${cur} victorias seguidas</b>, el récord del club: si ganan, lo baten` });
+    else if (cur >= 2 && cur === max - 1) out.push({ ico: '🏆', t: `Llevan <b>${cur} victorias seguidas</b>: una más iguala el récord del club (${max})` });
+    if (out.length < 2) { const mg = jugs.slice().sort((a, b) => (Number(b.goles) || 0) - (Number(a.goles) || 0))[0];
+      if (mg && mg.goles) out.push({ ico: '⚽', t: `Máximo goleador: <b>${nom(mg)}</b>, con ${mg.goles} ${Number(mg.goles) === 1 ? 'gol' : 'goles'}` }); }
+    return out.slice(0, 3);
+  }
+  function proxSeccionesHTML(liga, p, esCasa) {
+    proxEstilos(); pronEstilos();
+    const HC = '#ff5577', RC = '#4dabf7';
+    let h = '';
+    const D = pronPreparar(liga), { H, NT, nombres } = D;
+    const jug = D.P.filter(q => q.jugado);
+    const IDX = {}; liga.equipos.forEach((e, i) => IDX[e.id] = i);
+    const porVuelta = Math.max(1, ...liga.partidos.filter(q => q && q.vuelta === 1).map(q => q.jornada || 1));
+    const jgP = ((p.vuelta || 1) - 1) * porVuelta + (p.jornada || 1);
+    const riv = esCasa ? IDX[p.visitante] : IDX[p.local];
+    if (H >= 0 && riv != null && jug.length) {
+      const J = Math.max(...jug.map(q => q.jg));
+      const clave = JSON.stringify(jug.map(q => [q.jg, q.l, q.v, q.gl, q.gv])) + '|' + NT;
+      if (proxCache.clave !== clave) proxCache = { clave, S: pronSimular(D, J, PRON_N, 77 + J), D, J };
+      const S = proxCache.S;
+      const m = S.rest.findIndex(q => q.jg === jgP && q.l === IDX[p.local] && q.v === IDX[p.visitante]);
+      // Pronóstico, en el mismo orden que la cabecera (local a la izquierda)
+      if (m >= 0) {
+        const lamH = esCasa ? S.lam[m][0] : S.lam[m][1], lamR = esCasa ? S.lam[m][1] : S.lam[m][0];
+        const [w, d] = pronGanaEmpata(lamH, lamR), l = Math.max(0, 1 - w - d);
+        const pL = esCasa ? w : l, pV = esCasa ? l : w, colL = esCasa ? HC : RC, colV = esCasa ? RC : HC;
+        const tx = c => c === HC ? '#fff' : '#0a0e14';
+        h += `<div class="prox-sec"><div class="prox-t">🔮 Pronóstico</div>
+          <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:800; font-family:'Montserrat',sans-serif; margin-bottom:5px;"><span style="color:${colL}">Gana ${pronEsc(nombres[IDX[p.local]])}</span><span style="color:#94a3b8">Empate</span><span style="color:${colV}">Gana ${pronEsc(nombres[IDX[p.visitante]])}</span></div>
+          <div class="pron-tri"><div style="width:${pL*100}%; background:${colL}; color:${tx(colL)}">${pL >= .1 ? pronPct(pL) + '%' : ''}</div><div class="d" style="width:${d*100}%">${d >= .1 ? pronPct(d) + '%' : ''}</div><div style="width:${pV*100}%; background:${colV}; color:${tx(colV)}">${pV >= .1 ? pronPct(pV) + '%' : ''}</div></div></div>`;
+        // Lo que está en juego (solo si es el siguiente partido de Hergar)
+        const ki = S.keyMatches.indexOf(S.rest[m]);
+        if (S.rest[m] === S.nextH && ki >= 0) {
+          const champ = S.pos[H][0] / S.N, c = S.cond[ki], fr = x => x[1] ? x[0] / x[1] : 0;
+          const mio = esCasa ? { G: c.L, E: c.E, P: c.V } : { G: c.V, E: c.E, P: c.L };
+          const chip = (t, x) => { const v = fr(x), dl = Math.round((v - champ) * 100);
+            return `<div class="prox-chip"><div class="l">${t}</div><div class="v">${x[1] ? pronPct(v) + '%' : '–'}</div><div class="dl" style="color:${dl > 0 ? '#2ed573' : dl < 0 ? '#ff4757' : '#94a3b8'}">${dl > 0 ? '▲ +' + dl : dl < 0 ? '▼ ' + dl : '='}</div></div>`; };
+          h += `<div class="prox-sec"><div class="prox-t">🏆 Lo que está en juego</div>
+            <div style="font-size:12px; color:#cbd5e1; margin-bottom:8px;">Opciones de ser campeón y subir a Segunda: <b style="color:#e2e8f0">${pronPct(champ)}%</b> ahora.</div>
+            <div class="prox-chips">${chip('Si gana', mio.G)}${chip('Si empata', mio.E)}${chip('Si pierde', mio.P)}</div></div>`;
+        }
+      }
+      // Cara a cara
+      const ordT = [...Array(NT).keys()].sort((x, y) => S.bp[y] - S.bp[x] || (S.bg[y] - S.bc[y]) - (S.bg[x] - S.bc[x]) || S.bg[y] - S.bg[x]);
+      const pj = i => jug.filter(q => q.l === i || q.v === i).length;
+      const ppg = i => { const [a, b] = pronGanaEmpata(S.R.mu * S.R.att[i], S.R.mu * S.R.def[i]); return 3 * a + b; };
+      const porP = (v, i) => pj(i) ? v / pj(i) : 0;
+      const filas = [
+        ['Puesto', ordT.indexOf(H) + 1, ordT.indexOf(riv) + 1, x => x + 'º', true],
+        ['Puntos', S.bp[H], S.bp[riv], x => x, false],
+        ['Nivel (0-3)', ppg(H), ppg(riv), x => pronNum(x, 2), false],
+        ['Goles a favor / partido', porP(S.bg[H], H), porP(S.bg[riv], riv), x => pronNum(x, 1), false],
+        ['Goles en contra / partido', porP(S.bc[H], H), porP(S.bc[riv], riv), x => pronNum(x, 1), true],
+      ];
+      const fila = ([t, a, b, f, menor]) => {
+        const va = menor ? 1 / Math.max(a, .1) : Math.max(a, 0), vb = menor ? 1 / Math.max(b, .1) : Math.max(b, 0), tot = (va + vb) || 1;
+        const mH = menor ? a < b : a > b, mR = menor ? b < a : b > a;
+        return `<div class="prox-vsr"><div class="prox-vsv"><span style="color:${mH ? HC : '#e2e8f0'}">${f(a)}</span><span class="prox-vsl">${t}</span><span style="color:${mR ? RC : '#e2e8f0'}">${f(b)}</span></div>
+          <div class="prox-vsb"><div style="flex:${(va / tot) || .5}; background:${HC}; opacity:${mH ? 1 : .4}"></div><div style="flex:${(vb / tot) || .5}; background:${RC}; opacity:${mR ? 1 : .4}"></div></div></div>`; };
+      const bolas = arr => arr.map(r => `<span class="prox-bola ${r}">${r}</span>`).join('') || '<span style="color:#64748b; font-size:11px;">–</span>';
+      h += `<div class="prox-sec"><div class="prox-t">⚔️ Cara a cara</div>
+        <div class="prox-vsh"><span style="color:${HC}">${pronEsc(nombres[H])}</span><span style="color:${RC}">${pronEsc(nombres[riv])}</span></div>
+        ${filas.map(fila).join('')}
+        <div class="prox-vsl" style="text-align:center; margin:10px 0 6px;">Últimos 5 partidos (el más reciente a la derecha)</div>
+        <div class="prox-forma"><div>${bolas(proxForma(D, H, 5))}</div><div>${bolas(proxForma(D, riv, 5))}</div></div></div>`;
+    }
+    // A seguir
+    const js = proxASeguir(ultimaTemporada);
+    if (js.length) h += `<div class="prox-sec"><div class="prox-t">👀 A seguir</div>${js.map(x => `<div class="prox-seg"><span>${x.ico}</span><span>${x.t}</span></div>`).join('')}</div>`;
+    return h;
+  }
+
   function pintarProximoPartido() {
     const card = document.getElementById('proximoPartidoCard');
     if (!card) return;
@@ -2089,6 +2234,8 @@
       </div>` : '';
     const escudo = (eq, esH) => (esH || escudoSrcVisor(eq)) ? `<img src="${escudoSrcVisor(eq) || ESCUDO_HERGAR_SRC}" alt="" style="width:42px; height:42px; border-radius:50%; object-fit:cover; background:#fff; display:block; margin:0 auto 6px;">` : `<div style="width:42px; height:42px; border-radius:50%; background:${esH ? 'rgb(180,20,56)' : '#1a2332'}; margin:0 auto 6px; display:flex; align-items:center; justify-content:center; font-family:'Montserrat',sans-serif; font-weight:800; font-size:14px; color:${esH ? '#fff' : '#94a3b8'};">${escHtml(inicialesEquipoViewer(eq.nombre))}</div>`;
     const celda = 'padding:7px 0; border-top:1px solid rgba(255,255,255,0.06);';
+    let nuevas = '';
+    try { nuevas = proxSeccionesHTML(liga, p, esCasa); } catch (e) { console.error('Próximo partido:', e); }
     card.innerHTML = `
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
         <span style="font-size:11px; background:rgba(46,213,115,0.14); color:#2ed573; border-radius:6px; padding:3px 9px; font-weight:700;">📣 Próximo partido</span>
@@ -2100,14 +2247,7 @@
         <div style="flex:1; text-align:center;">${escudo(esCasa ? rival : hergar, !esCasa)}<div style="font-size:13px; font-weight:700; color:#e2e8f0;">${escHtml(esCasa ? rival.nombre : hergar.nombre)}</div></div>
       </div>
       <div style="text-align:center; font-size:14px; font-weight:600; color:#e2e8f0; padding:9px 0; border-top:1px solid rgba(255,255,255,0.08); border-bottom:1px solid rgba(255,255,255,0.08); margin-bottom:12px;">🗓️ ${escHtml(fechaHoraProximoViewer(p))}</div>
-      <div style="font-size:11.5px; color:#8da499; margin-bottom:6px;">Clasificación</div>
-      <table style="width:100%; border-collapse:collapse; font-size:13px; margin-bottom:12px; text-align:center;">
-        <thead><tr style="color:#52665c; font-size:11px;"><th style="text-align:left; font-weight:600; padding:3px 0;">Equipo</th><th style="font-weight:600;">Pos</th><th style="font-weight:600;">PJ</th><th style="font-weight:600;">Pts</th><th style="font-weight:600;">GF–GC</th></tr></thead>
-        <tbody>
-          <tr><td style="text-align:left; ${celda} color:#2ed573; font-weight:600;">${escHtml(hergar.nombre)}</td><td style="${celda}">${fh.pos}º</td><td style="${celda}">${fh.pj}</td><td style="${celda}">${fh.pts}</td><td style="${celda}">${fh.gf}–${fh.gc}</td></tr>
-          <tr><td style="text-align:left; ${celda} color:#e2e8f0;">${escHtml(rival.nombre)}</td><td style="${celda}">${fr.pos}º</td><td style="${celda}">${fr.pj}</td><td style="${celda}">${fr.pts}</td><td style="${celda}">${fr.gf}–${fr.gc}</td></tr>
-        </tbody>
-      </table>
+      ${nuevas}
       <div style="font-size:11.5px; color:#8da499; margin-bottom:6px;">Enfrentamientos anteriores</div>
       ${cara}
       ${convocatoriaHTML}`;
@@ -3186,6 +3326,139 @@
       return h + `</div>`;
     }
 
+    // ── v92 · PROBABILIDAD DE GANAR EN DIRECTO (visor) ──
+    // Goles esperados de cada equipo con el nivel del Pronóstico; en cada minuto se mira el marcador
+    // y la parte de los 70' que queda. Los goles con minuto llegan en m.golesMin (app v92) o, si no, de la cronología.
+    const WP_DUR = 70;
+    let wpCtxCache = { clave: null, ctx: null };
+    function wpContexto(m) {
+      const liga = ultimaLiga;
+      const clave = JSON.stringify([m && m.rival, liga && (liga.partidos || []).map(p => [p.id, p.golesLocal, p.golesVisitante]), liga && liga.proximoPublicado && liga.proximoPublicado.id]);
+      if (wpCtxCache.clave === clave) return wpCtxCache.ctx;
+      let ctx = { lh: 2.2, lr: 2.2, nota: 'Sin datos de la Liga: se usa un nivel medio para los dos equipos.' };
+      try {
+        if (liga && liga.equipos && liga.partidos) {
+          const D = pronPreparar(liga);
+          const hergar = liga.equipos[D.H];
+          const rivalEq = equipoLigaPorNombre(m && m.rival);
+          const Ri = rivalEq ? liga.equipos.findIndex(e => e.id === rivalEq.id) : -1;
+          const pub = liga.proximoPublicado, pp = pub && liga.partidos.find(x => x.id === pub.id);
+          let casa = null;
+          if (pp && rivalEq && hergar && (pp.local === rivalEq.id || pp.visitante === rivalEq.id)) casa = pp.local === hergar.id;
+          const jug = D.P.filter(p => p.jugado);
+          if (D.H >= 0 && jug.length) {
+            const R = pronNiveles(D.NT, jug, Math.max(...jug.map(p => p.jg)));
+            const ha = casa === null ? 1 : (casa ? R.h : 1 / R.h);
+            const attR = Ri >= 0 ? R.att[Ri] : 1, defR = Ri >= 0 ? R.def[Ri] : 1;
+            ctx = { lh: R.mu * R.att[D.H] * defR * ha, lr: R.mu * attR * R.def[D.H] / ha,
+                    nota: Ri >= 0 ? '' : 'Rival fuera de la Liga: se le da un nivel medio.' };
+          }
+        }
+      } catch (e) { console.error('Probabilidad en directo:', e); }
+      wpCtxCache = { clave, ctx };
+      return ctx;
+    }
+    function wpProb(ctx, gH, gR, min, final) {
+      if (final) return gH > gR ? [1,0,0] : gH < gR ? [0,0,1] : [0,1,0];
+      const f = Math.max(0.5, WP_DUR - min) / WP_DUR;
+      const A = pronPmf(ctx.lh * f), B = pronPmf(ctx.lr * f);
+      let w = 0, d = 0;
+      for (let i = 0; i < 20; i++) for (let j = 0; j < 20; j++) { const t = gH + i - gR - j, p = A[i] * B[j]; if (t > 0) w += p; else if (t === 0) d += p; }
+      return [w, d, Math.max(0, 1 - w - d)];
+    }
+    function wpMinuto(m) {
+      const min = Number(m.minuto) || 0;
+      if (!m.matchRunning && !m.matchFinished && m.parte === 2 && min <= 35) return 35; // descanso
+      return min;
+    }
+    function wpGoles(m) {
+      let goles;
+      if (Array.isArray(m.golesMin) || (m.golesMin && typeof m.golesMin === 'object')) {
+        goles = Object.values(m.golesMin).filter(g => g && g.min != null).map(g => ({ min: Number(g.min) || 0, rival: g.equipo === 'rival', nombre: g.nombre || '' }));
+      } else {
+        goles = tvEventos(m).filter(e => e.tipo === 'gol' || e.tipo === 'golRival').map(e => ({ min: e.min, rival: e.tipo === 'golRival', nombre: e.nombre || '' }));
+      }
+      goles.sort((a, b) => a.min - b.min);
+      const completos = goles.filter(g => !g.rival).length === (Number(m.golesLocal) || 0) && goles.filter(g => g.rival).length === (Number(m.golesRival) || 0);
+      return { goles, completos };
+    }
+    function pintarWP(m) {
+      const card = document.getElementById('wpCard');
+      if (!card) return;
+      if (!m) { card.style.display = 'none'; return; }
+      pronEstilos();
+      const ctx = wpContexto(m);
+      const previa = m.previa === true && !m.matchRunning && !m.matchFinished;
+      const fin = !!m.matchFinished;
+      const gH = Number(m.golesLocal) || 0, gR = Number(m.golesRival) || 0;
+      const T = previa ? 0 : wpMinuto(m);
+      const ahora = previa ? wpProb(ctx, 0, 0, 0, false) : wpProb(ctx, gH, gR, T, fin);
+      const inicio = wpProb(ctx, 0, 0, 0, false);
+      const { goles, completos } = wpGoles(m);
+      const pc = x => pronPct(x);
+      // Serie minuto a minuto
+      const serie = [];
+      if (!previa) {
+        for (let t = 0; t <= T; t++) {
+          const h = goles.filter(g => !g.rival && g.min <= t).length, r = goles.filter(g => g.rival && g.min <= t).length;
+          serie.push(t === T ? (fin ? wpProb(ctx, gH, gR, T, false) : ahora) : wpProb(ctx, h, r, t, false));
+        }
+      }
+      // Momento clave: el gol que más movió las opciones de ganar
+      let clave = null;
+      goles.forEach((g, k) => {
+        const ant = goles.slice(0, k), h0 = ant.filter(x => !x.rival).length, r0 = ant.filter(x => x.rival).length;
+        const a = wpProb(ctx, h0, r0, g.min, false)[0], b = wpProb(ctx, h0 + (g.rival ? 0 : 1), r0 + (g.rival ? 1 : 0), g.min, false)[0];
+        if (!clave || Math.abs(b - a) > Math.abs(clave.b - clave.a)) clave = { g, a, b };
+      });
+      let h = `<div class="card-title">📈 Probabilidad de ganar</div>`;
+      h += `<div style="font-size:11px; color:#94a3b8; margin-bottom:2px;">${previa ? 'Antes de empezar' : fin ? `Final · así fueron cambiando las opciones` : `Minuto ${T}' · ${gH}–${gR}`}</div>`;
+      if (!fin) {
+        const [w, d, l] = ahora;
+        h += `<div class="pron-tri"><div class="w" style="width:${w*100}%">${w >= .12 ? 'Gana ' : ''}${pc(w)}%</div><div class="d" style="width:${d*100}%">${d >= .08 ? pc(d) + '%' : ''}</div><div class="l" style="width:${l*100}%">${l >= .08 ? pc(l) + '%' : ''}</div></div>
+          <div style="display:flex; justify-content:space-between; font-size:10px; color:#64748b; margin-top:4px;"><span>Gana ${pc(w)}%</span><span>Empata ${pc(d)}%</span><span>Pierde ${pc(l)}%</span></div>`;
+      }
+      if (serie.length >= 2) h += wpGrafica(serie, goles, T);
+      let textos = [];
+      if (clave && Math.abs(clave.b - clave.a) >= .05) {
+        const g = clave.g;
+        textos.push(g.rival ? `🥅 El gol del rival en el ${g.min}' bajó las opciones de ganar del ${pc(clave.a)}% al ${pc(clave.b)}%.`
+                            : `⚽ El gol de ${escHtml(g.nombre || 'Hergar')} en el ${g.min}' subió las opciones de ganar del ${pc(clave.a)}% al ${pc(clave.b)}%.`);
+      }
+      if (fin && gH > gR && serie.length) {
+        let mn = 1, mm = 0; serie.forEach((p, t) => { if (p[0] < mn) { mn = p[0]; mm = t; } });
+        if (mn < .15) textos.push(`🔥 ¡Remontada! Hergar llegó a tener solo un ${pc(mn)}% de opciones de ganar (minuto ${mm}').`);
+      }
+      if (!previa && !fin && T < 3) textos.push(`Antes de empezar: gana ${pc(inicio[0])}%, empata ${pc(inicio[1])}%, pierde ${pc(inicio[2])}%.`);
+      if (!completos && !previa && goles.length < gH + gR) textos.push('Falta el minuto de algún gol: la gráfica puede no ser exacta.');
+      if (ctx.nota) textos.push(ctx.nota);
+      h += textos.map(t => `<div style="font-size:11.5px; color:#cbd5e1; line-height:1.45; margin-top:8px;">${t}</div>`).join('');
+      card.innerHTML = h;
+      card.style.display = 'block';
+    }
+    function wpGrafica(serie, goles, T) {
+      const W = 320, H = 130, L = 24, R = 6, top = 14, bot = 18, X = Math.max(WP_DUR, T);
+      const x = t => L + t / X * (W - L - R), y = v => top + (1 - v) * (H - top - bot);
+      const area = (f0, f1) => { const up = serie.map((p, t) => `${x(t).toFixed(1)},${y(f1(p)).toFixed(1)}`), dn = serie.map((p, t) => `${x(t).toFixed(1)},${y(f0(p)).toFixed(1)}`).reverse(); return up.concat(dn).join(' '); };
+      let g = '';
+      g += `<polygon points="${area(p => 0, p => p[0])}" fill="rgba(46,213,115,.55)"/>`;
+      g += `<polygon points="${area(p => p[0], p => p[0] + p[1])}" fill="rgba(148,163,184,.22)"/>`;
+      g += `<polygon points="${area(p => p[0] + p[1], p => 1)}" fill="rgba(255,71,87,.40)"/>`;
+      g += `<polyline points="${serie.map((p, t) => `${x(t).toFixed(1)},${y(p[0]).toFixed(1)}`).join(' ')}" fill="none" stroke="#2ed573" stroke-width="2"/>`;
+      [0, .5, 1].forEach(v => { g += `<text x="${L - 4}" y="${y(v) + 3}" text-anchor="end" font-size="8" fill="#64748b">${v * 100}%</text>`; });
+      g += `<line x1="${L}" x2="${W - R}" y1="${y(.5)}" y2="${y(.5)}" stroke="rgba(255,255,255,.18)" stroke-dasharray="3 3"/>`;
+      if (X >= 35) g += `<line x1="${x(35)}" x2="${x(35)}" y1="${top}" y2="${H - bot}" stroke="rgba(255,255,255,.25)" stroke-dasharray="2 3"/>`;
+      [0, 35, 70].filter(t => t <= X).forEach(t => { g += `<text x="${x(t)}" y="${H - 5}" text-anchor="middle" font-size="8" fill="#64748b">${t}'</text>`; });
+      goles.filter(gl => gl.min <= T).forEach(gl => { g += `<line x1="${x(gl.min)}" x2="${x(gl.min)}" y1="${top - 2}" y2="${H - bot}" stroke="${gl.rival ? 'rgba(255,71,87,.7)' : 'rgba(255,255,255,.55)'}" stroke-width="1"/><circle cx="${x(gl.min)}" cy="${top - 6}" r="4" fill="${gl.rival ? '#ff4757' : '#2ed573'}"/>`; });
+      return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="margin-top:10px; display:block;" role="img" aria-label="Probabilidad de ganar minuto a minuto">${g}</svg>
+        <div style="display:flex; gap:12px; font-size:10px; color:#94a3b8; margin-top:2px;"><span><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:rgba(46,213,115,.7);margin-right:4px;vertical-align:-1px"></i>Gana</span><span><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:rgba(148,163,184,.35);margin-right:4px;vertical-align:-1px"></i>Empata</span><span><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:rgba(255,71,87,.55);margin-right:4px;vertical-align:-1px"></i>Pierde</span><span>● gol</span></div>`;
+    }
+    // Para el aviso de gol y el Modo TV
+    function wpGanarAhora(m, golesH) {
+      const ctx = wpContexto(m);
+      return wpProb(ctx, golesH, Number(m.golesRival) || 0, wpMinuto(m), false)[0];
+    }
+
     function pintarPronosticoViewer() {
       if (!ultimaLiga) return;
       pronosticoLigaRender(ultimaLiga, document.getElementById('ligaPronViewer'), 'El pronóstico aparecerá cuando haya resultados de la primera jornada.');
@@ -3214,6 +3487,7 @@
     renderLigaEvolChipsViewer();
     renderLigaEvolucionViewer();
     if (document.getElementById('subLigaPron')?.classList.contains('active')) pintarPronosticoViewer(); // v89
+    if (ultimoMatchData) { try { pintarWP(ultimoMatchData); } catch (e) {} } // v92
   }, (err) => {
     // Antes esto fallaba en silencio (p.ej. permisos de Firebase) y la pantalla se
     // quedaba en "Cargando..." para siempre sin ninguna pista de qué había pasado.

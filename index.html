@@ -729,6 +729,8 @@
 
 <script type="module">
   // Visor · Modo TV: pantalla completa en horizontal (marcador, campo, estadísticas, cinta de eventos, rótulos de gol y cambio, descanso y previa).
+  // v95 (app) · Ficha de temporada: "Dónde ha jugado" (minutos, PJ e impacto por línea y por puesto, y partido a partido) y el puesto principal bajo el nombre.
+  // v94 · Tarjeta Próximo partido: la convocatoria sale en lista, once inicial por líneas y reservas (app v93).
   // v93 · Tarjeta Próximo partido: pronóstico, lo que está en juego, cara a cara y a seguir (Hergar en rojo, rival en azul); sustituye a la mini clasificación.
   // v92 (app) · En vivo: probabilidad de ganar minuto a minuto (tarjeta, gráfica, gol clave, remontadas), en el aviso de gol y en el Modo TV. La app publica los goles con minuto (golesMin).
   // v91 (app) · Pronóstico con tres botones: Ascenso (+ lo que necesitas para ser campeón), Calendario (dificultad de lo que queda) y Nivel (ranking por cómo juegan).
@@ -1122,6 +1124,63 @@
     return mejor;
   }
 
+
+  // ── v95 · "Dónde ha jugado": mismo criterio que la app (líneas y puestos que publica la temporada) ──
+  const LINEAS_ORDEN_V = ['portero', 'defensa', 'centrocampista', 'delantero', 'suplente'];
+  const LINEA_CORTA_V = { portero: 'POR', defensa: 'DEF', centrocampista: 'CEN', delantero: 'DEL', suplente: 'SUP' };
+  const LINEA_LARGA_V = { portero: 'Portero', defensa: 'Defensa', centrocampista: 'Centrocampista', delantero: 'Delantero', suplente: 'Sin línea' };
+  const LINEA_COLOR_V = { portero: '#3498db', defensa: '#2ed573', centrocampista: '#f5a623', delantero: '#ff5577', suplente: '#64748b' };
+  const PUESTOS_ORDEN_V = ['POR', 'LI', 'DFC', 'LD', 'MCD', 'MC', 'MI', 'MD', 'MP', 'EI', 'ED', 'DC'];
+  const PUESTO_LINEA_V = { POR: 'portero', LI: 'defensa', DFC: 'defensa', LD: 'defensa', MCD: 'centrocampista', MC: 'centrocampista', MI: 'centrocampista', MD: 'centrocampista', MP: 'centrocampista', EI: 'delantero', ED: 'delantero', DC: 'delantero' };
+  const PUESTO_LARGO_V = { POR: 'Portero', LI: 'Lateral izquierdo', DFC: 'Central', LD: 'Lateral derecho', MCD: 'Mediocentro defensivo', MC: 'Centrocampista', MI: 'Medio izquierdo', MD: 'Medio derecho', MP: 'Mediapunta', EI: 'Extremo izquierdo', ED: 'Extremo derecho', DC: 'Delantero centro' };
+  function puestoPrincipalV(j, linea) {
+    const mp = j.minutosPorPuesto || {};
+    let mejor = null, max = 0;
+    PUESTOS_ORDEN_V.forEach(k => { if (linea && PUESTO_LINEA_V[k] !== linea) return; if ((mp[k] || 0) > max) { max = mp[k]; mejor = k; } });
+    return mejor;
+  }
+  function etiquetaPosicionV(j) {
+    const li = posicionTemporada(j);
+    if (!(j.minutosPorPosicion && j.minutosPorPosicion[li] > 0)) return '';
+    const pu = puestoPrincipalV(j, li);
+    return pu ? `${pu} · ${PUESTO_LARGO_V[pu]}` : LINEA_LARGA_V[li];
+  }
+  function lineasJugadorHTMLV(j) {
+    if (!j) return '';
+    const mp = j.minutosPorPosicion || {}, ip = j.impactoPorPosicion || {}, pp = j.partidosPorPosicion || {}, mpu = j.minutosPorPuesto || {};
+    const claves = LINEAS_ORDEN_V.filter(l => (mp[l] || 0) > 0);
+    const total = claves.reduce((a, l) => a + mp[l], 0);
+    if (!total) return '';
+    const pct = {}; let acum = 0;
+    claves.forEach((l, i) => { pct[l] = i === claves.length - 1 ? 100 - acum : Math.round(mp[l] / total * 100); acum += pct[l]; });
+    const barra = claves.map(l => `<div style="width:${mp[l] / total * 100}%; background:${LINEA_COLOR_V[l]}; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:800; color:#0a0e14; white-space:nowrap; overflow:hidden;">${pct[l] >= 12 ? LINEA_CORTA_V[l] + ' ' + pct[l] + '%' : ''}</div>`).join('');
+    const filas = claves.map(l => {
+      const i70 = mp[l] > 0 ? (ip[l] || 0) / mp[l] * 70 : 0;
+      const pus = PUESTOS_ORDEN_V.filter(pu => PUESTO_LINEA_V[pu] === l && mpu[pu] > 0).sort((a, b) => mpu[b] - mpu[a]);
+      const detalle = pus.length ? `<div style="font-size:10px; color:#94a3b8; margin-top:2px;">${pus.map(pu => `${pu} ${mpu[pu]}'`).join(' · ')}</div>` : '';
+      return `<tr><td style="text-align:left; padding:7px 4px;"><span style="color:${LINEA_COLOR_V[l]};">●</span> ${LINEA_LARGA_V[l]}${detalle}</td><td style="text-align:center; padding:7px 4px;">${mp[l]}' <span style="color:#64748b;">(${pct[l]}%)</span></td><td style="text-align:center; padding:7px 4px;">${pp[l] || 0}</td><td style="text-align:center; padding:7px 4px; font-weight:800; color:${i70 >= 0 ? '#2ed573' : '#ff6b7a'};">${i70.toFixed(2).replace('.', ',')}</td></tr>`;
+    }).join('');
+    const chip = (txt, c) => `<span style="font-size:10px; font-weight:800; padding:3px 6px; border-radius:6px; background:${c}26; color:${c}; white-space:nowrap;">${txt}</span>`;
+    const chips = (h) => {
+      if (h.puestos && Object.keys(h.puestos).length) return PUESTOS_ORDEN_V.filter(pu => h.puestos[pu] > 0).map(pu => chip(`${pu} ${h.puestos[pu]}'`, LINEA_COLOR_V[PUESTO_LINEA_V[pu]])).join(' ');
+      if (h.lineas && Object.keys(h.lineas).length) return LINEAS_ORDEN_V.filter(l => h.lineas[l] > 0).map(l => chip(`${LINEA_CORTA_V[l]} ${h.lineas[l]}'`, LINEA_COLOR_V[l])).join(' ');
+      return `<span style="font-size:10px; color:#64748b; font-style:italic;">sin detalle</span>`;
+    };
+    const hist = (j.historial || []).slice().reverse();
+    const partidos = hist.map(h => `<div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; padding:7px 9px; background:rgba(255,255,255,0.03); border-radius:8px; margin-bottom:5px;">
+      <div style="flex:1; min-width:110px; font-size:11.5px; color:#e2e8f0;">vs ${escHtml(h.rival || '—')}<span style="display:block; font-size:10px; color:#64748b;">${escHtml(h.fecha || '')} · ${h.mins || 0}'</span></div>${chips(h)}</div>`).join('');
+    return `<div style="margin-top:12px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.07); border-radius:10px; padding:10px 12px; font-size:12px; color:#e2e8f0;">
+      <div style="font-size:11px; font-weight:800; color:#f5a623; letter-spacing:.5px; margin-bottom:8px;">📍 DÓNDE HA JUGADO</div>
+      <div style="display:flex; height:24px; border-radius:7px; overflow:hidden; margin-bottom:8px;">${barra}</div>
+      <table style="width:100%; border-collapse:collapse; font-size:11.5px;">
+        <tr style="color:#64748b; font-size:9.5px; font-weight:800;"><th style="text-align:left; padding:5px 4px;">LÍNEA</th><th style="padding:5px 4px;">MIN</th><th style="padding:5px 4px;">PJ</th><th style="padding:5px 4px;">IMP/70'</th></tr>
+        ${filas}
+      </table>
+      <div style="font-size:10.5px; color:#94a3b8; line-height:1.45; margin:6px 0 10px;">PJ cuenta cada partido solo en la línea donde jugó más minutos. Debajo de cada línea, los minutos en cada puesto.</div>
+      ${partidos ? `<div style="font-size:10.5px; font-weight:800; color:#64748b; letter-spacing:.5px; margin-bottom:6px;">PARTIDO A PARTIDO</div>${partidos}` : ''}
+    </div>`;
+  }
+
   // ── Perfil de temporada: para verse aunque no haya partido en juego (tocando el ranking) ──
   window.abrirPerfilJugadorTemporada = (id) => {
     if (!ultimaTemporada) return;
@@ -1161,6 +1220,7 @@
         <div style="text-align:center;">
           ${avatarPerfilHTML(id, j.dorsal)}
           <div style="font-size:15px; font-weight:800; color:#e2e8f0; margin-bottom:2px;">${(j.name||'').split(' ')[0]}</div>
+          ${etiquetaPosicionV(j) ? `<div style="font-size:11.5px; color:#f5a623; font-weight:800; margin-bottom:2px;">${etiquetaPosicionV(j)}</div>` : ''}
           <div style="font-size:11px; color:#64748b; margin-bottom:14px;">${j.partidos||0} partidos esta temporada</div>
         </div>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
@@ -1182,7 +1242,7 @@
         disparosPuerta: j.disparosPuerta||0, disparosFuera: j.disparosFuera||0, golesConTiros: j.golesConTiros
       }
     };
-    document.getElementById('perfilDatosContenido').innerHTML = renderFichaDatosHTML(statsDatos) + sociosJugadorHTML(ultimaTemporada, j.name);
+    document.getElementById('perfilDatosContenido').innerHTML = renderFichaDatosHTML(statsDatos) + sociosJugadorHTML(ultimaTemporada, j.name) + lineasJugadorHTMLV(j); // v95
     mostrarPestanaPerfil('cromo');
     document.getElementById('perfilModal').style.display = 'flex';
   };
@@ -2221,7 +2281,38 @@
       </div>`;
     }).join('') : `<div style="font-size:12.5px; color:#64748b; padding:2px 0;">Primer enfrentamiento de la temporada.</div>`;
     const convocados = (pub.convocados || []).slice().sort((a, b) => (a.dorsal || 99) - (b.dorsal || 99));
-    const convocatoriaHTML = convocados.length ? `
+    // v94 · Convocatoria en lista: once inicial (por líneas) y reservas. Sin papeles (app antigua): como antes.
+    const conRol = convocados.some(c => c.rol === 'T' || c.rol === 'R');
+    const chipConv = (c, col) => `<div style="display:flex; align-items:center; gap:6px; background:#0f172a; border:1px solid ${col}55; border-radius:8px; padding:6px 10px;"><span style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:12px; color:${col};">${escHtml(c.dorsal ?? '?')}</span><span style="font-size:12.5px; font-weight:700; color:#e2e8f0;">${escHtml((c.name || '').split(' ')[0])}</span></div>`;
+    let convocatoriaHTML = '';
+    if (convocados.length && conRol) {
+      const tit = convocados.filter(c => c.rol === 'T').sort((a, b) => (a.orden ?? 99) - (b.orden ?? 99));
+      const res = convocados.filter(c => c.rol !== 'T');
+      const LINEAS = [['portero', 'Portero'], ['defensa', 'Defensas'], ['centrocampista', 'Centrocampistas'], ['delantero', 'Delanteros']];
+      const grupos = LINEAS.map(([k, t]) => [t, tit.filter(c => c.linea === k)]).filter(g => g[1].length);
+      const sinLinea = tit.filter(c => !LINEAS.some(([k]) => k === c.linea));
+      if (sinLinea.length) grupos.push(['Once', sinLinea]);
+      convocatoriaHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:baseline; margin:14px 0 8px;">
+        <span style="font-size:11.5px; color:#8da499;">Convocatoria (${convocados.length})</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+        <span style="width:10px; height:10px; border-radius:50%; background:#2ed573;"></span>
+        <span style="font-size:12px; font-weight:800; color:#2ed573; letter-spacing:.3px;">ONCE INICIAL</span>
+        ${pub.formacion ? `<span style="font-size:11px; color:#8da499;">· 1-${escHtml(pub.formacion)}</span>` : ''}
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        ${grupos.map(([t, js]) => `<div><div style="font-size:10.5px; font-weight:700; color:#8da499; margin-bottom:5px;">${t}</div><div style="display:flex; flex-wrap:wrap; gap:6px;">${js.map(c => chipConv(c, '#2ed573')).join('')}</div></div>`).join('')}
+      </div>
+      ${res.length ? `<div style="display:flex; align-items:center; gap:8px; margin:14px 0 8px;">
+        <span style="width:10px; height:10px; border-radius:50%; background:#f5a623;"></span>
+        <span style="font-size:12px; font-weight:800; color:#f5a623; letter-spacing:.3px;">RESERVAS</span>
+        <span style="font-size:11px; color:#8da499;">· ${res.length}</span>
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:6px;">${res.map(c => chipConv(c, '#f5a623')).join('')}</div>` : ''}`;
+    } else if (convocados.length) {
+      convocatoriaHTML = `
+
       <div style="font-size:11.5px; color:#8da499; margin:14px 0 8px;">Convocados (${convocados.length})</div>
       <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px;">
         ${convocados.map(c => {
@@ -2231,7 +2322,8 @@
             : `<div style="width:52px; height:52px; border-radius:50%; background:#1a2332; border:2px solid #f5a623; display:flex; align-items:center; justify-content:center; font-family:'Montserrat',sans-serif; font-weight:800; font-size:16px; color:#f5a623;">#${c.dorsal ?? '?'}</div>`;
           return `<div style="text-align:center;">${avatar}<div style="font-size:10.5px; color:#cbd5e1; margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escHtml((c.name || '').split(' ')[0])}</div></div>`;
         }).join('')}
-      </div>` : '';
+      </div>`;
+    }
     const escudo = (eq, esH) => (esH || escudoSrcVisor(eq)) ? `<img src="${escudoSrcVisor(eq) || ESCUDO_HERGAR_SRC}" alt="" style="width:42px; height:42px; border-radius:50%; object-fit:cover; background:#fff; display:block; margin:0 auto 6px;">` : `<div style="width:42px; height:42px; border-radius:50%; background:${esH ? 'rgb(180,20,56)' : '#1a2332'}; margin:0 auto 6px; display:flex; align-items:center; justify-content:center; font-family:'Montserrat',sans-serif; font-weight:800; font-size:14px; color:${esH ? '#fff' : '#94a3b8'};">${escHtml(inicialesEquipoViewer(eq.nombre))}</div>`;
     const celda = 'padding:7px 0; border-top:1px solid rgba(255,255,255,0.06);';
     let nuevas = '';

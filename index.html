@@ -752,6 +752,7 @@
 
 <script type="module">
   // Visor · Modo TV: pantalla completa en horizontal (marcador, campo, estadísticas, cinta de eventos, rótulos de gol y cambio, descanso y previa).
+  // v100 (app) · Contexto: la temperatura se divide en frío (<8), fresco (8–15), templado (15–25) y calor (>25).
   // v99 (app) · En Temporada → Partidos y en Contexto sale el tiempo que hizo en cada partido.
   // v97 (app) · Tiempo del próximo partido (Open-Meteo) y "Cómo llegar" en la tarjeta; campo de cada equipo en Liga → Equipos; subpestaña 🧭 Contexto en Temporada.
   // v95 (app) · Ficha de temporada: "Dónde ha jugado" (minutos, PJ e impacto por línea y por puesto, y partido a partido) y el puesto principal bajo el nombre.
@@ -1212,7 +1213,7 @@
     // de 4 a 7 días, marcada como orientativa. Para partidos jugados se guarda lo que hizo de verdad.
     // El contexto de cada partido (casa/fuera, césped, hora, tiempo, nivel del rival, cómo llegábamos)
     // lo calcula la app y viaja con la temporada; el visor solo lo pinta.
-    const CTX_UMBRALES = { frio: 8, calor: 25, racha: 30, lluviaMm: 0.3 };
+    const CTX_UMBRALES = { frio: 8, fresco: 15, calor: 25, racha: 30, lluviaMm: 0.3 };
     function ctxEsc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
     function ctxCampoDe(liga, eqId) { const e = ((liga && liga.equipos) || []).find(x => x.id === eqId); return (e && e.campo) ? e.campo : null; }
     function ctxMapsUrl(c) {
@@ -1349,7 +1350,7 @@
         { k: 'tamano', t: '📏 Tamaño del campo', f: [['pequeno', 'Pequeño', 'En campos pequeños'], ['medio', 'Medio', 'En campos medianos'], ['grande', 'Grande', 'En campos grandes']] },
         { k: 'hora', t: '🕐 Hora', f: [['manana', 'Mañana', 'Por la mañana', 'antes de las 14:00'], ['tarde', 'Tarde', 'Por la tarde']] },
         { k: 'lluvia', t: '🌧️ Lluvia', f: [['si', 'Con lluvia', 'Con lluvia'], ['no', 'Sin lluvia', 'Sin lluvia']] },
-        { k: 'temp', t: '🌡️ Temperatura', f: [['frio', 'Frío', 'Con frío', `menos de ${CTX_UMBRALES.frio} °C`], ['templado', 'Templado', 'Con temperatura templada'], ['calor', 'Calor', 'Con calor', `más de ${CTX_UMBRALES.calor} °C`]] },
+        { k: 'temp', t: '🌡️ Temperatura', f: [['frio', 'Frío', 'Con frío', `menos de ${CTX_UMBRALES.frio} °C`], ['fresco', 'Fresco', 'Con fresco', `${CTX_UMBRALES.frio}–${CTX_UMBRALES.fresco} °C`], ['templado', 'Templado', 'Con temperatura templada', `${CTX_UMBRALES.fresco}–${CTX_UMBRALES.calor} °C`], ['calor', 'Calor', 'Con calor', `más de ${CTX_UMBRALES.calor} °C`]] },
         { k: 'viento', t: '💨 Viento', f: [['si', 'Con viento', 'Con viento', `rachas de más de ${CTX_UMBRALES.racha} km/h`], ['no', 'Sin viento', 'Sin viento']] },
         { k: 'nivel', t: '📊 Rival según la clasificación', f: [['arriba', 'De arriba', 'Contra los de arriba'], ['mitad', 'De la mitad', 'Contra los de la mitad'], ['abajo', 'De abajo', 'Contra los de abajo']] },
         { k: 'tras', t: '📈 Cómo llegamos', f: [['ganar', 'Tras ganar', 'Después de ganar'], ['nogana', 'Tras no ganar', 'Después de no ganar']] }
@@ -1363,7 +1364,7 @@
             case 'tamano': return c.tamano || null;
             case 'hora': { const m = /^(\d{1,2}):/.exec(c.hora || ''); return m ? (+m[1] < 14 ? 'manana' : 'tarde') : null; }
             case 'lluvia': return (ti && ti.mm != null) ? (ti.mm >= CTX_UMBRALES.lluviaMm ? 'si' : 'no') : null;
-            case 'temp': return (ti && ti.t != null) ? (ti.t < CTX_UMBRALES.frio ? 'frio' : ti.t > CTX_UMBRALES.calor ? 'calor' : 'templado') : null;
+            case 'temp': return (ti && ti.t != null) ? (ti.t < CTX_UMBRALES.frio ? 'frio' : ti.t < CTX_UMBRALES.fresco ? 'fresco' : ti.t > CTX_UMBRALES.calor ? 'calor' : 'templado') : null;
             case 'viento': { const r = ti ? (ti.racha != null ? ti.racha : ti.viento) : null; return r != null ? (r > CTX_UMBRALES.racha ? 'si' : 'no') : null; }
             case 'nivel': return c.nivel || null;
             case 'tras': return c.tras || null;

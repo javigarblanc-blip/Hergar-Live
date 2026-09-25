@@ -1,4 +1,19 @@
 <!DOCTYPE html>
+<!--
+  ╔══════════════════════════════════════════════════════════════╗
+  ║              HERGAR LIVE — Visor para familias               ║
+  ╠══════════════════════════════════════════════════════════════╣
+  ║  Autor:      Javi García Blanco                             ║
+  ║  Licencia:   Creative Commons BY-NC-SA 4.0                  ║
+  ║              https://creativecommons.org/licenses/by-nc-sa/4.0/
+  ║                                                             ║
+  ║  Puedes compartir y adaptar este trabajo siempre que:       ║
+  ║  · Des crédito al autor original (Javi García Blanco)       ║
+  ║  · No lo uses con fines comerciales                         ║
+  ║  · Distribuyas las versiones derivadas con la misma licencia║
+  ║  Datos del tiempo: Open-Meteo.com (CC BY 4.0)               ║
+  ╚══════════════════════════════════════════════════════════════╝
+-->
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -490,6 +505,7 @@
         <div class="subtab-btn" onclick="showSub(event,'subRachas')">🔥 Rachas</div>
         <div class="subtab-btn" onclick="showSub(event,'subRecords')">🏆 Récords</div>
         <div class="subtab-btn" onclick="showSub(event,'subMinutos')">⏱ Minutos</div>
+        <div class="subtab-btn" onclick="showSub(event,'subContexto')">🧭 Contexto</div>
         <div class="subtab-btn" onclick="showSub(event,'subComparativa')">📊 Comp.</div>
         <div class="subtab-btn" style="display:none;" onclick="showSub(event,'subHeatmap')">🗺️ Heatmap</div>
         <div class="subtab-btn" onclick="showSub(event,'subOnceIdeal')">🏅 Once</div>
@@ -545,6 +561,13 @@
         <div class="card">
           <div class="card-title">⏱ Cuándo marcamos y cuándo encajamos</div>
           <div id="minutosGoles"><div class="loader">Cargando...</div></div>
+        </div>
+      </div>
+      <div id="subContexto" class="sub-panel">
+        <div class="card">
+          <div class="card-title">🧭 Contexto</div>
+          <div style="font-size:11.5px; color:#94a3b8; line-height:1.5; margin-bottom:10px;">Cómo le va al equipo según dónde, cuándo y contra quién juega.</div>
+          <div id="contextoLista"><div class="loader">Cargando...</div></div>
         </div>
       </div>
       <div id="subRecords" class="sub-panel">
@@ -682,7 +705,7 @@
 </div>
 </div>
 
-<p class="note">HERGAR Live — visor de solo lectura para familias del club.</p>
+<p class="note">HERGAR Live — visor de solo lectura para familias del club.<br><span style="font-size:9px; opacity:.6;">© Javi García Blanco · <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener" style="color:inherit;">CC BY-NC-SA 4.0</a> · Datos del tiempo: <a href="https://open-meteo.com/" target="_blank" rel="noopener" style="color:inherit;">Open-Meteo</a></span></p>
 
 <div id="golBanner" role="status" aria-live="polite" onclick="ocultarGolBanner()">
   <div class="gol-titulo">⚽ ¡GOOOL DE HERGAR!</div>
@@ -729,6 +752,7 @@
 
 <script type="module">
   // Visor · Modo TV: pantalla completa en horizontal (marcador, campo, estadísticas, cinta de eventos, rótulos de gol y cambio, descanso y previa).
+  // v97 (app) · Tiempo del próximo partido (Open-Meteo) y "Cómo llegar" en la tarjeta; campo de cada equipo en Liga → Equipos; subpestaña 🧭 Contexto en Temporada.
   // v95 (app) · Ficha de temporada: "Dónde ha jugado" (minutos, PJ e impacto por línea y por puesto, y partido a partido) y el puesto principal bajo el nombre.
   // v94 · Tarjeta Próximo partido: la convocatoria sale en lista, once inicial por líneas y reservas (app v93).
   // v93 · Tarjeta Próximo partido: pronóstico, lo que está en juego, cara a cara y a seguir (Hergar en rojo, rival en azul); sustituye a la mini clasificación.
@@ -1180,6 +1204,205 @@
       ${partidos ? `<div style="font-size:10.5px; font-weight:800; color:#64748b; letter-spacing:.5px; margin-bottom:6px;">PARTIDO A PARTIDO</div>${partidos}` : ''}
     </div>`;
   }
+
+
+    // ── v97 · TIEMPO DEL PARTIDO Y CONTEXTO (mismo código en app y visor) ─────────────────
+    // El tiempo sale de Open-Meteo (gratis, sin clave). Previsión: se enseña solo hasta 7 días antes;
+    // de 4 a 7 días, marcada como orientativa. Para partidos jugados se guarda lo que hizo de verdad.
+    // El contexto de cada partido (casa/fuera, césped, hora, tiempo, nivel del rival, cómo llegábamos)
+    // lo calcula la app y viaja con la temporada; el visor solo lo pinta.
+    const CTX_UMBRALES = { frio: 8, calor: 25, racha: 30, lluviaMm: 0.3 };
+    function ctxEsc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+    function ctxCampoDe(liga, eqId) { const e = ((liga && liga.equipos) || []).find(x => x.id === eqId); return (e && e.campo) ? e.campo : null; }
+    function ctxMapsUrl(c) {
+        if (!c) return '';
+        if (c.maps) return c.maps;
+        const q = [c.nombre, c.lugar].filter(Boolean).join(', ');
+        if (q) return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(q);
+        if (c.lat != null) return `https://www.google.com/maps/search/?api=1&query=${c.lat},${c.lon}`;
+        return '';
+    }
+    const CTX_CESPED = { artificial: 'Artificial', natural: 'Natural', tierra: 'Tierra' };
+    function ctxIcono(code) {
+        if (code == null) return ['🌡️', ''];
+        if (code === 0) return ['☀️', 'Despejado'];
+        if (code === 1) return ['🌤️', 'Poco nuboso'];
+        if (code === 2) return ['⛅', 'Nubes y claros'];
+        if (code === 3) return ['☁️', 'Nublado'];
+        if (code === 45 || code === 48) return ['🌫️', 'Niebla'];
+        if (code >= 51 && code <= 57) return ['🌦️', 'Llovizna'];
+        if (code >= 61 && code <= 67) return ['🌧️', 'Lluvia'];
+        if (code >= 71 && code <= 77) return ['🌨️', 'Nieve'];
+        if (code >= 80 && code <= 82) return ['🌦️', 'Chubascos'];
+        if (code >= 85 && code <= 86) return ['🌨️', 'Chubascos de nieve'];
+        if (code >= 95) return ['⛈️', 'Tormenta'];
+        return ['🌡️', ''];
+    }
+    function ctxHoy() { const d = new Date(); d.setHours(0, 0, 0, 0); return d; }
+    function ctxISOaFecha(iso) { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null; }
+    function ctxFechaAISO(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+    function ctxDiasHasta(iso) { const d = ctxISOaFecha(iso); return d ? Math.round((d - ctxHoy()) / 86400000) : null; }
+    // d/m/aaaa (con o sin ceros) → aaaa-mm-dd
+    function ctxDMYaISO(txt) { const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(String(txt || '').trim()); return m ? `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : ''; }
+    const CTX_DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+    function ctxFechaCorta(d) { return `${CTX_DIAS[d.getDay()]} ${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`; }
+
+    // Tiempo en la franja del partido (hora de inicio + 90 min). Devuelve null si no hay datos.
+    const ctxCacheTiempo = {};
+    async function ctxTiempoFranja(lat, lon, fechaISO, hora) {
+        const mh = /^(\d{1,2}):(\d{2})/.exec(hora || '');
+        if (lat == null || lon == null || !fechaISO || !mh) return null;
+        const clave = [lat, lon, fechaISO, hora].join('|');
+        const ahora = Date.now();
+        if (ctxCacheTiempo[clave] && ahora - ctxCacheTiempo[clave].ts < 30 * 60000) return ctxCacheTiempo[clave].d;
+        const ini = +mh[1], fin = Math.floor((+mh[1] * 60 + +mh[2] + 89) / 60);
+        const base = `latitude=${lat}&longitude=${lon}&timezone=Europe%2FMadrid&start_date=${fechaISO}&end_date=${fechaISO}`;
+        const vars = 'temperature_2m,apparent_temperature,precipitation,wind_speed_10m,wind_gusts_10m,weather_code';
+        let j = null;
+        try {
+            const r = await fetch(`https://api.open-meteo.com/v1/forecast?${base}&hourly=${vars},precipitation_probability`);
+            if (r.ok) j = await r.json();
+        } catch (e) {}
+        if (!j || !j.hourly || !j.hourly.time || !j.hourly.time.length) {
+            try {
+                const r = await fetch(`https://archive-api.open-meteo.com/v1/archive?${base}&hourly=${vars}`);
+                if (r.ok) j = await r.json();
+            } catch (e) {}
+        }
+        if (!j || !j.hourly || !j.hourly.time) return null;
+        const H = j.hourly, idx = [];
+        H.time.forEach((tt, i) => { const h = +String(tt).slice(11, 13); if (h >= ini && h <= fin) idx.push(i); });
+        const val = (k) => idx.map(i => (H[k] || [])[i]).filter(v => v != null && !isNaN(v));
+        const t = val('temperature_2m');
+        if (!t.length) return null;
+        const media = (a) => a.reduce((x, y) => x + y, 0) / a.length;
+        const prob = val('precipitation_probability'), mm = val('precipitation'), vi = val('wind_speed_10m'), ra = val('wind_gusts_10m'), co = val('weather_code');
+        const finMin = +mh[1] * 60 + +mh[2] + 90;
+        const d = {
+            t: Math.round(media(t)), sens: val('apparent_temperature').length ? Math.round(media(val('apparent_temperature'))) : null,
+            prob: prob.length ? Math.max(...prob) : null, mm: mm.length ? Math.round(mm.reduce((x, y) => x + y, 0) * 10) / 10 : null,
+            viento: vi.length ? Math.round(Math.max(...vi)) : null, racha: ra.length ? Math.round(Math.max(...ra)) : null,
+            code: co.length ? Math.max(...co) : null,
+            franja: `${String(mh[1]).padStart(2, '0')}:${mh[2]}–${String(Math.floor(finMin / 60) % 24).padStart(2, '0')}:${String(finMin % 60).padStart(2, '0')}`
+        };
+        ctxCacheTiempo[clave] = { ts: ahora, d };
+        return d;
+    }
+
+    // Bloque "campo + tiempo" del próximo partido. opts.faltaCampo: texto si el campo no está metido (app).
+    function ctxCampoLineaHTML(campo) {
+        if (!campo) return '';
+        const url = ctxMapsUrl(campo);
+        const txt = [campo.nombre, CTX_CESPED[campo.cesped] ? CTX_CESPED[campo.cesped].toLowerCase() : ''].filter(Boolean).join(' · ');
+        return `<div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:8px; padding:10px 12px; border-radius:10px; background:rgba(255,255,255,.04); font-size:12px; color:#e2e8f0;">
+            <span>📍 ${ctxEsc(txt || campo.lugar || 'Campo')}</span>${url ? `<a href="${ctxEsc(url)}" target="_blank" rel="noopener" style="color:#2ed573; font-weight:800; text-decoration:none; white-space:nowrap;">Cómo llegar ›</a>` : ''}</div>`;
+    }
+    async function ctxPintarTiempoProximo(el, campo, fechaISO, hora, opts) {
+        if (!el) return;
+        opts = opts || {};
+        const caja = (inner, extra) => `<div style="background:rgba(52,152,219,.07); border:1px solid rgba(52,152,219,.22); border-radius:12px; padding:12px; margin-top:10px;">${inner}</div>${extra || ''}`;
+        const cab = (orient, franja) => `<div style="display:flex; justify-content:space-between; align-items:center; gap:6px; font-size:10.5px; font-weight:800; letter-spacing:.5px; color:#7fb8e6; margin-bottom:8px;"><span>🌦️ TIEMPO EN EL PARTIDO${franja ? ' · ' + franja : ''}</span>${orient ? '<span style="font-size:9.5px; color:#f5a623; background:rgba(245,166,35,.12); border:1px solid rgba(245,166,35,.35); padding:2px 7px; border-radius:6px; letter-spacing:0;">Previsión orientativa</span>' : ''}</div>`;
+        const lineaCampo = ctxCampoLineaHTML(campo);
+        if (!campo || campo.lat == null) { el.innerHTML = opts.faltaCampo ? `<div style="font-size:11px; color:#f5a623; margin-top:8px;">${opts.faltaCampo}</div>` : lineaCampo; return; }
+        if (!fechaISO || !/^\d{1,2}:\d{2}/.test(hora || '')) { el.innerHTML = (opts.faltaFecha ? `<div style="font-size:11px; color:#94a3b8; margin-top:8px;">${opts.faltaFecha}</div>` : '') + lineaCampo; return; }
+        const dias = ctxDiasHasta(fechaISO);
+        if (dias === null || dias < 0) { el.innerHTML = lineaCampo; return; }
+        if (dias > 7) {
+            const disp = ctxISOaFecha(fechaISO); disp.setDate(disp.getDate() - 7);
+            el.innerHTML = caja(cab(false, '') + `<div style="text-align:center; font-size:12px; color:#94a3b8; padding:4px; line-height:1.5;">La previsión saldrá a partir del <b>${ctxFechaCorta(disp)}</b>,<br>una semana antes del partido.</div>`, lineaCampo);
+            return;
+        }
+        el.innerHTML = caja(cab(dias > 3, '') + '<div style="font-size:12px; color:#94a3b8; text-align:center; padding:6px;">Cargando el tiempo…</div>', lineaCampo);
+        const d = await ctxTiempoFranja(campo.lat, campo.lon, fechaISO, hora);
+        if (!d) { el.innerHTML = caja(cab(false, '') + '<div style="font-size:12px; color:#94a3b8; text-align:center; padding:6px;">No se ha podido cargar el tiempo ahora mismo.</div>', lineaCampo); return; }
+        const [ico, cielo] = ctxIcono(d.code);
+        const dato = (v, l) => `<div style="background:rgba(0,0,0,.25); border-radius:9px; padding:7px 4px; text-align:center;"><b style="display:block; font-family:'Montserrat',sans-serif; font-size:14px; color:#e2e8f0;">${v}</b><span style="font-size:9.5px; color:#94a3b8; font-weight:700;">${l}</span></div>`;
+        el.innerHTML = caja(cab(dias > 3, d.franja) + `
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div style="font-size:38px; line-height:1;">${ico}</div>
+                <div><div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:30px; color:#e2e8f0;">${d.t} °C</div>
+                <div style="font-size:12px; color:#94a3b8; font-weight:700;">${d.sens != null ? 'Sensación ' + d.sens + ' °C' : ''}${cielo ? (d.sens != null ? ' · ' : '') + cielo : ''}</div></div>
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:10px;">
+                ${dato(d.prob != null ? d.prob + ' %' : '—', 'LLUVIA')}${dato(d.mm != null ? String(d.mm).replace('.', ',') + ' mm' : '—', 'CANTIDAD')}${dato(d.racha != null ? d.racha + ' km/h' : (d.viento != null ? d.viento + ' km/h' : '—'), 'VIENTO')}
+            </div>
+            <div style="text-align:right; font-size:9.5px; color:#64748b; margin-top:6px;">Datos del tiempo: <a href="https://open-meteo.com/" target="_blank" rel="noopener" style="color:#64748b;">Open-Meteo</a></div>`, lineaCampo);
+    }
+
+    // ── Contexto: tabla y frases a partir de partido.contexto ──
+    const CTX_GRUPOS = [
+        { k: 'donde', t: '🏠 Dónde', f: [['casa', 'En casa', 'En casa'], ['fuera', 'Fuera', 'Fuera de casa']] },
+        { k: 'cesped', t: '🟩 Césped', f: [['artificial', 'Artificial', 'En césped artificial'], ['natural', 'Natural', 'En césped natural'], ['tierra', 'Tierra', 'En tierra']] },
+        { k: 'tamano', t: '📏 Tamaño del campo', f: [['pequeno', 'Pequeño', 'En campos pequeños'], ['medio', 'Medio', 'En campos medianos'], ['grande', 'Grande', 'En campos grandes']] },
+        { k: 'hora', t: '🕐 Hora', f: [['manana', 'Mañana', 'Por la mañana', 'antes de las 14:00'], ['tarde', 'Tarde', 'Por la tarde']] },
+        { k: 'lluvia', t: '🌧️ Lluvia', f: [['si', 'Con lluvia', 'Con lluvia'], ['no', 'Sin lluvia', 'Sin lluvia']] },
+        { k: 'temp', t: '🌡️ Temperatura', f: [['frio', 'Frío', 'Con frío', `menos de ${CTX_UMBRALES.frio} °C`], ['templado', 'Templado', 'Con temperatura templada'], ['calor', 'Calor', 'Con calor', `más de ${CTX_UMBRALES.calor} °C`]] },
+        { k: 'viento', t: '💨 Viento', f: [['si', 'Con viento', 'Con viento', `rachas de más de ${CTX_UMBRALES.racha} km/h`], ['no', 'Sin viento', 'Sin viento']] },
+        { k: 'nivel', t: '📊 Rival según la clasificación', f: [['arriba', 'De arriba', 'Contra los de arriba'], ['mitad', 'De la mitad', 'Contra los de la mitad'], ['abajo', 'De abajo', 'Contra los de abajo']] },
+        { k: 'tras', t: '📈 Cómo llegamos', f: [['ganar', 'Tras ganar', 'Después de ganar'], ['nogana', 'Tras no ganar', 'Después de no ganar']] }
+    ];
+    function ctxValor(c, k) {
+        if (!c) return null;
+        const ti = c.tiempo;
+        switch (k) {
+            case 'donde': return c.casa === true ? 'casa' : c.casa === false ? 'fuera' : null;
+            case 'cesped': return c.cesped || null;
+            case 'tamano': return c.tamano || null;
+            case 'hora': { const m = /^(\d{1,2}):/.exec(c.hora || ''); return m ? (+m[1] < 14 ? 'manana' : 'tarde') : null; }
+            case 'lluvia': return (ti && ti.mm != null) ? (ti.mm >= CTX_UMBRALES.lluviaMm ? 'si' : 'no') : null;
+            case 'temp': return (ti && ti.t != null) ? (ti.t < CTX_UMBRALES.frio ? 'frio' : ti.t > CTX_UMBRALES.calor ? 'calor' : 'templado') : null;
+            case 'viento': { const r = ti ? (ti.racha != null ? ti.racha : ti.viento) : null; return r != null ? (r > CTX_UMBRALES.racha ? 'si' : 'no') : null; }
+            case 'nivel': return c.nivel || null;
+            case 'tras': return c.tras || null;
+        }
+        return null;
+    }
+    function ctxContextoHTML(temporada) {
+        const partidos = ((temporada && temporada.partidos) || []).filter(p => p && p.contexto);
+        if (!partidos.length) return `<div style="font-size:12px; color:#94a3b8; line-height:1.55; padding:6px 2px;">Aún no hay datos de contexto. Se rellenan solos con el calendario y los campos de la Liga (Liga → Equipos → 🏟️ Campo) y el tiempo de cada partido.</div>`;
+        const res = (p) => p.resultado || ((p.golesLocal > p.golesRival) ? 'V' : (p.golesLocal < p.golesRival) ? 'D' : 'E');
+        const dec = (n) => (Math.round(n * 10) / 10).toFixed(1).replace('.', ',');
+        const grupos = [], frases = [];
+        const ctxClave = (ps) => ps.map(p => partidos.indexOf(p)).sort((a, b) => a - b).join(',');
+        CTX_GRUPOS.forEach(g => {
+            const filas = g.f.map(([v, corto, largo, sub]) => {
+                const ps = partidos.filter(p => ctxValor(p.contexto, g.k) === v);
+                const c = { V: 0, E: 0, D: 0 }; let gf = 0, gc = 0;
+                ps.forEach(p => { c[res(p)]++; gf += +p.golesLocal || 0; gc += +p.golesRival || 0; });
+                const pj = ps.length;
+                return { v, corto, largo, sub, ps, pj, V: c.V, E: c.E, D: c.D, gf: pj ? gf / pj : 0, gc: pj ? gc / pj : 0, pct: pj ? Math.round((c.V * 3 + c.E) / (pj * 3) * 100) : 0 };
+            }).filter(f => f.pj > 0);
+            if (!filas.length) return;
+            grupos.push({ g, filas });
+            const validas = filas.filter(f => f.pj >= 2);
+            if (validas.length >= 2) {
+                const ord = validas.slice().sort((a, b) => b.pct - a.pct);
+                const mejor = ord[0], peor = ord[ord.length - 1];
+                if (mejor.pct - peor.pct >= 20) frases.push({ clave: ctxClave(mejor.ps) + '/' + ctxClave(peor.ps), peso: mejor.pct - peor.pct, txt: `${g.t.split(' ')[0]} ${mejor.largo} sacamos el <b>${mejor.pct} %</b> de los puntos; ${peor.largo.charAt(0).toLowerCase() + peor.largo.slice(1)}, el <b>${peor.pct} %</b>.` });
+                const ordGc = validas.slice().sort((a, b) => b.gc - a.gc);
+                if (ordGc[0].gc - ordGc[ordGc.length - 1].gc >= 1) frases.push({ clave: ctxClave(ordGc[0].ps) + '/' + ctxClave(ordGc[ordGc.length - 1].ps), peso: (ordGc[0].gc - ordGc[ordGc.length - 1].gc) * 15, txt: `${g.t.split(' ')[0]} ${ordGc[0].largo} encajamos <b>${dec(ordGc[0].gc)}</b> goles por partido; ${ordGc[ordGc.length - 1].largo.charAt(0).toLowerCase() + ordGc[ordGc.length - 1].largo.slice(1)}, <b>${dec(ordGc[ordGc.length - 1].gc)}</b>.` });
+            }
+            filas.filter(f => f.pj >= 3 && f.D === 0).forEach(f => frases.push({ clave: ctxClave(f.ps), peso: 18 + f.pj, txt: `${g.t.split(' ')[0]} ${f.largo} aún no hemos perdido (<b>${f.V}V ${f.E}E</b>).` }));
+        });
+        frases.sort((a, b) => b.peso - a.peso);
+        // si dos frases hablan exactamente de los mismos partidos (p. ej. en casa = en artificial), solo sale una
+        const vistas = new Set(), destacados = [];
+        frases.forEach(f => { const base = f.clave.split('/').sort().join('/'); if (destacados.length < 3 && !vistas.has(base)) { vistas.add(base); destacados.push(f); } });
+        const fila = (f) => {
+            const col = f.pct >= 60 ? '#2ed573' : f.pct >= 40 ? '#f5a623' : '#ff5577';
+            const lista = f.ps.map(p => { const r = res(p); const c = r === 'V' ? '#2ed573' : r === 'D' ? '#ff5577' : '#94a3b8'; return `<div style="display:flex; justify-content:space-between; gap:8px; font-size:11.5px; padding:5px 8px; background:rgba(0,0,0,.2); border-radius:7px; margin-top:4px; color:#e2e8f0;"><span>vs ${ctxEsc(p.rival)} <span style="color:#64748b;">· ${ctxEsc(p.fecha)}</span></span><span style="color:${c}; font-weight:800;">${p.golesLocal}-${p.golesRival}</span></div>`; }).join('');
+            return `<div onclick="var s=this.nextElementSibling; s.style.display = s.style.display === 'block' ? 'none' : 'block';" style="display:grid; grid-template-columns:92px 1fr 48px; align-items:center; gap:8px; padding:7px 0; border-top:1px solid rgba(255,255,255,.05); cursor:pointer;">
+                <div style="font-size:12px; font-weight:700; color:#e2e8f0;">${f.corto}${f.sub ? `<div style="font-size:10px; color:#64748b; font-weight:600;">${f.sub}</div>` : ''}</div>
+                <div><div style="height:8px; border-radius:4px; background:rgba(255,255,255,.06); overflow:hidden; display:flex;"><div style="width:${f.V / f.pj * 100}%; background:#2ed573;"></div><div style="width:${f.E / f.pj * 100}%; background:#94a3b8;"></div><div style="width:${f.D / f.pj * 100}%; background:#ff5577;"></div></div>
+                    <div style="font-size:10px; color:#94a3b8; margin-top:4px;">${f.pj} PJ · ${f.V}V ${f.E}E ${f.D}D · ${dec(f.gf)} a favor · ${dec(f.gc)} en contra${f.pj < 3 ? ' <span style="color:#f5a623; font-weight:700;">· pocos datos</span>' : ''}</div></div>
+                <div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:15px; text-align:right; color:${col};">${f.pct}%</div>
+            </div><div style="display:none; padding:2px 0 6px;">${lista}</div>`;
+        };
+        return (destacados.length ? `<div style="background:rgba(46,213,115,.08); border:1px solid rgba(46,213,115,.3); border-radius:12px; padding:10px 12px; margin-bottom:12px;">${destacados.map(d => `<div style="font-size:12.5px; line-height:1.5; padding:3px 0; color:#e2e8f0;">${d.txt}</div>`).join('')}</div>` : '')
+            + `<div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap; font-size:10px; color:#94a3b8; margin-bottom:10px;"><span><i style="display:inline-block; width:9px; height:9px; border-radius:2px; background:#2ed573; margin-right:4px;"></i>Ganados</span><span><i style="display:inline-block; width:9px; height:9px; border-radius:2px; background:#94a3b8; margin-right:4px;"></i>Empatados</span><span><i style="display:inline-block; width:9px; height:9px; border-radius:2px; background:#ff5577; margin-right:4px;"></i>Perdidos</span><span>% = puntos sacados</span></div>`
+            + grupos.map(({ g, filas }) => `<div style="background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06); border-radius:14px; padding:12px; margin-bottom:10px;"><div style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:12px; margin-bottom:6px; color:#e2e8f0;">${g.t}</div>${filas.map(fila).join('')}</div>`).join('')
+            + `<div style="font-size:10.5px; color:#64748b; text-align:center; line-height:1.45;">Toca una fila para ver sus partidos. Cuenta ${partidos.length} de ${((temporada && temporada.partidos) || []).length} partidos; si falta algún dato de un partido, ese partido no entra en ese apartado.<br>Datos del tiempo: <a href="https://open-meteo.com/" target="_blank" rel="noopener" style="color:#64748b;">Open-Meteo</a></div>`;
+    }
 
   // ── Perfil de temporada: para verse aunque no haya partido en juego (tocando el ranking) ──
   window.abrirPerfilJugadorTemporada = (id) => {
@@ -2339,11 +2562,13 @@
         <div style="flex:1; text-align:center;">${escudo(esCasa ? rival : hergar, !esCasa)}<div style="font-size:13px; font-weight:700; color:#e2e8f0;">${escHtml(esCasa ? rival.nombre : hergar.nombre)}</div></div>
       </div>
       <div style="text-align:center; font-size:14px; font-weight:600; color:#e2e8f0; padding:9px 0; border-top:1px solid rgba(255,255,255,0.08); border-bottom:1px solid rgba(255,255,255,0.08); margin-bottom:12px;">🗓️ ${escHtml(fechaHoraProximoViewer(p))}</div>
+      <div id="proxTiempoVisor" style="margin:-4px 0 12px;"></div>
       ${nuevas}
       <div style="font-size:11.5px; color:#8da499; margin-bottom:6px;">Enfrentamientos anteriores</div>
       ${cara}
       ${convocatoriaHTML}`;
     card.style.display = 'block';
+    try { ctxPintarTiempoProximo(document.getElementById('proxTiempoVisor'), ctxCampoDe(liga, p.local), ctxDMYaISO(p.fechaPartido || ''), p.hora || ''); } catch (e) { console.error('Tiempo:', e); } // v97
     const informe = document.getElementById('informeIACard');
     if (informe) informe.style.display = 'none'; // la tarjeta sustituye al informe IA
   }
@@ -2855,6 +3080,7 @@
     pintarRecords(temporada);
     try { document.getElementById('minutosGoles').innerHTML = tramosGolHTML(temporada, 'vtr'); } catch (e) { console.error('Minutos:', e); }
     try { document.getElementById('sociedadesLista').innerHTML = sociedadesHTML(temporada); } catch (e) { console.error('Sociedades:', e); }
+    try { document.getElementById('contextoLista').innerHTML = ctxContextoHTML(temporada); } catch (e) { console.error('Contexto:', e); } // v97
     pintarComparativa(temporada);
     pintarHeatmap(temporada);
     pintarOnceIdeal(temporada);
@@ -3599,7 +3825,8 @@
     cont.innerHTML = liga.equipos.map(eq => `
       <div class="liga-equipo-row">
         ${escudoEquipoVisorHTML(eq, 30)}
-        <div class="liga-equipo-nombre ${eq.esHergar?'hergar':''}">${eq.nombre}</div>
+        <div class="liga-equipo-nombre ${eq.esHergar?'hergar':''}" style="flex:1;">${eq.nombre}${eq.campo ? `<div style="font-size:10.5px; color:#94a3b8; font-weight:600; margin-top:2px;">🏟️ ${ctxEsc([eq.campo.nombre, CTX_CESPED[eq.campo.cesped]].filter(Boolean).join(' · ') || eq.campo.lugar || 'Campo')}</div>` : ''}</div>
+        ${eq.campo && ctxMapsUrl(eq.campo) ? `<a href="${ctxEsc(ctxMapsUrl(eq.campo))}" target="_blank" rel="noopener" style="font-size:11px; font-weight:800; color:#2ed573; text-decoration:none; white-space:nowrap;">Cómo llegar ›</a>` : ''}
       </div>`).join('');
   }
 

@@ -432,13 +432,6 @@
   </div>
 
   <div class="content">
-    <div class="tabs-header">
-      <div class="tab-btn active" onclick="showTab('partido')">⚽ Partido</div>
-      <div class="tab-btn" onclick="showTab('envivo')">📊 En vivo</div>
-      <div class="tab-btn" onclick="showTab('temporada')">🏆 Temp.</div>
-      <div class="tab-btn" onclick="showTab('liga')">📋 Liga</div>
-    </div>
-
     <!-- PARTIDO -->
     <div id="partido" class="panel active">
       <div class="card" id="proximoPartidoCard" style="display:none;"></div>
@@ -751,6 +744,7 @@
 </div>
 
 <script type="module">
+  // Visor · Sin las pestañas de arriba (Partido / En vivo / Temp. / Liga): se navega solo con la barra de abajo.
   // Visor · Modo TV: pantalla completa en horizontal (marcador, campo, estadísticas, cinta de eventos, rótulos de gol y cambio, descanso y previa).
   // v100 (app) · Contexto: la temperatura se divide en frío (<8), fresco (8–15), templado (15–25) y calor (>25).
   // v99 (app) · En Temporada → Partidos y en Contexto sale el tiempo que hizo en cada partido.
@@ -3040,7 +3034,6 @@
     document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
     document.getElementById(id).classList.add('active');
     const map = {partido:0, envivo:1, temporada:2, liga:3};
-    document.querySelectorAll('.content .tabs-header .tab-btn').forEach((b,i)=>b.classList.toggle('active', i===map[id]));
     document.querySelectorAll('.bottom-tab').forEach((b,i)=>b.classList.toggle('active', i===map[id]));
   }
   function showSub(ev, id){

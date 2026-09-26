@@ -790,11 +790,11 @@
   // La app las publica junto con la temporada (temporada/reglas). Si aún no han llegado, se usan estas,
   // que son las mismas que trae la app.
   const REGLAS_POR_DEFECTO = {
-    version: 2, minMinutosRanking: 35, minMinutosSinergia: 20, minMinutosMVP: 10, suelo: -5,
+    version: 3, minMinutosRanking: 35, minMinutosSinergia: 20, minMinutosMVP: 10, suelo: -5,
     acciones: { gol: 0.75, golExtraDefensa: 1.25, golExtraMedio: 0.15, asistencia: 0.40, paseClave: 0.25, paseArea: 0.15,
       disparoPuerta: 0.30, disparoFuera: 0.10, regate: 0.10, defensa: 0.30, defensaClave: 1.00,
       parada: 0.30, paradaDificil: 1.00, fallo: -0.20, falloImportante: -0.50 },
-    equipo: { golFavor: 1.00, golContra: -1.00, tiroRivalPuerta: -0.15, tiroRivalFuera: -0.05, desdeQuintoGol: 0.30 },
+    equipo: { golFavor: 1.00, golContra: -1.00, tiroRivalPuerta: -0.15, tiroRivalFuera: -0.05, golesSinReparto: 4 },
     porteriaCero: { portero: 1.50, defensa: 1.25, centrocampista: 0.60, delantero: 0 },
     penaltis: { marca: 0.50, falla: -0.75, provocado: 0.40, contraGolCampo: -0.50, paradoPortero: 1.00 }
   };
@@ -3226,7 +3226,7 @@
       csFila('Paradas del portero', `${fmtPts(a.parada)} / ${fmtPts(a.paradaDificil)}`, true, 'Parada normal / parada difícil.')
     ].join('');
     const juego = [
-      csFila('Gol a favor', fmtPts(e.golFavor), true, 'Suma a todos los que están en el campo.'),
+      csFila('Gol a favor', fmtPts(e.golFavor), true, `Suma a todos los que están en el campo. Si el equipo marca más de ${e.golesSinReparto || 4} en el partido, cada gol vale ${e.golesSinReparto || 4} ÷ goles totales, caiga cuando caiga, para que la 1.ª y la 2.ª parte cuenten igual.`),
       csFila('Gol en contra', fmtPts(e.golContra), false, 'Resta a todos los que están en el campo.'),
       csFila('Tiros del rival', `${fmtPts(e.tiroRivalFuera)} a ${fmtPts(e.tiroRivalPuerta)}`, false, 'Restan un poco a los que están en el campo.')
     ].join('');

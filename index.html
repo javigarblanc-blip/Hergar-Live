@@ -744,6 +744,7 @@
 </div>
 
 <script type="module">
+  // v102 (app) · El regate / jugada individual pasa a valer +0,10 en el impacto (antes +0,05).
   // Visor · Sin las pestañas de arriba (Partido / En vivo / Temp. / Liga): se navega solo con la barra de abajo.
   // Visor · Modo TV: pantalla completa en horizontal (marcador, campo, estadísticas, cinta de eventos, rótulos de gol y cambio, descanso y previa).
   // v100 (app) · Contexto: la temperatura se divide en frío (<8), fresco (8–15), templado (15–25) y calor (>25).
@@ -791,7 +792,7 @@
   const REGLAS_POR_DEFECTO = {
     version: 2, minMinutosRanking: 35, minMinutosSinergia: 20, minMinutosMVP: 10, suelo: -5,
     acciones: { gol: 0.75, golExtraDefensa: 1.25, golExtraMedio: 0.15, asistencia: 0.40, paseClave: 0.25, paseArea: 0.15,
-      disparoPuerta: 0.30, disparoFuera: 0.10, regate: 0.05, defensa: 0.30, defensaClave: 1.00,
+      disparoPuerta: 0.30, disparoFuera: 0.10, regate: 0.10, defensa: 0.30, defensaClave: 1.00,
       parada: 0.30, paradaDificil: 1.00, fallo: -0.20, falloImportante: -0.50 },
     equipo: { golFavor: 1.00, golContra: -1.00, tiroRivalPuerta: -0.15, tiroRivalFuera: -0.05, desdeQuintoGol: 0.30 },
     porteriaCero: { portero: 1.50, defensa: 1.25, centrocampista: 0.60, delantero: 0 },
@@ -2757,10 +2758,69 @@
         ${golesMin}
         ${mvpLine}
         ${statsHtml}
+        ${actuacionPartidoHtml(temporada, p)}
         ${informeIAPartidoHtml(p)}
       </div>`;
     }).join('');
   }
+
+    // ── v104 · ACTUACIÓN DE CADA JUGADOR EN UN PARTIDO (misma función en la app y en el visor) ──
+    // Sale del historial que cada jugador guarda por partido (fecha + rival). El impacto del partido es lo que sumó
+    // o restó ese día; debajo, lo mismo llevado a 70 minutos. Con menos de 10' no se da el "por 70'" (engaña).
+    function actuacionPartidoHtml(t, p) {
+        if (!t || !p) return '';
+        const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        const num = (n) => (n > 0 ? '+' : n < 0 ? '−' : '') + Math.abs(n).toFixed(2).replace('.', ',');
+        const ORD = ['POR', 'LI', 'DFC', 'LD', 'MCD', 'MC', 'MI', 'MD', 'MP', 'EI', 'ED', 'DC'];
+        const LIN = { portero: 'POR', defensa: 'DEF', centrocampista: 'CEN', delantero: 'DEL' };
+        const tit = Array.isArray(p.titulares) ? p.titulares.map(Number) : [];
+        const filas = [];
+        Object.values(t.jugadores || {}).forEach(j => {
+            const h = (j.historial || []).find(x => x.fecha === p.fecha && x.rival === p.rival);
+            if (!h || !((h.mins || 0) > 0 || h.goles || h.asistencias)) return;
+            const mins = h.mins || 0;
+            const imp = (h.imp !== undefined) ? h.imp : (h.impPond || 0) * mins / 70;
+            let puesto = '';
+            if (h.puestos && Object.keys(h.puestos).length) puesto = ORD.filter(k => h.puestos[k] > 0).sort((a, b) => h.puestos[b] - h.puestos[a])[0] || '';
+            else if (h.lineas && Object.keys(h.lineas).length) { const l = Object.keys(h.lineas).sort((a, b) => h.lineas[b] - h.lineas[a])[0]; puesto = LIN[l] || ''; }
+            filas.push({ j, h, mins, imp, puesto, titular: tit.length ? tit.includes(Number(j.id)) : null });
+        });
+        if (!filas.length) return '';
+        filas.sort((a, b) => b.imp - a.imp || b.mins - a.mins);
+        const maxAbs = Math.max(...filas.map(f => Math.abs(f.imp)), 0.01);
+        const filasHtml = filas.map(f => {
+            const h = f.h, a = h.acc || {};
+            const col = f.imp >= 0 ? '#2ed573' : '#ff6b7a';
+            const ancho = Math.round(Math.abs(f.imp) / maxAbs * 100);
+            const chips = [];
+            if (h.goles) chips.push(`⚽${h.goles > 1 ? '×' + h.goles : ''}`);
+            if (h.asistencias) chips.push(`👟${h.asistencias > 1 ? '×' + h.asistencias : ''}`);
+            [['dp', '🎯'], ['df', '💨'], ['pc', '🔑'], ['pa', '📯'], ['reg', '🌀'], ['def', '🛡️'], ['defC', '🛡️⭐'], ['par', '🧤'], ['parD', '🧤⭐']].forEach(([k, ic]) => { if (a[k]) chips.push(`${ic}${a[k] > 1 ? '×' + a[k] : ''}`); });
+            if (a.am) chips.push('🟨'); if (a.ro) chips.push('🟥');
+            const mvp = p.mvpId != null && Number(p.mvpId) === Number(f.j.id);
+            const p70 = f.mins >= 10 ? `${num((h.impPond !== undefined) ? h.impPond : f.imp / f.mins * 70)} /70'` : '—';
+            const papel = f.titular === null ? '' : (f.titular ? 'Titular' : 'Entró');
+            return `<div style="padding:7px 0; border-top:1px solid rgba(255,255,255,0.06);">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="width:22px; text-align:center; font-weight:900; color:#f5a623; font-size:12px; font-family:'Montserrat',sans-serif;">${esc(f.j.dorsal ?? '—')}</span>
+                    <span style="flex:1; min-width:0; font-size:12.5px; font-weight:700; color:#e2e8f0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc((f.j.name || '').split(' ')[0])}${mvp ? ' <span style="color:#f5a623;">⭐</span>' : ''}</span>
+                    <span style="font-size:10.5px; color:#94a3b8; white-space:nowrap;">${[f.puesto, papel, f.mins + "'"].filter(Boolean).join(' · ')}</span>
+                    <span style="width:52px; text-align:right; font-family:'Montserrat',sans-serif; font-weight:900; font-size:13px; color:${col};">${num(f.imp)}</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px; margin-top:4px; padding-left:30px;">
+                    <div style="flex:1; height:4px; border-radius:3px; background:rgba(255,255,255,0.06);"><div style="width:${ancho}%; height:100%; border-radius:3px; background:${col};"></div></div>
+                    <span style="font-size:10px; color:#64748b; white-space:nowrap; width:74px; text-align:right;">${p70}</span>
+                </div>
+                ${chips.length ? `<div style="padding-left:30px; margin-top:3px; font-size:11px; line-height:1.5; color:#cbd5e1;">${chips.join(' ')}</div>` : ''}
+            </div>`;
+        }).join('');
+        const sinDetalle = filas.every(f => !f.h.acc);
+        return `<details style="margin-top:6px; padding-top:6px; border-top:1px solid rgba(255,255,255,0.06);">
+            <summary style="color:#2ed573; font-size:11px; font-weight:800; cursor:pointer;">👥 Actuación de cada jugador (${filas.length})</summary>
+            <div style="font-size:10.5px; color:#94a3b8; line-height:1.45; margin:6px 0 2px;">Impacto que sumó cada uno en este partido, de mayor a menor. Debajo, lo mismo llevado a 70 minutos (solo con 10' o más).${sinDetalle ? ' Este partido es anterior a la v104: solo tiene goles y asistencias, no el resto de acciones.' : ''}</div>
+            ${filasHtml}
+        </details>`;
+    }
 
   function informeIAPartidoHtml(p) {
     if (!p || !p.analisisIA) return '';

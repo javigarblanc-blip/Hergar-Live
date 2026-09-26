@@ -2783,33 +2783,37 @@
             let puesto = '';
             if (h.puestos && Object.keys(h.puestos).length) puesto = ORD.filter(k => h.puestos[k] > 0).sort((a, b) => h.puestos[b] - h.puestos[a])[0] || '';
             else if (h.lineas && Object.keys(h.lineas).length) { const l = Object.keys(h.lineas).sort((a, b) => h.lineas[b] - h.lineas[a])[0]; puesto = LIN[l] || ''; }
-            filas.push({ j, h, mins, imp, puesto, titular: tit.length ? tit.includes(Number(j.id)) : null });
+            const p70 = mins >= 10 ? ((h.impPond !== undefined) ? h.impPond : imp / mins * 70) : null; // v106: se ordena por esto
+            filas.push({ j, h, mins, imp, p70, puesto, titular: tit.length ? tit.includes(Number(j.id)) : null });
         });
         if (!filas.length) return '';
-        filas.sort((a, b) => b.imp - a.imp || b.mins - a.mins);
-        const maxAbs = Math.max(...filas.map(f => Math.abs(f.imp)), 0.01);
+        // v106: por impacto por 70'; los de menos de 10' van al final (su "por 70'" engaña)
+        filas.sort((a, b) => (a.p70 === null) - (b.p70 === null) || (b.p70 ?? b.imp) - (a.p70 ?? a.imp) || b.mins - a.mins);
+        const maxAbs = Math.max(...filas.map(f => Math.abs(f.p70 ?? f.imp)), 0.01);
         const filasHtml = filas.map(f => {
             const h = f.h, a = h.acc || {};
-            const col = f.imp >= 0 ? '#2ed573' : '#ff6b7a';
-            const ancho = Math.round(Math.abs(f.imp) / maxAbs * 100);
+            const ref = f.p70 ?? f.imp;
+            const col = f.p70 === null ? '#64748b' : (ref >= 0 ? '#2ed573' : '#ff6b7a');
+            const ancho = Math.round(Math.abs(ref) / maxAbs * 100);
             const chips = [];
             if (h.goles) chips.push(`⚽${h.goles > 1 ? '×' + h.goles : ''}`);
             if (h.asistencias) chips.push(`👟${h.asistencias > 1 ? '×' + h.asistencias : ''}`);
             [['dp', '🎯'], ['df', '💨'], ['pc', '🔑'], ['pa', '📯'], ['reg', '🌀'], ['def', '🛡️'], ['defC', '🛡️⭐'], ['par', '🧤'], ['parD', '🧤⭐']].forEach(([k, ic]) => { if (a[k]) chips.push(`${ic}${a[k] > 1 ? '×' + a[k] : ''}`); });
             if (a.am) chips.push('🟨'); if (a.ro) chips.push('🟥');
             const mvp = p.mvpId != null && Number(p.mvpId) === Number(f.j.id);
-            const p70 = f.mins >= 10 ? `${num((h.impPond !== undefined) ? h.impPond : f.imp / f.mins * 70)} /70'` : '—';
+            const grande = f.p70 !== null ? num(f.p70) : '—';
+            const pequeno = `${num(f.imp)} total`;
             const papel = f.titular === null ? '' : (f.titular ? 'Titular' : 'Entró');
             return `<div style="padding:7px 0; border-top:1px solid rgba(255,255,255,0.06);">
                 <div style="display:flex; align-items:center; gap:8px;">
                     <span style="width:22px; text-align:center; font-weight:900; color:#f5a623; font-size:12px; font-family:'Montserrat',sans-serif;">${esc(f.j.dorsal ?? '—')}</span>
                     <span style="flex:1; min-width:0; font-size:12.5px; font-weight:700; color:#e2e8f0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc((f.j.name || '').split(' ')[0])}${mvp ? ' <span style="color:#f5a623;">⭐</span>' : ''}</span>
                     <span style="font-size:10.5px; color:#94a3b8; white-space:nowrap;">${[f.puesto, papel, f.mins + "'"].filter(Boolean).join(' · ')}</span>
-                    <span style="width:52px; text-align:right; font-family:'Montserrat',sans-serif; font-weight:900; font-size:13px; color:${col};">${num(f.imp)}</span>
+                    <span style="width:52px; text-align:right; font-family:'Montserrat',sans-serif; font-weight:900; font-size:13px; color:${col};">${grande}</span>
                 </div>
                 <div style="display:flex; align-items:center; gap:8px; margin-top:4px; padding-left:30px;">
                     <div style="flex:1; height:4px; border-radius:3px; background:rgba(255,255,255,0.06);"><div style="width:${ancho}%; height:100%; border-radius:3px; background:${col};"></div></div>
-                    <span style="font-size:10px; color:#64748b; white-space:nowrap; width:74px; text-align:right;">${p70}</span>
+                    <span style="font-size:10px; color:#64748b; white-space:nowrap; width:74px; text-align:right;">${pequeno}</span>
                 </div>
                 ${chips.length ? `<div style="padding-left:30px; margin-top:3px; font-size:11px; line-height:1.5; color:#cbd5e1;">${chips.join(' ')}</div>` : ''}
             </div>`;
@@ -2817,7 +2821,7 @@
         const sinDetalle = filas.every(f => !f.h.acc);
         return `<details style="margin-top:6px; padding-top:6px; border-top:1px solid rgba(255,255,255,0.06);">
             <summary style="color:#2ed573; font-size:11px; font-weight:800; cursor:pointer;">👥 Actuación de cada jugador (${filas.length})</summary>
-            <div style="font-size:10.5px; color:#94a3b8; line-height:1.45; margin:6px 0 2px;">Impacto que sumó cada uno en este partido, de mayor a menor. Debajo, lo mismo llevado a 70 minutos (solo con 10' o más).${sinDetalle ? ' Este partido es anterior a la v104: solo tiene goles y asistencias, no el resto de acciones.' : ''}</div>
+            <div style="font-size:10.5px; color:#94a3b8; line-height:1.45; margin:6px 0 2px;">Ordenados por impacto por 70 minutos, para comparar igual al que jugó 30' y al que jugó 70'. En gris, el impacto total que sumó en el partido. Con menos de 10' no se da el "por 70'" y van al final.${sinDetalle ? ' Este partido es anterior a la v104: solo tiene goles y asistencias, no el resto de acciones.' : ''}</div>
             ${filasHtml}
         </details>`;
     }

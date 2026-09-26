@@ -2601,7 +2601,12 @@
     const res = gl > gr ? ['VICTORIA', '#2ed573'] : gl < gr ? ['DERROTA', '#ff4757'] : ['EMPATE', '#f5a623'];
     const rival = escHtml((m.rival || 'RIVAL').toUpperCase());
     // goles con minuto
-    const goles = Array.isArray(m.golesMin) ? m.golesMin.slice().sort((a, b) => n(a.min) - n(b.min)) : [];
+    let golesSrc = m.golesMin ? Object.values(m.golesMin) : [];
+    if (!golesSrc.length && ultimaTemporada && Array.isArray(ultimaTemporada.partidos)) { // el directo no los trae: los del partido guardado
+      const p = ultimaTemporada.partidos.slice().reverse().find(x => n(x.golesLocal) === gl && n(x.golesRival) === gr && normNombreEquipo(x.rival) === normNombreEquipo(m.rival));
+      if (p && Array.isArray(p.goles)) golesSrc = p.goles;
+    }
+    const goles = golesSrc.filter(Boolean).slice().sort((a, b) => n(a.min) - n(b.min));
     const lineaGoles = (eq) => goles.filter(g => g.equipo === eq).map(g => `${g.min != null ? g.min + "'" : ''} ${escHtml(g.nombre || (eq === 'rival' ? '' : ''))}`.trim()).join(' · ');
     const gH = lineaGoles('hergar'), gR = lineaGoles('rival');
     // estadísticas
@@ -3847,6 +3852,12 @@
     }
     function wpGoles(m) {
       let goles;
+      // Si el partido ya terminó y el directo no trae los goles, se cogen del partido guardado en la temporada
+      if (m.matchFinished && !(m.golesMin && Object.keys(m.golesMin).length) && ultimaTemporada && Array.isArray(ultimaTemporada.partidos)) {
+        const ps = ultimaTemporada.partidos;
+        const p = ps.slice().reverse().find(x => Number(x.golesLocal) === Number(m.golesLocal) && Number(x.golesRival) === Number(m.golesRival) && normNombreEquipo(x.rival) === normNombreEquipo(m.rival));
+        if (p && Array.isArray(p.goles) && p.goles.length) m = Object.assign({}, m, { golesMin: p.goles });
+      }
       if (Array.isArray(m.golesMin) || (m.golesMin && typeof m.golesMin === 'object')) {
         goles = Object.values(m.golesMin).filter(g => g && g.min != null).map(g => ({ min: Number(g.min) || 0, rival: g.equipo === 'rival', nombre: g.nombre || '' }));
       } else {
@@ -3892,7 +3903,10 @@
         h += `<div class="pron-tri"><div class="w" style="width:${w*100}%">${w >= .12 ? 'Gana ' : ''}${pc(w)}%</div><div class="d" style="width:${d*100}%">${d >= .08 ? pc(d) + '%' : ''}</div><div class="l" style="width:${l*100}%">${l >= .08 ? pc(l) + '%' : ''}</div></div>
           <div style="display:flex; justify-content:space-between; font-size:10px; color:#64748b; margin-top:4px;"><span>Gana ${pc(w)}%</span><span>Empata ${pc(d)}%</span><span>Pierde ${pc(l)}%</span></div>`;
       }
-      if (serie.length >= 2) h += wpGrafica(serie, goles, T);
+      if (serie.length >= 2) {
+        h += wpGrafica(serie, goles, T);
+        h += `<div style="font-size:11px; color:#94a3b8; line-height:1.45; margin-top:6px;">Cómo leerla: en cada minuto, la parte verde es la probabilidad de que Hergar gane, la gris de que empate y la roja de que pierda, según el marcador y el tiempo que queda. Cada punto es un gol: el verde sube de golpe con los nuestros y baja con los del rival.</div>`;
+      }
       let textos = [];
       if (clave && Math.abs(clave.b - clave.a) >= .05) {
         const g = clave.g;

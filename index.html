@@ -276,6 +276,9 @@
   .vs-bar { display:flex; height:6px; margin-top:5px; border-radius:3px; overflow:hidden; background:rgba(255,255,255,.06); }
   .vs-bar .h { background:#2ed573; }
   .vs-bar .r { background:#64748b; }
+  /* resumen del último partido: Hergar en su rojo */
+  .vs-rojo .vs-num.h { color:#ff5577; }
+  .vs-rojo .vs-bar .h { background:rgb(180,20,56); }
 
   /* ── Aviso de gol dentro de la página ── */
   #golBanner { display:none; position:fixed; left:12px; right:12px; top:calc(10px + env(safe-area-inset-top,0px));
@@ -434,6 +437,7 @@
   <div class="content">
     <!-- PARTIDO -->
     <div id="partido" class="panel active">
+      <div class="card" id="resumenUltimoCard" style="display:none;"></div>
       <div class="card" id="proximoPartidoCard" style="display:none;"></div>
       <div class="card" id="informeIACard" style="display:none;">
         <div class="card-title">🤖 Informe del partido (IA)</div>
@@ -1556,6 +1560,7 @@
 
     pintarInformeIA(matchData);
     pintarProximoPartido();
+    try { pintarResumenUltimo(matchData); } catch (e) { console.error('Resumen del partido:', e); }
     pintarCampo(matchData);
     pintarBanquilloPrevia(matchData, previa);
     pintarEventos(matchData);
@@ -2580,6 +2585,85 @@
     try { ctxPintarTiempoProximo(document.getElementById('proxTiempoVisor'), ctxCampoDe(liga, p.local), ctxDMYaISO(p.fechaPartido || ''), p.hora || ''); } catch (e) { console.error('Tiempo:', e); } // v97
     const informe = document.getElementById('informeIACard');
     if (informe) informe.style.display = 'none'; // la tarjeta sustituye al informe IA
+  }
+
+
+  // ── Resumen del último partido en la pestaña Partido ─────────────────────
+  // Sale al terminar el partido y se queda hasta que empieza el siguiente. Los 3 primeros días va arriba;
+  // después baja debajo de la tarjeta del próximo partido.
+  const DIAS_RESUMEN_ARRIBA = 3;
+  function pintarResumenUltimo(m) {
+    const card = document.getElementById('resumenUltimoCard');
+    if (!card) return;
+    if (!m || !m.matchFinished) { card.style.display = 'none'; card.innerHTML = ''; return; }
+    const n = (v) => Number(v) || 0;
+    const gl = n(m.golesLocal), gr = n(m.golesRival);
+    const res = gl > gr ? ['VICTORIA', '#2ed573'] : gl < gr ? ['DERROTA', '#ff4757'] : ['EMPATE', '#f5a623'];
+    const rival = escHtml((m.rival || 'RIVAL').toUpperCase());
+    // goles con minuto
+    const goles = Array.isArray(m.golesMin) ? m.golesMin.slice().sort((a, b) => n(a.min) - n(b.min)) : [];
+    const lineaGoles = (eq) => goles.filter(g => g.equipo === eq).map(g => `${g.min != null ? g.min + "'" : ''} ${escHtml(g.nombre || (eq === 'rival' ? '' : ''))}`.trim()).join(' · ');
+    const gH = lineaGoles('hergar'), gR = lineaGoles('rival');
+    // estadísticas
+    const filas = [
+      ['Disparos', n(m.tirosNuestrosPuerta) + n(m.tirosNuestrosFuera), n(m.tirosRivalesPuerta) + n(m.tirosRivalesFuera)],
+      ['A puerta', n(m.tirosNuestrosPuerta), n(m.tirosRivalesPuerta)],
+      ['Córners', n(m.cornersFavor), n(m.cornersContra)],
+      ['Faltas cometidas', n(m.faltasContra), n(m.faltasFavor)]
+    ].filter(([, h, r]) => h + r > 0);
+    const totT = n(m.tirosNuestrosPuerta) + n(m.tirosNuestrosFuera);
+    // destacados: los 3 mejores por impacto por 70' (con 10' o más)
+    const minMVP = (reglasImpacto && reglasImpacto.minMinutosMVP) || 10;
+    const top = Object.entries(m.jugadores || {}).filter(([, p]) => n(p.minutos) >= minMVP)
+      .sort((a, b) => n(b[1].impactoPond) - n(a[1].impactoPond)).slice(0, 3);
+    const medallas = ['🥇', '🥈', '🥉'];
+    const topHTML = top.length ? `<div style="font-size:11px; font-weight:800; color:#8da499; letter-spacing:.4px; margin:14px 0 6px;">⭐ DESTACADOS (impacto por 70')</div>` + top.map(([id, p], i) => {
+      const extra = [p.goles ? `⚽${p.goles > 1 ? '×' + p.goles : ''}` : '', p.asistencias ? `👟${p.asistencias > 1 ? '×' + p.asistencias : ''}` : ''].filter(Boolean).join(' ');
+      return `<div onclick="abrirPerfilJugador('${id}')" style="display:flex; align-items:center; gap:10px; padding:8px 10px; background:rgba(255,255,255,.04); border-radius:9px; margin-bottom:5px; cursor:pointer;">
+        <span style="font-size:16px;">${medallas[i]}</span>
+        <span style="font-family:'Montserrat',sans-serif; font-weight:900; color:#f5a623; font-size:12px; min-width:18px;">${escHtml(p.dorsal ?? '')}</span>
+        <span style="flex:1; font-size:13px; font-weight:700; color:#e2e8f0;">${escHtml((p.name || '').split(' ')[0])} <span style="font-size:11px; color:#8da499; font-weight:600;">${n(p.minutos)}' ${extra}</span></span>
+        <span style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:13px; color:#2ed573;">${n(p.impactoPond).toFixed(2).replace('.', ',')}</span>
+      </div>`;
+    }).join('') : '';
+    // el resumen de la IA, solo si su tarjeta está tapada por la del próximo partido
+    const ia = (m.resumenIA && proximoPartidoActual()) ? `<div style="font-style:italic; color:#a855f7; font-size:12px; line-height:1.5; padding:9px 10px; background:rgba(168,85,247,.08); border:1px solid rgba(168,85,247,.25); border-radius:9px; margin-top:12px;">🤖 "${escHtml(m.resumenIA)}"</div>` : '';
+    const fin = m.finalizadoEn || m.actualizado || null; // la app manda cuándo se pulsó FINAL (v107)
+    const fecha = fin ? new Date(fin) : null;
+    const fechaTxt = fecha ? fecha.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }) : '';
+    card.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <span style="font-size:11px; background:rgba(180,20,56,.18); color:#ff5577; border-radius:6px; padding:3px 9px; font-weight:700;">📊 Último partido</span>
+        <span style="font-size:11px; color:#8da499;">${escHtml(fechaTxt)}</span>
+      </div>
+      <div style="display:flex; align-items:center; justify-content:center; gap:12px; margin-bottom:4px;">
+        <span style="font-size:13px; font-weight:800; color:#ff5577;">HERGAR</span>
+        <span style="font-family:'Montserrat',sans-serif; font-size:28px; font-weight:900; color:#fff;">${gl} – ${gr}</span>
+        <span style="font-size:13px; font-weight:800; color:#94a3b8;">${rival}</span>
+      </div>
+      <div style="text-align:center; font-size:11px; font-weight:800; letter-spacing:1px; color:${res[1]}; margin-bottom:10px;">${res[0]}</div>
+      ${gH ? `<div style="font-size:12px; color:#cbd5e1; line-height:1.5; margin-bottom:4px;">⚽ ${gH}</div>` : ''}
+      ${gR ? `<div style="font-size:12px; color:#94a3b8; line-height:1.5; margin-bottom:4px;">🥅 ${rival}: ${gR}</div>` : ''}
+      ${filas.length ? `<div class="vs-rojo" style="margin-top:12px;">
+        <div class="vs-head"><span class="h" style="color:#ff5577;">HERGAR</span><span class="r">${rival}</span></div>
+        ${filas.map(([label, h, r]) => `
+          <div class="vs-row">
+            <div class="vs-vals"><span class="vs-num h">${h}</span><span class="vs-label">${label}</span><span class="vs-num r">${r}</span></div>
+            <div class="vs-bar" style="gap:${h > 0 && r > 0 ? 3 : 0}px;"><div class="h" style="flex:${h};"></div><div class="r" style="flex:${r};"></div></div>
+          </div>`).join('')}
+        ${totT > 0 ? `<div class="sub-caption" style="margin-top:-4px;">Acierto de cara a gol: ${Math.round(Math.min(gl, totT) / totT * 100)} % de los disparos acabaron en gol</div>` : ''}
+      </div>` : ''}
+      ${topHTML}
+      ${ia}
+      <button onclick="showTab('envivo'); window.scrollTo(0,0);" style="width:100%; margin-top:12px; padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.04); color:#e2e8f0; font-weight:700; font-size:12px; cursor:pointer;">Ver todas las estadísticas del partido →</button>`;
+    card.style.display = 'block';
+    // colocación: arriba los primeros días; luego debajo del próximo partido
+    const prox = document.getElementById('proximoPartidoCard');
+    const reciente = !fin || (Date.now() - fin) < DIAS_RESUMEN_ARRIBA * 86400000;
+    if (prox && prox.parentNode === card.parentNode) {
+      if (reciente) prox.parentNode.insertBefore(card, prox);
+      else prox.parentNode.insertBefore(card, prox.nextSibling);
+    }
   }
 
   function pintarInformeIA(matchData) {

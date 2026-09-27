@@ -729,9 +729,11 @@
     <div class="fd-tabs">
       <button id="perfilCromoTabBtn" class="fd-active" onclick="mostrarPestanaPerfil('cromo')">🎴 Cromo</button>
       <button id="perfilDatosTabBtn" onclick="mostrarPestanaPerfil('datos')">📊 Datos</button>
+      <button id="perfilEvoTabBtn" onclick="mostrarPestanaPerfil('evo')" style="display:none;">📈 Evolución</button>
     </div>
     <div id="perfilContenido"></div>
     <div id="perfilDatosContenido" style="display:none;"></div>
+    <div id="perfilEvoContenido" style="display:none;"></div>
     <button onclick="document.getElementById('perfilModal').style.display='none';" style="margin-top:14px; width:100%; padding:11px; background:rgba(255,255,255,.06); color:#e2e8f0; border:none; border-radius:10px; font-weight:700; font-family:'Montserrat',sans-serif;">CERRAR</button>
   </div>
 </div>
@@ -1051,11 +1053,92 @@
       </div>`;
   }
   window.mostrarPestanaPerfil = function(cual) {
-    const esCromo = cual === 'cromo';
-    document.getElementById('perfilContenido').style.display = esCromo ? 'block' : 'none';
-    document.getElementById('perfilDatosContenido').style.display = esCromo ? 'none' : 'block';
-    document.getElementById('perfilCromoTabBtn').classList.toggle('fd-active', esCromo);
-    document.getElementById('perfilDatosTabBtn').classList.toggle('fd-active', !esCromo);
+    [['cromo', 'perfilContenido', 'perfilCromoTabBtn'], ['datos', 'perfilDatosContenido', 'perfilDatosTabBtn'], ['evo', 'perfilEvoContenido', 'perfilEvoTabBtn']].forEach(([k, cont, btn]) => {
+      const c = document.getElementById(cont), b = document.getElementById(btn);
+      if (c) c.style.display = k === cual ? 'block' : 'none';
+      if (b) b.classList.toggle('fd-active', k === cual);
+    });
+  };
+  function mostrarBotonEvo(si) { const b = document.getElementById('perfilEvoTabBtn'); if (b) b.style.display = si ? '' : 'none'; }
+
+  // ── Evolución del impacto por 70' partido a partido (ficha de temporada) ──
+  // Línea del niño frente a la media del equipo en ese mismo partido. Con menos de 10' el partido no se valora.
+  const EVO_MIN = 10;
+  let evoDatos = null;
+  function evoImpDe(h) { return (h.imp !== undefined && h.imp !== null) ? Number(h.imp) : (Number(h.impPond) || 0) * (Number(h.mins) || 0) / 70; }
+  function evoHistDe(j, p) { return (j.historial || []).find(h => h.fecha === p.fecha && h.rival === p.rival) || null; }
+  function evolucionJugadorHTML(t, j) {
+    const ps = (t && t.partidos) || [];
+    const puntos = [];
+    ps.forEach((p, i) => {
+      const h = evoHistDe(j, p);
+      if (!h || !((h.mins || 0) > 0 || h.goles || h.asistencias)) return;
+      // media del equipo en ese partido: impacto de todos los que jugaron, llevado a 70'
+      let imp = 0, mins = 0;
+      Object.values(t.jugadores || {}).forEach(o => { const x = evoHistDe(o, p); if (x && (x.mins || 0) > 0) { imp += evoImpDe(x); mins += x.mins; } });
+      const mins_j = h.mins || 0;
+      puntos.push({ i, p, h, mins: mins_j, v: mins_j >= EVO_MIN ? (h.impPond !== undefined ? Number(h.impPond) : evoImpDe(h) / mins_j * 70) : null, media: mins > 0 ? imp / mins * 70 : null });
+    });
+    evoDatos = puntos;
+    const nombre = escHtml((j.name || '').split(' ')[0]);
+    const valorados = puntos.filter(x => x.v !== null);
+    if (valorados.length < 2) return `<div style="text-align:center; padding:22px 10px; color:#94a3b8; font-size:12.5px; line-height:1.5;">📈<br>Hace falta más de un partido con ${EVO_MIN}' o más para ver la evolución de ${nombre}.</div>`;
+    const fmt = n => n.toFixed(1).replace('.', ',');
+    // gráfica
+    const W = 320, H = 170, L = 28, R = 12, T = 10, B = 24;
+    const vals = puntos.flatMap(x => [x.v, x.media]).filter(x => x !== null);
+    let mn = Math.min(0, ...vals), mx = Math.max(...vals, 1);
+    mn = Math.floor(mn); mx = Math.ceil(mx + 0.3);
+    const n = puntos.length;
+    const X = k => n === 1 ? (L + W - R) / 2 : L + k * (W - L - R) / (n - 1);
+    const Y = v => T + (1 - (v - mn) / (mx - mn)) * (H - T - B);
+    const paso = (mx - mn) <= 6 ? 2 : (mx - mn) <= 12 ? 3 : 5;
+    let g = '';
+    for (let v = Math.ceil(mn / paso) * paso; v <= mx; v += paso) g += `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="rgba(255,255,255,${v === 0 ? .18 : .07})"/><text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end" font-size="10" fill="#64748b">${v}</text>`;
+    const cadaEtiq = Math.ceil(n / 8);
+    puntos.forEach((x, k) => { if (k % cadaEtiq === 0 || k === n - 1) g += `<text x="${X(k)}" y="${H - 7}" text-anchor="middle" font-size="10" fill="#64748b">J${x.i + 1}</text>`; });
+    const med = puntos.map((x, k) => x.media === null ? null : `${X(k).toFixed(1)},${Y(x.media).toFixed(1)}`).filter(Boolean);
+    if (med.length > 1) g += `<polyline fill="none" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4 4" points="${med.join(' ')}"/>`;
+    const lin = puntos.map((x, k) => x.v === null ? null : `${X(k).toFixed(1)},${Y(x.v).toFixed(1)}`).filter(Boolean);
+    g += `<polyline fill="none" stroke="#ff5577" stroke-width="2.5" stroke-linejoin="round" points="${lin.join(' ')}"/>`;
+    puntos.forEach((x, k) => {
+      const cy = x.v !== null ? Y(x.v) : Y(x.media !== null ? x.media : 0);
+      g += x.v === null
+        ? `<circle cx="${X(k)}" cy="${cy}" r="5" fill="#0f172a" stroke="#64748b" stroke-width="1.5"/>`
+        : `<circle cx="${X(k)}" cy="${cy}" r="5" fill="#ff5577" stroke="#0f172a" stroke-width="1.5"/>`;
+      g += `<rect x="${X(k) - 14}" y="${T}" width="28" height="${H - T - B}" fill="transparent" style="cursor:pointer" onclick="evoDetalle(${k})"/>`;
+    });
+    // resumen
+    const media = arr => arr.reduce((a, b) => a + b, 0) / arr.length;
+    const tot = media(valorados.map(x => x.v));
+    const ult = valorados.slice(-3), mUlt = media(ult.map(x => x.v));
+    const dif = mUlt - tot;
+    const tend = valorados.length < 4 ? '' : dif > 0.3 ? `<span style="color:#2ed573;">↗ sube</span>` : dif < -0.3 ? `<span style="color:#ff6b7a;">↘ baja</span>` : `<span style="color:#94a3b8;">→ estable</span>`;
+    const mejor = valorados.reduce((a, b) => b.v > a.v ? b : a);
+    const conMedia = valorados.filter(x => x.media !== null);
+    const encima = conMedia.filter(x => x.v >= x.media).length;
+    const caja = (t1, v1, extra) => `<div style="background:rgba(255,255,255,.04); border-radius:8px; padding:8px 10px;"><div style="font-size:10.5px; color:#94a3b8;">${t1}</div><div style="font-family:'Montserrat',sans-serif; font-size:16px; font-weight:900; color:#e2e8f0;">${v1} <span style="font-family:'Inter',sans-serif; font-size:11px; font-weight:700;">${extra || ''}</span></div></div>`;
+    return `<div style="font-size:11px; font-weight:800; color:#f5a623; letter-spacing:.5px; margin-bottom:6px;">📈 EVOLUCIÓN · impacto por 70'</div>
+      <svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Impacto por 70 minutos de ${nombre} en cada partido">${g}</svg>
+      <div style="display:flex; gap:12px; flex-wrap:wrap; font-size:10.5px; color:#94a3b8; margin:2px 0 10px;">
+        <span><span style="display:inline-block; width:14px; height:3px; background:#ff5577; vertical-align:middle; border-radius:2px;"></span> ${nombre}</span>
+        <span><span style="display:inline-block; width:14px; border-top:2px dashed #64748b; vertical-align:middle;"></span> Media del equipo</span>
+        <span><span style="display:inline-block; width:8px; height:8px; border-radius:50%; border:1.5px solid #64748b; vertical-align:middle;"></span> Menos de ${EVO_MIN}'</span>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+        ${caja(valorados.length >= 4 ? 'Últimos 3 partidos' : 'Media', fmt(valorados.length >= 4 ? mUlt : tot), tend)}
+        ${caja('Mejor partido', fmt(mejor.v), `<span style="color:#94a3b8;">vs ${escHtml(mejor.p.rival)}</span>`)}
+      </div>
+      ${conMedia.length ? `<div style="font-size:11.5px; color:#cbd5e1; margin-top:8px;">Por encima de la media del equipo en <b>${encima}</b> de ${conMedia.length} partidos.</div>` : ''}
+      <div id="evoDetalleBox" style="margin-top:10px; font-size:12px; line-height:1.45; background:rgba(180,20,56,.1); border:1px solid rgba(180,20,56,.35); border-radius:9px; padding:8px 10px; color:#e2e8f0;">Toca un punto para ver ese partido.</div>`;
+  }
+  window.evoDetalle = function(k) {
+    const x = evoDatos && evoDatos[k]; const box = document.getElementById('evoDetalleBox');
+    if (!x || !box) return;
+    const p = x.p, h = x.h;
+    const extra = [h.goles ? `${h.goles} ${h.goles === 1 ? 'gol' : 'goles'}` : '', h.asistencias ? `${h.asistencias} asist.` : ''].filter(Boolean).join(', ');
+    const fmt2 = n => n.toFixed(2).replace('.', ',');
+    box.innerHTML = `<b>J${x.i + 1}</b> · vs ${escHtml(p.rival)} ${p.golesLocal}-${p.golesRival} <span style="color:#94a3b8;">· ${escHtml(p.fecha || '')}</span><br>${x.mins}'${extra ? ' · ' + extra : ''} · ${x.v === null ? `<span style="color:#94a3b8;">menos de ${EVO_MIN}', sin valorar</span>` : `<b style="color:#2ed573;">${fmt2(x.v)}</b>`}${x.media !== null ? ` <span style="color:#94a3b8;">(equipo ${fmt2(x.media)})</span>` : ''}`;
   };
 
   function avatarPerfilHTML(id, dorsal) {
@@ -1090,6 +1173,7 @@
           </div>`).join('')}
       </div>`;
     document.getElementById('perfilDatosContenido').innerHTML = `<div style="text-align:center; padding:20px 10px; color:#64748b; font-size:12px;">Este cromo es de un partido ya jugado — la ficha de datos detallada solo está disponible para el partido en directo o el perfil de temporada.</div>`;
+    mostrarBotonEvo(false);
     mostrarPestanaPerfil('cromo');
     document.getElementById('perfilModal').style.display = 'flex';
   };
@@ -1136,6 +1220,7 @@
       }
     };
     document.getElementById('perfilDatosContenido').innerHTML = renderFichaDatosHTML(statsDatos);
+    mostrarBotonEvo(false);
     mostrarPestanaPerfil('cromo'); // el modal siempre abre en la pestaña del cromo
     document.getElementById('perfilModal').style.display = 'flex';
   };
@@ -1479,6 +1564,7 @@
       }
     };
     document.getElementById('perfilDatosContenido').innerHTML = renderFichaDatosHTML(statsDatos) + sociosJugadorHTML(ultimaTemporada, j.name) + lineasJugadorHTMLV(j); // v95
+    try { document.getElementById('perfilEvoContenido').innerHTML = evolucionJugadorHTML(ultimaTemporada, j); mostrarBotonEvo(true); } catch (e) { console.error('Evolución:', e); mostrarBotonEvo(false); }
     mostrarPestanaPerfil('cromo');
     document.getElementById('perfilModal').style.display = 'flex';
   };

@@ -158,6 +158,21 @@
     text-align:center; min-width:66px;
   }
   .subtab-btn.active { background:linear-gradient(135deg,#f5a623,#c98a1c); color:#0a0e0a; border-color:transparent; }
+  /* Temporada: 4 apartados principales + "Más análisis" desplegable */
+  .tmp-main { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; margin-bottom:8px; }
+  .tmp-main .subtab-btn { display:flex; align-items:center; justify-content:center; gap:6px; min-height:52px; border-radius:12px;
+    font-size:13px; font-weight:800; color:#e2e8f0; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); cursor:pointer; }
+  .tmp-main .subtab-btn.active { background:#f5a623; color:#0a0e14; border-color:#f5a623; }
+  .tmp-mas { width:100%; min-height:46px; display:flex; align-items:center; justify-content:space-between; padding:0 14px; margin-bottom:8px;
+    border-radius:12px; border:1px dashed rgba(255,255,255,.2); background:transparent; color:#e2e8f0;
+    font-family:'Montserrat',sans-serif; font-weight:800; font-size:12.5px; cursor:pointer; }
+  .tmp-mas .txt { font-family:'Inter',sans-serif; font-size:11px; font-weight:700; color:#94a3b8; }
+  .tmp-mas.sec-activo { border-color:#f5a623; color:#f5a623; }
+  .tmp-sec { display:none; grid-template-columns:repeat(3, minmax(0,1fr)); gap:6px; margin-bottom:10px; }
+  .tmp-sec.abierto { display:grid; }
+  .tmp-sec .subtab-btn { display:flex; align-items:center; justify-content:center; gap:4px; min-width:0; min-height:44px; border-radius:10px;
+    font-size:11px; color:#cbd5e1; cursor:pointer; }
+  .tmp-sec .subtab-btn.active { background:rgba(245,166,35,.16); color:#f5a623; border-color:#f5a623; }
   .rank-row { display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid rgba(255,255,255,.04); }
   .rank-pos { font-family:'Montserrat',sans-serif; font-weight:900; font-size:13px; color:#475569; width:18px; }
   .rank-name { flex:1; font-weight:700; font-size:12.5px; color:#e2e8f0; }
@@ -494,18 +509,24 @@
 
     <!-- TEMPORADA -->
     <div id="temporada" class="panel">
-      <div class="subtabs">
-        <div class="subtab-btn active" onclick="showSub(event,'subPlantilla')">👥 Plantilla</div>
-        <div class="subtab-btn" onclick="showSub(event,'subRanking')">📈 Ranking</div>
-        <div class="subtab-btn" onclick="showSub(event,'subPartidos')">📅 Partidos</div>
-        <div class="subtab-btn" onclick="showSub(event,'subSinergias')">🔗 Sinergias</div>
-        <div class="subtab-btn" onclick="showSub(event,'subRachas')">🔥 Rachas</div>
-        <div class="subtab-btn" onclick="showSub(event,'subRecords')">🏆 Récords</div>
-        <div class="subtab-btn" onclick="showSub(event,'subMinutos')">⏱ Minutos</div>
-        <div class="subtab-btn" onclick="showSub(event,'subContexto')">🧭 Contexto</div>
-        <div class="subtab-btn" onclick="showSub(event,'subComparativa')">📊 Comp.</div>
-        <div class="subtab-btn" style="display:none;" onclick="showSub(event,'subHeatmap')">🗺️ Heatmap</div>
-        <div class="subtab-btn" onclick="showSub(event,'subOnceIdeal')">🏅 Once</div>
+      <!-- Menú de Temporada: 4 principales arriba y el resto en "Más análisis" -->
+      <div class="tmp-main">
+        <button type="button" class="subtab-btn active" onclick="showSub(event,'subPartidos')">📅 Partidos</button>
+        <button type="button" class="subtab-btn" onclick="showSub(event,'subPlantilla')">👥 Plantilla</button>
+        <button type="button" class="subtab-btn" onclick="showSub(event,'subRanking')">📈 Ranking</button>
+        <button type="button" class="subtab-btn" onclick="showSub(event,'subRecords')">🏆 Récords</button>
+      </div>
+      <button type="button" class="tmp-mas" id="tmpMasBtn" onclick="toggleMasTemp()" aria-expanded="false" aria-controls="tmpMasPanel">
+        <span>📊 Más análisis</span><span class="txt" id="tmpMasTxt">6 apartados más ▾</span>
+      </button>
+      <div class="tmp-sec" id="tmpMasPanel">
+        <button type="button" class="subtab-btn" onclick="showSub(event,'subSinergias')">🔗 Sinergias</button>
+        <button type="button" class="subtab-btn" onclick="showSub(event,'subRachas')">🔥 Rachas</button>
+        <button type="button" class="subtab-btn" onclick="showSub(event,'subMinutos')">⏱ Minutos</button>
+        <button type="button" class="subtab-btn" onclick="showSub(event,'subContexto')">🧭 Contexto</button>
+        <button type="button" class="subtab-btn" onclick="showSub(event,'subComparativa')">📊 Comparativa</button>
+        <button type="button" class="subtab-btn" style="display:none;" onclick="showSub(event,'subHeatmap')">🗺️ Heatmap</button>
+        <button type="button" class="subtab-btn" onclick="showSub(event,'subOnceIdeal')">🏅 Once ideal</button>
       </div>
 
       <div id="subRanking" class="sub-panel">
@@ -524,14 +545,14 @@
         </div>
       </div>
 
-      <div id="subPartidos" class="sub-panel">
+      <div id="subPartidos" class="sub-panel active">
         <div class="card">
           <div class="card-title">Historial de partidos</div>
           <div id="partidosLista"><div class="loader">Cargando...</div></div>
         </div>
       </div>
 
-      <div id="subPlantilla" class="sub-panel active">
+      <div id="subPlantilla" class="sub-panel">
         <div class="card">
           <div class="card-title">👥 Plantilla completa</div>
           <div id="plantillaTablaLista"><div class="loader">Cargando...</div></div>
@@ -750,6 +771,7 @@
 </div>
 
 <script type="module">
+  // Visor · Temporada: menú nuevo con 4 apartados grandes (Partidos, Plantilla, Ranking, Récords) y el resto en "Más análisis", que recuerda si se dejó abierto. Abre en Partidos.
   // v102 (app) · El regate / jugada individual pasa a valer +0,10 en el impacto (antes +0,05).
   // Visor · Sin las pestañas de arriba (Partido / En vivo / Temp. / Liga): se navega solo con la barra de abajo.
   // Visor · Modo TV: pantalla completa en horizontal (marcador, campo, estadísticas, cinta de eventos, rótulos de gol y cambio, descanso y previa).
@@ -3276,12 +3298,36 @@
     document.querySelectorAll('.bottom-tab').forEach((b,i)=>b.classList.toggle('active', i===map[id]));
   }
   function showSub(ev, id){
-    const panel = ev.target.closest('.panel');
+    const btn = ev.currentTarget || ev.target.closest('.subtab-btn') || ev.target;
+    const panel = btn.closest('.panel');
     panel.querySelectorAll('.sub-panel').forEach(p=>p.classList.remove('active'));
     document.getElementById(id).classList.add('active');
     panel.querySelectorAll('.subtab-btn').forEach(b=>b.classList.remove('active'));
-    ev.target.classList.add('active');
+    btn.classList.add('active');
+    if (panel.id === 'temporada') actualizarMasTemp();
   }
+  // ── Temporada · "Más análisis": se despliega y el visor recuerda si lo dejaste abierto ──
+  function masTempAbierto() { try { return localStorage.getItem('hergarLive_masAnalisis') === '1'; } catch (e) { return false; } }
+  function actualizarMasTemp() {
+    const panelMas = document.getElementById('tmpMasPanel'), btn = document.getElementById('tmpMasBtn'), txt = document.getElementById('tmpMasTxt');
+    if (!panelMas || !btn) return;
+    const abierto = panelMas.classList.contains('abierto');
+    const secActivo = !!panelMas.querySelector('.subtab-btn.active');
+    btn.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+    btn.classList.toggle('sec-activo', secActivo && !abierto);
+    if (txt) txt.textContent = abierto ? 'ocultar ▴' : '6 apartados más ▾';
+  }
+  function toggleMasTemp() {
+    const panelMas = document.getElementById('tmpMasPanel');
+    if (!panelMas) return;
+    const abrir = !panelMas.classList.contains('abierto');
+    panelMas.classList.toggle('abierto', abrir);
+    try { localStorage.setItem('hergarLive_masAnalisis', abrir ? '1' : '0'); } catch (e) {}
+    actualizarMasTemp();
+  }
+  window.toggleMasTemp = toggleMasTemp;
+  if (masTempAbierto()) { const pm = document.getElementById('tmpMasPanel'); if (pm) pm.classList.add('abierto'); }
+  actualizarMasTemp();
   window.showTab = showTab;
   window.showSub = showSub;
 

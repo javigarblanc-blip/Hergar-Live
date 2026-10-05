@@ -772,6 +772,8 @@
 
 <script type="module">
   // Visor · Temporada: menú nuevo con 4 apartados grandes (Partidos, Plantilla, Ranking, Récords) y el resto en "Más análisis", que recuerda si se dejó abierto. Abre en Partidos.
+  // v115 (app) · La parada cuenta como tiro a puerta del rival: −0,15 a los de campo, al portero no.
+  // v114 (app) · Ficha del portero: % de paradas y minutos sin encajar (racha actual y récord); los calcula la app.
   // v102 (app) · El regate / jugada individual pasa a valer +0,10 en el impacto (antes +0,05).
   // Visor · Sin las pestañas de arriba (Partido / En vivo / Temp. / Liga): se navega solo con la barra de abajo.
   // Visor · Modo TV: pantalla completa en horizontal (marcador, campo, estadísticas, cinta de eventos, rótulos de gol y cambio, descanso y previa).
@@ -1018,6 +1020,35 @@
     if (tiros <= 0) return null;
     return { goles, tiros, pct: Math.round(goles / tiros * 100) };
   }
+  // ── v114 · FICHA DEL PORTERO: % de paradas y rachas sin encajar (mismo código en la app y en el visor) ──
+  function fdPorteroFilas(stats) {
+      const ps = stats.portero;
+      if (!ps) return '';
+      const fila = (ic, nom, sub, total) => `<div class="fd-stat-row">
+          <div class="ic">${ic}</div>
+          <div class="label"><div class="nom">${nom}</div><div class="ratio">${sub}</div></div>
+          <div class="total">${total}</div>
+      </div>`;
+      let html = '';
+      if (ps.tirosPuerta > 0) {
+          html += fila('🧤', '% de paradas', `${ps.paradas} ${ps.paradas === 1 ? 'parada' : 'paradas'} de ${ps.tirosPuerta} ${ps.tirosPuerta === 1 ? 'tiro' : 'tiros'} a puerta`, `${ps.pct}%`);
+      } else {
+          html += fila('🧤', '% de paradas', 'Aún sin tiros a puerta del rival', '—');
+      }
+      if (!stats.esPartidoSuelto && ps.rachaActual != null) {
+          const d = ps.rachaDesde;
+          const subAct = !d ? 'Aún no ha encajado ningún gol'
+              : `Sin encajar desde el ${d.min}' vs ${d.rival}`;
+          html += fila('⏱️', 'Imbatido ahora', subAct, `${ps.rachaActual}'`);
+          html += fila('🏆', 'Récord sin encajar', ps.rachaRecord > 0 && ps.rachaRecord === ps.rachaActual ? 'Es la racha que lleva ahora' : 'Su mejor racha de la temporada', `${ps.rachaRecord}'`);
+      }
+      return html;
+  }
+  function porteroStatsPartidoSuelto(p) {
+      const gr = p.golesRecibidos || 0;
+      const tiros = Math.max(p.tirosPuertaEnPorteria || 0, (p.paradas || 0) + gr);
+      return { tirosPuerta: tiros, paradas: tiros - gr, pct: tiros > 0 ? Math.round((tiros - gr) / tiros * 100) : null };
+  }
   function fdEficaciaRow(t) {
     const e = eficaciaTiroJugador(t);
     if (!e) return '';
@@ -1041,6 +1072,7 @@
     const partidosLabel = stats.esPartidoSuelto ? 'Este partido' : 'Partidos';
     const statsFilas = stats.esPortero
       ? fdStatRow('🥅', 'Goles recibidos', t.golesRecibidos, minutosTotal)
+        + fdPorteroFilas(stats) // v114
         + fdStatRow('🧤', 'Paradas', t.paradas, minutosTotal)
         + fdStatRow('✋', 'Paradas difíciles', t.paradasDificiles, minutosTotal)
       : fdStatRow('⚽', 'Goles', t.goles, minutosTotal)
@@ -1232,6 +1264,7 @@
     // FICHA DE DATOS del partido en vivo (un solo partido = el que está en juego)
     const statsDatos = {
       nombre: p.name, dorsal: p.dorsal, esPortero: !!p.esPortero, esPartidoSuelto: true,
+      portero: p.esPortero ? porteroStatsPartidoSuelto(p) : null, // v114
       partidos: 1, minutosTotal: p.minutos || 0, minsPromedio: p.minutos || 0,
       impactoPond: p.impactoPond || 0,
       totales: {
@@ -1576,6 +1609,7 @@
     }
     const statsDatos = {
       nombre: j.name, dorsal: j.dorsal, esPortero, esPartidoSuelto: false,
+      portero: j.porteroStats || null, // v114
       partidos: j.partidos||0, minutosTotal: j.minutos||0, minsPromedio: statsAttrs.minutos,
       impactoPond: statsAttrs.impactoPond,
       totales: {
@@ -3448,12 +3482,12 @@
       csFila('Regate / jugada individual', fmtPts(a.regate), true, 'Supera a un rival sin acabar en tiro ni pase.'),
       csFila('Acción defensiva', fmtPts(a.defensa), true),
       csFila('Acción defensiva clave', fmtPts(a.defensaClave), true, 'Un despeje o una entrada que evita una ocasión clara.'),
-      csFila('Paradas del portero', `${fmtPts(a.parada)} / ${fmtPts(a.paradaDificil)}`, true, 'Parada normal / parada difícil.')
+      csFila('Paradas del portero', `${fmtPts(a.parada)} / ${fmtPts(a.paradaDificil)}`, true, 'Parada normal / parada difícil. Cuentan como tiro a puerta del rival, pero al portero no le restan.')
     ].join('');
     const juego = [
       csFila('Gol a favor', fmtPts(e.golFavor), true, `Suma a todos los que están en el campo. Si el equipo marca más de ${e.golesSinReparto || 4} en el partido, cada gol vale ${e.golesSinReparto || 4} ÷ goles totales, caiga cuando caiga, para que la 1.ª y la 2.ª parte cuenten igual.`),
       csFila('Gol en contra', fmtPts(e.golContra), false, 'Resta a todos los que están en el campo.'),
-      csFila('Tiros del rival', `${fmtPts(e.tiroRivalFuera)} a ${fmtPts(e.tiroRivalPuerta)}`, false, 'Restan un poco a los que están en el campo.')
+      csFila('Tiros del rival', `${fmtPts(e.tiroRivalFuera)} a ${fmtPts(e.tiroRivalPuerta)}`, false, 'Restan un poco a los que están en el campo. Un tiro a puerta que para el portero también resta, salvo al portero.')
     ].join('');
     const porteria = [
       csFila('Portero', fmtPts(pc.portero), true),

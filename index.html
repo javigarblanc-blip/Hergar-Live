@@ -772,6 +772,7 @@
 
 <script type="module">
   // Visor · Temporada: menú nuevo con 4 apartados grandes (Partidos, Plantilla, Ranking, Récords) y el resto en "Más análisis", que recuerda si se dejó abierto. Abre en Partidos.
+  // v116 (app) · El % de paradas cuenta también las paradas de partidos sin detalle; "De ellas, difíciles".
   // v115 (app) · La parada cuenta como tiro a puerta del rival: −0,15 a los de campo, al portero no.
   // v114 (app) · Ficha del portero: % de paradas y minutos sin encajar (racha actual y récord); los calcula la app.
   // v102 (app) · El regate / jugada individual pasa a valer +0,10 en el impacto (antes +0,05).
@@ -1074,7 +1075,7 @@
       ? fdStatRow('🥅', 'Goles recibidos', t.golesRecibidos, minutosTotal)
         + fdPorteroFilas(stats) // v114
         + fdStatRow('🧤', 'Paradas', t.paradas, minutosTotal)
-        + fdStatRow('✋', 'Paradas difíciles', t.paradasDificiles, minutosTotal)
+        + fdStatRow('✋', 'De ellas, difíciles', t.paradasDificiles, minutosTotal)
       : fdStatRow('⚽', 'Goles', t.goles, minutosTotal)
         + fdEficaciaRow(t)
         + fdStatRow('👟', 'Asistencias', t.asistencias, minutosTotal)

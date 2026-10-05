@@ -824,7 +824,7 @@
     version: 3, minMinutosRanking: 35, minMinutosSinergia: 20, minMinutosMVP: 10, suelo: -5,
     acciones: { gol: 0.75, golExtraDefensa: 1.25, golExtraMedio: 0.15, asistencia: 0.40, paseClave: 0.25, paseArea: 0.15,
       disparoPuerta: 0.30, disparoFuera: 0.10, regate: 0.10, defensa: 0.30, defensaClave: 1.00,
-      parada: 0.30, paradaDificil: 1.00, fallo: -0.20, falloImportante: -0.50 },
+      parada: 0.30, paradaDificil: 1.00, fallo: -0.20, falloImportante: -0.50, fueraJuego: -0.05 },
     equipo: { golFavor: 1.00, golContra: -1.00, tiroRivalPuerta: -0.15, tiroRivalFuera: -0.05, golesSinReparto: 4 },
     porteriaCero: { portero: 1.50, defensa: 1.25, centrocampista: 0.60, delantero: 0 },
     penaltis: { marca: 0.50, falla: -0.75, provocado: 0.40, contraGolCampo: -0.50, paradoPortero: 1.00 }
@@ -905,8 +905,9 @@
       ['Disparos',         n(matchData.tirosNuestrosPuerta) + n(matchData.tirosNuestrosFuera), n(matchData.tirosRivalesPuerta) + n(matchData.tirosRivalesFuera)],
       ['A puerta',         n(matchData.tirosNuestrosPuerta), n(matchData.tirosRivalesPuerta)],
       ['Córners',          n(matchData.cornersFavor), n(matchData.cornersContra)],
-      ['Faltas cometidas', n(matchData.faltasContra), n(matchData.faltasFavor)]
-    ];
+      ['Faltas cometidas', n(matchData.faltasContra), n(matchData.faltasFavor)],
+      ['Fueras de juego',  n(matchData.fuerasJuegoNuestros), n(matchData.fuerasJuegoRival)] // v117
+    ].filter(([l, h, r]) => l !== 'Fueras de juego' || h + r > 0);
     const amarillas = Object.values(matchData.jugadores || {}).reduce((sum, p) => sum + (p.amarillas || 0), 0);
     cont.innerHTML = `
       <div class="vs-head"><span class="h">HERGAR</span><span class="r">${escHtml((matchData.rival || 'RIVAL').toUpperCase())}</span></div>
@@ -1083,7 +1084,8 @@
         + fdStatRow('🔑', 'Pases clave', t.pasesClave, minutosTotal)
         + fdStatRow('🛡️', 'Acciones defensivas', t.accionesDef, minutosTotal)
         + fdStatRow('🛡️⭐', 'Acciones def. clave', t.accionesDefClave, minutosTotal)
-        + fdStatRow('🌀', 'Regates / jugadas individuales', t.regates, minutosTotal);
+        + fdStatRow('🌀', 'Regates / jugadas individuales', t.regates, minutosTotal)
+        + (t.fuerasJuego ? fdStatRow('🚩', 'Fueras de juego', t.fuerasJuego, minutosTotal) : ''); // v117
     return `
       <div class="fd-header${stats.esPortero ? ' fd-portero' : ''}">
         <div class="fd-avatar">${stats.dorsal}</div>
@@ -1270,7 +1272,7 @@
       impactoPond: p.impactoPond || 0,
       totales: {
         goles: p.goles||0, asistencias: p.asistencias||0, pasesArea: p.pasesArea||0, pasesClave: p.pasesClave||0,
-        accionesDef: p.accionesDef||0, accionesDefClave: p.accionesDefClave||0, regates: p.regates||0, paradas: p.paradas||0, paradasDificiles: p.paradasDificiles||0,
+        accionesDef: p.accionesDef||0, accionesDefClave: p.accionesDefClave||0, regates: p.regates||0, fuerasJuego: p.fuerasJuego||0, paradas: p.paradas||0, paradasDificiles: p.paradasDificiles||0,
         golesRecibidos: p.golesRecibidos||0, amarillas: p.amarillas||0, rojas: p.roja?1:0,
         disparosPuerta: p.disparosPuerta||0, disparosFuera: p.disparosFuera||0, golesConTiros: p.goles||0
       }
@@ -1615,7 +1617,7 @@
       impactoPond: statsAttrs.impactoPond,
       totales: {
         goles: j.goles||0, asistencias: j.asistencias||0, pasesArea: j.pasesArea||0, pasesClave: j.pasesClave||0,
-        accionesDef: j.accionesDef||0, accionesDefClave: j.accionesDefClave||0, regates: j.regates||0, paradas: j.paradas||0, paradasDificiles: j.paradasDificiles||0,
+        accionesDef: j.accionesDef||0, accionesDefClave: j.accionesDefClave||0, regates: j.regates||0, fuerasJuego: j.fuerasJuego||0, paradas: j.paradas||0, paradasDificiles: j.paradasDificiles||0,
         golesRecibidos: j.golesRecibidos||0, amarillas: j.amarillas||0, rojas: j.rojas||0,
         disparosPuerta: j.disparosPuerta||0, disparosFuera: j.disparosFuera||0, golesConTiros: j.golesConTiros
       }
@@ -2145,8 +2147,9 @@
       ['Disparos a puerta', n(m.tirosNuestrosPuerta), n(m.tirosRivalesPuerta)],
       ['Disparos fuera', n(m.tirosNuestrosFuera), n(m.tirosRivalesFuera)],
       ['Córners', n(m.cornersFavor), n(m.cornersContra)],
-      ['Faltas cometidas', n(m.faltasContra), n(m.faltasFavor)]
-    ];
+      ['Faltas cometidas', n(m.faltasContra), n(m.faltasFavor)],
+      ['Fueras de juego', n(m.fuerasJuegoNuestros), n(m.fuerasJuegoRival)] // v117
+    ].filter(([l, h, r]) => l !== 'Fueras de juego' || h + r > 0);
   }
   function tvListaGoles(m) {
     // v92: si la app publica los goles con minuto, salen todos, también los antiguos
@@ -2757,7 +2760,8 @@
       ['Disparos', n(m.tirosNuestrosPuerta) + n(m.tirosNuestrosFuera), n(m.tirosRivalesPuerta) + n(m.tirosRivalesFuera)],
       ['A puerta', n(m.tirosNuestrosPuerta), n(m.tirosRivalesPuerta)],
       ['Córners', n(m.cornersFavor), n(m.cornersContra)],
-      ['Faltas cometidas', n(m.faltasContra), n(m.faltasFavor)]
+      ['Faltas cometidas', n(m.faltasContra), n(m.faltasFavor)],
+      ['Fueras de juego', n(m.fuerasJuegoNuestros), n(m.fuerasJuegoRival)] // v117
     ].filter(([, h, r]) => h + r > 0);
     const totT = n(m.tirosNuestrosPuerta) + n(m.tirosNuestrosFuera);
     // destacados: los 3 mejores por impacto por 70' (con 10' o más)
@@ -2979,7 +2983,7 @@
         mvpLine = `<div style="display:flex; align-items:center; justify-content:space-between; gap:6px; font-size:10px; color:#8da499; margin-top:2px;"><span>⭐ MVP: ${p.mvp}</span>${p.mvpId ? `<button onclick="abrirCromoMvpGuardado(${i})" style="background:rgba(245,166,35,0.14); border:1px solid rgba(245,166,35,0.4); color:#f5a623; border-radius:6px; padding:2px 8px; font-size:10px; font-weight:700; white-space:nowrap;">🎴 Cromo</button>` : ''}</div>`;
       }
       const extrasHtml = extras.length ? `<div style="font-size:10px; color:#8da499; margin-top:2px;">${extras.join(' · ')}</div>` : '';
-      const statsHtml = (p.tirosNuestrosPuerta != null) ? `<div style="font-size:9px; color:#64748b; margin-top:4px; padding-top:4px; border-top:1px solid rgba(255,255,255,0.06);">🎯 ${(p.tirosNuestrosPuerta||0)+(p.tirosNuestrosFuera||0)}(${p.tirosNuestrosPuerta||0}) — ${(p.tirosRivalesPuerta||0)+(p.tirosRivalesFuera||0)}(${p.tirosRivalesPuerta||0}) · 🟨 ${p.faltasFavor||0}/${p.faltasContra||0} · ⛳ ${p.cornersFavor||0}/${p.cornersContra||0}</div>` : '';
+      const statsHtml = (p.tirosNuestrosPuerta != null) ? `<div style="font-size:9px; color:#64748b; margin-top:4px; padding-top:4px; border-top:1px solid rgba(255,255,255,0.06);">🎯 ${(p.tirosNuestrosPuerta||0)+(p.tirosNuestrosFuera||0)}(${p.tirosNuestrosPuerta||0}) — ${(p.tirosRivalesPuerta||0)+(p.tirosRivalesFuera||0)}(${p.tirosRivalesPuerta||0}) · 🟨 ${p.faltasFavor||0}/${p.faltasContra||0} · ⛳ ${p.cornersFavor||0}/${p.cornersContra||0}${(p.fuerasJuegoNuestros||p.fuerasJuegoRival) ? ` · 🚩 ${p.fuerasJuegoNuestros||0}/${p.fuerasJuegoRival||0}` : ''}</div>` : '';
       return `<div class="rank-row" style="flex-direction:column; align-items:stretch; gap:2px;">
         <div style="display:flex; align-items:center; gap:8px;">
           <div class="rank-name">${p.fecha || ''} · vs ${p.rival}</div>
@@ -3030,7 +3034,7 @@
             const chips = [];
             if (h.goles) chips.push(`⚽${h.goles > 1 ? '×' + h.goles : ''}`);
             if (h.asistencias) chips.push(`👟${h.asistencias > 1 ? '×' + h.asistencias : ''}`);
-            [['dp', '🎯'], ['df', '💨'], ['pc', '🔑'], ['pa', '📯'], ['reg', '🌀'], ['def', '🛡️'], ['defC', '🛡️⭐'], ['par', '🧤'], ['parD', '🧤⭐']].forEach(([k, ic]) => { if (a[k]) chips.push(`${ic}${a[k] > 1 ? '×' + a[k] : ''}`); });
+            [['dp', '🎯'], ['df', '💨'], ['pc', '🔑'], ['pa', '📯'], ['reg', '🌀'], ['fj', '🚩'], ['def', '🛡️'], ['defC', '🛡️⭐'], ['par', '🧤'], ['parD', '🧤⭐']].forEach(([k, ic]) => { if (a[k]) chips.push(`${ic}${a[k] > 1 ? '×' + a[k] : ''}`); });
             if (a.am) chips.push('🟨'); if (a.ro) chips.push('🟥');
             const mvp = p.mvpId != null && Number(p.mvpId) === Number(f.j.id);
             const grande = f.p70 !== null ? num(f.p70) : '—';
@@ -3177,7 +3181,7 @@
       ${filasJugadores || '<div class="loader">Sin datos</div>'}`;
   }
 
-  const COMPARATIVA_STATS = { goles: 'Goles', asistencias: 'Asistencias', minutos: 'Minutos', impactoAcum: 'Impacto', impactoPorPartido: 'Imp. x 70 min', pasesArea: 'Pases al área', pasesClave: 'Pases clave', accionesDef: 'Acc. defensivas', regates: 'Regates', accionesDefClave: 'Acc. def. clave', partidos: 'Partidos', amarillas: 'Amarillas', rojas: 'Rojas' };
+  const COMPARATIVA_STATS = { goles: 'Goles', asistencias: 'Asistencias', minutos: 'Minutos', impactoAcum: 'Impacto', impactoPorPartido: 'Imp. x 70 min', pasesArea: 'Pases al área', pasesClave: 'Pases clave', accionesDef: 'Acc. defensivas', regates: 'Regates', fuerasJuego: 'Fueras de juego', accionesDefClave: 'Acc. def. clave', partidos: 'Partidos', amarillas: 'Amarillas', rojas: 'Rojas' };
   // Estadísticas que se muestran con 2 decimales; el resto son enteras.
   const COMPARATIVA_DECIMALES = new Set(['impactoAcum', 'impactoPorPartido']);
   function pintarComparativa(t) {
@@ -3483,7 +3487,8 @@
       csFila('Regate / jugada individual', fmtPts(a.regate), true, 'Supera a un rival sin acabar en tiro ni pase.'),
       csFila('Acción defensiva', fmtPts(a.defensa), true),
       csFila('Acción defensiva clave', fmtPts(a.defensaClave), true, 'Un despeje o una entrada que evita una ocasión clara.'),
-      csFila('Paradas del portero', `${fmtPts(a.parada)} / ${fmtPts(a.paradaDificil)}`, true, 'Parada normal / parada difícil. Cuentan como tiro a puerta del rival, pero al portero no le restan.')
+      csFila('Paradas del portero', `${fmtPts(a.parada)} / ${fmtPts(a.paradaDificil)}`, true, 'Parada normal / parada difícil. Cuentan como tiro a puerta del rival, pero al portero no le restan.'),
+      csFila('Fuera de juego', fmtPts(a.fueraJuego != null ? a.fueraJuego : -0.05), false, 'Resta muy poco: un desmarque que sale por poco no se castiga como un fallo. El fuera de juego del rival no suma a nadie.')
     ].join('');
     const juego = [
       csFila('Gol a favor', fmtPts(e.golFavor), true, `Suma a todos los que están en el campo. Si el equipo marca más de ${e.golesSinReparto || 4} en el partido, cada gol vale ${e.golesSinReparto || 4} ÷ goles totales, caiga cuando caiga, para que la 1.ª y la 2.ª parte cuenten igual.`),

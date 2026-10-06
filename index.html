@@ -2666,7 +2666,7 @@
     const convocados = (pub.convocados || []).slice().sort((a, b) => (a.dorsal || 99) - (b.dorsal || 99));
     // v94 · Convocatoria en lista: once inicial (por líneas) y reservas. Sin papeles (app antigua): como antes.
     const conRol = convocados.some(c => c.rol === 'T' || c.rol === 'R');
-    const chipConv = (c, col) => `<div style="display:flex; align-items:center; gap:6px; background:#0f172a; border:1px solid ${col}55; border-radius:8px; padding:6px 10px;"><span style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:12px; color:${col};">${escHtml(c.dorsal ?? '?')}</span><span style="font-size:12.5px; font-weight:700; color:#e2e8f0;">${escHtml((c.name || '').split(' ')[0])}</span></div>`;
+    const chipConv = (c, col) => `<div style="display:flex; align-items:center; gap:6px; background:#0f172a; border:1px solid ${col}55; border-radius:8px; padding:6px 10px;"><span style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:12px; color:${col};">${escHtml(c.dorsal ?? '?')}</span><span style="font-size:12.5px; font-weight:700; color:#e2e8f0;">${escHtml((c.name || '').split(' ')[0])}</span>${c.sube ? '<span style="font-size:10px; font-weight:800; color:#5dade2;">⬆</span>' : ''}</div>`;
     let convocatoriaHTML = '';
     if (convocados.length && conRol) {
       const tit = convocados.filter(c => c.rol === 'T').sort((a, b) => (a.orden ?? 99) - (b.orden ?? 99));
@@ -2701,9 +2701,10 @@
         ${convocados.map(c => {
           const f = fotosJugadores[c.id];
           const avatar = (f && f.foto)
-            ? `<img src="${f.foto}" style="width:52px; height:52px; border-radius:50%; object-fit:cover; border:2px solid #f5a623;">`
-            : `<div style="width:52px; height:52px; border-radius:50%; background:#1a2332; border:2px solid #f5a623; display:flex; align-items:center; justify-content:center; font-family:'Montserrat',sans-serif; font-weight:800; font-size:16px; color:#f5a623;">#${c.dorsal ?? '?'}</div>`;
-          return `<div style="text-align:center;">${avatar}<div style="font-size:10.5px; color:#cbd5e1; margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escHtml((c.name || '').split(' ')[0])}</div></div>`;
+            ? `<img src="${f.foto}" style="width:52px; height:52px; border-radius:50%; object-fit:cover; border:2px solid ${c.sube ? '#5dade2' : '#f5a623'};">`
+            : `<div style="width:52px; height:52px; border-radius:50%; background:#1a2332; border:2px solid ${c.sube ? '#5dade2' : '#f5a623'}; display:flex; align-items:center; justify-content:center; font-family:'Montserrat',sans-serif; font-weight:800; font-size:16px; color:#f5a623;">#${c.dorsal ?? '?'}</div>`;
+          const sube = c.sube ? `<div style="font-size:9px; font-weight:800; color:#5dade2; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">⬆ ${escHtml(c.sube)}</div>` : ''; // v118: sube de otro equipo
+          return `<div style="text-align:center;">${avatar}<div style="font-size:10.5px; color:#cbd5e1; margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escHtml((c.name || '').split(' ')[0])}</div>${sube}</div>`;
         }).join('')}
       </div>`;
     }

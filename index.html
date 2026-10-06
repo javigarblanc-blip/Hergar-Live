@@ -2065,7 +2065,9 @@
   // ── v119 · VÍDEOS DE LOS GOLES ──────────────────────────────────────────────
   // La app solo publica g.video (código del vídeo en Google Drive) si hay permiso; aquí se reproduce con el
   // reproductor de Drive. La lista del reproductor es la del partido o la de la galería (con su filtro).
-  function videoValido(g) { return !!(g && typeof g.video === 'string' && /^[\w-]{20,80}$/.test(g.video)); }
+  // v120 · el vídeo puede ser de GitHub ("gh:videos/archivo.mp4", en el mismo sitio que el visor) o de Drive (código)
+  function esVideoGh(v) { return typeof v === 'string' && /^gh:videos\/[\w.-]+\.(mp4|mov|m4v|webm|3gp)$/i.test(v); }
+  function videoValido(g) { return !!(g && typeof g.video === 'string' && (esVideoGh(g.video) || /^[\w-]{20,80}$/.test(g.video))); }
   let vgLista = [], vgPos = 0, vgFiltro = 'todos';
   function golesConVideo(t) {
     const out = [];
@@ -2088,8 +2090,21 @@
     document.getElementById('vgSub').textContent = `vs ${p.rival || ''}${p.fecha ? ' · ' + p.fecha : ''}${g.asistente ? ' · asistencia de ' + g.asistente : ''}${vgLista.length > 1 ? ` · ${vgPos + 1} de ${vgLista.length}` : ''}`;
     // v119b · se reproduce el archivo directamente (no necesita cookies de Google, que WhatsApp y algunos
     // navegadores bloquean dentro de otra página). Si falla, se prueba el reproductor de Drive.
+    document.getElementById('vgAnt').disabled = vgPos === 0;
+    document.getElementById('vgSig').disabled = vgPos >= vgLista.length - 1;
+    document.querySelector('.vg-nav').style.display = vgLista.length > 1 ? 'flex' : 'none';
     const vv = document.getElementById('vgVideo'), fr = document.getElementById('vgFrame'), av = document.getElementById('vgAviso');
     av.style.display = 'none'; fr.style.display = 'none'; fr.src = 'about:blank'; vv.style.display = '';
+    const dl = document.getElementById('vgDrive');
+    if (esVideoGh(g.video)) {
+      // v120 · vídeo guardado junto al visor: se reproduce directamente
+      dl.style.display = 'none';
+      vv.onerror = () => { av.innerHTML = 'El vídeo aún se está publicando (tarda 1-2 minutos después de subirlo). Prueba otra vez en un momento.'; av.style.display = ''; };
+      vv.src = g.video.slice(3);
+      try { vv.play().catch(() => {}); } catch (e) {}
+      return;
+    }
+    dl.style.display = '';
     vv.onerror = () => {
       vv.style.display = 'none'; vv.removeAttribute('src');
       fr.src = `https://drive.google.com/file/d/${g.video}/preview`; fr.style.display = '';
@@ -2098,9 +2113,6 @@
     vv.src = `https://drive.usercontent.google.com/download?id=${g.video}&export=download`;
     try { vv.play().catch(() => {}); } catch (e) {}
     document.getElementById('vgDrive').href = `https://drive.google.com/file/d/${g.video}/view`;
-    document.getElementById('vgAnt').disabled = vgPos === 0;
-    document.getElementById('vgSig').disabled = vgPos >= vgLista.length - 1;
-    document.querySelector('.vg-nav').style.display = vgLista.length > 1 ? 'flex' : 'none';
   }
   window.moverVideoGol = (d) => { const n = vgPos + d; if (n < 0 || n >= vgLista.length) return; vgPos = n; pintarVideoGol(); };
   window.cerrarVideoGol = () => {
@@ -2131,7 +2143,7 @@
     const lista = listaGaleria();
     cont.innerHTML = `<div class="vgal-filtros"><button type="button" class="vgal-f ${vgFiltro === 'todos' ? 'on' : ''}" data-f="todos">Todos (${todos.length})</button>${nombres.map(nm => `<button type="button" class="vgal-f ${vgFiltro === nm ? 'on' : ''}" data-f="${escHtml(nm)}">${escHtml(nm)} (${cuenta[nm]})</button>`).join('')}</div>
       <div class="vgal-grid">${lista.map((x, i) => `<button type="button" class="vgal-item" data-i="${i}" aria-label="Vídeo del gol de ${escHtml(x.g.nombre || '')}">
-        <img src="https://drive.google.com/thumbnail?id=${x.g.video}&sz=w480" alt="" loading="lazy" onerror="this.remove()">
+        ${esVideoGh(x.g.video) ? `<video src="${x.g.video.slice(3)}#t=0.5" preload="metadata" muted playsinline style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; pointer-events:none;"></video>` : `<img src="https://drive.google.com/thumbnail?id=${x.g.video}&sz=w480" alt="" loading="lazy" onerror="this.remove()">`}
         <span class="pl"><i>▶</i></span>
         <span class="cap">${escHtml(x.g.nombre || '¿?')}${x.g.min != null ? ' · ' + x.g.min + "'" : ''}<small>vs ${escHtml(x.p.rival || '')}${x.g.asistente ? ' · asist. ' + escHtml(x.g.asistente) : ''}</small></span>
       </button>`).join('')}</div>`;

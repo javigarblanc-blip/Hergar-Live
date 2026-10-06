@@ -437,8 +437,9 @@
   .vg-top b { font-family: 'Montserrat', sans-serif; font-size: 14px; }
   .vg-cerrar { width: 42px; height: 42px; flex-shrink: 0; border-radius: 10px; border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.08); color: #fff; font-size: 17px; cursor: pointer; }
   .vg-marco { flex: 1; display: flex; align-items: center; justify-content: center; padding: 0 8px; min-height: 0; }
-  .vg-marco iframe { width: min(100%, 960px, calc((100vh - 150px) * 16 / 9)); height: auto; aspect-ratio: 16/9; border: 0; border-radius: 8px; background: #111; }
-  @media (orientation: landscape) and (max-height: 500px) { .vg-marco iframe { width: min(100%, calc((100vh - 135px) * 16 / 9)); } }
+  .vg-marco video { background: #000; }
+  .vg-marco video, .vg-marco iframe { width: min(100%, 960px, calc((100vh - 150px) * 16 / 9)); height: auto; aspect-ratio: 16/9; border: 0; border-radius: 8px; background: #111; }
+  @media (orientation: landscape) and (max-height: 500px) { .vg-marco video, .vg-marco iframe { width: min(100%, calc((100vh - 135px) * 16 / 9)); } }
   .vg-pie { padding: 10px 14px calc(16px + env(safe-area-inset-bottom, 0px)); text-align: center; color: #94a3b8; font-size: 11px; }
   .vg-nav { display: flex; gap: 8px; justify-content: center; margin-bottom: 8px; }
   .vg-nav button { min-height: 42px; padding: 0 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.06); color: #fff; font-weight: 700; font-size: 12px; cursor: pointer; }
@@ -2085,7 +2086,17 @@
     const g = x.g, p = x.p;
     document.getElementById('vgTitulo').textContent = `${g.nombre || '¿?'}${g.min != null ? ' · ' + g.min + "'" : ''}${g.penalti ? ' (penalti)' : ''}`;
     document.getElementById('vgSub').textContent = `vs ${p.rival || ''}${p.fecha ? ' · ' + p.fecha : ''}${g.asistente ? ' · asistencia de ' + g.asistente : ''}${vgLista.length > 1 ? ` · ${vgPos + 1} de ${vgLista.length}` : ''}`;
-    document.getElementById('vgFrame').src = `https://drive.google.com/file/d/${g.video}/preview`;
+    // v119b · se reproduce el archivo directamente (no necesita cookies de Google, que WhatsApp y algunos
+    // navegadores bloquean dentro de otra página). Si falla, se prueba el reproductor de Drive.
+    const vv = document.getElementById('vgVideo'), fr = document.getElementById('vgFrame'), av = document.getElementById('vgAviso');
+    av.style.display = 'none'; fr.style.display = 'none'; fr.src = 'about:blank'; vv.style.display = '';
+    vv.onerror = () => {
+      vv.style.display = 'none'; vv.removeAttribute('src');
+      fr.src = `https://drive.google.com/file/d/${g.video}/preview`; fr.style.display = '';
+      av.innerHTML = 'Si no se ve, pulsa <b>Abrir el vídeo en Drive</b>.'; av.style.display = '';
+    };
+    vv.src = `https://drive.usercontent.google.com/download?id=${g.video}&export=download`;
+    try { vv.play().catch(() => {}); } catch (e) {}
     document.getElementById('vgDrive').href = `https://drive.google.com/file/d/${g.video}/view`;
     document.getElementById('vgAnt').disabled = vgPos === 0;
     document.getElementById('vgSig').disabled = vgPos >= vgLista.length - 1;
@@ -2095,6 +2106,7 @@
   window.cerrarVideoGol = () => {
     document.getElementById('videoGolModal').classList.remove('on');
     document.getElementById('vgFrame').src = 'about:blank';
+    const vv = document.getElementById('vgVideo'); try { vv.pause(); } catch (e) {} vv.onerror = null; vv.removeAttribute('src'); try { vv.load(); } catch (e) {}
     document.body.style.overflow = '';
   };
   // Goles con vídeo de un partido, empezando por el que se ha tocado (o por el primero si no se da)
@@ -4554,10 +4566,15 @@
 <!-- v119 · REPRODUCTOR DE VÍDEO DE LOS GOLES -->
 <div id="videoGolModal" role="dialog" aria-modal="true" aria-label="Vídeo del gol">
   <div class="vg-top"><div style="min-width:0;"><b id="vgTitulo"></b><div id="vgSub" style="font-size:11px; color:#94a3b8; margin-top:2px;"></div></div><button type="button" class="vg-cerrar" onclick="cerrarVideoGol()" aria-label="Cerrar">✕</button></div>
-  <div class="vg-marco"><iframe id="vgFrame" allow="autoplay; fullscreen" allowfullscreen title="Vídeo del gol"></iframe></div>
+  <div class="vg-marco">
+    <video id="vgVideo" controls playsinline preload="metadata"></video>
+    <iframe id="vgFrame" allow="autoplay; fullscreen" allowfullscreen title="Vídeo del gol" style="display:none;"></iframe>
+  </div>
+  <div id="vgAviso" style="display:none; text-align:center; color:#cbd5e1; font-size:12.5px; line-height:1.5; padding:8px 18px 0;"></div>
   <div class="vg-pie">
     <div class="vg-nav"><button type="button" id="vgAnt" onclick="moverVideoGol(-1)">‹ Gol anterior</button><button type="button" id="vgSig" onclick="moverVideoGol(1)">Siguiente gol ›</button></div>
-    <div class="gira">📱 Gira el móvil para verlo en grande · <a id="vgDrive" href="#" target="_blank" rel="noopener">Abrir en Drive</a></div>
+    <a id="vgDrive" href="#" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; justify-content:center; min-height:42px; padding:0 16px; margin-bottom:8px; border-radius:10px; border:1px solid rgba(93,173,226,.5); background:rgba(93,173,226,.12);">↗ Abrir el vídeo en Drive</a>
+    <div class="gira">📱 Gira el móvil para verlo en grande</div>
   </div>
 </div>
 </body>

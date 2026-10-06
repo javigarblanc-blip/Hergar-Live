@@ -419,6 +419,32 @@
   #tvSalir button { width:64px; height:64px; border-radius:50%; background:rgba(17,24,39,.92); border:2px solid rgba(255,255,255,.5); color:#fff; font-size:30px; font-weight:700; cursor:pointer; }
   #tvSalir span { background:rgba(17,24,39,.92); padding:8px 14px; border-radius:10px; font-size:16px; color:#e2e8f0; }
   @media (prefers-reduced-motion: reduce) { .tv-gol, .tv-cambio, .tv-dot { animation:none; } .tv-confeti { display:none; } }
+  /* v119 · vídeos de los goles */
+  .vplay { width: 28px; height: 28px; flex-shrink: 0; border-radius: 50%; border: none; background: rgb(180,20,56); color: #fff; font-size: 10px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0 0 0 2px; }
+  .vgal-filtros { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 10px; scrollbar-width: none; }
+  .vgal-f { flex-shrink: 0; padding: 7px 11px; border-radius: 16px; border: 1px solid rgba(255,255,255,.1); background: transparent; color: #94a3b8; font-size: 11px; font-weight: 700; cursor: pointer; }
+  .vgal-f.on { background: rgba(180,20,56,.2); border-color: #ff5577; color: #ff5577; }
+  .vgal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .vgal-item { position: relative; aspect-ratio: 16/9; border-radius: 10px; overflow: hidden; cursor: pointer; background: linear-gradient(160deg,#1a6e3a,#0f4a25); border: 1px solid rgba(255,255,255,.08); padding: 0; }
+  .vgal-item img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .vgal-item .pl { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .vgal-item .pl i { width: 34px; height: 34px; border-radius: 50%; background: rgba(180,20,56,.92); color: #fff; font-style: normal; font-size: 12px; display: flex; align-items: center; justify-content: center; }
+  .vgal-item .cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 16px 7px 5px; background: linear-gradient(transparent, rgba(0,0,0,.88)); font-size: 10.5px; font-weight: 700; line-height: 1.3; text-align: left; color: #fff; }
+  .vgal-item .cap small { display: block; font-weight: 600; color: #cbd5e1; font-size: 9.5px; }
+  #videoGolModal { position: fixed; inset: 0; z-index: 10050; background: #000; display: none; flex-direction: column; overscroll-behavior: contain; }
+  #videoGolModal.on { display: flex; }
+  .vg-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 10px; color: #fff; }
+  .vg-top b { font-family: 'Montserrat', sans-serif; font-size: 14px; }
+  .vg-cerrar { width: 42px; height: 42px; flex-shrink: 0; border-radius: 10px; border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.08); color: #fff; font-size: 17px; cursor: pointer; }
+  .vg-marco { flex: 1; display: flex; align-items: center; justify-content: center; padding: 0 8px; min-height: 0; }
+  .vg-marco iframe { width: min(100%, 960px, calc((100vh - 150px) * 16 / 9)); height: auto; aspect-ratio: 16/9; border: 0; border-radius: 8px; background: #111; }
+  @media (orientation: landscape) and (max-height: 500px) { .vg-marco iframe { width: min(100%, calc((100vh - 135px) * 16 / 9)); } }
+  .vg-pie { padding: 10px 14px calc(16px + env(safe-area-inset-bottom, 0px)); text-align: center; color: #94a3b8; font-size: 11px; }
+  .vg-nav { display: flex; gap: 8px; justify-content: center; margin-bottom: 8px; }
+  .vg-nav button { min-height: 42px; padding: 0 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.06); color: #fff; font-weight: 700; font-size: 12px; cursor: pointer; }
+  .vg-nav button:disabled { opacity: .3; }
+  .vg-pie a { color: #5dade2; font-weight: 700; text-decoration: none; }
+  @media (orientation: landscape) and (max-height: 500px) { .vg-pie .gira { display: none; } .vg-top { padding-top: 6px; padding-bottom: 4px; } }
 </style>
 </head>
 <body>
@@ -517,9 +543,10 @@
         <button type="button" class="subtab-btn" onclick="showSub(event,'subRecords')">🏆 Récords</button>
       </div>
       <button type="button" class="tmp-mas" id="tmpMasBtn" onclick="toggleMasTemp()" aria-expanded="false" aria-controls="tmpMasPanel">
-        <span>📊 Más análisis</span><span class="txt" id="tmpMasTxt">6 apartados más ▾</span>
+        <span>📊 Más análisis</span><span class="txt" id="tmpMasTxt">7 apartados más ▾</span>
       </button>
       <div class="tmp-sec" id="tmpMasPanel">
+        <button type="button" class="subtab-btn" onclick="showSub(event,'subVideos')">🎥 Goles en vídeo</button>
         <button type="button" class="subtab-btn" onclick="showSub(event,'subSinergias')">🔗 Sinergias</button>
         <button type="button" class="subtab-btn" onclick="showSub(event,'subRachas')">🔥 Rachas</button>
         <button type="button" class="subtab-btn" onclick="showSub(event,'subMinutos')">⏱ Minutos</button>
@@ -630,6 +657,13 @@
           </div>
           <canvas id="heatmapCanvas" width="360" height="480" style="width:100%; border-radius:10px;"></canvas>
           <div id="heatmapStats" class="sub-caption" style="text-align:center; margin-top:6px;"></div>
+        </div>
+      </div>
+      <div id="subVideos" class="sub-panel">
+        <div class="card">
+          <div class="card-title">🎥 Goles en vídeo</div>
+          <div class="sub-caption" style="margin:-4px 0 10px;">Todos los goles de la temporada con vídeo, del más reciente al más antiguo. Toca uno para verlo.</div>
+          <div id="videosGaleria"><div class="loader">Cargando...</div></div>
         </div>
       </div>
       <div id="subOnceIdeal" class="sub-panel">
@@ -1952,7 +1986,7 @@
     ps.forEach(p => (Array.isArray(p.goles) ? p.goles : []).forEach(g => {
       if (g.equipo === 'hergar' && g.min != null && (!gr || g.min < gr.g.min)) gr = { g, p };
     }));
-    R.equipo.push(gr ? { ico: '⚡', t: 'Gol más rápido', v: `Minuto ${gr.g.min}`, det: `${escHtml(gr.g.nombre || '¿?')} ${vs(gr.p)}` } : { ico: '⚡', t: 'Gol más rápido', v: '—', det: 'Falta el minuto de los goles' });
+    R.equipo.push(gr ? { ico: '⚡', t: 'Gol más rápido', v: `Minuto ${gr.g.min}`, det: `${escHtml(gr.g.nombre || '¿?')} ${vs(gr.p)}`, vid: videoValido(gr.g) ? [t.partidos.indexOf(gr.p), gr.p.goles.indexOf(gr.g)] : null } : { ico: '⚡', t: 'Gol más rápido', v: '—', det: 'Falta el minuto de los goles' });
     if (gr) R.raw.golRapido = { valor: gr.g.min, det: `${gr.g.nombre || ''} ${vs(gr.p)}` };
 
     // Jugadores: goles en un partido y hat-tricks
@@ -1962,7 +1996,8 @@
       if (x.n >= 3) R.hattricks.push({ nombre: x.nombre, n: x.n, det: vs(p) });
     }));
     if (jg) {
-      R.jugadores.push({ ico: '⚽', dorsal: dorsalDe(jg.x.nombre), t: 'Más goles en un partido', v: `${escHtml(jg.x.nombre)} · ${plural(jg.x.n, 'gol', 'goles')}`, det: vs(jg.p) });
+      const pjg = t.partidos.indexOf(jg.p); // v119: ▶ con los goles de ese partido que tengan vídeo
+      R.jugadores.push({ ico: '⚽', dorsal: dorsalDe(jg.x.nombre), t: 'Más goles en un partido', v: `${escHtml(jg.x.nombre)} · ${plural(jg.x.n, 'gol', 'goles')}`, det: vs(jg.p), vid: (Array.isArray(jg.p.goles) && jg.p.goles.some(g => videoValido(g) && g.nombre === jg.x.nombre)) ? [pjg, jg.p.goles.findIndex(g => videoValido(g) && g.nombre === jg.x.nombre)] : null });
       R.raw.jugGoles = { valor: jg.x.n, det: `${jg.x.nombre} ${vs(jg.p)}` };
     }
     // Partidos seguidos marcando (por jugador)
@@ -2000,12 +2035,12 @@
       <div class="rec-sec">EQUIPO</div>
       <div class="rec-grid">${R.equipo.map(r => `
         <div class="rec-card"><div class="rec-top"><span class="rec-ico">${r.ico}</span>${r.vivo ? vivo : ''}</div>
-          <div class="rec-t">${r.t}</div><div class="rec-v">${r.v}</div><div class="rec-d">${r.det}</div></div>`).join('')}
+          <div class="rec-t">${r.t}</div><div class="rec-v">${r.v}</div><div class="rec-d">${r.det}</div>${r.vid ? `<button type="button" class="vplay" style="margin-top:6px;" onclick="verVideoPartido(${r.vid[0]}, ${r.vid[1]})" aria-label="Ver vídeo">▶</button>` : ''}</div>`).join('')}
       </div>
       ${R.jugadores.length ? `<div class="rec-sec">JUGADORES</div>
       <div class="rec-lista">${R.jugadores.map(r => `
         <div class="rec-fila"><div class="rec-dorsal">${r.dorsal != null ? escHtml(r.dorsal) : r.ico}</div>
-          <div style="flex:1; min-width:0;"><div class="rec-t">${r.t} ${r.vivo ? vivo : ''}</div><div class="rec-v" style="font-size:16px;">${r.v}</div><div class="rec-d">${r.det}</div></div></div>`).join('')}
+          <div style="flex:1; min-width:0;"><div class="rec-t">${r.t} ${r.vivo ? vivo : ''}</div><div class="rec-v" style="font-size:16px;">${r.v}</div><div class="rec-d">${r.det}</div></div>${r.vid ? `<button type="button" class="vplay" style="align-self:center;" onclick="verVideoPartido(${r.vid[0]}, ${r.vid[1]})" aria-label="Ver vídeo">▶</button>` : ''}</div>`).join('')}
       </div>` : ''}
       ${R.hattricks.length ? `<div class="rec-sec">HAT-TRICKS</div>
       <div class="rec-lista">${R.hattricks.map(h => `<div class="rec-fila" style="justify-content:space-between;"><span style="font-weight:700;">⭐ ${escHtml(h.nombre)} · ${h.n} goles</span><span class="rec-d">${h.det}</span></div>`).join('')}</div>` : ''}
@@ -2020,8 +2055,76 @@
       const riv = g.equipo === 'rival';
       const min = g.min != null ? `${g.min}'` : '–';
       const txt = riv ? `Gol del rival${g.penalti ? ' (penalti)' : ''}` : `${escHtml(g.nombre || '¿?')}${g.penalti ? ' (penalti)' : ''}${g.asistente ? ` · asistencia de ${escHtml(g.asistente)}` : ''}`;
-      return `<div style="display:flex; gap:8px; font-size:11px; color:${riv ? '#94a3b8' : '#e2e8f0'};"><b style="width:26px; flex-shrink:0; color:${riv ? '#94a3b8' : '#2ed573'};">${min}</b><span>${riv ? '🥅' : '⚽'} ${txt}</span></div>`;
+      const pi = (ultimaTemporada && Array.isArray(ultimaTemporada.partidos)) ? ultimaTemporada.partidos.indexOf(p) : -1; // v119
+      const play = (!riv && videoValido(g) && pi >= 0) ? `<button type="button" class="vplay" onclick="verVideoPartido(${pi}, ${goles.indexOf(g)})" aria-label="Ver vídeo del gol">▶</button>` : '';
+      return `<div style="display:flex; align-items:center; gap:8px; font-size:11px; color:${riv ? '#94a3b8' : '#e2e8f0'}; ${play ? '' : 'min-height:0;'}"><b style="width:26px; flex-shrink:0; color:${riv ? '#94a3b8' : '#2ed573'};">${min}</b><span style="flex:1;">${riv ? '🥅' : '⚽'} ${txt}</span>${play}</div>`;
     }).join('')}</div>`;
+  }
+
+  // ── v119 · VÍDEOS DE LOS GOLES ──────────────────────────────────────────────
+  // La app solo publica g.video (código del vídeo en Google Drive) si hay permiso; aquí se reproduce con el
+  // reproductor de Drive. La lista del reproductor es la del partido o la de la galería (con su filtro).
+  function videoValido(g) { return !!(g && typeof g.video === 'string' && /^[\w-]{20,80}$/.test(g.video)); }
+  let vgLista = [], vgPos = 0, vgFiltro = 'todos';
+  function golesConVideo(t) {
+    const out = [];
+    (t && Array.isArray(t.partidos) ? t.partidos : []).forEach((p, pi) => (Array.isArray(p.goles) ? p.goles : []).forEach((g, gi) => {
+      if (g.equipo !== 'rival' && videoValido(g)) out.push({ p, g, pi, gi });
+    }));
+    return out;
+  }
+  function abrirListaVideo(lista, pos) {
+    if (!lista.length) return;
+    vgLista = lista; vgPos = Math.max(0, Math.min(pos, lista.length - 1));
+    pintarVideoGol();
+    document.getElementById('videoGolModal').classList.add('on');
+    document.body.style.overflow = 'hidden';
+  }
+  function pintarVideoGol() {
+    const x = vgLista[vgPos]; if (!x) return;
+    const g = x.g, p = x.p;
+    document.getElementById('vgTitulo').textContent = `${g.nombre || '¿?'}${g.min != null ? ' · ' + g.min + "'" : ''}${g.penalti ? ' (penalti)' : ''}`;
+    document.getElementById('vgSub').textContent = `vs ${p.rival || ''}${p.fecha ? ' · ' + p.fecha : ''}${g.asistente ? ' · asistencia de ' + g.asistente : ''}${vgLista.length > 1 ? ` · ${vgPos + 1} de ${vgLista.length}` : ''}`;
+    document.getElementById('vgFrame').src = `https://drive.google.com/file/d/${g.video}/preview`;
+    document.getElementById('vgDrive').href = `https://drive.google.com/file/d/${g.video}/view`;
+    document.getElementById('vgAnt').disabled = vgPos === 0;
+    document.getElementById('vgSig').disabled = vgPos >= vgLista.length - 1;
+    document.querySelector('.vg-nav').style.display = vgLista.length > 1 ? 'flex' : 'none';
+  }
+  window.moverVideoGol = (d) => { const n = vgPos + d; if (n < 0 || n >= vgLista.length) return; vgPos = n; pintarVideoGol(); };
+  window.cerrarVideoGol = () => {
+    document.getElementById('videoGolModal').classList.remove('on');
+    document.getElementById('vgFrame').src = 'about:blank';
+    document.body.style.overflow = '';
+  };
+  // Goles con vídeo de un partido, empezando por el que se ha tocado (o por el primero si no se da)
+  window.verVideoPartido = (pi, gi) => {
+    const lista = golesConVideo(ultimaTemporada).filter(x => x.pi === pi).sort((a, b) => (a.g.min ?? 999) - (b.g.min ?? 999));
+    const pos = gi == null ? 0 : lista.findIndex(x => x.gi === gi);
+    abrirListaVideo(lista, Math.max(0, pos));
+  };
+  function listaGaleria() {
+    return golesConVideo(ultimaTemporada).sort((a, b) => (b.pi - a.pi) || ((a.g.min ?? 999) - (b.g.min ?? 999)))
+      .filter(x => vgFiltro === 'todos' || (x.g.nombre || '¿?') === vgFiltro);
+  }
+  function pintarGaleriaVideos() {
+    const cont = document.getElementById('videosGaleria');
+    if (!cont) return;
+    const todos = golesConVideo(ultimaTemporada);
+    if (!todos.length) { cont.innerHTML = '<div class="loader">Aún no hay goles con vídeo</div>'; return; }
+    const cuenta = {};
+    todos.forEach(x => { const k = x.g.nombre || '¿?'; cuenta[k] = (cuenta[k] || 0) + 1; });
+    if (vgFiltro !== 'todos' && !cuenta[vgFiltro]) vgFiltro = 'todos';
+    const nombres = Object.keys(cuenta).sort((a, b) => cuenta[b] - cuenta[a] || a.localeCompare(b, 'es'));
+    const lista = listaGaleria();
+    cont.innerHTML = `<div class="vgal-filtros"><button type="button" class="vgal-f ${vgFiltro === 'todos' ? 'on' : ''}" data-f="todos">Todos (${todos.length})</button>${nombres.map(nm => `<button type="button" class="vgal-f ${vgFiltro === nm ? 'on' : ''}" data-f="${escHtml(nm)}">${escHtml(nm)} (${cuenta[nm]})</button>`).join('')}</div>
+      <div class="vgal-grid">${lista.map((x, i) => `<button type="button" class="vgal-item" data-i="${i}" aria-label="Vídeo del gol de ${escHtml(x.g.nombre || '')}">
+        <img src="https://drive.google.com/thumbnail?id=${x.g.video}&sz=w480" alt="" loading="lazy" onerror="this.remove()">
+        <span class="pl"><i>▶</i></span>
+        <span class="cap">${escHtml(x.g.nombre || '¿?')}${x.g.min != null ? ' · ' + x.g.min + "'" : ''}<small>vs ${escHtml(x.p.rival || '')}${x.g.asistente ? ' · asist. ' + escHtml(x.g.asistente) : ''}</small></span>
+      </button>`).join('')}</div>`;
+    cont.querySelectorAll('.vgal-f').forEach(b => b.onclick = () => { vgFiltro = b.dataset.f; pintarGaleriaVideos(); });
+    cont.querySelectorAll('.vgal-item').forEach(b => b.onclick = () => abrirListaVideo(listaGaleria(), Number(b.dataset.i)));
   }
 
   // ── Aviso de récord batido en directo (visor + Modo TV) ──
@@ -3355,7 +3458,7 @@
     const secActivo = !!panelMas.querySelector('.subtab-btn.active');
     btn.setAttribute('aria-expanded', abierto ? 'true' : 'false');
     btn.classList.toggle('sec-activo', secActivo && !abierto);
-    if (txt) txt.textContent = abierto ? 'ocultar ▴' : '6 apartados más ▾';
+    if (txt) txt.textContent = abierto ? 'ocultar ▴' : '7 apartados más ▾';
   }
   function toggleMasTemp() {
     const panelMas = document.getElementById('tmpMasPanel');
@@ -3411,6 +3514,7 @@
     pintarSinergias(temporada);
     pintarRachas(temporada);
     pintarRecords(temporada);
+    try { pintarGaleriaVideos(); } catch (e) { console.error('Vídeos:', e); } // v119
     try { document.getElementById('minutosGoles').innerHTML = tramosGolHTML(temporada, 'vtr'); } catch (e) { console.error('Minutos:', e); }
     try { document.getElementById('sociedadesLista').innerHTML = sociedadesHTML(temporada); } catch (e) { console.error('Sociedades:', e); }
     try { document.getElementById('contextoLista').innerHTML = ctxContextoHTML(temporada); } catch (e) { console.error('Contexto:', e); } // v97
@@ -4447,5 +4551,14 @@
     navigator.serviceWorker.register('sw.js').catch(()=>{});
   }
 </script>
+<!-- v119 · REPRODUCTOR DE VÍDEO DE LOS GOLES -->
+<div id="videoGolModal" role="dialog" aria-modal="true" aria-label="Vídeo del gol">
+  <div class="vg-top"><div style="min-width:0;"><b id="vgTitulo"></b><div id="vgSub" style="font-size:11px; color:#94a3b8; margin-top:2px;"></div></div><button type="button" class="vg-cerrar" onclick="cerrarVideoGol()" aria-label="Cerrar">✕</button></div>
+  <div class="vg-marco"><iframe id="vgFrame" allow="autoplay; fullscreen" allowfullscreen title="Vídeo del gol"></iframe></div>
+  <div class="vg-pie">
+    <div class="vg-nav"><button type="button" id="vgAnt" onclick="moverVideoGol(-1)">‹ Gol anterior</button><button type="button" id="vgSig" onclick="moverVideoGol(1)">Siguiente gol ›</button></div>
+    <div class="gira">📱 Gira el móvil para verlo en grande · <a id="vgDrive" href="#" target="_blank" rel="noopener">Abrir en Drive</a></div>
+  </div>
+</div>
 </body>
 </html>

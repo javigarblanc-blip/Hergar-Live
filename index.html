@@ -2374,6 +2374,8 @@
         <div class="vs"><div class="cr a">${rsEscH(150)}</div><div class="vstx">VS</div><div class="cr b">${rsEscR(p, 150)}</div></div>
         <div class="meta"><b>Hergar · ${rivN}</b><span>${escHtml(p.fecha || '')}</span></div></div>`;
     } else if (paso.tipo === 'minuto') {
+      // Al entrar en pantalla completa el móvil enseña su aviso unos segundos abajo: el primer vídeo espera a que se vaya
+      paso.dur = rs.fsT ? Math.max(1500, 6000 - (performance.now() - rs.fsT)) : 1500;
       html = `<div class="rs-minuto"><div class="m">${x.g.min != null ? `${x.g.min}<small>'</small>` : '⚽'}</div><div class="w">GOL DEL HERGAR</div></div>`;
     } else if (paso.tipo === 'tarjeta') {
       const riv = x.riv;
@@ -2456,7 +2458,9 @@
     if (!rsTieneVideos(p)) return;
     if (rs) window.cerrarResumen();
     const b = rsConstruir(p);
-    rs = { p, pi, pasos: b.pasos, goles: b.goles, i: 0, acum: 0, t0: performance.now(), pausa: false, mudo: false, tok: 0, raf: null, timerCarga: null, fs: false };
+    const de = document.documentElement;
+    const pedirFs = !tvActivo && !document.fullscreenElement && !document.webkitFullscreenElement && !!(de.requestFullscreen || de.webkitRequestFullscreen);
+    rs = { p, pi, pasos: b.pasos, goles: b.goles, i: 0, acum: 0, t0: performance.now(), pausa: false, mudo: false, tok: 0, raf: null, timerCarga: null, fs: false, fsT: pedirFs ? performance.now() : 0 };
     document.getElementById('rsBars').innerHTML = '';
     document.getElementById('rsStage').classList.remove('rs-pausada');
     document.getElementById('resumenTV').classList.add('on');
@@ -2472,11 +2476,11 @@
     }
     rs.raf = requestAnimationFrame(rsBucle);
     // Pantalla completa y en horizontal (si no se está ya en el Modo TV)
-    if (!tvActivo && !document.fullscreenElement && !document.webkitFullscreenElement) {
-      const el = document.documentElement;
+    if (pedirFs) {
+      const el = de;
       try {
         const pr = el.requestFullscreen ? el.requestFullscreen({ navigationUI: 'hide' }) : (el.webkitRequestFullscreen ? el.webkitRequestFullscreen() : null);
-        if (rs) rs.fs = !!(el.requestFullscreen || el.webkitRequestFullscreen);
+        if (rs) rs.fs = true;
         Promise.resolve(pr).then(() => { try { if (screen.orientation && screen.orientation.lock) return screen.orientation.lock('landscape').catch(() => {}); } catch (e) {} }).catch(() => {}).then(() => setTimeout(rsEscala, 250));
       } catch (e) {}
     }

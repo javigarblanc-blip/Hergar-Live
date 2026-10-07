@@ -431,6 +431,88 @@
   .vgal-item .pl i { width: 34px; height: 34px; border-radius: 50%; background: rgba(180,20,56,.92); color: #fff; font-style: normal; font-size: 12px; display: flex; align-items: center; justify-content: center; }
   .vgal-item .cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 16px 7px 5px; background: linear-gradient(transparent, rgba(0,0,0,.88)); font-size: 10.5px; font-weight: 700; line-height: 1.3; text-align: left; color: #fff; }
   .vgal-item .cap small { display: block; font-weight: 600; color: #cbd5e1; font-size: 9.5px; }
+  /* ── Resumen del partido tipo tele (🎬) ─────────────────────────────── */
+  .btn-resumen { width:100%; margin:10px 0 4px; border:0; border-radius:12px; padding:11px 12px; cursor:pointer; display:flex; align-items:center; gap:11px; background:linear-gradient(90deg, rgb(180,20,56), rgb(140,14,44)); color:#fff; text-align:left; box-shadow:0 6px 22px rgba(180,20,56,.28); font-family:inherit; }
+  .btn-resumen .rp { width:34px; height:34px; border-radius:50%; background:#fff; color:rgb(180,20,56); display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0; padding-left:2px; }
+  .btn-resumen b { display:block; font-family:'Montserrat',sans-serif; font-weight:800; font-size:13.5px; }
+  .btn-resumen small { font-size:11px; opacity:.85; }
+  .btn-resumen .rt { display:flex; gap:3px; margin-left:auto; flex-shrink:0; }
+  .btn-resumen .rt i { width:4px; height:20px; border-radius:3px; background:rgba(255,255,255,.85); }
+  .btn-resumen .rt i.o { background:rgba(255,255,255,.25); }
+  .btn-resumen-mini { background:rgba(255,77,109,.16); border:1px solid rgba(255,77,109,.55); color:#ff6b85; border-radius:6px; padding:3px 9px; font-size:10px; font-weight:700; white-space:nowrap; cursor:pointer; }
+  .tv-btn-resumen { position:absolute; right:32px; bottom:26px; z-index:6; background:rgb(180,20,56); color:#fff; border:0; border-radius:40px; padding:16px 30px; font-family:'Montserrat',sans-serif; font-weight:800; font-size:22px; cursor:pointer; box-shadow:0 8px 30px rgba(180,20,56,.45); }
+  #resumenTV { position:fixed; inset:0; z-index:10100; background:#000; display:none; overflow:hidden; touch-action:manipulation; overscroll-behavior:contain; -webkit-user-select:none; user-select:none; }
+  #resumenTV.on { display:block; }
+  #rsStage { position:absolute; left:50%; top:50%; width:1280px; height:720px; transform-origin:center center; background:#000; overflow:hidden; font-family:'Montserrat',sans-serif; color:#fff; }
+  #rsVideo { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; background:#000; }
+  .rs-capa { position:absolute; inset:0; }
+  .rs-oculta { display:none !important; }
+  #rsStage.rs-pausada * { animation-play-state:paused !important; }
+  .rs-carga { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); font:600 18px 'Inter',sans-serif; color:#cbd5e1; background:rgba(0,0,0,.55); padding:10px 18px; border-radius:10px; }
+  .rs-bars { position:absolute; top:16px; left:26px; right:26px; display:flex; gap:6px; z-index:20; }
+  .rs-bars div { flex:1; height:5px; background:rgba(255,255,255,.25); border-radius:3px; overflow:hidden; }
+  .rs-bars i { display:block; height:100%; width:0; background:#fff; }
+  .rs-bars div.rv i { background:#94a3b8; }
+  .rs-top { position:absolute; top:38px; right:26px; display:flex; gap:12px; z-index:21; }
+  .rs-top button { width:52px; height:52px; border-radius:50%; background:rgba(0,0,0,.5); border:1px solid rgba(255,255,255,.25); color:#fff; font-size:22px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .rs-tap { position:absolute; top:100px; bottom:0; z-index:15; }
+  .rs-tap.l { left:0; width:30%; } .rs-tap.c { left:30%; width:40%; } .rs-tap.r { right:0; width:30%; }
+  #rsStage.rs-fin .rs-tap { display:none; }
+  .rs-pausa { position:absolute; inset:0; display:none; align-items:center; justify-content:center; z-index:14; pointer-events:none; }
+  #rsStage.rs-pausada .rs-pausa { display:flex; }
+  .rs-pausa span { width:110px; height:110px; border-radius:50%; background:rgba(0,0,0,.55); display:flex; align-items:center; justify-content:center; font-size:40px; }
+  @keyframes rsFade { to { opacity:1; } }
+  @keyframes rsSube { from { opacity:0; transform:translateY(20%); } to { opacity:1; transform:none; } }
+  @keyframes rsZoom { from { opacity:0; transform:scale(1.4); } to { opacity:1; transform:none; } }
+  @keyframes rsInL { from { opacity:0; transform:translateX(-40%); } to { opacity:1; transform:none; } }
+  @keyframes rsInR { from { opacity:0; transform:translateX(40%); } to { opacity:1; transform:none; } }
+  @keyframes rsFranja { to { transform:skewY(-4deg) scaleX(1); } }
+  @keyframes rsLT { to { transform:none; } }
+  @keyframes rsPop { 50% { transform:scale(1.5); } }
+  .rs-intro { position:absolute; inset:0; background:radial-gradient(circle at 50% 45%, #2a0a12 0%, #0a0204 60%, #000 100%); display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .rs-intro .tag { position:absolute; top:94px; font-weight:800; font-size:15px; letter-spacing:6px; color:#ff4d6d; opacity:0; animation:rsFade .4s .2s forwards; }
+  .rs-intro .franja { position:absolute; left:-10%; right:-10%; height:160px; top:280px; background:rgb(180,20,56); opacity:.9; transform:skewY(-4deg) scaleX(0); animation:rsFranja .7s .1s cubic-bezier(.2,.8,.2,1) forwards; }
+  .rs-intro .vs { position:relative; z-index:2; display:flex; align-items:center; gap:44px; }
+  .rs-intro .cr { opacity:0; display:flex; }
+  .rs-intro .cr.a { animation:rsInL .6s .5s cubic-bezier(.2,.8,.2,1) forwards; }
+  .rs-intro .cr.b { animation:rsInR .6s .5s cubic-bezier(.2,.8,.2,1) forwards; }
+  .rs-intro .vstx { font-weight:900; font-size:40px; opacity:0; animation:rsFade .4s .9s forwards; }
+  .rs-intro .meta { position:relative; z-index:2; margin-top:24px; text-align:center; opacity:0; animation:rsSube .5s 1.1s forwards; }
+  .rs-intro .meta b { display:block; font-weight:800; font-size:26px; letter-spacing:3px; text-transform:uppercase; }
+  .rs-intro .meta span { font:500 17px 'Inter',sans-serif; color:#d6d8dc; }
+  .rs-minuto { position:absolute; inset:0; background:#000; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .rs-minuto .m { font-weight:900; font-size:158px; line-height:1; animation:rsZoom .5s cubic-bezier(.2,.8,.2,1); }
+  .rs-minuto .m small { font-size:.45em; color:#ff4d6d; }
+  .rs-minuto .w { margin-top:8px; font-weight:800; font-size:22px; letter-spacing:7px; color:#94a3b8; animation:rsFade .4s .2s both; }
+  .rs-lt { position:absolute; left:38px; bottom:40px; display:flex; align-items:stretch; z-index:5; transform:translateX(-130%); animation:rsLT .35s cubic-bezier(.2,.8,.2,1) forwards; }
+  .rs-lt .sc { display:flex; align-items:center; gap:10px; background:#0b0b0d; padding:9px 14px; border-radius:9px 0 0 9px; }
+  .rs-lt .sc b { font-weight:900; font-size:32px; letter-spacing:3px; }
+  .rs-lt .who { background:rgb(180,20,56); padding:9px 18px; display:flex; flex-direction:column; justify-content:center; border-radius:0 9px 9px 0; }
+  .rs-lt .who b { font-weight:800; font-size:25px; }
+  .rs-lt .who span { font:600 15px 'Inter',sans-serif; color:rgba(255,255,255,.88); }
+  .rs-lt .min { position:absolute; right:-9px; top:-20px; background:#fff; color:#000; font-weight:900; font-size:16px; padding:3px 8px; border-radius:6px; }
+  .rs-tarjeta { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:radial-gradient(circle at 50% 50%, #1c0a0f, #000 70%); }
+  .rs-tarjeta.rv { background:radial-gradient(circle at 50% 50%, #1a1d22, #000 70%); }
+  .rs-tarjeta .box { display:flex; align-items:center; gap:36px; animation:rsSube .5s cubic-bezier(.2,.8,.2,1); }
+  .rs-tarjeta .k { font-weight:800; font-size:17px; letter-spacing:6px; color:#ff4d6d; }
+  .rs-tarjeta.rv .k { color:#94a3b8; }
+  .rs-tarjeta .n { font-weight:900; font-size:50px; margin:4px 0; }
+  .rs-tarjeta .d { font:600 19px 'Inter',sans-serif; color:#cfd2d6; }
+  .rs-tarjeta .scr { margin-top:14px; display:inline-flex; align-items:center; gap:12px; background:#0b0b0d; border:1px solid rgba(255,255,255,.12); padding:7px 14px; border-radius:9px; font-weight:900; font-size:32px; }
+  .rs-tarjeta .scr .hl { display:inline-block; color:#ff4d6d; animation:rsPop .5s .5s; }
+  .rs-tarjeta.rv .scr .hl { color:#fff; }
+  .rs-tarjeta .nv { position:absolute; bottom:44px; font:500 14px 'Inter',sans-serif; color:#94a3b8; }
+  .rs-final { position:absolute; inset:0; background:radial-gradient(circle at 50% 40%, #2a0a12, #000 70%); display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .rs-final .k { font-weight:800; font-size:19px; letter-spacing:9px; color:#ff4d6d; animation:rsFade .4s both; }
+  .rs-final .res { display:flex; align-items:center; gap:30px; margin:14px 0 22px; animation:rsZoom .6s .2s both; }
+  .rs-final .res b { font-weight:900; font-size:108px; letter-spacing:6px; }
+  .rs-final .res b .h { color:#ff4d6d; }
+  .rs-final .gl { display:flex; gap:12px 22px; flex-wrap:wrap; justify-content:center; max-width:82%; }
+  .rs-final .gl div { font:600 18px 'Inter',sans-serif; color:#e3e5e8; opacity:0; animation:rsSube .4s forwards; }
+  .rs-final .gl div i { font-style:normal; color:#94a3b8; margin-left:5px; }
+  .rs-final .gl div.rv { color:#94a3b8; }
+  .rs-final .bts { display:flex; gap:14px; margin-top:30px; opacity:0; animation:rsFade .4s 1.8s forwards; }
+  .rs-final .bts button { font:700 17px 'Montserrat',sans-serif; color:#fff; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.3); padding:11px 22px; border-radius:30px; cursor:pointer; }
   #videoGolModal { position: fixed; inset: 0; z-index: 10050; background: #000; display: none; flex-direction: column; overscroll-behavior: contain; }
   #videoGolModal.on { display: flex; }
   .vg-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 10px; color: #fff; }
@@ -806,6 +888,7 @@
 </div>
 
 <script type="module">
+  // Visor · 🎬 Resumen del partido tipo tele: cortinilla, minuto y vídeo de cada gol con rótulo (marcador y goleador) desde que arranca el vídeo, tarjetas para goles sin vídeo y del rival, y final con goleadores. Botón en Último partido, en Temporada → Partidos y en la pantalla Final del Modo TV.
   // Visor · Temporada: menú nuevo con 4 apartados grandes (Partidos, Plantilla, Ranking, Récords) y el resto en "Más análisis", que recuerda si se dejó abierto. Abre en Partidos.
   // v116 (app) · El % de paradas cuenta también las paradas de partidos sin detalle; "De ellas, difíciles".
   // v115 (app) · La parada cuenta como tiro a puerta del rival: −0,15 a los de campo, al portero no.
@@ -2151,6 +2234,278 @@
     cont.querySelectorAll('.vgal-item').forEach(b => b.onclick = () => abrirListaVideo(listaGaleria(), Number(b.dataset.i)));
   }
 
+  // ── Visor · RESUMEN DEL PARTIDO TIPO TELE (🎬) ─────────────────────────────
+  // Cortinilla de entrada, y gol a gol: minuto + vídeo con rótulo (marcador y goleador) desde que arranca el vídeo;
+  // los goles sin vídeo y los del rival salen como tarjeta para que el marcador cuente bien la historia; y final.
+  // No se edita ningún vídeo: se reproducen uno detrás de otro y el visor pinta los rótulos encima.
+  // Opcional: si un gol trae g.inicio (segundos), el vídeo empieza ahí.
+  let rs = null;
+  function rsGolesPartido(p) {
+    return (p && Array.isArray(p.goles) ? p.goles : []).map((g, gi) => ({ g, gi })).filter(x => x.g)
+      .sort((a, b) => (a.g.min ?? 999) - (b.g.min ?? 999));
+  }
+  function rsTieneVideos(p) { return !!p && Array.isArray(p.goles) && p.goles.some(g => g && g.equipo !== 'rival' && videoValido(g)); }
+  function rsSrcVideo(v) { return esVideoGh(v) ? v.slice(3) : `https://drive.usercontent.google.com/download?id=${v}&export=download`; }
+  function rsAbrev(n) { return (normNombreEquipo(n).replace(/\s+/g, '').slice(0, 3) || 'RIV').toUpperCase(); }
+  function rsEscH(px) { return `<img src="${ESCUDO_HERGAR_SRC}" alt="" style="width:${px}px; height:${px}px; border-radius:50%; object-fit:cover; background:#fff; flex-shrink:0;">`; }
+  function rsEscR(p, px) { return escudoEquipoVisorHTML(equipoLigaPorNombre(p.rival), px, p.rival); }
+  function rsDetalle(x) {
+    if (x.g.asistente) return 'Asist. ' + x.g.asistente;
+    if (x.g.penalti) return 'De penalti';
+    return x.n === 1 ? 'Su primer gol del partido' : x.n === 2 ? 'Doblete' : x.n === 3 ? '¡Hat-trick!' : `${x.n}.º gol del partido`;
+  }
+  // Índice en la temporada del partido que enseña el directo (mismo criterio que la tarjeta de Último partido)
+  function indicePartidoDeMatch(m) {
+    const t = ultimaTemporada;
+    if (!m || !t || !Array.isArray(t.partidos)) return -1;
+    const n = (v) => Number(v) || 0, gl = n(m.golesLocal), gr = n(m.golesRival);
+    for (let i = t.partidos.length - 1; i >= 0; i--) {
+      const x = t.partidos[i];
+      if (x && n(x.golesLocal) === gl && n(x.golesRival) === gr && normNombreEquipo(x.rival) === normNombreEquipo(m.rival)) return i;
+    }
+    return -1;
+  }
+  function resumenBotonHTML(pi) {
+    const p = ultimaTemporada && Array.isArray(ultimaTemporada.partidos) ? ultimaTemporada.partidos[pi] : null;
+    if (!rsTieneVideos(p)) return '';
+    const hs = rsGolesPartido(p).filter(x => x.g.equipo !== 'rival');
+    const nv = hs.filter(x => videoValido(x.g)).length;
+    return `<button type="button" class="btn-resumen" onclick="abrirResumenPartido(${pi})"><span class="rp">▶</span><span><b>Ver resumen del partido</b><small>${nv === 1 ? '1 gol en vídeo' : nv + ' goles en vídeo'}</small></span><span class="rt">${hs.slice(0, 16).map(x => `<i class="${videoValido(x.g) ? '' : 'o'}"></i>`).join('')}</span></button>`;
+  }
+  function resumenFilaHTML(p) {
+    const t = ultimaTemporada, pi = t && Array.isArray(t.partidos) ? t.partidos.indexOf(p) : -1;
+    if (pi < 0 || !rsTieneVideos(p)) return '';
+    return `<div style="display:flex; justify-content:flex-end; margin-top:5px;"><button type="button" class="btn-resumen-mini" onclick="abrirResumenPartido(${pi})">🎬 Resumen del partido</button></div>`;
+  }
+
+  function rsConstruir(p) {
+    const pasos = [{ tipo: 'intro', dur: 3500, gol: -1 }], goles = [], cuenta = {};
+    let h = 0, r = 0;
+    rsGolesPartido(p).forEach(({ g, gi }) => {
+      const riv = g.equipo === 'rival';
+      if (riv) r++; else h++;
+      const nombre = g.nombre || '¿?';
+      if (!riv) cuenta[nombre] = (cuenta[nombre] || 0) + 1;
+      const k = goles.length, x = { g, gi, riv, h, r, n: riv ? 0 : cuenta[nombre], p0: pasos.length };
+      goles.push(x);
+      if (!riv && videoValido(g)) { pasos.push({ tipo: 'minuto', dur: 1500, gol: k }); pasos.push({ tipo: 'video', dur: 0, gol: k }); }
+      else pasos.push({ tipo: 'tarjeta', dur: 3200, gol: k });
+      x.p1 = pasos.length - 1;
+    });
+    pasos.push({ tipo: 'final', dur: 0, gol: -2 });
+    return { pasos, goles };
+  }
+  function rsEscala() {
+    const st = document.getElementById('rsStage');
+    if (!st) return;
+    const W = window.innerWidth, H = window.innerHeight, vertical = H > W;
+    const s = vertical ? Math.min(H / 1280, W / 720) : Math.min(W / 1280, H / 720);
+    st.style.transform = `translate(-50%, -50%) ${vertical ? 'rotate(90deg) ' : ''}scale(${s})`;
+  }
+  function rsTrans() { return rs.acum + (rs.pausa ? 0 : performance.now() - rs.t0); }
+  function rsVideoEl() { return document.getElementById('rsVideo'); }
+  function rsSoltarVideo() {
+    const vv = rsVideoEl();
+    vv.onplaying = vv.onended = vv.onerror = vv.onloadedmetadata = null;
+    try { vv.pause(); } catch (e) {}
+    vv.classList.add('rs-oculta');
+  }
+  function rsPlay(vv) {
+    if (!rs || rs.pausa) return;
+    let pr; try { pr = vv.play(); } catch (e) {}
+    if (pr && pr.catch) pr.catch(err => {
+      // Si el navegador no deja reproducir con sonido, se sigue sin sonido (se puede activar con 🔊)
+      if (err && err.name === 'NotAllowedError' && !vv.muted && rs) { vv.muted = true; rs.mudo = true; rsIconoSonido(); vv.play().catch(() => {}); }
+    });
+  }
+  function rsIconoSonido() { const b = document.getElementById('rsSonidoBtn'); if (b && rs) b.textContent = rs.mudo ? '🔇' : '🔊'; }
+  function rsIr(i) {
+    if (!rs) return;
+    rs.i = Math.max(0, Math.min(rs.pasos.length - 1, i));
+    rs.acum = 0; rs.t0 = performance.now(); rs.tok++;
+    rsPintar();
+  }
+  function rsPintarLT(x) {
+    const p = rs.p;
+    document.getElementById('rsLT').innerHTML = `<div class="rs-lt"><div class="sc">${rsEscH(40)}<b>HER ${x.h} – ${x.r} ${escHtml(rsAbrev(p.rival))}</b></div><div class="who"><b>⚽ ${escHtml(x.g.nombre || '¿?')}</b><span>${escHtml(rsDetalle(x))}</span></div>${x.g.min != null ? `<div class="min">${x.g.min}'</div>` : ''}</div>`;
+  }
+  function rsFalloVideo(x) {
+    if (!rs) return;
+    x.fallo = true;
+    const paso = rs.pasos[rs.i];
+    paso.tipo = 'tarjeta'; paso.dur = 3200;
+    rs.acum = 0; rs.t0 = performance.now(); rs.tok++;
+    rsPintar();
+  }
+  function rsCargarVideo(x) {
+    const vv = rsVideoEl(), carga = document.getElementById('rsCarga'), tok = rs.tok;
+    document.getElementById('rsLT').innerHTML = '';
+    vv.classList.remove('rs-oculta'); carga.classList.remove('rs-oculta');
+    let puesto = false;
+    vv.onplaying = () => { if (!rs || tok !== rs.tok) return; carga.classList.add('rs-oculta'); if (!puesto) { puesto = true; rsPintarLT(x); } };
+    vv.onended = () => { if (rs && tok === rs.tok) rsIr(rs.i + 1); };
+    vv.onerror = () => { if (rs && tok === rs.tok) rsFalloVideo(x); };
+    vv.onloadedmetadata = () => {
+      const ini = Number(x.g.inicio) || 0;
+      if (ini > 0 && ini < (vv.duration || 0) - 1) { try { vv.currentTime = ini; } catch (e) {} }
+    };
+    vv.muted = rs.mudo;
+    const src = rsSrcVideo(x.g.video);
+    if (vv.getAttribute('src') !== src || vv.error) vv.src = src; else { try { vv.currentTime = Number(x.g.inicio) || 0; } catch (e) {} }
+    clearTimeout(rs.timerCarga);
+    rs.timerCarga = setTimeout(() => { if (rs && tok === rs.tok && vv.readyState < 2 && !rs.pausa) rsFalloVideo(x); }, 25000);
+    rsPlay(vv);
+    // se va cargando el siguiente vídeo
+    const sig = rs.goles.slice(rs.goles.indexOf(x) + 1).find(y => !y.riv && videoValido(y.g) && !y.fallo);
+    const pre = document.getElementById('rsPre');
+    if (sig) { const s2 = rsSrcVideo(sig.g.video); if (pre.getAttribute('src') !== s2) { pre.src = s2; try { pre.load(); } catch (e) {} } }
+  }
+  function rsPintar() {
+    const st = document.getElementById('rsStage'), capa = document.getElementById('rsCapa');
+    const paso = rs.pasos[rs.i], x = rs.goles[paso.gol], p = rs.p;
+    clearTimeout(rs.timerCarga);
+    st.classList.toggle('rs-fin', paso.tipo === 'final');
+    document.getElementById('rsCarga').classList.add('rs-oculta');
+    if (paso.tipo !== 'video') { rsSoltarVideo(); document.getElementById('rsLT').innerHTML = ''; }
+    const rivMay = escHtml(String(p.rival || 'Rival').toUpperCase()), rivN = escHtml(p.rival || 'Rival'), ab = escHtml(rsAbrev(p.rival));
+    let html = '';
+    if (paso.tipo === 'intro') {
+      html = `<div class="rs-intro"><div class="tag">RESUMEN DEL PARTIDO</div><div class="franja"></div>
+        <div class="vs"><div class="cr a">${rsEscH(150)}</div><div class="vstx">VS</div><div class="cr b">${rsEscR(p, 150)}</div></div>
+        <div class="meta"><b>Hergar · ${rivN}</b><span>${escHtml(p.fecha || '')}</span></div></div>`;
+    } else if (paso.tipo === 'minuto') {
+      html = `<div class="rs-minuto"><div class="m">${x.g.min != null ? `${x.g.min}<small>'</small>` : '⚽'}</div><div class="w">GOL DEL HERGAR</div></div>`;
+    } else if (paso.tipo === 'tarjeta') {
+      const riv = x.riv;
+      html = `<div class="rs-tarjeta ${riv ? 'rv' : ''}"><div class="box">${riv ? rsEscR(p, 130) : rsEscH(130)}<div>
+        <div class="k">${riv ? 'GOL DE ' + rivMay : 'GOL DEL HERGAR'}${x.g.min != null ? ' · ' + x.g.min + "'" : ''}</div>
+        <div class="n">${riv ? rivN : escHtml(x.g.nombre || '¿?')}</div>
+        <div class="d">${riv ? (x.g.penalti ? 'Gol del rival, de penalti' : 'Gol del rival') : escHtml(rsDetalle(x))}</div>
+        <div class="scr">HER <span class="${riv ? '' : 'hl'}">${x.h}</span> – <span class="${riv ? 'hl' : ''}">${x.r}</span> ${ab}</div>
+        </div></div>${riv ? '' : `<div class="nv">${x.fallo ? 'No se ha podido cargar el vídeo de este gol' : 'Este gol no tiene vídeo'}</div>`}</div>`;
+    } else if (paso.tipo === 'final') {
+      const grupos = [];
+      rs.goles.forEach(y => {
+        const who = y.riv ? (p.rival || 'Rival') : (y.g.nombre || '¿?');
+        let o = grupos.find(q => q.who === who && q.riv === y.riv);
+        if (!o) { o = { who, riv: y.riv, mins: [] }; grupos.push(o); }
+        o.mins.push(y.g.min);
+      });
+      html = `<div class="rs-final"><div class="k">FINAL</div>
+        <div class="res">${rsEscH(94)}<b><span class="h">${Number(p.golesLocal) || 0}</span> – ${Number(p.golesRival) || 0}</b>${rsEscR(p, 94)}</div>
+        <div class="gl">${grupos.map((q, i) => `<div class="${q.riv ? 'rv' : ''}" style="animation-delay:${(0.7 + i * 0.12).toFixed(2)}s">${q.riv ? '🥅' : '⚽'} ${escHtml(q.who)}${q.mins.length > 1 ? ' ×' + q.mins.length : ''}<i>${q.mins.filter(v => v != null).map(v => v + "'").join(' ')}</i></div>`).join('')}</div>
+        <div class="bts"><button type="button" onclick="rsDeNuevo()">↺ Volver a verlo</button><button type="button" onclick="cerrarResumen()">Cerrar</button></div></div>`;
+    }
+    capa.innerHTML = html;
+    if (paso.tipo === 'video') rsCargarVideo(x);
+    rsBarras();
+  }
+  function rsBarras() {
+    const c = document.getElementById('rsBars');
+    if (!c || !rs) return;
+    if (c.children.length !== rs.goles.length) c.innerHTML = rs.goles.map(x => `<div class="${x.riv ? 'rv' : ''}"><i></i></div>`).join('');
+    const paso = rs.pasos[rs.i], vv = rsVideoEl();
+    rs.goles.forEach((x, k) => {
+      let f;
+      if (rs.i > x.p1) f = 1;
+      else if (rs.i < x.p0) f = 0;
+      else if (paso.tipo === 'minuto') f = 0.15 * Math.min(1, rsTrans() / paso.dur);
+      else if (paso.tipo === 'video') f = 0.15 + 0.85 * (vv.duration ? Math.min(1, vv.currentTime / vv.duration) : 0);
+      else f = Math.min(1, rsTrans() / (paso.dur || 1));
+      c.children[k].firstChild.style.width = (f * 100).toFixed(1) + '%';
+    });
+  }
+  function rsBucle() {
+    if (!rs) return;
+    const paso = rs.pasos[rs.i];
+    if (!rs.pausa && paso.dur > 0 && rsTrans() >= paso.dur) rsIr(rs.i + 1);
+    rsBarras();
+    rs.raf = requestAnimationFrame(rsBucle);
+  }
+  function rsSetPausa(v) {
+    if (!rs || v === rs.pausa) return;
+    if (v) { rs.acum += performance.now() - rs.t0; rs.pausa = true; }
+    else { rs.t0 = performance.now(); rs.pausa = false; }
+    document.getElementById('rsStage').classList.toggle('rs-pausada', v);
+    if (rs.pasos[rs.i].tipo === 'video') { const vv = rsVideoEl(); if (v) { try { vv.pause(); } catch (e) {} } else rsPlay(vv); }
+  }
+  window.rsPausa = () => { if (rs && rs.pasos[rs.i].tipo !== 'final') rsSetPausa(!rs.pausa); };
+  window.rsSiguiente = () => {
+    if (!rs) return;
+    const paso = rs.pasos[rs.i];
+    if (paso.tipo === 'final') return;
+    const sig = paso.gol < 0 ? 0 : paso.gol + 1;
+    rsIr(sig < rs.goles.length ? rs.goles[sig].p0 : rs.pasos.length - 1);
+    rsSetPausa(false);
+  };
+  window.rsAnterior = () => {
+    if (!rs) return;
+    const paso = rs.pasos[rs.i], vv = rsVideoEl();
+    if (paso.gol === -1) { rsIr(0); rsSetPausa(false); return; }
+    const k = paso.gol === -2 ? rs.goles.length : paso.gol;
+    const ini = k < rs.goles.length ? rs.goles[k].p0 : rs.pasos.length - 1;
+    const avanzado = rs.i > ini || rsTrans() > 1500 || (paso.tipo === 'video' && vv.currentTime > 1.5);
+    if (avanzado && k < rs.goles.length) rsIr(ini);
+    else rsIr(k - 1 >= 0 ? rs.goles[k - 1].p0 : 0);
+    rsSetPausa(false);
+  };
+  window.rsSonido = () => { if (!rs) return; rs.mudo = !rs.mudo; rsVideoEl().muted = rs.mudo; rsIconoSonido(); };
+  window.rsDeNuevo = () => { if (!rs) return; rsIr(0); rsSetPausa(false); };
+  window.abrirResumenPartido = (pi, gi) => {
+    const t = ultimaTemporada, p = t && Array.isArray(t.partidos) ? t.partidos[pi] : null;
+    if (!rsTieneVideos(p)) return;
+    if (rs) window.cerrarResumen();
+    const b = rsConstruir(p);
+    rs = { p, pi, pasos: b.pasos, goles: b.goles, i: 0, acum: 0, t0: performance.now(), pausa: false, mudo: false, tok: 0, raf: null, timerCarga: null, fs: false };
+    document.getElementById('rsBars').innerHTML = '';
+    document.getElementById('rsStage').classList.remove('rs-pausada');
+    document.getElementById('resumenTV').classList.add('on');
+    document.body.style.overflow = 'hidden';
+    rsEscala();
+    const inicio = gi == null ? 0 : (rs.goles.find(x => x.gi === gi) || { p0: 0 }).p0;
+    rsIr(inicio);
+    // Se "desbloquea" el reproductor con el toque del usuario para que luego los vídeos puedan sonar (iPhone)
+    const vv = rsVideoEl(), primero = rs.goles.find(x => !x.riv && videoValido(x.g));
+    if (primero && rs.pasos[rs.i].tipo !== 'video') {
+      vv.muted = false; vv.src = rsSrcVideo(primero.g.video);
+      try { const pr = vv.play(); if (pr && pr.then) pr.then(() => { if (!rs || rs.pasos[rs.i].tipo !== 'video') vv.pause(); }).catch(() => {}); } catch (e) {}
+    }
+    rs.raf = requestAnimationFrame(rsBucle);
+    // Pantalla completa y en horizontal (si no se está ya en el Modo TV)
+    if (!tvActivo && !document.fullscreenElement && !document.webkitFullscreenElement) {
+      const el = document.documentElement;
+      try {
+        const pr = el.requestFullscreen ? el.requestFullscreen({ navigationUI: 'hide' }) : (el.webkitRequestFullscreen ? el.webkitRequestFullscreen() : null);
+        if (rs) rs.fs = !!(el.requestFullscreen || el.webkitRequestFullscreen);
+        Promise.resolve(pr).then(() => { try { if (screen.orientation && screen.orientation.lock) return screen.orientation.lock('landscape').catch(() => {}); } catch (e) {} }).catch(() => {}).then(() => setTimeout(rsEscala, 250));
+      } catch (e) {}
+    }
+  };
+  window.cerrarResumen = () => {
+    if (!rs) return;
+    cancelAnimationFrame(rs.raf); clearTimeout(rs.timerCarga);
+    rsSoltarVideo();
+    const vv = rsVideoEl(); vv.removeAttribute('src'); try { vv.load(); } catch (e) {}
+    const pre = document.getElementById('rsPre'); pre.removeAttribute('src'); try { pre.load(); } catch (e) {}
+    const fs = rs.fs;
+    rs = null;
+    document.getElementById('rsCapa').innerHTML = ''; document.getElementById('rsLT').innerHTML = '';
+    document.getElementById('resumenTV').classList.remove('on');
+    if (!tvActivo) document.body.style.overflow = '';
+    if (fs) {
+      try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch (e) {}
+      try { if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {}); else if (document.webkitFullscreenElement && document.webkitExitFullscreen) document.webkitExitFullscreen(); } catch (e) {}
+    }
+  };
+  window.addEventListener('resize', () => { if (rs) rsEscala(); });
+  document.addEventListener('keydown', (e) => {
+    if (!rs) return;
+    if (e.key === 'ArrowRight') window.rsSiguiente();
+    else if (e.key === 'ArrowLeft') window.rsAnterior();
+    else if (e.key === ' ') { e.preventDefault(); window.rsPausa(); }
+    else if (e.key === 'Escape') window.cerrarResumen();
+  });
+
   // ── Aviso de récord batido en directo (visor + Modo TV) ──
   let recordsCodigo = null, recordsAvisados = new Set(), recordCola = [], recordMostrando = false, recordTimer = null;
   function avisarRecordsSiProcede(m, goles, foto, marcanIds) {
@@ -2431,6 +2786,10 @@
     else if (estado === 'descanso' || estado === 'final') html = tvPantallaResumen(m, estado);
     else html = tvPantallaPartido(m, estado);
     base.innerHTML = html;
+    if (estado === 'final') { // 🎬 resumen del partido en la pantalla de Final
+      const pi = indicePartidoDeMatch(m);
+      if (pi >= 0 && rsTieneVideos(ultimaTemporada.partidos[pi])) base.insertAdjacentHTML('beforeend', `<button type="button" class="tv-btn-resumen" onclick="event.stopPropagation(); abrirResumenPartido(${pi})">🎬 Ver resumen</button>`);
+    }
   }
   function tvActualizarReloj() {
     const el = document.getElementById('tvReloj');
@@ -2881,7 +3240,14 @@
       if (p && Array.isArray(p.goles)) golesSrc = p.goles;
     }
     const goles = golesSrc.filter(Boolean).slice().sort((a, b) => n(a.min) - n(b.min));
-    const lineaGoles = (eq) => goles.filter(g => g.equipo === eq).map(g => `${g.min != null ? g.min + "'" : ''} ${escHtml(g.nombre || (eq === 'rival' ? '' : ''))}`.trim()).join(' · ');
+    const rsPi = indicePartidoDeMatch(m), rsP = rsPi >= 0 ? ultimaTemporada.partidos[rsPi] : null;
+    const lineaGoles = (eq) => goles.filter(g => g.equipo === eq).map(g => {
+      const txt = `${g.min != null ? g.min + "'" : ''} ${escHtml(g.nombre || '')}`.trim();
+      if (eq === 'rival' || !rsP || !Array.isArray(rsP.goles)) return txt;
+      // los goles con vídeo se pueden tocar: el resumen empieza en ese gol
+      const gi = rsP.goles.findIndex(x => x && x.equipo !== 'rival' && videoValido(x) && Number(x.min) === Number(g.min) && (x.nombre || '') === (g.nombre || ''));
+      return gi < 0 ? txt : `<span onclick="abrirResumenPartido(${rsPi}, ${gi})" style="cursor:pointer; white-space:nowrap;">${txt} <span style="color:#ff5577; font-size:9px;">▶</span></span>`;
+    }).join(' · ');
     const gH = lineaGoles('hergar'), gR = lineaGoles('rival');
     // estadísticas
     const filas = [
@@ -2924,6 +3290,7 @@
       <div style="text-align:center; font-size:11px; font-weight:800; letter-spacing:1px; color:${res[1]}; margin-bottom:10px;">${res[0]}</div>
       ${gH ? `<div style="font-size:12px; color:#cbd5e1; line-height:1.5; margin-bottom:4px;">⚽ ${gH}</div>` : ''}
       ${gR ? `<div style="font-size:12px; color:#94a3b8; line-height:1.5; margin-bottom:4px;">🥅 ${rival}: ${gR}</div>` : ''}
+      ${rsPi >= 0 ? resumenBotonHTML(rsPi) : ''}
       ${filas.length ? `<div class="vs-rojo" style="margin-top:12px;">
         <div class="vs-head"><span class="h" style="color:#ff5577;">HERGAR</span><span class="r">${rival}</span></div>
         ${filas.map(([label, h, r]) => `
@@ -3120,6 +3487,7 @@
         ${ctxTiempoChip(p.contexto) ? `<div style="margin-top:2px;">${ctxTiempoChip(p.contexto)}</div>` : ''}
         ${extrasHtml}
         ${golesMin}
+        ${resumenFilaHTML(p)}
         ${mvpLine}
         ${statsHtml}
         ${actuacionPartidoHtml(temporada, p)}
@@ -3539,6 +3907,7 @@
     pintarRachas(temporada);
     pintarRecords(temporada);
     try { pintarGaleriaVideos(); } catch (e) { console.error('Vídeos:', e); } // v119
+    try { if (ultimoMatchData) pintarResumenUltimo(ultimoMatchData); if (tvActivo) tvRender(); } catch (e) { console.error('Resumen:', e); } // 🎬 el botón del resumen necesita la temporada
     try { document.getElementById('minutosGoles').innerHTML = tramosGolHTML(temporada, 'vtr'); } catch (e) { console.error('Minutos:', e); }
     try { document.getElementById('sociedadesLista').innerHTML = sociedadesHTML(temporada); } catch (e) { console.error('Sociedades:', e); }
     try { document.getElementById('contextoLista').innerHTML = ctxContextoHTML(temporada); } catch (e) { console.error('Contexto:', e); } // v97
@@ -4588,6 +4957,21 @@
     <a id="vgDrive" href="#" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; justify-content:center; min-height:42px; padding:0 16px; margin-bottom:8px; border-radius:10px; border:1px solid rgba(93,173,226,.5); background:rgba(93,173,226,.12);">↗ Abrir el vídeo en Drive</a>
     <div class="gira">📱 Gira el móvil para verlo en grande</div>
   </div>
+</div>
+<div id="resumenTV" role="dialog" aria-modal="true" aria-label="Resumen del partido">
+  <div id="rsStage">
+    <video id="rsVideo" class="rs-oculta" playsinline preload="auto"></video>
+    <div id="rsLT" class="rs-capa" style="pointer-events:none;"></div>
+    <div id="rsCapa" class="rs-capa"></div>
+    <div id="rsCarga" class="rs-carga rs-oculta">Cargando vídeo…</div>
+    <div class="rs-bars" id="rsBars"></div>
+    <div class="rs-pausa"><span>❚❚</span></div>
+    <div class="rs-tap l" onclick="rsAnterior()"></div>
+    <div class="rs-tap c" onclick="rsPausa()"></div>
+    <div class="rs-tap r" onclick="rsSiguiente()"></div>
+    <div class="rs-top"><button type="button" id="rsSonidoBtn" onclick="rsSonido()" aria-label="Sonido">🔊</button><button type="button" onclick="cerrarResumen()" aria-label="Cerrar">✕</button></div>
+  </div>
+  <video id="rsPre" preload="auto" muted playsinline style="display:none;"></video>
 </div>
 </body>
 </html>

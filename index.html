@@ -4727,8 +4727,16 @@
     const liga = ultimaLiga;
     const numGlobal = (ligaViewerVuelta - 1) * 9 + ligaViewerJornada;
     document.getElementById('ligaViewerJnLabel').textContent = `JORNADA ${numGlobal}`;
-    const partidosJornada = liga.partidos.filter(p => p.vuelta === ligaViewerVuelta && p.jornada === ligaViewerJornada);
-    document.getElementById('ligaViewerJnFecha').textContent = partidosJornada.length ? partidosJornada[0].fecha : '';
+    let partidosJornada = liga.partidos.filter(p => p.vuelta === ligaViewerVuelta && p.jornada === ligaViewerJornada);
+    // v127: con la fecha de cada partido (importada de la federación), se ordenan y se agrupan por día
+    const isoDe = (f) => { const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(f || ''); return m ? `${m[3]}-${m[2]}-${m[1]}` : ''; };
+    const ordenDe = (p) => (isoDe(p.fechaPartido) || '9999-99-99') + ' ' + (p.hora || '99:99');
+    const porDias = partidosJornada.some(p => isoDe(p.fechaPartido));
+    if (porDias) partidosJornada = partidosJornada.slice().sort((a, b) => ordenDe(a) < ordenDe(b) ? -1 : ordenDe(a) > ordenDe(b) ? 1 : (a.id || 0) - (b.id || 0));
+    document.getElementById('ligaViewerJnFecha').textContent = porDias ? '' : (partidosJornada.length ? partidosJornada[0].fecha : '');
+    const DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+    const diaDe = (f) => { const iso = isoDe(f); if (!iso) return ''; const d = new Date(iso + 'T12:00:00'); return isNaN(d) ? '' : DIAS[d.getDay()]; };
+    let diaActual = null;
     const cont = document.getElementById('ligaViewerPartidos');
     cont.innerHTML = partidosJornada.map(p => {
       const localEs = esHergarLigaViewer(liga, p.local), visEs = esHergarLigaViewer(liga, p.visitante);
@@ -4736,8 +4744,17 @@
       const marcador = jugado
         ? `<div class="liga-marcador">${p.golesLocal} - ${p.golesVisitante}</div>`
         : `<div class="liga-marcador pendiente">vs</div>`;
-      const cuando = (p.fechaPartido || p.hora) ? `<div style="text-align:center; font-size:10.5px; color:#8da499; margin:-4px 0 8px;">${escHtml([p.fechaPartido, p.hora].filter(Boolean).join(' · '))}</div>` : '';
-      return `
+      let cabecera = '';
+      if (porDias) {
+        const fp = isoDe(p.fechaPartido) ? p.fechaPartido : '';
+        if (fp !== diaActual) {
+          cabecera = `<div style="text-align:center; font-family:'Montserrat',sans-serif; font-weight:800; font-size:10.5px; color:#94a3b8; letter-spacing:.6px; text-transform:uppercase; margin:${diaActual === null ? '0' : '14px'} 0 2px;">${fp ? escHtml(diaDe(fp) + ' ' + fp) : 'Fecha por confirmar'}</div>`;
+          diaActual = fp;
+        }
+      }
+      const cuandoTxt = porDias ? (p.hora || '') : [p.fechaPartido, p.hora].filter(Boolean).join(' · ');
+      const cuando = cuandoTxt ? `<div style="text-align:center; font-size:10.5px; color:#8da499; margin:-4px 0 8px;">${escHtml(cuandoTxt)}</div>` : '';
+      return `${cabecera}
       <div class="liga-partido-row">
         <span class="liga-equipo-name local ${localEs?'hergar-team':''}">${nombreEquipoLigaViewer(liga, p.local)}</span>
         ${escudoLigaVisorPorId(liga, p.local, 22)}

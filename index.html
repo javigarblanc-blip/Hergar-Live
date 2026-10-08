@@ -149,6 +149,8 @@
   }
   .player-table td.impacto { font-family:'Montserrat',sans-serif; font-weight:800; color:#f5a623; }
   .player-table td.pond { font-family:'Montserrat',sans-serif; font-weight:800; color:#3498db; }
+  .partido-det > summary::-webkit-details-marker { display:none; }
+  .partido-det[open] > summary .partido-flecha { transform:rotate(180deg); }
   .sub-caption { font-size:9.5px; color:#475569; margin-top:6px; text-align:right; }
 
   .subtabs { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:10px; }
@@ -3467,6 +3469,9 @@
   }
 
 
+  // Partidos desplegados: se recuerdan para que no se cierren al llegar datos nuevos
+  const partidosAbiertos = new Set();
+  window.partidoToggle = (el) => { const k = el.dataset.k; if (el.open) partidosAbiertos.add(k); else partidosAbiertos.delete(k); };
   function pintarPartidos(temporada) {
     const partidos = (temporada.partidos || []).slice().reverse();
     const cont = document.getElementById('partidosLista');
@@ -3483,20 +3488,25 @@
       }
       const extrasHtml = extras.length ? `<div style="font-size:10px; color:#8da499; margin-top:2px;">${extras.join(' · ')}</div>` : '';
       const statsHtml = (p.tirosNuestrosPuerta != null) ? `<div style="font-size:9px; color:#64748b; margin-top:4px; padding-top:4px; border-top:1px solid rgba(255,255,255,0.06);">🎯 ${(p.tirosNuestrosPuerta||0)+(p.tirosNuestrosFuera||0)}(${p.tirosNuestrosPuerta||0}) — ${(p.tirosRivalesPuerta||0)+(p.tirosRivalesFuera||0)}(${p.tirosRivalesPuerta||0}) · 🟨 ${p.faltasFavor||0}/${p.faltasContra||0} · ⛳ ${p.cornersFavor||0}/${p.cornersContra||0}${(p.fuerasJuegoNuestros||p.fuerasJuegoRival) ? ` · 🚩 ${p.fuerasJuegoNuestros||0}/${p.fuerasJuegoRival||0}` : ''}</div>` : '';
-      return `<div class="rank-row" style="flex-direction:column; align-items:stretch; gap:2px;">
-        <div style="display:flex; align-items:center; gap:8px;">
+      const clavePartido = `${p.fecha || ''}|${p.rival || ''}`;
+      const abierto = partidosAbiertos.has(clavePartido);
+      return `<details class="rank-row partido-det" data-k="${escHtml(clavePartido)}" ${abierto ? 'open' : ''} ontoggle="partidoToggle(this)" style="flex-direction:column; align-items:stretch; gap:2px; display:block;">
+        <summary style="display:flex; align-items:center; gap:8px; cursor:pointer; list-style:none; -webkit-tap-highlight-color:transparent;">
           <div class="rank-name">${p.fecha || ''} · vs ${p.rival}</div>
           <div class="streak-chip ${chipClass}">${p.golesLocal}–${p.golesRival} ${icon}</div>
+          <span class="partido-flecha" style="color:#64748b; font-size:11px; width:12px; text-align:center;">▾</span>
+        </summary>
+        <div style="display:flex; flex-direction:column; gap:2px; margin-top:6px;">
+          ${ctxTiempoChip(p.contexto) ? `<div style="margin-top:2px;">${ctxTiempoChip(p.contexto)}</div>` : ''}
+          ${extrasHtml}
+          ${golesMin}
+          ${resumenFilaHTML(p)}
+          ${mvpLine}
+          ${statsHtml}
+          ${actuacionPartidoHtml(temporada, p)}
+          ${informeIAPartidoHtml(p)}
         </div>
-        ${ctxTiempoChip(p.contexto) ? `<div style="margin-top:2px;">${ctxTiempoChip(p.contexto)}</div>` : ''}
-        ${extrasHtml}
-        ${golesMin}
-        ${resumenFilaHTML(p)}
-        ${mvpLine}
-        ${statsHtml}
-        ${actuacionPartidoHtml(temporada, p)}
-        ${informeIAPartidoHtml(p)}
-      </div>`;
+      </details>`;
     }).join('');
   }
 

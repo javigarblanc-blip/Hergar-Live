@@ -1769,7 +1769,7 @@
   //  · Cuota de tiros con cada niño en el campo: desde la v135 (cada partido guarda tfCampo/tcCampo).
   //  · Victorias añadidas (WPA): lo que subió cada gol la probabilidad de ganar, con el modelo del Pronóstico.
   //  · Elo de la Liga y tabla de la suerte (expectativa pitagórica, exponente 1,2).
-  const ELO_BASE = 1500, ELO_K = 30, ELO_CASA = 100;
+  const ELO_BASE = 1000, ELO_K = 30, ELO_CASA = 100;
   const PITA_EXP = 1.2, PITA_FIABLE_PJ = 8;
   const WPA_ASIST = 0.5; // la asistencia se lleva la mitad de lo que vale el gol
   function proPct(x) { return x == null ? '—' : Math.round(x * 100) + ' %'; }
@@ -1998,7 +1998,7 @@
               <div style="font-size:11.5px; color:#94a3b8; line-height:1.45; margin:6px 0;">Puntos que "debería" tener cada equipo por sus goles a favor y en contra, frente a los que tiene. Verde: le ha faltado suerte; rojo: le ha sobrado.${S.maxPj < PITA_FIABLE_PJ ? ` <b style="color:#f5a623;">Aún van pocas jornadas: tómalo como una pista.</b>` : ''}</div>${sf}</details>`;
       }
       return `<details style="margin-top:12px;"><summary style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:12.5px; color:${acento}; cursor:pointer;">📊 Ranking Elo</summary>
-          <div style="font-size:11.5px; color:#94a3b8; line-height:1.45; margin:6px 0;">Todos empiezan con ${ELO_BASE}. Cada partido suben o bajan según lo esperado: ganar al de arriba da mucho y ganar al de abajo, poco. Las goleadas cuentan algo más y se tiene en cuenta jugar en casa.${E.jugados < 20 ? ' Las primeras jornadas se mueve mucho.' : ''}</div>${eloFilas}${graf}</details>${suerte}`;
+          <div style="font-size:11.5px; color:#94a3b8; line-height:1.45; margin:6px 0;">Todos empiezan con ${ELO_BASE}, como en el ranking FIFA. Cada partido suben o bajan según lo esperado: ganar al de arriba da mucho y ganar al de abajo, poco. Las goleadas cuentan algo más y se tiene en cuenta jugar en casa.${E.jugados < 20 ? ' Las primeras jornadas se mueve mucho.' : ''}</div>${eloFilas}${graf}</details>${suerte}`;
   }
   // Bloque de la ficha del jugador
   function proJugadorHTML(t, liga, j, minMinutos, acento) {

@@ -649,6 +649,8 @@
           <div class="card-title">Ranking de temporada</div>
           <select id="rankingCriterioSelect" onchange="rerenderRanking()" style="width:100%; padding:8px; border-radius:8px; background:#0f172a; color:#e2e8f0; border:1px solid rgba(255,255,255,.1); margin-bottom:10px; font-size:12px;">
             <option value="pond">⭐ Impacto (x70min)</option>
+            <option value="peso">⚖️ Peso en el equipo</option>
+            <option value="cuota">🎯 Cuota de acciones</option>
             <option value="goles">⚽ Goles</option>
             <option value="asistencias">👟 Asistencias</option>
             <option value="minutos">⏱ Minutos</option>
@@ -1247,6 +1249,119 @@
   let evoDatos = null;
   function evoImpDe(h) { return (h.imp !== undefined && h.imp !== null) ? Number(h.imp) : (Number(h.impPond) || 0) * (Number(h.mins) || 0) / 70; }
   function evoHistDe(j, p) { return (j.historial || []).find(h => h.fecha === p.fecha && h.rival === p.rival) || null; }
+  // ── v132 · PESO EN EL EQUIPO (misma función en la app y en el visor) ──
+  // Compara a cada jugador con sus compañeros del MISMO partido, para quitar el efecto del resultado y del rival.
+  //  · En cada partido: media del equipo por 70' = impacto de todos los que jugaron ÷ sus minutos × 70
+  //    (la misma "media del equipo" que dibuja la Evolución del visor).
+  //  · Diferencia del día = su impacto por 70' − esa media.
+  //  · Temporada = media de esas diferencias, pesada por los minutos que jugó en cada partido.
+  // Cuota de acciones: acciones de juego que hizo ÷ las que le "tocarían" por sus minutos en cada partido
+  // (×1,0 = lo normal). Solo partidos en directo con el detalle de acciones, y sin porteros.
+  const PESO_MIN_BARRA = 10; // con menos minutos, la barra de ese partido sale en gris (engaña)
+  const PESO_ACC = ['dp', 'pc', 'pa', 'reg', 'def', 'defC'];
+  function pesoHistDe(j, p) { return (j.historial || []).find(x => x.fecha === p.fecha && x.rival === p.rival) || null; }
+  function pesoImpDe(h) { const m = h.mins || 0; return h.imp !== undefined ? (Number(h.imp) || 0) : (Number(h.impPond) || 0) * m / 70; }
+  function pesoEsPortero(j) {
+      const mp = j.minutosPorPosicion || {};
+      let mejor = '', max = 0;
+      Object.keys(mp).forEach(k => { if ((mp[k] || 0) > max) { max = mp[k] || 0; mejor = k; } });
+      return mejor === 'portero';
+  }
+  function pesoAccionesDe(h) {
+      const a = h.acc || {};
+      return (h.goles || 0) + (h.asistencias || 0) + PESO_ACC.reduce((s, k) => s + (Number(a[k]) || 0), 0);
+  }
+  function pesoEquipoTemporada(t) {
+      const ps = (t && t.partidos) || [];
+      const js = Object.values((t && t.jugadores) || {});
+      const res = {};
+      js.forEach(j => { res[j.id] = { id: j.id, j, esPortero: pesoEsPortero(j), sumDif: 0, mins: 0, acc: 0, esperado: 0, partidos: [] }; });
+      ps.forEach((p, i) => {
+          const filas = [];
+          js.forEach(j => { const h = pesoHistDe(j, p); if (h && (h.mins || 0) > 0) filas.push({ j, h, mins: h.mins, imp: pesoImpDe(h) }); });
+          const minsEq = filas.reduce((s, f) => s + f.mins, 0);
+          if (!minsEq) return;
+          const media = filas.reduce((s, f) => s + f.imp, 0) / minsEq * 70;
+          // cuota: solo si el partido tiene el detalle de acciones (en directo) y sin contar porteros
+          const conDetalle = filas.filter(f => f.h.acc !== undefined && !res[f.j.id].esPortero);
+          const accEq = conDetalle.reduce((s, f) => s + pesoAccionesDe(f.h), 0);
+          const minsAccEq = conDetalle.reduce((s, f) => s + f.mins, 0);
+          filas.forEach(f => {
+              const r = res[f.j.id];
+              const p70 = f.imp / f.mins * 70;
+              const dif = p70 - media;
+              r.sumDif += dif * f.mins; r.mins += f.mins;
+              r.partidos.push({ i, p, mins: f.mins, p70, media, dif, valorado: f.mins >= PESO_MIN_BARRA });
+          });
+          if (minsAccEq > 0 && accEq > 0) conDetalle.forEach(f => {
+              const r = res[f.j.id];
+              r.acc += pesoAccionesDe(f.h);
+              r.esperado += accEq * f.mins / minsAccEq;
+          });
+      });
+      Object.values(res).forEach(r => {
+          r.peso = r.mins > 0 ? r.sumDif / r.mins : null;
+          r.cuota = (!r.esPortero && r.esperado > 0) ? r.acc / r.esperado : null;
+      });
+      return res;
+  }
+  function pesoFmt(v, d) { d = d == null ? 2 : d; return (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(d).replace('.', ','); }
+  function pesoFmtCuota(v) { return v == null ? '—' : '×' + v.toFixed(1).replace('.', ','); }
+  function pesoColor(v) { return v >= 0 ? '#2ed573' : '#ff6b7a'; }
+  function pesoEsc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+  // Bloque de la ficha del jugador. minMinutos: el mínimo del ranking (35); acento: color de títulos de cada pantalla.
+  function pesoJugadorHTML(t, j, minMinutos, acento) {
+      if (!t || !j) return '';
+      const todos = pesoEquipoTemporada(t);
+      const r = todos[j.id];
+      if (!r || r.peso === null) return '';
+      acento = acento || '#2ed573';
+      const validos = Object.values(todos).filter(x => x.peso !== null && (x.j.minutos || 0) >= minMinutos).sort((a, b) => b.peso - a.peso);
+      const pos = validos.indexOf(r);
+      const puesto = pos >= 0 ? `${pos + 1}.º de ${validos.length}` : `menos de ${minMinutos}'`;
+      const maxAbs = Math.max(1, ...r.partidos.filter(x => x.valorado).map(x => Math.abs(x.dif)));
+      const filas = r.partidos.map(x => {
+          const p = x.p;
+          const res = (p.golesLocal != null && p.golesRival != null) ? `${p.golesLocal}-${p.golesRival}` : '';
+          const izq = `<div style="font-size:12px; line-height:1.25; min-width:0;"><div style="font-weight:600; color:#e2e8f0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">J${x.i + 1} · ${pesoEsc(p.rival)}</div><div style="font-size:10px; color:#94a3b8;">${res}${res ? ' · ' : ''}${x.mins}'</div></div>`;
+          if (!x.valorado) {
+              return `<div style="display:grid; grid-template-columns:96px 1fr 44px; gap:8px; align-items:center; padding:6px 0; border-top:1px solid rgba(255,255,255,.05);">${izq}<div style="font-size:10.5px; color:#64748b;">Menos de ${PESO_MIN_BARRA}', sin barra</div><div style="text-align:right; font-size:11px; color:#64748b;">${pesoFmt(x.dif, 1)}</div></div>`;
+          }
+          const w = Math.round(Math.min(1, Math.abs(x.dif) / maxAbs) * 50);
+          const col = pesoColor(x.dif);
+          const barra = x.dif >= 0 ? `left:50%; width:${w}%;` : `right:50%; width:${w}%;`;
+          return `<div style="display:grid; grid-template-columns:96px 1fr 44px; gap:8px; align-items:center; padding:6px 0; border-top:1px solid rgba(255,255,255,.05);">${izq}
+              <div><div style="position:relative; height:12px; background:rgba(255,255,255,.04); border-radius:4px;"><div style="position:absolute; left:50%; top:-2px; bottom:-2px; width:1px; background:rgba(255,255,255,.25);"></div><div style="position:absolute; top:0; bottom:0; ${barra} background:${col}; border-radius:4px;"></div></div>
+              <div style="font-size:10px; color:#64748b; margin-top:3px;">él ${pesoFmt(x.p70, 1)} · media ${pesoFmt(x.media, 1)}</div></div>
+              <div style="text-align:right; font-family:'Montserrat',sans-serif; font-weight:800; font-size:12px; color:${col};">${pesoFmt(x.dif, 1)}</div></div>`;
+      }).join('');
+      const caja = (valor, color, texto) => `<div style="background:rgba(255,255,255,.04); border-radius:10px; padding:9px 10px;"><div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:22px; color:${color};">${valor}</div><div style="font-size:10.5px; line-height:1.3; color:#94a3b8; margin-top:2px;">${texto}</div></div>`;
+      const cuotaTxt = r.esPortero ? 'cuota de acciones: no se calcula para el portero' : (r.cuota == null ? 'cuota de acciones: aún sin partidos con detalle de acciones' : 'cuota de acciones: lo que hace frente a lo que le tocaría por sus minutos');
+      return `<div style="background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:12px 14px; margin-top:12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;"><div style="font-size:11px; font-weight:800; color:${acento}; letter-spacing:.5px;">⚖️ PESO EN EL EQUIPO</div><div style="font-size:11px; color:#94a3b8;">${puesto}</div></div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+              ${caja(pesoFmt(r.peso), pesoColor(r.peso), 'sobre la media de sus compañeros de partido (por 70\')')}
+              ${caja(pesoFmtCuota(r.cuota), r.cuota == null ? '#64748b' : (r.cuota >= 1 ? '#2ed573' : '#ff6b7a'), cuotaTxt)}
+          </div>
+          ${(j.minutos || 0) < minMinutos ? `<div style="font-size:11px; color:#94a3b8; margin-top:8px;">Aún no llega a ${minMinutos} minutos: dato provisional.</div>` : ''}
+          <details style="margin-top:10px;"><summary style="font-size:11.5px; font-weight:700; color:${acento}; cursor:pointer;">Partido a partido (${r.partidos.length})</summary>
+              <div style="margin-top:6px;">${filas}</div>
+              <div style="font-size:10.5px; line-height:1.4; color:#94a3b8; margin-top:6px;">Verde: por encima de la media de los que jugaron ese día. Rojo: por debajo. Debajo de cada barra, su impacto por 70' y la media del equipo.</div>
+          </details>
+      </div>`;
+  }
+  // Apartado de "¿Cómo se calcula el impacto?"
+  function pesoExplicacionHTML(minMinutos) {
+      const ej = (t1, m, e, d) => `<div style="background:rgba(255,255,255,.04); border-radius:10px; padding:8px 10px; font-size:12px; line-height:1.45; color:#e2e8f0;"><b>${t1}</b><br>Media del equipo ${m}<br>Él: ${e} → <span style="color:#2ed573; font-weight:800;">${d}</span></div>`;
+      return `<div style="font-size:12.5px; line-height:1.55; color:#e2e8f0; padding-top:6px;">
+          <p style="margin:0 0 8px;">Los goles del equipo suman a todos los que están en el campo y los encajados restan a todos. Por eso en una goleada todos salen altos y en una derrota, todos bajos.</p>
+          <p style="margin:0 0 8px;">El <strong>peso en el equipo</strong> compara a cada jugador con sus compañeros <strong>del mismo partido</strong>. Así el resultado y el rival afectan igual a todos y se anulan:</p>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:0 0 8px;">${ej('Gana 8-0', '+3,0', '+4,0', '+1,0')}${ej('Pierde 0-5', '−1,0', '0,0', '+1,0')}</div>
+          <p style="margin:0 0 8px;">La cifra de la temporada es la media de esas diferencias, contando más los partidos en los que jugó más minutos. Mínimo ${minMinutos} minutos para entrar en el ranking.</p>
+          <p style="margin:0;"><strong>Cuota de acciones:</strong> goles, asistencias, pases clave, pases al área, disparos a puerta, regates y acciones defensivas que hace, frente a las que le tocarían por sus minutos. ×1,0 es lo normal; ×1,5, un 50 % más. No se calcula para el portero ni cuenta los partidos cargados a mano.</p>
+      </div>`;
+  }
+
   function evolucionJugadorHTML(t, j) {
     const ps = (t && t.partidos) || [];
     const puntos = [];
@@ -1310,6 +1425,7 @@
         ${caja('Mejor partido', fmt(mejor.v), `<span style="color:#94a3b8;">vs ${escHtml(mejor.p.rival)}</span>`)}
       </div>
       ${conMedia.length ? `<div style="font-size:11.5px; color:#cbd5e1; margin-top:8px;">Por encima de la media del equipo en <b>${encima}</b> de ${conMedia.length} partidos.</div>` : ''}
+      ${(() => { try { const r = pesoEquipoTemporada(t)[j.id]; return r && r.peso !== null ? `<div style="font-size:11.5px; color:#cbd5e1; margin-top:4px;">⚖️ Peso en el equipo: <b style="color:${pesoColor(r.peso)};">${pesoFmt(r.peso)}</b> de media sobre sus compañeros (la distancia entre su línea y la discontinua).</div>` : ''; } catch (e) { return ''; } })()}
       <div id="evoDetalleBox" style="margin-top:10px; font-size:12px; line-height:1.45; background:rgba(180,20,56,.1); border:1px solid rgba(180,20,56,.35); border-radius:9px; padding:8px 10px; color:#e2e8f0;">Toca un punto para ver ese partido.</div>`;
   }
   window.evoDetalle = function(k) {
@@ -1745,7 +1861,8 @@
         disparosPuerta: j.disparosPuerta||0, disparosFuera: j.disparosFuera||0, golesConTiros: j.golesConTiros
       }
     };
-    document.getElementById('perfilDatosContenido').innerHTML = renderFichaDatosHTML(statsDatos) + sociosJugadorHTML(ultimaTemporada, j.name) + lineasJugadorHTMLV(j); // v95
+    let pesoHtml = ''; try { pesoHtml = pesoJugadorHTML(ultimaTemporada, j, minMinutosRanking(), '#f5a623'); } catch (e) { console.error('Peso:', e); } // v132
+    document.getElementById('perfilDatosContenido').innerHTML = renderFichaDatosHTML(statsDatos) + pesoHtml + sociosJugadorHTML(ultimaTemporada, j.name) + lineasJugadorHTMLV(j); // v95
     try { document.getElementById('perfilEvoContenido').innerHTML = evolucionJugadorHTML(ultimaTemporada, j); mostrarBotonEvo(true); } catch (e) { console.error('Evolución:', e); mostrarBotonEvo(false); }
     mostrarPestanaPerfil('cromo');
     document.getElementById('perfilModal').style.display = 'flex';
@@ -3378,11 +3495,19 @@
       partidos: j => j.partidos || 0,
       notaIA: j => j._notaIA !== null ? j._notaIA : -1,
     };
+    // v132: Peso en el equipo y Cuota de acciones (mismo mínimo de minutos que el impacto)
+    const esPesoCuota = criterio === 'peso' || criterio === 'cuota';
+    const pesos = esPesoCuota ? pesoEquipoTemporada(temporada) : null;
+    const valPeso = j => { const r = pesos && pesos[j.id]; if (!r) return null; return criterio === 'peso' ? r.peso : r.cuota; };
+    valorPorCriterio.peso = j => valPeso(j) ?? -99;
+    valorPorCriterio.cuota = j => valPeso(j) ?? -99;
     const getVal = valorPorCriterio[criterio] || valorPorCriterio.pond;
     // v41: el ranking de impacto exige un mínimo de minutos; quien no llega aparece aparte, en observación
-    const esImpacto = criterio === 'pond';
+    const esImpacto = criterio === 'pond' || esPesoCuota;
     const minRanking = minMinutosRanking();
-    const lista = esImpacto ? jugadores.filter(j => (j.minutos || 0) >= minRanking) : jugadores;
+    let lista = esImpacto ? jugadores.filter(j => (j.minutos || 0) >= minRanking) : jugadores;
+    const sinCuota = criterio === 'cuota' ? lista.filter(j => valPeso(j) === null) : []; // porteros o sin detalle de acciones
+    if (criterio === 'cuota') lista = lista.filter(j => valPeso(j) !== null);
     const enObservacion = esImpacto ? jugadores.filter(j => (j.minutos || 0) < minRanking).sort((a,b) => (b.minutos || 0) - (a.minutos || 0)) : [];
     lista.sort((a,b) => getVal(b) - getVal(a));
     const cont = document.getElementById('rankingLista');
@@ -3395,6 +3520,8 @@
       partidos: j => j.partidos || 0,
       notaIA: j => j._notaIA !== null ? j._notaIA.toFixed(1) : '—',
     };
+    etiquetaVal.peso = j => { const v = valPeso(j); return v === null ? '—' : `<span style="color:${pesoColor(v)};">${pesoFmt(v)}</span>`; };
+    etiquetaVal.cuota = j => { const v = valPeso(j); return `<span style="color:${(v ?? 0) >= 1 ? '#2ed573' : '#ff6b7a'};">${pesoFmtCuota(v)}</span>`; };
     const getEtiqueta = etiquetaVal[criterio] || etiquetaVal.pond;
     cont.innerHTML = lista.map((j, i) => `
       <div class="rank-row" onclick="abrirPerfilJugadorTemporada('${j.id}')" style="cursor:pointer;">
@@ -3406,6 +3533,11 @@
       </div>`).join('');
     if (esImpacto && lista.length === 0) {
       cont.innerHTML = `<div class="loader">Aún nadie llega a ${minRanking} minutos acumulados</div>`;
+    }
+    if (criterio === 'peso') {
+      cont.innerHTML = `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin:0 0 8px;">Cuánto está cada jugador por encima o por debajo de sus compañeros del mismo partido (por 70'). No depende del resultado ni del rival.</div>` + cont.innerHTML;
+    } else if (criterio === 'cuota') {
+      cont.innerHTML = `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin:0 0 8px;">Acciones de juego que hace frente a las que le tocarían por sus minutos. ×1,0 es lo normal.${sinCuota.length ? ' Sin cuota (portero o sin partidos con detalle): ' + sinCuota.map(j => escHtml((j.name || '').split(' ')[0])).join(', ') + '.' : ''}</div>` + cont.innerHTML;
     }
     if (esImpacto && enObservacion.length > 0) {
       cont.innerHTML += `<div style="margin-top:12px; padding:10px 12px; border:1px dashed rgba(255,255,255,.18); border-radius:12px;">
@@ -4026,6 +4158,7 @@
       + csTarjeta('Lo que pasa mientras juega', juego)
       + csTarjeta('Portería a cero', porteria, 'Se aplica si el equipo no encaja ningún gol mientras el jugador está en el campo. Es proporcional a sus minutos.', true)
       + csTarjeta('Sinergias', `<div style="font-size:12.5px; line-height:1.55; color:#e2e8f0; padding-top:6px;">Impacto que suman los dos jugadores de una pareja mientras coinciden en el campo, por cada 70 minutos juntos. Hacen falta ${R.minMinutosSinergia || 20} minutos juntos para entrar en la lista.</div>`)
+      + csTarjeta('Peso en el equipo', pesoExplicacionHTML(R.minMinutosRanking || 35)) // v132
       + csTarjeta('Cómo se ordena la clasificación',
         `<div style="font-size:12.5px; line-height:1.55; color:#e2e8f0; padding-top:6px;">
           <p style="margin:0 0 8px;">Se usa el impacto por 70 minutos, para poder comparar a quien juega más con quien juega menos.</p>

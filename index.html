@@ -651,6 +651,12 @@
             <option value="pond">⭐ Impacto (x70min)</option>
             <option value="peso">⚖️ Peso en el equipo</option>
             <option value="cuota">🎯 Cuota de acciones</option>
+            <option value="puntosGol">💎 Puntos de sus goles</option>
+            <option value="masmenos">➕➖ Más/menos en el campo</option>
+            <option value="clave">⏱ Momento clave</option>
+            <option value="echa">🫂 Se le echa de menos</option>
+            <option value="wpa">🏆 Victorias añadidas</option>
+            <option value="tirosCampo">🎯 Tiros con él en el campo</option>
             <option value="goles">⚽ Goles</option>
             <option value="asistencias">👟 Asistencias</option>
             <option value="minutos">⏱ Minutos</option>
@@ -685,6 +691,10 @@
           <div class="card-title">🤝 Sociedades goleadoras</div>
           <div id="sociedadesLista"><div class="loader">Cargando...</div></div>
         </div>
+        <div class="card">
+          <div class="card-title">🧱 El muro</div>
+          <div id="muroLista"><div class="loader">Cargando...</div></div>
+        </div>
       </div>
       <div id="subRachas" class="sub-panel">
         <div class="card">
@@ -696,6 +706,18 @@
         <div class="card">
           <div class="card-title">⏱ Cuándo marcamos y cuándo encajamos</div>
           <div id="minutosGoles"><div class="loader">Cargando...</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">📈 Momentos del partido</div>
+          <div id="momentosEquipoLista"><div class="loader">Cargando...</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">⏳ Tiempo por marcador</div>
+          <div id="marcadorEquipoLista"><div class="loader">Cargando...</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">🎯 Cuota de tiros</div>
+          <div id="tirosEquipoLista"><div class="loader">Cargando...</div></div>
         </div>
       </div>
       <div id="subContexto" class="sub-panel">
@@ -817,6 +839,7 @@
             </table>
           </div>
         </div>
+        <div class="card" id="ligaEloSuerteVisor" style="display:none;"></div>
       </div>
 
       <div id="subLigaEvol" class="sub-panel">
@@ -1362,6 +1385,657 @@
       </div>`;
   }
 
+  // ── v133 · PUNTOS QUE VALEN SUS GOLES y MÁS/MENOS EN EL CAMPO (misma función en la app y en el visor) ──
+  // Puntos: se mira el ORDEN de los goles de Hergar.
+  //  · Gol de la victoria (+2): el gol de Hergar n.º (goles del rival + 1). Desde ahí el rival ya no alcanzó.
+  //  · Gol del empate (+1): el gol de Hergar n.º (goles del rival), si el rival marcó y no perdimos.
+  //  Las asistencias de esos goles se cuentan igual, en una cifra aparte.
+  // Más/menos: diferencia de goles del equipo por 70' con él en el campo, menos la de cuando no está.
+  //  Desde la v133 se guarda en cada partido (gfCampo/gcCampo). En los anteriores se deduce:
+  //  titular = del minuto 0 a sus minutos; suplente = desde (duración − sus minutos) hasta el final
+  //  (un jugador cambiado no puede volver a entrar). Se comprueba con los goles a favor que sí se guardaron.
+  function ptsGolMin(g) { const m = g.min != null ? g.min : g.minuto; return m == null ? null : Number(m); }
+  function ptsGolesOrdenados(p, equipo) {
+      if (!Array.isArray(p.goles)) return null;
+      const gs = p.goles.map((g, k) => ({ g, k })).filter(x => x.g && x.g.equipo === equipo);
+      return gs.sort((a, b) => ((ptsGolMin(a.g) ?? 999) - (ptsGolMin(b.g) ?? 999)) || ((a.g.idx ?? a.k) - (b.g.idx ?? b.k))).map(x => x.g);
+  }
+  function ptsHistDe(j, p) { return (j.historial || []).find(x => x.fecha === p.fecha && x.rival === p.rival) || null; }
+  function puntosGolesTemporada(t) {
+      const ps = (t && t.partidos) || [];
+      const js = Object.values((t && t.jugadores) || {});
+      const res = {};
+      js.forEach(j => { res[j.id] = { id: j.id, j, puntos: 0, decisivos: 0, goles: 0, ptsAsist: 0, lista: [] }; });
+      let sinOrden = 0;
+      ps.forEach((p, i) => {
+          const gf = Number(p.golesLocal) || 0, gc = Number(p.golesRival) || 0;
+          if (!gf) return;
+          const valor = new Array(gf).fill(0); // puntos de cada gol de Hergar, en orden
+          if (gf > gc) valor[gc] = 2;
+          if (gf >= gc && gc > 0) valor[gc - 1] = 1;
+          const nuestros = ptsGolesOrdenados(p, 'hergar');
+          if (nuestros && nuestros.length === gf) {
+              nuestros.forEach((g, k) => {
+                  const r = g.jugadorId != null ? res[g.jugadorId] : null;
+                  if (r) { r.goles++; r.puntos += valor[k]; if (valor[k] > 0) r.decisivos++; r.lista.push({ i, p, n: k + 1, min: ptsGolMin(g), v: valor[k] }); }
+                  const a = g.asistenteId != null ? res[g.asistenteId] : null;
+                  if (a && valor[k] > 0) a.ptsAsist += valor[k];
+              });
+              return;
+          }
+          // Sin el orden de los goles: solo se puede repartir si los marcó todos el mismo jugador
+          const goleadores = js.map(j => ({ j, h: ptsHistDe(j, p) })).filter(x => x.h && (x.h.goles || 0) > 0);
+          const total = goleadores.reduce((s, x) => s + (x.h.goles || 0), 0);
+          if (goleadores.length === 1 && total === gf) {
+              const r = res[goleadores[0].j.id];
+              valor.forEach((v, k) => { r.goles++; r.puntos += v; if (v > 0) r.decisivos++; r.lista.push({ i, p, n: k + 1, min: null, v }); });
+              return;
+          }
+          if (valor.some(v => v > 0)) sinOrden++;
+          goleadores.forEach(x => { res[x.j.id].goles += x.h.goles || 0; });
+      });
+      return { jugadores: res, sinOrden };
+  }
+  function mmDuracion(p, filas) {
+      let d = 0;
+      const m = /^(\d+):/.exec(String(p.duracion || ''));
+      if (m) d = parseInt(m[1]);
+      filas.forEach(f => { if (f.mins > d) d = f.mins; });
+      return d || 70;
+  }
+  function masMenosTemporada(t) {
+      const ps = (t && t.partidos) || [];
+      const js = Object.values((t && t.jugadores) || {});
+      const res = {};
+      js.forEach(j => { res[j.id] = { id: j.id, j, gfOn: 0, gcOn: 0, minOn: 0, gfOff: 0, gcOff: 0, minOff: 0, pendientes: 0, partidos: [] }; });
+      ps.forEach((p, i) => {
+          const gf = Number(p.golesLocal) || 0, gc = Number(p.golesRival) || 0;
+          const filas = [];
+          js.forEach(j => { const h = ptsHistDe(j, p); if (h && (h.mins || 0) > 0) filas.push({ j, h, mins: h.mins }); });
+          const dur = mmDuracion(p, filas);
+          const tit = Array.isArray(p.titulares) ? p.titulares.map(String) : null;
+          const golesN = ptsGolesOrdenados(p, 'hergar'), golesR = ptsGolesOrdenados(p, 'rival');
+          const conMinutos = (arr, n) => arr && arr.length === n && arr.every(g => ptsGolMin(g) != null);
+          const okN = conMinutos(golesN, gf), okR = conMinutos(golesR, gc);
+          const enCampo = {};
+          filas.forEach(f => {
+              const h = f.h, mins = f.mins;
+              let dato = null; // { gf, gc } con él en el campo, o null si no se puede saber
+              if (h.gcCampo !== undefined && h.gfCampo !== undefined) dato = { gf: h.gfCampo, gc: h.gcCampo };
+              else if (mins >= dur) dato = { gf, gc };
+              else {
+                  const manual = h.acc === undefined && h.imp === undefined; // partido cargado a mano: minutos enteros, bordes incluidos
+                  const esTit = tit ? tit.includes(String(f.j.id)) : null;
+                  const estado = (g) => {
+                      if (esTit === null) return '?';
+                      const ini = esTit ? 0 : dur - mins, fin = esTit ? mins : dur;
+                      if (manual) return (g >= ini && g <= fin) ? 'on' : 'off';
+                      if (esTit) return g < fin ? 'on' : g > fin ? 'off' : '?';
+                      return g > ini ? 'on' : g < ini - 1 ? 'off' : '?';
+                  };
+                  // goles en contra
+                  let gcOn = null;
+                  if (gc === 0) gcOn = 0;
+                  else if (okR) { const es = golesR.map(g => estado(ptsGolMin(g))); if (!es.includes('?')) gcOn = es.filter(x => x === 'on').length; }
+                  // goles a favor: el dato guardado manda; si no, se deduce
+                  let gfOn = null;
+                  if (h.gfCampo !== undefined) {
+                      gfOn = h.gfCampo;
+                      if (gcOn !== null && okN && esTit !== null) { // comprobación: si los a favor no cuadran, los minutos no son fiables
+                          const es = golesN.map(g => estado(ptsGolMin(g)));
+                          const seguro = es.filter(x => x === 'on').length, posible = seguro + es.filter(x => x === '?').length;
+                          if (gfOn < seguro || gfOn > posible) gcOn = null;
+                      }
+                  } else if (gf === 0) gfOn = 0;
+                  else if (okN) { const es = golesN.map(g => estado(ptsGolMin(g))); if (!es.includes('?')) gfOn = es.filter(x => x === 'on').length; }
+                  if (gfOn !== null && gcOn !== null) dato = { gf: gfOn, gc: gcOn };
+              }
+              enCampo[f.j.id] = { dato, mins };
+          });
+          js.forEach(j => {
+              const r = res[j.id], e = enCampo[j.id];
+              if (e && !e.dato) { r.pendientes++; r.partidos.push({ i, p, mins: e.mins, pendiente: true }); return; }
+              const on = e ? e.dato : { gf: 0, gc: 0 }, minOn = e ? e.mins : 0;
+              r.gfOn += on.gf; r.gcOn += on.gc; r.minOn += minOn;
+              r.gfOff += gf - on.gf; r.gcOff += gc - on.gc; r.minOff += Math.max(0, dur - minOn);
+              if (e) r.partidos.push({ i, p, mins: minOn, gf: on.gf, gc: on.gc });
+          });
+      });
+      Object.values(res).forEach(r => {
+          r.on = r.minOn > 0 ? (r.gfOn - r.gcOn) / r.minOn * 70 : null;
+          r.off = r.minOff > 0 ? (r.gfOff - r.gcOff) / r.minOff * 70 : null;
+          r.dif = (r.on !== null && r.off !== null) ? r.on - r.off : null;
+      });
+      return res;
+  }
+  function mmFmt(v) { return v == null ? '—' : (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(1).replace('.', ','); }
+  function ptsFmt(v) { return v + (v === 1 ? ' pt' : ' pts'); }
+  // Bloque de la ficha del jugador
+  function puntosMasMenosHTML(t, j, minMinutos, acento) {
+      if (!t || !j) return '';
+      acento = acento || '#2ed573';
+      const P = puntosGolesTemporada(t), rp = P.jugadores[j.id];
+      const rm = masMenosTemporada(t)[j.id];
+      if (!rp || !rm) return '';
+      const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+      const col = (v) => v == null ? '#64748b' : v >= 0 ? '#2ed573' : '#ff6b7a';
+      const caja = (valor, color, texto) => `<div style="background:rgba(255,255,255,.04); border-radius:10px; padding:9px 10px;"><div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:22px; color:${color};">${valor}</div><div style="font-size:10.5px; line-height:1.3; color:#94a3b8; margin-top:2px;">${texto}</div></div>`;
+      const nombre = esc((j.name || '').split(' ')[0]);
+      const goles = rp.lista.map(x => {
+          const p = x.p, cls = x.v === 2 ? ['rgba(46,213,115,.15)', '#2ed573'] : x.v === 1 ? ['rgba(245,166,35,.15)', '#f5a623'] : ['rgba(255,255,255,.06)', '#94a3b8'];
+          const etiqueta = x.v === 2 ? 'gol de la victoria' : x.v === 1 ? 'gol del empate' : '';
+          return `<div style="display:flex; justify-content:space-between; gap:8px; padding:5px 0; border-top:1px solid rgba(255,255,255,.05); font-size:12px;"><div style="min-width:0;"><span style="color:#e2e8f0;">J${x.i + 1} · ${esc(p.rival)}</span> <span style="color:#94a3b8; font-size:11px;">${p.golesLocal}-${p.golesRival} · ${x.n}.º gol${x.min != null ? ` (${x.min}')` : ''}${etiqueta ? ' · ' + etiqueta : ''}</span></div><span style="flex:none; padding:1px 7px; border-radius:10px; font-size:11px; font-weight:700; background:${cls[0]}; color:${cls[1]};">${x.v > 0 ? '+' : ''}${ptsFmt(x.v)}</span></div>`;
+      }).join('');
+      const mmPartidos = rm.partidos.map(x => `<div style="display:flex; justify-content:space-between; gap:8px; padding:5px 0; border-top:1px solid rgba(255,255,255,.05); font-size:12px;"><span style="color:#e2e8f0;">J${x.i + 1} · ${esc(x.p.rival)} <span style="color:#94a3b8; font-size:11px;">${x.mins}'</span></span><span style="color:${x.pendiente ? '#94a3b8' : col(x.gf - x.gc)}; font-weight:700;">${x.pendiente ? 'no se puede saber' : `${x.gf}-${x.gc} con él`}</span></div>`).join('');
+      const poco = (j.minutos || 0) < minMinutos;
+      return `<div style="background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:12px 14px; margin-top:12px;">
+          <div style="font-size:11px; font-weight:800; color:${acento}; letter-spacing:.5px; margin-bottom:8px;">💎 PUNTOS Y ➕➖ MÁS/MENOS</div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+              ${caja(ptsFmt(rp.puntos), '#f5a623', `valen sus ${rp.goles} ${rp.goles === 1 ? 'gol' : 'goles'}${rp.ptsAsist ? ` · asistencias ${ptsFmt(rp.ptsAsist)}` : ''}`)}
+              ${caja(mmFmt(rm.dif), col(rm.dif), 'más/menos: lo que mejora la diferencia de goles por 70\' cuando juega')}
+          </div>
+          ${rm.on !== null ? `<div style="font-size:11.5px; line-height:1.45; color:#cbd5e1; margin-top:8px;">Con ${nombre} en el campo, el equipo hace <b style="color:${col(rm.on)};">${mmFmt(rm.on)}</b> goles de diferencia por 70'; sin él, <b style="color:${col(rm.off)};">${mmFmt(rm.off)}</b>. Goles con él: ${rm.gfOn}-${rm.gcOn}.</div>` : ''}
+          ${poco ? `<div style="font-size:11px; color:#94a3b8; margin-top:6px;">Aún no llega a ${minMinutos} minutos: más/menos provisional.</div>` : ''}
+          ${rm.pendientes ? `<div style="font-size:11px; color:#94a3b8; margin-top:6px;">⏳ ${rm.pendientes} ${rm.pendientes === 1 ? 'partido' : 'partidos'} sin contar en el más/menos: no se puede saber si estaba en el campo en algún gol.</div>` : ''}
+          ${goles ? `<details style="margin-top:10px;"><summary style="font-size:11.5px; font-weight:700; color:${acento}; cursor:pointer;">Sus goles (${rp.lista.length})</summary><div style="margin-top:4px;">${goles}</div></details>` : ''}
+          ${mmPartidos ? `<details style="margin-top:8px;"><summary style="font-size:11.5px; font-weight:700; color:${acento}; cursor:pointer;">Goles con él en el campo, partido a partido</summary><div style="margin-top:4px;">${mmPartidos}</div></details>` : ''}
+      </div>`;
+  }
+  // Apartado de "¿Cómo se calcula el impacto?"
+  function puntosMasMenosExplicacionHTML(minMinutos) {
+      const ej = (r, txt) => `<div style="display:flex; justify-content:space-between; gap:8px; padding:4px 0; border-top:1px solid rgba(255,255,255,.05);"><b>${r}</b><span style="color:#cbd5e1; text-align:right;">${txt}</span></div>`;
+      return `<div style="font-size:12.5px; line-height:1.55; color:#e2e8f0; padding-top:6px;">
+          <p style="margin:0 0 8px;"><strong>💎 Puntos que valen sus goles.</strong> Se mira el orden de los goles. El <strong>gol de la victoria</strong> (+2) es el que supera lo que acabó marcando el rival: desde ese gol, el rival ya no alcanzó. El <strong>gol del empate</strong> (+1) es el que iguala lo que acabó marcando el rival.</p>
+          <div style="font-size:12px; margin:0 0 8px;">${ej('11-0', '1.º gol +2 · el resto 0')}${ej('2-1', '1.º +1 · 2.º +2')}${ej('3-2', '2.º +1 · 3.º +2')}${ej('1-1', 'el gol +1')}${ej('Derrota', 'ningún gol suma')}</div>
+          <p style="margin:0 0 8px;">Cuando no encajamos, el punto del 0-0 no es de ningún goleador: es de la defensa. Las asistencias de esos goles se cuentan aparte.</p>
+          <p style="margin:0;"><strong>➕➖ Más/menos.</strong> Diferencia de goles del equipo por cada 70 minutos con él en el campo, menos la de cuando no juega (banquillo o partidos en los que no estuvo). Mide cuánto mejora el equipo cuando él está, aunque no marque. Mínimo ${minMinutos} minutos.</p>
+      </div>`;
+  }
+
+  // ── v134 · MOMENTOS DEL PARTIDO, EL MURO, MOMENTO CLAVE y SE LE ECHA DE MENOS (misma función en la app y en el visor) ──
+  const MOM_CLAVE_MIN = 55;      // "momento clave": del minuto 55 en adelante...
+  const MOM_CLAVE_DIF = 1;       // ...con el partido empatado o a un gol
+  const MOM_REACCION_MIN = 10;   // reacción: marcar en los 10' siguientes a encajar
+  const MURO_MIN_JUNTOS = 70;    // el muro: mínimo de minutos juntos
+  const ECHA_MIN_SIN = 2;        // se le echa de menos: mínimo de partidos sin él
+  function momPuntos(gf, gc) { return gf > gc ? 3 : gf === gc ? 1 : 0; }
+  // Goles de los dos equipos en orden. null si no cuadran con el marcador.
+  function momSecuencia(p) {
+      if (!Array.isArray(p.goles)) return null;
+      const gf = Number(p.golesLocal) || 0, gc = Number(p.golesRival) || 0;
+      const gs = p.goles.map((g, k) => ({ g, k })).filter(x => x.g && (x.g.equipo === 'hergar' || x.g.equipo === 'rival'));
+      if (gs.filter(x => x.g.equipo === 'hergar').length !== gf || gs.filter(x => x.g.equipo === 'rival').length !== gc) return null;
+      gs.sort((a, b) => ((ptsGolMin(a.g) ?? 999) - (ptsGolMin(b.g) ?? 999)) || ((a.g.idx ?? a.k) - (b.g.idx ?? b.k)));
+      let h = 0, r = 0;
+      return gs.map(x => { const antes = { h, r }; if (x.g.equipo === 'hergar') h++; else r++; return { g: x.g, equipo: x.g.equipo, min: ptsGolMin(x.g), antes, despues: { h, r } }; });
+  }
+  function momentosEquipoTemporada(t) {
+      const ps = (t && t.partidos) || [];
+      const out = { remontados: 0, perdidos: 0, listaRem: [], listaPer: [], primero: { V: 0, E: 0, D: 0 }, primeroRival: { V: 0, E: 0, D: 0 }, sinGoles: 0,
+          reaccion: { veces: 0, total: 0, lista: [] }, sinOrden: 0, analizados: 0 };
+      ps.forEach((p, i) => {
+          const gf = Number(p.golesLocal) || 0, gc = Number(p.golesRival) || 0;
+          const res = gf > gc ? 'V' : gf === gc ? 'E' : 'D';
+          if (gf + gc === 0) { out.sinGoles++; out.analizados++; return; }
+          const sec = momSecuencia(p);
+          if (!sec) { out.sinOrden++; return; }
+          out.analizados++;
+          (sec[0].equipo === 'hergar' ? out.primero : out.primeroRival)[res]++;
+          const fueDetras = sec.some(x => x.despues.h < x.despues.r), fueDelante = sec.some(x => x.despues.h > x.despues.r);
+          const pts = momPuntos(gf, gc);
+          if (fueDetras && pts > 0) { out.remontados += pts; out.listaRem.push({ i, p, pts }); }
+          if (fueDelante && pts < 3) { out.perdidos += 3 - pts; out.listaPer.push({ i, p, pts: 3 - pts }); }
+          sec.forEach((x, k) => {
+              if (x.equipo !== 'rival' || x.min == null) return;
+              out.reaccion.total++;
+              const resp = sec.slice(k + 1).find(y => y.equipo === 'hergar' && y.min != null && y.min - x.min <= MOM_REACCION_MIN);
+              if (resp) { out.reaccion.veces++; out.reaccion.lista.push({ i, p, min: x.min, minResp: resp.min }); }
+          });
+      });
+      return out;
+  }
+  // Goles y asistencias en el momento clave, por jugador
+  function momentoClaveTemporada(t) {
+      const ps = (t && t.partidos) || [];
+      const res = {};
+      Object.values((t && t.jugadores) || {}).forEach(j => { res[j.id] = { id: j.id, j, goles: 0, asist: 0, lista: [] }; });
+      ps.forEach((p, i) => {
+          const sec = momSecuencia(p);
+          if (!sec) return;
+          sec.forEach(x => {
+              if (x.equipo !== 'hergar' || x.min == null || x.min < MOM_CLAVE_MIN) return;
+              if (Math.abs(x.antes.h - x.antes.r) > MOM_CLAVE_DIF) return;
+              const g = res[x.g.jugadorId], a = x.g.asistenteId != null ? res[x.g.asistenteId] : null;
+              if (g) { g.goles++; g.lista.push({ i, p, min: x.min, antes: x.antes, despues: x.despues, tipo: 'gol' }); }
+              if (a) { a.asist++; a.lista.push({ i, p, min: x.min, antes: x.antes, despues: x.despues, tipo: 'asist' }); }
+          });
+      });
+      return res;
+  }
+  // Puntos por partido del equipo con él jugando y sin él (no cuentan los que suben de otro equipo)
+  function echaDeMenosTemporada(t) {
+      const ps = (t && t.partidos) || [];
+      const res = {};
+      Object.values((t && t.jugadores) || {}).forEach(j => {
+          if (j.invitado) return;
+          const r = { id: j.id, j, con: 0, pjCon: 0, sin: 0, pjSin: 0 };
+          ps.forEach(p => {
+              const h = ptsHistDe(j, p);
+              const pts = momPuntos(Number(p.golesLocal) || 0, Number(p.golesRival) || 0);
+              if (h && ((h.mins || 0) > 0 || h.goles || h.asistencias)) { r.con += pts; r.pjCon++; } else { r.sin += pts; r.pjSin++; }
+          });
+          r.ppCon = r.pjCon ? r.con / r.pjCon : null;
+          r.ppSin = r.pjSin ? r.sin / r.pjSin : null;
+          r.dif = (r.ppCon !== null && r.ppSin !== null && r.pjSin >= ECHA_MIN_SIN) ? r.ppCon - r.ppSin : null;
+          res[j.id] = r;
+      });
+      return res;
+  }
+  // Tramo en el campo de cada jugador en un partido (mismo criterio que el más/menos). null si no se puede saber.
+  function muroTramo(p, h, dur, tit, jid) {
+      const mins = h.mins || 0;
+      if (mins >= dur) return { ini: 0, fin: dur, estado: () => 'on' };
+      if (!tit) return null;
+      const manual = h.acc === undefined && h.imp === undefined;
+      const esTit = tit.includes(String(jid));
+      const ini = esTit ? 0 : dur - mins, fin = esTit ? mins : dur;
+      const estado = (g) => {
+          if (manual) return (g >= ini && g <= fin) ? 'on' : 'off';
+          if (esTit) return g < fin ? 'on' : g > fin ? 'off' : '?';
+          return g > ini ? 'on' : g < ini - 1 ? 'off' : '?';
+      };
+      return { ini, fin, estado };
+  }
+  // El muro: parejas y tríos de defensas con menos goles en contra por 70' jugando juntos
+  function muroTemporada(t) {
+      const ps = (t && t.partidos) || [];
+      const js = Object.values((t && t.jugadores) || {});
+      const esDefensa = (j) => { const mp = j.minutosPorPosicion || {}; let mejor = '', max = 0; Object.keys(mp).forEach(k => { if ((mp[k] || 0) > max) { max = mp[k] || 0; mejor = k; } }); return mejor === 'defensa'; };
+      const defs = js.filter(esDefensa);
+      const grupos = {};
+      const clave = (arr) => arr.map(j => j.id).sort((a, b) => String(a).localeCompare(String(b))).join('|');
+      const combos = [];
+      for (let a = 0; a < defs.length; a++) for (let b = a + 1; b < defs.length; b++) {
+          combos.push([defs[a], defs[b]]);
+          for (let c = b + 1; c < defs.length; c++) combos.push([defs[a], defs[b], defs[c]]);
+      }
+      combos.forEach(cb => { grupos[clave(cb)] = { js: cb, mins: 0, gc: 0, partidos: 0 }; });
+      let gcEq = 0, minEq = 0;
+      ps.forEach(p => {
+          const gc = Number(p.golesRival) || 0;
+          const filas = [];
+          js.forEach(j => { const h = ptsHistDe(j, p); if (h && (h.mins || 0) > 0) filas.push({ j, h, mins: h.mins }); });
+          if (!filas.length) return;
+          const dur = mmDuracion(p, filas);
+          gcEq += gc; minEq += dur;
+          const tit = Array.isArray(p.titulares) ? p.titulares.map(String) : null;
+          const golesR = ptsGolesOrdenados(p, 'rival');
+          const okR = golesR && golesR.length === gc && golesR.every(g => ptsGolMin(g) != null);
+          const tramo = {};
+          filas.forEach(f => { tramo[f.j.id] = muroTramo(p, f.h, dur, tit, f.j.id); });
+          combos.forEach(cb => {
+              const tr = cb.map(j => tramo[j.id]);
+              if (tr.some(x => x === undefined)) return; // alguno no jugó
+              if (tr.some(x => x === null)) return;      // no se puede saber cuándo estuvo
+              const ini = Math.max(...tr.map(x => x.ini)), fin = Math.min(...tr.map(x => x.fin));
+              const juntos = Math.max(0, fin - ini);
+              if (!juntos) return;
+              let gcJ = 0;
+              if (gc > 0) {
+                  if (!okR) return;
+                  let dudoso = false;
+                  golesR.forEach(g => { const m = ptsGolMin(g); const es = tr.map(x => x.estado(m)); if (es.includes('?')) dudoso = true; else if (es.every(e => e === 'on')) gcJ++; });
+                  if (dudoso) return;
+              }
+              const gr = grupos[clave(cb)];
+              gr.mins += juntos; gr.gc += gcJ; gr.partidos++;
+          });
+      });
+      const lista = Object.values(grupos).filter(g => g.mins >= MURO_MIN_JUNTOS).map(g => Object.assign(g, { gc70: g.gc / g.mins * 70 }));
+      const ord = (a, b) => a.gc70 - b.gc70 || b.mins - a.mins;
+      return { parejas: lista.filter(g => g.js.length === 2).sort(ord), trios: lista.filter(g => g.js.length === 3).sort(ord), mediaEquipo: minEq ? gcEq / minEq * 70 : null };
+  }
+  function momFmt1(v) { return v == null ? '—' : v.toFixed(1).replace('.', ','); }
+  function momEsc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+  // Tarjeta del equipo: remontados/perdidos, marcar primero y reacción tras encajar
+  function momentosEquipoHTML(t, acento) {
+      acento = acento || '#f5a623';
+      const m = momentosEquipoTemporada(t);
+      if (!m.analizados) return `<div style="font-size:12px; color:#94a3b8;">Aún no hay partidos con el orden de los goles.</div>`;
+      const caja = (valor, color, texto) => `<div style="background:rgba(255,255,255,.04); border-radius:10px; padding:9px 10px;"><div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:22px; color:${color};">${valor}</div><div style="font-size:10.5px; line-height:1.3; color:#94a3b8; margin-top:2px;">${texto}</div></div>`;
+      const lineaP = (x, signo, color) => `<div style="display:flex; justify-content:space-between; gap:8px; padding:4px 0; border-top:1px solid rgba(255,255,255,.05); font-size:12px;"><span style="color:#e2e8f0;">J${x.i + 1} · ${momEsc(x.p.rival)} <span style="color:#94a3b8;">${x.p.golesLocal}-${x.p.golesRival}</span></span><b style="color:${color};">${signo}${x.pts}</b></div>`;
+      const reg = (o) => { const n = o.V + o.E + o.D; return n ? `${o.V}V ${o.E}E ${o.D}D <span style="color:#94a3b8;">· ${momFmt1((o.V * 3 + o.E) / n)} pts/partido</span>` : '—'; };
+      const pj = m.primero.V + m.primero.E + m.primero.D, pjR = m.primeroRival.V + m.primeroRival.E + m.primeroRival.D;
+      const fila = (titulo, valor) => `<div style="display:flex; justify-content:space-between; gap:8px; padding:7px 0; border-top:1px solid rgba(255,255,255,.06); font-size:12.5px;"><span style="color:#cbd5e1;">${titulo}</span><span style="color:#e2e8f0; text-align:right;">${valor}</span></div>`;
+      const rc = m.reaccion;
+      return `<div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+              ${caja('+' + m.remontados, '#2ed573', 'puntos remontados: sacados yendo por detrás en el marcador')}
+              ${caja((m.perdidos ? '−' : '') + m.perdidos, m.perdidos ? '#ff6b7a' : '#94a3b8', 'puntos perdidos: se escaparon yendo por delante')}
+          </div>
+          ${(m.listaRem.length || m.listaPer.length) ? `<details style="margin-top:8px;"><summary style="font-size:11.5px; font-weight:700; color:${acento}; cursor:pointer;">Ver los partidos</summary><div style="margin-top:4px;">${m.listaRem.map(x => lineaP(x, '+', '#2ed573')).join('')}${m.listaPer.map(x => lineaP(x, '−', '#ff6b7a')).join('')}</div></details>` : ''}
+          <div style="margin-top:10px;">
+              ${fila('⚡ Marcando primero', pj ? reg(m.primero) : '—')}
+              ${fila('🥶 Encajando primero', pjR ? reg(m.primeroRival) : '—')}
+              ${fila(`🔁 Tras encajar, marcamos en ${MOM_REACCION_MIN}'`, rc.total ? `<b>${rc.veces}</b> de ${rc.total} veces` : '—')}
+          </div>
+          ${m.sinOrden ? `<div style="font-size:11px; color:#94a3b8; margin-top:6px;">${m.sinOrden} ${m.sinOrden === 1 ? 'partido no tiene' : 'partidos no tienen'} el orden de los goles y no cuenta${m.sinOrden === 1 ? '' : 'n'}: se completa en Editar partido.</div>` : ''}`;
+  }
+  // Tarjeta del muro (pestaña Sinergias)
+  function muroHTML(t, acento) {
+      acento = acento || '#f5a623';
+      const m = muroTemporada(t);
+      const nom = (j) => momEsc((j.name || '').split(' ')[0]);
+      const fila = (g, k) => `<div style="display:grid; grid-template-columns:22px 1fr auto; gap:8px; align-items:center; padding:7px 0; border-top:1px solid rgba(255,255,255,.05);"><div style="font-family:'Montserrat',sans-serif; font-weight:800; color:#94a3b8; text-align:center;">${k + 1}</div><div style="font-size:12.5px; color:#e2e8f0; min-width:0;">${g.js.map(nom).join(' · ')}<div style="font-size:10.5px; color:#94a3b8;">${g.mins}' juntos · ${g.gc} ${g.gc === 1 ? 'gol' : 'goles'} en contra</div></div><div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:16px; color:${m.mediaEquipo != null && g.gc70 <= m.mediaEquipo ? '#2ed573' : '#ff6b7a'}; text-align:right;">${momFmt1(g.gc70)}<div style="font-size:9.5px; font-weight:600; color:#94a3b8; font-family:Inter,sans-serif;">por 70'</div></div></div>`;
+      const bloque = (titulo, arr) => `<div style="font-size:11px; font-weight:800; color:#cbd5e1; letter-spacing:.5px; margin:10px 0 2px;">${titulo}</div>${arr.length ? arr.slice(0, 3).map(fila).join('') : `<div style="font-size:11.5px; color:#94a3b8; padding:4px 0;">Aún ninguno llega a ${MURO_MIN_JUNTOS}' juntos.</div>`}`;
+      return `<div style="font-size:11.5px; color:#94a3b8; line-height:1.45;">Defensas que menos goles encajan por cada 70 minutos jugando juntos. Media del equipo: <b style="color:#e2e8f0;">${momFmt1(m.mediaEquipo)}</b> goles en contra por 70'. Mínimo ${MURO_MIN_JUNTOS}' juntos.</div>
+          ${bloque('PAREJAS', m.parejas)}${bloque('TRÍOS', m.trios)}`;
+  }
+  // Bloque de la ficha del jugador: momento clave y se le echa de menos
+  function claveEchaHTML(t, j, acento) {
+      if (!t || !j) return '';
+      acento = acento || '#2ed573';
+      const c = momentoClaveTemporada(t)[j.id];
+      const e = echaDeMenosTemporada(t)[j.id];
+      if (!c && !e) return '';
+      const caja = (valor, color, texto) => `<div style="background:rgba(255,255,255,.04); border-radius:10px; padding:9px 10px;"><div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:22px; color:${color};">${valor}</div><div style="font-size:10.5px; line-height:1.3; color:#94a3b8; margin-top:2px;">${texto}</div></div>`;
+      const tot = c ? c.goles + c.asist : 0;
+      const lista = c ? c.lista.map(x => `<div style="display:flex; justify-content:space-between; gap:8px; padding:4px 0; border-top:1px solid rgba(255,255,255,.05); font-size:12px;"><span style="color:#e2e8f0;">J${x.i + 1} · ${momEsc(x.p.rival)} <span style="color:#94a3b8;">${x.min}' · ${x.antes.h}-${x.antes.r} → ${x.despues.h}-${x.despues.r}</span></span><span>${x.tipo === 'gol' ? '⚽' : '👟'}</span></div>`).join('') : '';
+      let echa = '—', echaCol = '#64748b', echaTxt = `se le echa de menos: hacen falta ${ECHA_MIN_SIN} partidos sin él para calcularlo`;
+      if (j.invitado) echaTxt = 'se le echa de menos: no se calcula para quien sube de otro equipo';
+      else if (e && e.dif !== null) { echa = (e.dif >= 0 ? '+' : '−') + Math.abs(e.dif).toFixed(1).replace('.', ','); echaCol = e.dif >= 0 ? '#2ed573' : '#ff6b7a'; echaTxt = `puntos por partido: ${momFmt1(e.ppCon)} con él (${e.pjCon}) · ${momFmt1(e.ppSin)} sin él (${e.pjSin})`; }
+      return `<div style="background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:12px 14px; margin-top:12px;">
+          <div style="font-size:11px; font-weight:800; color:${acento}; letter-spacing:.5px; margin-bottom:8px;">⏱ MOMENTO CLAVE Y 🫂 SE LE ECHA DE MENOS</div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+              ${caja(tot, tot ? '#f5a623' : '#64748b', `goles y asistencias del ${MOM_CLAVE_MIN}' en adelante, con el partido empatado o a un gol${c && tot ? ` (${c.goles} G · ${c.asist} A)` : ''}`)}
+              ${caja(echa, echaCol, echaTxt)}
+          </div>
+          ${lista ? `<details style="margin-top:8px;"><summary style="font-size:11.5px; font-weight:700; color:${acento}; cursor:pointer;">Ver sus goles y asistencias clave</summary><div style="margin-top:4px;">${lista}</div></details>` : ''}
+      </div>`;
+  }
+  // Apartado de "¿Cómo se calcula el impacto?"
+  function momentosExplicacionHTML() {
+      return `<div style="font-size:12.5px; line-height:1.55; color:#e2e8f0; padding-top:6px;">
+          <p style="margin:0 0 8px;"><strong>Puntos remontados:</strong> los que se sacan de un partido en el que se fue por detrás (3 si se acaba ganando, 1 si se empata). <strong>Puntos perdidos:</strong> los que se escapan de un partido en el que se fue por delante (2 si se acaba empatando, 3 si se pierde).</p>
+          <p style="margin:0 0 8px;"><strong>Reacción tras encajar:</strong> cuántas veces el Hergar marca en los ${MOM_REACCION_MIN} minutos siguientes a un gol en contra.</p>
+          <p style="margin:0 0 8px;"><strong>Momento clave:</strong> goles y asistencias del minuto ${MOM_CLAVE_MIN} en adelante con el partido empatado o a un gol de diferencia, antes de ese gol.</p>
+          <p style="margin:0 0 8px;"><strong>Se le echa de menos:</strong> puntos por partido del equipo cuando juega menos los de cuando no está. Hacen falta al menos ${ECHA_MIN_SIN} partidos sin él.</p>
+          <p style="margin:0;"><strong>El muro:</strong> goles en contra por cada 70 minutos de las parejas y tríos de defensas mientras juegan juntos. Mínimo ${MURO_MIN_JUNTOS} minutos juntos.</p>
+      </div>`;
+  }
+
+  // ── v135 · MÉTRICAS DE LOS PROFESIONALES (misma función en la app y en el visor) ──
+  //  · Tiempo por marcador ("game state"): minutos ganando, empatando y perdiendo.
+  //  · Cuota de tiros: tiros del Hergar ÷ tiros de los dos equipos (con córners, "inclinación del campo").
+  //  · Cuota de tiros con cada niño en el campo: desde la v135 (cada partido guarda tfCampo/tcCampo).
+  //  · Victorias añadidas (WPA): lo que subió cada gol la probabilidad de ganar, con el modelo del Pronóstico.
+  //  · Elo de la Liga y tabla de la suerte (expectativa pitagórica, exponente 1,2).
+  const ELO_BASE = 1500, ELO_K = 30, ELO_CASA = 100;
+  const PITA_EXP = 1.2, PITA_FIABLE_PJ = 8;
+  const WPA_ASIST = 0.5; // la asistencia se lleva la mitad de lo que vale el gol
+  function proPct(x) { return x == null ? '—' : Math.round(x * 100) + ' %'; }
+  function proFmt(v, d) { d = d == null ? 1 : d; return v == null ? '—' : (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(d).replace('.', ','); }
+  function proFilas(t, p) { const out = []; Object.values((t && t.jugadores) || {}).forEach(j => { const h = ptsHistDe(j, p); if (h && (h.mins || 0) > 0) out.push({ j, h, mins: h.mins }); }); return out; }
+  // Minutos con cada marcador entre ini y fin (sec = momSecuencia del partido)
+  function proEstados(sec, dur, ini, fin) {
+      const s = { g: 0, e: 0, p: 0 };
+      let h = 0, r = 0, desde = 0;
+      const tramo = (a, b) => { const x = Math.max(a, ini), y = Math.min(b, fin); if (y <= x) return; const d = y - x; if (h > r) s.g += d; else if (h === r) s.e += d; else s.p += d; };
+      sec.forEach(x => { const m = Math.min(dur, Math.max(desde, x.min)); tramo(desde, m); desde = m; if (x.equipo === 'hergar') h++; else r++; });
+      tramo(desde, dur);
+      return s;
+  }
+  function marcadorTemporada(t) {
+      const ps = (t && t.partidos) || [];
+      const eq = { g: 0, e: 0, p: 0, partidos: [], sinDatos: 0 };
+      const jug = {};
+      Object.values((t && t.jugadores) || {}).forEach(j => { jug[j.id] = { j, g: 0, e: 0, p: 0 }; });
+      ps.forEach((p, i) => {
+          const gf = Number(p.golesLocal) || 0, gc = Number(p.golesRival) || 0;
+          const filas = proFilas(t, p);
+          const dur = mmDuracion(p, filas);
+          const sec = (gf + gc === 0) ? [] : momSecuencia(p);
+          if (!sec || sec.some(x => x.min == null)) { eq.sinDatos++; return; }
+          const s = proEstados(sec, dur, 0, dur);
+          eq.g += s.g; eq.e += s.e; eq.p += s.p; eq.partidos.push({ i, p, s });
+          const tit = Array.isArray(p.titulares) ? p.titulares.map(String) : null;
+          filas.forEach(f => {
+              const tr = muroTramo(p, f.h, dur, tit, f.j.id);
+              if (!tr) return;
+              const sj = proEstados(sec, dur, tr.ini, tr.fin), r = jug[f.j.id];
+              r.g += sj.g; r.e += sj.e; r.p += sj.p;
+          });
+      });
+      return { eq, jug };
+  }
+  function proBarra(s, alto) {
+      const T = s.g + s.e + s.p;
+      if (!T) return '';
+      const seg = (v, c) => v > 0 ? `<div style="width:${v / T * 100}%; background:${c}; display:flex; align-items:center; justify-content:center; font-family:'Montserrat',sans-serif; font-weight:800; font-size:11px; color:#0b0f14;">${alto >= 20 && v / T > .12 ? Math.round(v / T * 100) + '%' : ''}</div>` : '';
+      return `<div style="display:flex; height:${alto}px; border-radius:${Math.min(8, alto / 2)}px; overflow:hidden;">${seg(s.g, '#2ed573')}${seg(s.e, '#94a3b8')}${seg(s.p, '#ff6b7a')}</div>`;
+  }
+  const PRO_LEYENDA = `<div style="display:flex; gap:12px; flex-wrap:wrap; font-size:10.5px; color:#94a3b8; margin-top:6px;"><span><i style="display:inline-block; width:9px; height:9px; border-radius:3px; background:#2ed573; margin-right:4px;"></i>Ganando</span><span><i style="display:inline-block; width:9px; height:9px; border-radius:3px; background:#94a3b8; margin-right:4px;"></i>Empatando</span><span><i style="display:inline-block; width:9px; height:9px; border-radius:3px; background:#ff6b7a; margin-right:4px;"></i>Perdiendo</span></div>`;
+  function marcadorEquipoHTML(t, acento) {
+      acento = acento || '#f5a623';
+      const M = marcadorTemporada(t), e = M.eq;
+      if (!e.partidos.length) return `<div style="font-size:12px; color:#94a3b8;">Aún no hay partidos con el minuto de los goles.</div>`;
+      const filas = e.partidos.map(x => `<div style="display:grid; grid-template-columns:118px 1fr; gap:8px; align-items:center; padding:3px 0; font-size:11.5px;"><span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#e2e8f0;">J${x.i + 1} ${momEsc(x.p.rival)} <span style="color:#94a3b8;">${x.p.golesLocal}-${x.p.golesRival}</span></span>${proBarra(x.s, 8)}</div>`).join('');
+      return `<div style="font-size:11.5px; color:#94a3b8; line-height:1.45; margin-bottom:8px;">Qué parte de los minutos de la temporada ha ido el Hergar por delante, igualado o por detrás en el marcador.</div>
+          ${proBarra(e, 26)}${PRO_LEYENDA}
+          <details style="margin-top:10px;"><summary style="font-size:11.5px; font-weight:700; color:${acento}; cursor:pointer;">Partido a partido</summary><div style="margin-top:6px;">${filas}</div></details>
+          ${e.sinDatos ? `<div style="font-size:11px; color:#94a3b8; margin-top:6px;">${e.sinDatos} ${e.sinDatos === 1 ? 'partido no tiene' : 'partidos no tienen'} el minuto de los goles y no cuenta${e.sinDatos === 1 ? '' : 'n'}.</div>` : ''}`;
+  }
+  // Cuota de tiros del equipo
+  function tirosEquipoTemporada(t) {
+      const ps = (t && t.partidos) || [];
+      const out = { n: 0, r: 0, cn: 0, cr: 0, partidos: [] };
+      ps.forEach((p, i) => {
+          if (p.tirosNuestrosPuerta == null && p.tirosRivalesPuerta == null) return;
+          const n = (Number(p.tirosNuestrosPuerta) || 0) + (Number(p.tirosNuestrosFuera) || 0);
+          const r = (Number(p.tirosRivalesPuerta) || 0) + (Number(p.tirosRivalesFuera) || 0);
+          if (n + r === 0) return;
+          out.n += n; out.r += r; out.cn += Number(p.cornersFavor) || 0; out.cr += Number(p.cornersContra) || 0;
+          out.partidos.push({ i, p, n, r });
+      });
+      out.cuota = out.n + out.r ? out.n / (out.n + out.r) : null;
+      out.inclinacion = out.n + out.r + out.cn + out.cr ? (out.n + out.cn) / (out.n + out.r + out.cn + out.cr) : null;
+      return out;
+  }
+  function tirosEquipoHTML(t, acento) {
+      acento = acento || '#f5a623';
+      const T = tirosEquipoTemporada(t);
+      if (!T.partidos.length) return `<div style="font-size:12px; color:#94a3b8;">Aún no hay partidos con tiros apuntados.</div>`;
+      const caja = (valor, color, texto) => `<div style="background:rgba(255,255,255,.04); border-radius:10px; padding:9px 10px;"><div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:22px; color:${color};">${valor}</div><div style="font-size:10.5px; line-height:1.3; color:#94a3b8; margin-top:2px;">${texto}</div></div>`;
+      const filas = T.partidos.map(x => { const c = x.n / (x.n + x.r); return `<div style="display:grid; grid-template-columns:118px 1fr 38px; gap:8px; align-items:center; padding:3px 0; font-size:11.5px;"><span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#e2e8f0;">J${x.i + 1} ${momEsc(x.p.rival)}</span><div style="display:flex; height:8px; border-radius:4px; overflow:hidden;"><div style="width:${c * 100}%; background:rgb(180,20,56);"></div><div style="flex:1; background:#475569;"></div></div><span style="text-align:right; font-weight:700; color:#e2e8f0;">${proPct(c)}</span></div>`; }).join('');
+      return `<div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+              ${caja(proPct(T.cuota), T.cuota >= .5 ? '#2ed573' : '#ff6b7a', `de los tiros de nuestros partidos son del Hergar (${T.n} de ${T.n + T.r})`)}
+              ${caja(proPct(T.inclinacion), '#f5a623', 'contando también los córners: cuánto jugamos en su campo')}
+          </div>
+          <details style="margin-top:10px;"><summary style="font-size:11.5px; font-weight:700; color:${acento}; cursor:pointer;">Partido a partido</summary><div style="margin-top:6px;">${filas}</div><div style="font-size:10.5px; color:#94a3b8; margin-top:4px;">En rojo, la parte de los tiros que son del Hergar.</div></details>`;
+  }
+  // Cuota de tiros con cada niño en el campo (solo partidos desde la v135)
+  function tirosCampoTemporada(t) {
+      const ps = (t && t.partidos) || [];
+      const res = {};
+      let n = 0, r = 0, conDato = 0;
+      Object.values((t && t.jugadores) || {}).forEach(j => { res[j.id] = { id: j.id, j, f: 0, c: 0, mins: 0 }; });
+      ps.forEach(p => {
+          const filas = proFilas(t, p).filter(f => f.h.tfCampo !== undefined);
+          if (!filas.length) return;
+          conDato++;
+          n += (Number(p.tirosNuestrosPuerta) || 0) + (Number(p.tirosNuestrosFuera) || 0);
+          r += (Number(p.tirosRivalesPuerta) || 0) + (Number(p.tirosRivalesFuera) || 0);
+          filas.forEach(f => { const x = res[f.j.id]; x.f += f.h.tfCampo || 0; x.c += f.h.tcCampo || 0; x.mins += f.mins; });
+      });
+      Object.values(res).forEach(x => { x.cuota = x.f + x.c ? x.f / (x.f + x.c) : null; });
+      return { jugadores: res, media: n + r ? n / (n + r) : null, partidos: conDato };
+  }
+  // Victorias añadidas
+  function proNorm(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\b(c\.?\s?d\.?|u\.?\s?d\.?|c\.?\s?f\.?|a\.?\s?d\.?|club|deportivo|futbol|f\.?c\.?)\b/g, ' ').replace(/[^a-z0-9]+/g, ' ').trim(); }
+  function proRivalLiga(liga, p) {
+      if (!liga || !liga.equipos) return { i: -1, casa: null };
+      const H = liga.equipos.findIndex(e => e.esHergar);
+      const c = p.contexto || {};
+      if (c.ligaId != null && liga.partidos) {
+          const lp = liga.partidos.find(x => x.id === c.ligaId);
+          if (lp && H >= 0) {
+              const hid = liga.equipos[H].id, rid = lp.local === hid ? lp.visitante : lp.local;
+              return { i: liga.equipos.findIndex(e => e.id === rid), casa: lp.local === hid };
+          }
+      }
+      const nr = proNorm(p.rival);
+      const i = nr ? liga.equipos.findIndex((e, k) => k !== H && (proNorm(e.nombre) === nr || (proNorm(e.nombre).includes(nr) && nr.length >= 4) || (nr.includes(proNorm(e.nombre)) && proNorm(e.nombre).length >= 4))) : -1;
+      return { i, casa: typeof c.casa === 'boolean' ? c.casa : null };
+  }
+  function wpaTemporada(t, liga) {
+      const ps = (t && t.partidos) || [];
+      const res = {};
+      Object.values((t && t.jugadores) || {}).forEach(j => { res[j.id] = { id: j.id, j, v: 0, goles: 0, asist: 0, lista: [] }; });
+      let R = null, D = null;
+      try {
+          if (liga && liga.equipos && liga.partidos && typeof pronPreparar === 'function') {
+              D = pronPreparar(liga);
+              const jug = D.P.filter(p => p.jugado);
+              if (D.H >= 0 && jug.length) R = pronNiveles(D.NT, jug, Math.max(...jug.map(p => p.jg)));
+          }
+      } catch (e) { R = null; }
+      let sinOrden = 0;
+      ps.forEach((p, i) => {
+          const gf = Number(p.golesLocal) || 0, gc = Number(p.golesRival) || 0;
+          if (!gf) return;
+          const sec = momSecuencia(p);
+          if (!sec || sec.some(x => x.min == null)) { sinOrden++; return; }
+          let lh = 2.2, lr = 2.2;
+          if (R) {
+              const rv = proRivalLiga(liga, p);
+              const ha = rv.casa === null ? 1 : (rv.casa ? R.h : 1 / R.h);
+              const attR = rv.i >= 0 ? R.att[rv.i] : 1, defR = rv.i >= 0 ? R.def[rv.i] : 1;
+              lh = R.mu * R.att[D.H] * defR * ha; lr = R.mu * attR * R.def[D.H] / ha;
+          }
+          const dur = mmDuracion(p, proFilas(t, p));
+          const prob = (h, r, min) => {
+              const f = Math.max(0.5, dur - min) / dur;
+              const A = pronPmf(lh * f), B = pronPmf(lr * f);
+              let w = 0;
+              for (let a = 0; a < 20; a++) for (let b = 0; b < 20; b++) if (h + a > r + b) w += A[a] * B[b];
+              return w;
+          };
+          sec.forEach(x => {
+              if (x.equipo !== 'hergar') return;
+              const antes = prob(x.antes.h, x.antes.r, x.min), despues = prob(x.despues.h, x.despues.r, x.min);
+              const d = despues - antes;
+              const g = res[x.g.jugadorId];
+              if (g) { g.v += d; g.goles++; g.lista.push({ i, p, min: x.min, antes, despues, d, marcador: `${x.despues.h}-${x.despues.r}`, tipo: 'gol' }); }
+              const a = x.g.asistenteId != null ? res[x.g.asistenteId] : null;
+              if (a) { a.v += d * WPA_ASIST; a.asist++; a.lista.push({ i, p, min: x.min, antes, despues, d: d * WPA_ASIST, marcador: `${x.despues.h}-${x.despues.r}`, tipo: 'asist' }); }
+          });
+      });
+      return { jugadores: res, sinOrden, conLiga: !!R };
+  }
+  // Elo y tabla de la suerte de toda la Liga
+  function eloLiga(liga) {
+      if (!liga || !liga.equipos || !liga.partidos || typeof pronPreparar !== 'function') return null;
+      const D = pronPreparar(liga);
+      const jug = D.P.filter(p => p.jugado).sort((a, b) => a.jg - b.jg);
+      const elo = Array(D.NT).fill(ELO_BASE);
+      const ult = Array(D.NT).fill(0);
+      const maxJ = jug.length ? jug[jug.length - 1].jg : 0;
+      const histH = [{ jg: 0, elo: ELO_BASE }];
+      jug.forEach(p => {
+          const dr = elo[p.l] + ELO_CASA - elo[p.v];
+          const we = 1 / (1 + Math.pow(10, -dr / 400));
+          const w = p.gl > p.gv ? 1 : p.gl === p.gv ? 0.5 : 0;
+          const gd = Math.abs(p.gl - p.gv), G = gd <= 1 ? 1 : gd === 2 ? 1.5 : (11 + gd) / 8;
+          const d = ELO_K * G * (w - we);
+          elo[p.l] += d; elo[p.v] -= d;
+          if (p.jg === maxJ) { ult[p.l] += d; ult[p.v] -= d; }
+          if (p.l === D.H || p.v === D.H) histH.push({ jg: p.jg, elo: elo[D.H] });
+      });
+      return { equipos: liga.equipos.map((e, i) => ({ e, i, elo: elo[i], ult: ult[i] })).sort((a, b) => b.elo - a.elo), histH, jugados: jug.length };
+  }
+  function suerteLiga(liga) {
+      if (!liga || !liga.equipos || !liga.partidos || typeof pronPreparar !== 'function') return null;
+      const D = pronPreparar(liga);
+      const jug = D.P.filter(p => p.jugado);
+      if (!jug.length) return null;
+      const T = liga.equipos.map((e, i) => ({ e, i, pj: 0, gf: 0, gc: 0, pts: 0 }));
+      let totPts = 0;
+      jug.forEach(p => {
+          const L = T[p.l], V = T[p.v];
+          L.pj++; V.pj++; L.gf += p.gl; L.gc += p.gv; V.gf += p.gv; V.gc += p.gl;
+          const pl = p.gl > p.gv ? 3 : p.gl === p.gv ? 1 : 0, pv = p.gv > p.gl ? 3 : p.gl === p.gv ? 1 : 0;
+          L.pts += pl; V.pts += pv; totPts += pl + pv;
+      });
+      const ptsPartido = totPts / jug.length;
+      T.forEach(x => {
+          const a = Math.pow(x.gf, PITA_EXP), b = Math.pow(x.gc, PITA_EXP);
+          x.esp = x.pj ? (a + b ? a / (a + b) : 0.5) * ptsPartido * x.pj : 0;
+          x.dif = x.pts - x.esp;
+      });
+      return { equipos: T.filter(x => x.pj > 0).sort((a, b) => a.dif - b.dif), maxPj: Math.max(...T.map(x => x.pj)) };
+  }
+  function ligaEloSuerteHTML(liga, acento) {
+      acento = acento || '#f5a623';
+      const E = eloLiga(liga), S = suerteLiga(liga);
+      if (!E || !E.jugados) return '';
+      const esc = momEsc;
+      const fila = (k, nombre, me, sub, valor, color, peque) => `<div style="display:grid; grid-template-columns:22px 1fr auto; gap:8px; align-items:center; padding:7px ${me ? '4px' : '0'}; border-top:1px solid rgba(255,255,255,.05); font-size:12.5px;${me ? ' background:rgba(180,20,56,.18); border-radius:8px;' : ''}"><div style="font-family:'Montserrat',sans-serif; font-weight:800; color:#94a3b8; text-align:center;">${k}</div><div style="min-width:0; color:#e2e8f0;">${esc(nombre)}<div style="font-size:10.5px; color:#94a3b8;">${sub}</div></div><div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:15px; text-align:right; color:${color};">${valor}<div style="font-size:9.5px; font-weight:600; color:#94a3b8; font-family:Inter,sans-serif;">${peque}</div></div></div>`;
+      const eloFilas = E.equipos.map((x, k) => fila(k + 1, x.e.nombre, !!x.e.esHergar, `última jornada: <span style="color:${x.ult >= 0 ? '#2ed573' : '#ff6b7a'};">${proFmt(x.ult, 0)}</span>`, Math.round(x.elo), '#e2e8f0', 'puntos Elo')).join('');
+      // gráfica del Hergar
+      let graf = '';
+      if (E.histH.length > 2) {
+          const W = 320, H = 110, L = 34, Rr = 10, Tp = 8, B = 18, vals = E.histH.map(x => x.elo);
+          const mn = Math.min(...vals, ELO_BASE) - 10, mx = Math.max(...vals, ELO_BASE) + 10;
+          const X = k => L + k * (W - L - Rr) / (E.histH.length - 1), Y = v => Tp + (1 - (v - mn) / (mx - mn)) * (H - Tp - B);
+          let g = `<line x1="${L}" x2="${W - Rr}" y1="${Y(ELO_BASE)}" y2="${Y(ELO_BASE)}" stroke="rgba(255,255,255,.2)" stroke-dasharray="3 3"/><text x="${L - 4}" y="${Y(ELO_BASE) + 4}" font-size="9" fill="#94a3b8" text-anchor="end">${ELO_BASE}</text>`;
+          g += `<polyline fill="none" stroke="rgb(180,20,56)" stroke-width="2.5" points="${E.histH.map((x, k) => X(k).toFixed(1) + ',' + Y(x.elo).toFixed(1)).join(' ')}"/>`;
+          E.histH.forEach((x, k) => { g += `<circle cx="${X(k).toFixed(1)}" cy="${Y(x.elo).toFixed(1)}" r="3" fill="rgb(180,20,56)"/>`; if (k && (E.histH.length < 12 || k % 2 === 0)) g += `<text x="${X(k).toFixed(1)}" y="${H - 5}" font-size="9" fill="#94a3b8" text-anchor="middle">J${x.jg}</text>`; });
+          graf = `<div style="font-size:11px; font-weight:800; color:#cbd5e1; margin:10px 0 2px;">EL HERGAR JORNADA A JORNADA</div><svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Elo del Hergar jornada a jornada">${g}</svg>`;
+      }
+      let suerte = '';
+      if (S) {
+          const sf = S.equipos.map((x, k) => fila(k + 1, x.e.nombre, !!x.e.esHergar, `${x.pts} pts reales · ${x.esp.toFixed(1).replace('.', ',')} esperados · goles ${x.gf}-${x.gc}`, proFmt(x.dif), x.dif < 0 ? '#2ed573' : '#ff6b7a', x.dif < 0 ? 'le falta suerte' : 'le sobra')).join('');
+          suerte = `<details style="margin-top:12px;"><summary style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:12.5px; color:${acento}; cursor:pointer;">🍀 Tabla de la suerte</summary>
+              <div style="font-size:11.5px; color:#94a3b8; line-height:1.45; margin:6px 0;">Puntos que "debería" tener cada equipo por sus goles a favor y en contra, frente a los que tiene. Verde: le ha faltado suerte; rojo: le ha sobrado.${S.maxPj < PITA_FIABLE_PJ ? ` <b style="color:#f5a623;">Aún van pocas jornadas: tómalo como una pista.</b>` : ''}</div>${sf}</details>`;
+      }
+      return `<details style="margin-top:12px;"><summary style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:12.5px; color:${acento}; cursor:pointer;">📊 Ranking Elo</summary>
+          <div style="font-size:11.5px; color:#94a3b8; line-height:1.45; margin:6px 0;">Todos empiezan con ${ELO_BASE}. Cada partido suben o bajan según lo esperado: ganar al de arriba da mucho y ganar al de abajo, poco. Las goleadas cuentan algo más y se tiene en cuenta jugar en casa.${E.jugados < 20 ? ' Las primeras jornadas se mueve mucho.' : ''}</div>${eloFilas}${graf}</details>${suerte}`;
+  }
+  // Bloque de la ficha del jugador
+  function proJugadorHTML(t, liga, j, minMinutos, acento) {
+      if (!t || !j) return '';
+      acento = acento || '#2ed573';
+      const M = marcadorTemporada(t).jug[j.id];
+      const W = wpaTemporada(t, liga).jugadores[j.id];
+      const TC = tirosCampoTemporada(t), tc = TC.jugadores[j.id];
+      const caja = (valor, color, texto) => `<div style="background:rgba(255,255,255,.04); border-radius:10px; padding:9px 10px;"><div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:22px; color:${color};">${valor}</div><div style="font-size:10.5px; line-height:1.3; color:#94a3b8; margin-top:2px;">${texto}</div></div>`;
+      const tieneM = M && (M.g + M.e + M.p) > 0;
+      const lista = W ? W.lista.map(x => `<div style="display:flex; justify-content:space-between; gap:6px; padding:4px 0; border-top:1px solid rgba(255,255,255,.05); font-size:11.5px;"><span style="color:#e2e8f0;">${x.tipo === 'gol' ? '⚽' : '👟'} J${x.i + 1} ${momEsc(x.p.rival)} · ${x.min}' → ${x.marcador} <span style="color:#94a3b8;">${proPct(x.antes)} → ${proPct(x.despues)}</span></span><b style="color:#2ed573;">${proFmt(x.d, 2)}</b></div>`).join('') : '';
+      const tcTxt = tc && tc.cuota != null ? `${proPct(tc.cuota)}` : '—';
+      const tcCol = tc && tc.cuota != null && TC.media != null ? (tc.cuota >= TC.media ? '#2ed573' : '#ff6b7a') : '#64748b';
+      const tcSub = tc && tc.cuota != null ? `tiros del Hergar con él en el campo (${tc.f} de ${tc.f + tc.c}) · media del equipo ${proPct(TC.media)}` : 'tiros del Hergar con él en el campo: se cuenta desde la v135';
+      return `<div style="background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:12px 14px; margin-top:12px;">
+          <div style="font-size:11px; font-weight:800; color:${acento}; letter-spacing:.5px; margin-bottom:8px;">🏆 VICTORIAS AÑADIDAS · 🎯 TIROS · ⏳ MARCADOR</div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+              ${caja(W && W.lista.length ? proFmt(W.v, 2) : '—', W && W.v > 0 ? '#2ed573' : '#64748b', 'victorias añadidas: lo que subieron sus goles y asistencias la probabilidad de ganar')}
+              ${caja(tcTxt, tcCol, tcSub)}
+          </div>
+          ${tieneM ? `<div style="font-size:11px; font-weight:700; color:#cbd5e1; margin:10px 0 4px;">En qué marcador ha jugado sus minutos</div>${proBarra(M, 18)}${PRO_LEYENDA}` : ''}
+          ${lista ? `<details style="margin-top:8px;"><summary style="font-size:11.5px; font-weight:700; color:${acento}; cursor:pointer;">Cómo cambió la probabilidad con sus goles</summary><div style="margin-top:4px;">${lista}</div></details>` : ''}
+      </div>`;
+  }
+  function proExplicacionHTML() {
+      return `<div style="font-size:12.5px; line-height:1.55; color:#e2e8f0; padding-top:6px;">
+          <p style="margin:0 0 8px;"><strong>Tiempo por marcador:</strong> minutos que se pasan ganando, empatando y perdiendo. Sale del minuto de cada gol.</p>
+          <p style="margin:0 0 8px;"><strong>Cuota de tiros:</strong> tiros del Hergar entre los tiros de los dos equipos. Con los córners, aproxima cuánto se juega en el campo rival. <strong>Con cada niño en el campo:</strong> lo mismo, contando solo los tiros mientras él juega (desde la v135).</p>
+          <p style="margin:0 0 8px;"><strong>Victorias añadidas:</strong> cuánto subió cada gol la probabilidad de ganar en ese momento, con el mismo cálculo que el directo del visor. +1,00 es una victoria entera. La asistencia se lleva la mitad.</p>
+          <p style="margin:0 0 8px;"><strong>Elo:</strong> todos empiezan con ${ELO_BASE}. Tras cada partido se compara lo esperado con lo que pasó: ganar al de arriba sube mucho, perder con el de abajo baja mucho. Las goleadas cuentan algo más y jugar en casa se tiene en cuenta.</p>
+          <p style="margin:0;"><strong>Tabla de la suerte:</strong> con los goles a favor (GF) y en contra (GC), la parte de los puntos que "tocaría" es GF<sup>1,2</sup> ÷ (GF<sup>1,2</sup> + GC<sup>1,2</sup>). Se compara con los puntos reales. Es poco fiable las primeras ${PITA_FIABLE_PJ} jornadas.</p>
+      </div>`;
+  }
+
+
+
+
   function evolucionJugadorHTML(t, j) {
     const ps = (t && t.partidos) || [];
     const puntos = [];
@@ -1862,6 +2536,9 @@
       }
     };
     let pesoHtml = ''; try { pesoHtml = pesoJugadorHTML(ultimaTemporada, j, minMinutosRanking(), '#f5a623'); } catch (e) { console.error('Peso:', e); } // v132
+    try { pesoHtml = puntosMasMenosHTML(ultimaTemporada, j, minMinutosRanking(), '#f5a623') + pesoHtml; } catch (e) { console.error('Puntos/más-menos:', e); } // v133
+    try { pesoHtml = claveEchaHTML(ultimaTemporada, j, '#f5a623') + pesoHtml; } catch (e) { console.error('Momento clave:', e); } // v134
+    try { pesoHtml = proJugadorHTML(ultimaTemporada, ultimaLiga, j, minMinutosRanking(), '#f5a623') + pesoHtml; } catch (e) { console.error('Victorias añadidas:', e); } // v135
     document.getElementById('perfilDatosContenido').innerHTML = renderFichaDatosHTML(statsDatos) + pesoHtml + sociosJugadorHTML(ultimaTemporada, j.name) + lineasJugadorHTMLV(j); // v95
     try { document.getElementById('perfilEvoContenido').innerHTML = evolucionJugadorHTML(ultimaTemporada, j); mostrarBotonEvo(true); } catch (e) { console.error('Evolución:', e); mostrarBotonEvo(false); }
     mostrarPestanaPerfil('cromo');
@@ -3499,15 +4176,43 @@
     const esPesoCuota = criterio === 'peso' || criterio === 'cuota';
     const pesos = esPesoCuota ? pesoEquipoTemporada(temporada) : null;
     const valPeso = j => { const r = pesos && pesos[j.id]; if (!r) return null; return criterio === 'peso' ? r.peso : r.cuota; };
+    // v133: Puntos de sus goles y Más/menos en el campo
+    const esPuntos = criterio === 'puntosGol', esMM = criterio === 'masmenos';
+    const ptsT = esPuntos ? puntosGolesTemporada(temporada) : null;
+    const mmT = esMM ? masMenosTemporada(temporada) : null;
+    const valPts = j => (ptsT && ptsT.jugadores[j.id]) || null;
+    const valMM = j => (mmT && mmT[j.id]) || null;
+    valorPorCriterio.puntosGol = j => { const r = valPts(j); return r ? r.puntos * 1000 + r.decisivos * 100 + r.ptsAsist * 10 + r.goles / 100 : -1; };
+    valorPorCriterio.masmenos = j => { const r = valMM(j); return r && r.dif !== null ? r.dif : -99; };
+    // v134: Momento clave y Se le echa de menos
+    const esClave = criterio === 'clave', esEcha = criterio === 'echa';
+    const claveT = esClave ? momentoClaveTemporada(temporada) : null, echaT = esEcha ? echaDeMenosTemporada(temporada) : null;
+    const valClave = j => (claveT && claveT[j.id]) || null, valEcha = j => (echaT && echaT[j.id]) || null;
+    valorPorCriterio.clave = j => { const r = valClave(j); return r ? (r.goles + r.asist) * 100 + r.goles : -1; };
+    valorPorCriterio.echa = j => { const r = valEcha(j); return r && r.dif !== null ? r.dif : -99; };
+    // v135: Victorias añadidas y Cuota de tiros con él en el campo
+    const esWpa = criterio === 'wpa', esTC = criterio === 'tirosCampo';
+    const wpaT = esWpa ? wpaTemporada(temporada, ultimaLiga) : null, tcT = esTC ? tirosCampoTemporada(temporada) : null;
+    const valWpa = j => (wpaT && wpaT.jugadores[j.id]) || null, valTC = j => (tcT && tcT.jugadores[j.id]) || null;
+    valorPorCriterio.wpa = j => { const r = valWpa(j); return r ? r.v : -99; };
+    valorPorCriterio.tirosCampo = j => { const r = valTC(j); return r && r.cuota !== null ? r.cuota : -99; };
     valorPorCriterio.peso = j => valPeso(j) ?? -99;
     valorPorCriterio.cuota = j => valPeso(j) ?? -99;
     const getVal = valorPorCriterio[criterio] || valorPorCriterio.pond;
     // v41: el ranking de impacto exige un mínimo de minutos; quien no llega aparece aparte, en observación
-    const esImpacto = criterio === 'pond' || esPesoCuota;
+    const esImpacto = criterio === 'pond' || esPesoCuota || esMM;
     const minRanking = minMinutosRanking();
     let lista = esImpacto ? jugadores.filter(j => (j.minutos || 0) >= minRanking) : jugadores;
     const sinCuota = criterio === 'cuota' ? lista.filter(j => valPeso(j) === null) : []; // porteros o sin detalle de acciones
     if (criterio === 'cuota') lista = lista.filter(j => valPeso(j) !== null);
+    const sinMM = esMM ? lista.filter(j => !valMM(j) || valMM(j).dif === null) : [];
+    if (esMM) lista = lista.filter(j => valMM(j) && valMM(j).dif !== null);
+    if (esPuntos) lista = lista.filter(j => valPts(j) && valPts(j).goles + valPts(j).ptsAsist > 0);
+    if (esClave) lista = lista.filter(j => valClave(j) && valClave(j).goles + valClave(j).asist > 0);
+    if (esWpa) lista = lista.filter(j => valWpa(j) && valWpa(j).lista.length > 0);
+    if (esTC) lista = lista.filter(j => valTC(j) && valTC(j).cuota !== null && valTC(j).mins >= minRanking);
+    const sinEcha = esEcha ? lista.filter(j => !valEcha(j) || valEcha(j).dif === null) : [];
+    if (esEcha) lista = lista.filter(j => valEcha(j) && valEcha(j).dif !== null);
     const enObservacion = esImpacto ? jugadores.filter(j => (j.minutos || 0) < minRanking).sort((a,b) => (b.minutos || 0) - (a.minutos || 0)) : [];
     lista.sort((a,b) => getVal(b) - getVal(a));
     const cont = document.getElementById('rankingLista');
@@ -3520,6 +4225,12 @@
       partidos: j => j.partidos || 0,
       notaIA: j => j._notaIA !== null ? j._notaIA.toFixed(1) : '—',
     };
+    etiquetaVal.wpa = j => { const r = valWpa(j); return `<span style="color:${r.v >= 0 ? '#2ed573' : '#ff6b7a'};">${proFmt(r.v, 2)}</span>`; };
+    etiquetaVal.tirosCampo = j => { const r = valTC(j); return `<span style="color:${tcT.media == null || r.cuota >= tcT.media ? '#2ed573' : '#ff6b7a'};">${proPct(r.cuota)}</span>`; };
+    etiquetaVal.clave = j => { const r = valClave(j); return `<span style="color:#f5a623;">${r.goles}G · ${r.asist}A</span>`; };
+    etiquetaVal.echa = j => { const r = valEcha(j); return `<span style="color:${r.dif >= 0 ? '#2ed573' : '#ff6b7a'};">${(r.dif >= 0 ? '+' : '−') + Math.abs(r.dif).toFixed(1).replace('.', ',')}</span>`; };
+    etiquetaVal.puntosGol = j => { const r = valPts(j); return `<span style="color:#f5a623;">${ptsFmt(r.puntos)}</span>`; };
+    etiquetaVal.masmenos = j => { const r = valMM(j); return `<span style="color:${r.dif >= 0 ? '#2ed573' : '#ff6b7a'};">${mmFmt(r.dif)}</span>`; };
     etiquetaVal.peso = j => { const v = valPeso(j); return v === null ? '—' : `<span style="color:${pesoColor(v)};">${pesoFmt(v)}</span>`; };
     etiquetaVal.cuota = j => { const v = valPeso(j); return `<span style="color:${(v ?? 0) >= 1 ? '#2ed573' : '#ff6b7a'};">${pesoFmtCuota(v)}</span>`; };
     const getEtiqueta = etiquetaVal[criterio] || etiquetaVal.pond;
@@ -3534,7 +4245,19 @@
     if (esImpacto && lista.length === 0) {
       cont.innerHTML = `<div class="loader">Aún nadie llega a ${minRanking} minutos acumulados</div>`;
     }
-    if (criterio === 'peso') {
+    if (esWpa) {
+      cont.innerHTML = `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin:0 0 8px;">Cuánto subieron sus goles y asistencias la probabilidad de ganar. +1,00 es una victoria entera; la asistencia se lleva la mitad.</div>` + (lista.length ? cont.innerHTML : '<div class="loader">Aún no hay goles con minuto</div>');
+    } else if (esTC) {
+      cont.innerHTML = `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin:0 0 8px;">De los tiros de los dos equipos mientras juega, cuántos son del Hergar. Media del equipo: ${proPct(tcT.media)}. Se cuenta desde la v135 de la app.</div>` + (lista.length ? cont.innerHTML : '<div class="loader">Empezará a salir tras el próximo partido</div>');
+    } else if (esClave) {
+      cont.innerHTML = `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin:0 0 8px;">Goles y asistencias del minuto ${MOM_CLAVE_MIN} en adelante con el partido empatado o a un gol.</div>` + (lista.length ? cont.innerHTML : '<div class="loader">Aún no hay goles en el momento clave</div>');
+    } else if (esEcha) {
+      cont.innerHTML = `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin:0 0 8px;">Puntos por partido del equipo cuando juega menos los de cuando no está. Mínimo ${ECHA_MIN_SIN} partidos sin él.${sinEcha.length ? ` ${sinEcha.length} sin dato (han faltado a menos de ${ECHA_MIN_SIN} partidos o suben de otro equipo).` : ''}</div>` + (lista.length ? cont.innerHTML : '<div class="loader">Aún nadie ha faltado a suficientes partidos</div>');
+    } else if (esPuntos) {
+      cont.innerHTML = `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin:0 0 8px;">Gol de la victoria +2, gol del empate +1. Las asistencias de esos goles se cuentan aparte.</div>` + (lista.length ? cont.innerHTML : '<div class="loader">Aún no hay goles</div>');
+    } else if (esMM) {
+      cont.innerHTML = `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin:0 0 8px;">Cuánto mejora la diferencia de goles del equipo, por 70', cuando juega frente a cuando no juega.${sinMM.length ? ' Sin dato (lo jugó casi todo o faltan datos): ' + sinMM.map(j => escHtml((j.name || '').split(' ')[0])).join(', ') + '.' : ''}</div>` + cont.innerHTML;
+    } else if (criterio === 'peso') {
       cont.innerHTML = `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin:0 0 8px;">Cuánto está cada jugador por encima o por debajo de sus compañeros del mismo partido (por 70'). No depende del resultado ni del rival.</div>` + cont.innerHTML;
     } else if (criterio === 'cuota') {
       cont.innerHTML = `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin:0 0 8px;">Acciones de juego que hace frente a las que le tocarían por sus minutos. ×1,0 es lo normal.${sinCuota.length ? ' Sin cuota (portero o sin partidos con detalle): ' + sinCuota.map(j => escHtml((j.name || '').split(' ')[0])).join(', ') + '.' : ''}</div>` + cont.innerHTML;
@@ -4063,6 +4786,9 @@
     try { pintarGaleriaVideos(); } catch (e) { console.error('Vídeos:', e); } // v119
     try { if (ultimoMatchData) pintarResumenUltimo(ultimoMatchData); if (tvActivo) tvRender(); } catch (e) { console.error('Resumen:', e); } // 🎬 el botón del resumen necesita la temporada
     try { document.getElementById('minutosGoles').innerHTML = tramosGolHTML(temporada, 'vtr'); } catch (e) { console.error('Minutos:', e); }
+    try { document.getElementById('momentosEquipoLista').innerHTML = momentosEquipoHTML(temporada, '#f5a623'); } catch (e) { console.error('Momentos:', e); } // v134
+    try { document.getElementById('marcadorEquipoLista').innerHTML = marcadorEquipoHTML(temporada, '#f5a623'); document.getElementById('tirosEquipoLista').innerHTML = tirosEquipoHTML(temporada, '#f5a623'); } catch (e) { console.error('Marcador/tiros:', e); } // v135
+    try { document.getElementById('muroLista').innerHTML = muroHTML(temporada, '#f5a623'); } catch (e) { console.error('Muro:', e); } // v134
     try { document.getElementById('sociedadesLista').innerHTML = sociedadesHTML(temporada); } catch (e) { console.error('Sociedades:', e); }
     try { document.getElementById('contextoLista').innerHTML = ctxContextoHTML(temporada); } catch (e) { console.error('Contexto:', e); } // v97
     pintarComparativa(temporada);
@@ -4159,6 +4885,9 @@
       + csTarjeta('Portería a cero', porteria, 'Se aplica si el equipo no encaja ningún gol mientras el jugador está en el campo. Es proporcional a sus minutos.', true)
       + csTarjeta('Sinergias', `<div style="font-size:12.5px; line-height:1.55; color:#e2e8f0; padding-top:6px;">Impacto que suman los dos jugadores de una pareja mientras coinciden en el campo, por cada 70 minutos juntos. Hacen falta ${R.minMinutosSinergia || 20} minutos juntos para entrar en la lista.</div>`)
       + csTarjeta('Peso en el equipo', pesoExplicacionHTML(R.minMinutosRanking || 35)) // v132
+      + csTarjeta('Puntos de los goles y más/menos', puntosMasMenosExplicacionHTML(R.minMinutosRanking || 35)) // v133
+      + csTarjeta('Momentos, momento clave y el muro', momentosExplicacionHTML()) // v134
+      + csTarjeta('Métricas de los profesionales', proExplicacionHTML()) // v135
       + csTarjeta('Cómo se ordena la clasificación',
         `<div style="font-size:12.5px; line-height:1.55; color:#e2e8f0; padding-top:6px;">
           <p style="margin:0 0 8px;">Se usa el impacto por 70 minutos, para poder comparar a quien juega más con quien juega menos.</p>
@@ -4939,6 +5668,7 @@
         <td>${i+1}</td><td style="text-align:left;"><span style="display:inline-flex; align-items:center; gap:6px;">${escudoLigaVisorPorId(liga, f.id, 18)}<span>${f.nombre}</span></span></td><td>${f.pj}</td><td>${f.pg}</td><td>${f.pe}</td>
         <td>${f.pp}</td><td>${f.gf}</td><td>${f.gc}</td><td>${f.dg>0?'+':''}${f.dg}</td><td>${f.pts}</td>
       </tr>`).join('');
+    try { const c = document.getElementById('ligaEloSuerteVisor'); if (c) { const h = ligaEloSuerteHTML(liga, '#f5a623'); c.innerHTML = h; c.style.display = h ? '' : 'none'; } } catch (e) { console.error('Elo/suerte:', e); } // v135
   }
 
   // ── Evolución ──

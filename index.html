@@ -631,13 +631,14 @@
         <button type="button" class="subtab-btn" onclick="showSub(event,'subRecords')">🏆 Récords</button>
       </div>
       <button type="button" class="tmp-mas" id="tmpMasBtn" onclick="toggleMasTemp()" aria-expanded="false" aria-controls="tmpMasPanel">
-        <span>📊 Más análisis</span><span class="txt" id="tmpMasTxt">7 apartados más ▾</span>
+        <span>📊 Más análisis</span><span class="txt" id="tmpMasTxt">8 apartados más ▾</span>
       </button>
       <div class="tmp-sec" id="tmpMasPanel">
         <button type="button" class="subtab-btn" onclick="showSub(event,'subVideos')">🎥 Goles en vídeo</button>
         <button type="button" class="subtab-btn" onclick="showSub(event,'subSinergias')">🔗 Sinergias</button>
         <button type="button" class="subtab-btn" onclick="showSub(event,'subRachas')">🔥 Rachas</button>
         <button type="button" class="subtab-btn" onclick="showSub(event,'subMinutos')">⏱ Minutos</button>
+        <button type="button" class="subtab-btn" onclick="showSub(event,'subBanquillo')">🔄 Banquillo</button>
         <button type="button" class="subtab-btn" onclick="showSub(event,'subContexto')">🧭 Contexto</button>
         <button type="button" class="subtab-btn" onclick="showSub(event,'subComparativa')">📊 Comparativa</button>
         <button type="button" class="subtab-btn" style="display:none;" onclick="showSub(event,'subHeatmap')">🗺️ Heatmap</button>
@@ -718,6 +719,12 @@
         <div class="card">
           <div class="card-title">🎯 Cuota de tiros</div>
           <div id="tirosEquipoLista"><div class="loader">Cargando...</div></div>
+        </div>
+      </div>
+      <div id="subBanquillo" class="sub-panel">
+        <div class="card">
+          <div class="card-title">🔄 Efecto del banquillo</div>
+          <div id="banquilloLista"><div class="loader">Cargando...</div></div>
         </div>
       </div>
       <div id="subContexto" class="sub-panel">
@@ -918,6 +925,7 @@
 </div>
 
 <script type="module">
+  // v137 (app) · Más análisis → 🔄 Banquillo: el equipo antes y después de los cambios, lo que aporta el banquillo, cambio a cambio y cada niño de titular y de suplente.
   // Visor · 🎬 Resumen del partido tipo tele: cortinilla, minuto y vídeo de cada gol con rótulo (marcador y goleador) desde que arranca el vídeo, tarjetas para goles sin vídeo y del rival, y final con goleadores. Botón en Último partido, en Temporada → Partidos y en la pantalla Final del Modo TV.
   // Visor · Temporada: menú nuevo con 4 apartados grandes (Partidos, Plantilla, Ranking, Récords) y el resto en "Más análisis", que recuerda si se dejó abierto. Abre en Partidos.
   // v116 (app) · El % de paradas cuenta también las paradas de partidos sin detalle; "De ellas, difíciles".
@@ -2034,6 +2042,228 @@
   }
 
 
+
+
+
+  // ── v137 · EFECTO DEL BANQUILLO (misma función en la app y en el visor) ──
+  // Con los titulares de cada partido y los minutos de cada niño se sabe cuándo entró cada suplente
+  // (un cambiado no vuelve a entrar: el que entra juega desde "duración − sus minutos" hasta el final).
+  //  · Equipo: goles por 70' con el once inicial (hasta el primer cambio) y tras los cambios.
+  //    Cuota de tiros antes y después: solo partidos desde la v137 (la app apunta los tiros tras el primer cambio).
+  //  · Lo que aporta el banquillo: goles, asistencias, impacto y minutos de los que salen desde el banquillo.
+  //  · Cambio a cambio: goles a favor − en contra mientras el que entra está en el campo (el mismo dato del más/menos).
+  //  · Titular vs. suplente: impacto y más/menos por 70' de cada niño en cada papel (mínimo 35' en cada uno).
+  const BQ_MIN_ROL = 35;
+  function bqEsc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+  function bqNom(j) { return bqEsc(((j && j.name) || '¿?').split(' ')[0]); }
+  function bqDec(v) { return v == null ? '—' : v.toFixed(1).replace('.', ','); }
+  function bqSig(v, d) { return v == null ? '—' : (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(d == null ? 1 : d).replace('.', ','); }
+  function bqPartidoInfo(t, p) {
+      const tit = Array.isArray(p.titulares) && p.titulares.length ? p.titulares.map(String) : null;
+      if (!tit) return null;
+      const filas = proFilas(t, p);
+      if (!filas.length) return null;
+      const dur = mmDuracion(p, filas);
+      const ent = [], sal = [];
+      filas.forEach(f => {
+          if (tit.includes(String(f.j.id))) { if (f.mins < dur) sal.push({ j: f.j, min: f.mins }); }
+          else ent.push({ j: f.j, h: f.h, min: Math.max(0, dur - f.mins), mins: f.mins });
+      });
+      return { tit, filas, dur, ent, sal, primer: ent.length ? Math.min(...ent.map(e => e.min)) : null };
+  }
+  function banquilloTemporada(t) {
+      const ps = (t && t.partidos) || [];
+      const eq = { minA: 0, gfA: 0, gcA: 0, minD: 0, gfD: 0, gcD: 0, partidos: 0, conCambios: 0, sinMinutoGol: 0, tiros: { nA: 0, rA: 0, nD: 0, rD: 0, partidos: 0 } };
+      const ap = { goles: 0, golesTot: 0, asist: 0, asistTot: 0, imp: 0, impTot: 0, mins: 0, minsTot: 0 };
+      const cambios = [], jug = {};
+      let conDatos = 0, sinTitulares = 0; const sinTitLista = [];
+      let mm = {};
+      try { mm = masMenosTemporada(t); } catch (e) { mm = {}; }
+      Object.values((t && t.jugadores) || {}).forEach(j => {
+          jug[j.id] = { id: j.id, j, tMin: 0, tImp: 0, sMin: 0, sImp: 0, tGf: 0, tGc: 0, tMm: 0, sGf: 0, sGc: 0, sMm: 0, entradas: 0, gBanq: 0, aBanq: 0 };
+      });
+      ps.forEach((p, i) => {
+          const inf = bqPartidoInfo(t, p);
+          if (!inf) { if (!(Array.isArray(p.titulares) && p.titulares.length)) { sinTitulares++; sinTitLista.push({ i, p }); } return; }
+          conDatos++;
+          const gf = Number(p.golesLocal) || 0, gc = Number(p.golesRival) || 0;
+          // lo que aporta el banquillo y cada niño como titular o suplente
+          inf.filas.forEach(f => {
+              const esTit = inf.tit.includes(String(f.j.id));
+              const imp = pesoImpDe(f.h), g = f.h.goles || 0, a = f.h.asistencias || 0;
+              ap.golesTot += g; ap.asistTot += a; ap.impTot += imp; ap.minsTot += f.mins;
+              if (!esTit) { ap.goles += g; ap.asist += a; ap.imp += imp; ap.mins += f.mins; }
+              const r = jug[f.j.id];
+              if (!r) return;
+              if (esTit) { r.tMin += f.mins; r.tImp += imp; }
+              else { r.sMin += f.mins; r.sImp += imp; r.entradas++; r.gBanq += g; r.aBanq += a; }
+              const x = mm[f.j.id] ? mm[f.j.id].partidos.find(q => q.i === i) : null;
+              if (x && !x.pendiente) {
+                  if (esTit) { r.tGf += x.gf; r.tGc += x.gc; r.tMm += x.mins; }
+                  else { r.sGf += x.gf; r.sGc += x.gc; r.sMm += x.mins; }
+              }
+          });
+          // el equipo antes y después del primer cambio
+          const sec = (gf + gc === 0) ? [] : momSecuencia(p);
+          if (sec && !sec.some(x => x.min == null)) {
+              eq.partidos++;
+              const corte = inf.primer == null ? inf.dur : Math.min(inf.primer, inf.dur);
+              if (inf.primer != null) eq.conCambios++;
+              eq.minA += corte; eq.minD += inf.dur - corte;
+              sec.forEach(x => {
+                  const antes = x.min < corte;
+                  if (x.equipo === 'hergar') { if (antes) eq.gfA++; else eq.gfD++; }
+                  else { if (antes) eq.gcA++; else eq.gcD++; }
+              });
+          } else eq.sinMinutoGol++;
+          if (p.tirosTrasCambio && !p.manual) {
+              const n = (Number(p.tirosNuestrosPuerta) || 0) + (Number(p.tirosNuestrosFuera) || 0);
+              const r = (Number(p.tirosRivalesPuerta) || 0) + (Number(p.tirosRivalesFuera) || 0);
+              const nD = Math.min(n, Number(p.tirosTrasCambio.n) || 0), rD = Math.min(r, Number(p.tirosTrasCambio.r) || 0);
+              eq.tiros.nA += n - nD; eq.tiros.rA += r - rD; eq.tiros.nD += nD; eq.tiros.rD += rD; eq.tiros.partidos++;
+          }
+          // cambio a cambio: cada uno que entra con el que salió a la vez (el más cercano en el minuto)
+          const salidas = inf.sal.slice().sort((a, b) => a.min - b.min), usadas = new Set();
+          inf.ent.slice().sort((a, b) => a.min - b.min).forEach(e => {
+              let k = -1, mejor = 99;
+              salidas.forEach((s, si) => { if (usadas.has(si)) return; const d = Math.abs(s.min - e.min); if (d < mejor) { mejor = d; k = si; } });
+              const s = (k >= 0 && mejor <= 2) ? salidas[k] : null;
+              if (s) usadas.add(k);
+              const x = mm[e.j.id] ? mm[e.j.id].partidos.find(q => q.i === i) : null;
+              cambios.push({ i, p, min: e.min, entra: e.j, sale: s ? s.j : null, mins: e.mins, dato: (x && !x.pendiente) ? { gf: x.gf, gc: x.gc } : null });
+          });
+      });
+      const por70 = (v, m) => m > 0 ? v / m * 70 : null;
+      Object.values(jug).forEach(r => {
+          r.impT = r.tMin >= BQ_MIN_ROL ? por70(r.tImp, r.tMin) : null;
+          r.impS = r.sMin >= BQ_MIN_ROL ? por70(r.sImp, r.sMin) : null;
+          r.mmT = r.tMm >= BQ_MIN_ROL ? por70(r.tGf - r.tGc, r.tMm) : null;
+          r.mmS = r.sMm >= BQ_MIN_ROL ? por70(r.sGf - r.sGc, r.sMm) : null;
+      });
+      return { eq, ap, cambios, jug, conDatos, sinTitulares, sinTitLista };
+  }
+  function banquilloHTML(t, acento, pref) {
+      acento = acento || '#f5a623'; pref = pref || 'bq';
+      const B = banquilloTemporada(t), e = B.eq, ap = B.ap;
+      // v137 · aviso de los partidos que no cuentan por no tener los titulares (en la app, con botón para marcarlos)
+        const enApp = typeof abrirTitularesPartidos === 'function';
+        const avisoTit = B.sinTitulares ? `<div style="background:rgba(245,166,35,.08); border:1px solid rgba(245,166,35,.3); border-radius:10px; padding:10px 12px; margin-bottom:12px;">
+            <div style="font-size:12px; line-height:1.45; color:#e2e8f0;">⚠️ <strong>${B.sinTitulares} ${B.sinTitulares === 1 ? 'partido no cuenta' : 'partidos no cuentan'}</strong> porque no ${B.sinTitulares === 1 ? 'tiene' : 'tienen'} los titulares guardados:</div>
+            <div style="font-size:11px; color:#94a3b8; margin-top:4px; line-height:1.45;">${B.sinTitLista.map(x => `J${x.i + 1} ${bqEsc(x.p.rival)}`).join(' · ')}</div>
+            ${enApp ? `<button type="button" onclick="abrirTitularesPartidos()" style="margin-top:8px; width:100%; min-height:40px; border-radius:9px; background:rgba(245,166,35,.15); border:1px solid rgba(245,166,35,.5); color:#f5a623; font-weight:800; font-size:12px; cursor:pointer;">🧾 Marcar titulares</button>`
+                    : `<div style="font-size:11px; color:#94a3b8; margin-top:6px;">Se marcan en la app: Temporada → ⋯ → Titulares de partidos guardados.</div>`}
+        </div>` : '';
+        if (!B.conDatos) return avisoTit || `<div style="font-size:12px; color:#94a3b8; line-height:1.5;">Aún no hay partidos con datos para calcularlo.</div>`;
+      const ROJO = 'rgb(180,20,56)', GRIS = '#64748b';
+      const nota = (txt) => `<div style="font-size:10.5px; line-height:1.45; color:#94a3b8; margin-top:8px;">${txt}</div>`;
+      const caja = (titulo, valor, sub) => `<div style="background:rgba(255,255,255,.04); border-radius:10px; padding:10px 6px; text-align:center;"><div style="font-size:10px; font-weight:800; letter-spacing:.5px; color:#94a3b8;">${titulo}</div><div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:21px; color:#e2e8f0; margin:3px 0 1px;">${valor}</div><div style="font-size:10.5px; color:#64748b;">${sub}</div></div>`;
+      const sub = (t1) => `<div style="font-size:11px; font-weight:800; color:${acento}; letter-spacing:.5px; margin:14px 0 6px;">${t1}</div>`;
+      // ── Pestaña EQUIPO ──
+      const p70 = (v, m) => m > 0 ? v / m * 70 : null;
+      const gfA = p70(e.gfA, e.minA), gcA = p70(e.gcA, e.minA), gfD = p70(e.gfD, e.minD), gcD = p70(e.gcD, e.minD);
+      const comp = (label, a, d, color, mejorMas) => {
+          const max = Math.max(a || 0, d || 0, 0.01);
+          const fila = (txt, v) => `<div style="display:grid; grid-template-columns:86px 1fr 38px; gap:8px; align-items:center; margin-top:4px; font-size:11px;"><span style="color:#94a3b8;">${txt}</span><div style="height:9px; border-radius:5px; background:rgba(255,255,255,.06); overflow:hidden;"><div style="width:${v == null ? 0 : v / max * 100}%; height:100%; background:${color}; border-radius:5px;"></div></div><b style="text-align:right; color:#e2e8f0;">${bqDec(v)}</b></div>`;
+          let flecha = '';
+          if (a != null && d != null && Math.abs(d - a) >= 0.05) { const bien = mejorMas ? d > a : d < a; flecha = `<span style="color:${bien ? '#2ed573' : '#ff6b7a'}; font-weight:800;">${bien ? '▲ mejora' : '▼ empeora'} tras los cambios</span>`; }
+          return `<div style="padding:8px 0; border-top:1px solid rgba(255,255,255,.06);"><div style="display:flex; justify-content:space-between; gap:8px; font-size:12px; color:#e2e8f0; font-weight:700;"><span>${label}</span><span style="font-size:10.5px;">${flecha}</span></div>${fila('Once inicial', a)}${fila('Tras cambios', d)}</div>`;
+      };
+      let equipo = '';
+      if (e.partidos) {
+          equipo += `<div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">${caja('ONCE INICIAL', `${bqDec(gfA)} – ${bqDec(gcA)}`, `${e.minA}' jugados`)}${caja('TRAS LOS CAMBIOS', e.minD ? `${bqDec(gfD)} – ${bqDec(gcD)}` : '—', `${e.minD}' jugados`)}</div>
+              <div style="font-size:10.5px; color:#64748b; text-align:center; margin:4px 0 2px;">Goles a favor – en contra por cada 70 minutos</div>
+              ${comp('⚽ Goles a favor por 70\'', gfA, gfD, ROJO, true)}${comp('🥅 Goles en contra por 70\'', gcA, gcD, GRIS, false)}`;
+          const T = e.tiros;
+          if (T.partidos && (T.nA + T.rA) && (T.nD + T.rD)) {
+              const ca = T.nA / (T.nA + T.rA), cd = T.nD / (T.nD + T.rD);
+              const barra = (c) => `<div style="display:flex; height:9px; border-radius:5px; overflow:hidden;"><div style="width:${c * 100}%; background:${ROJO};"></div><div style="flex:1; background:#475569;"></div></div>`;
+              equipo += `<div style="padding:8px 0; border-top:1px solid rgba(255,255,255,.06);"><div style="font-size:12px; color:#e2e8f0; font-weight:700;">🎯 Cuota de tiros</div>
+                  <div style="display:grid; grid-template-columns:86px 1fr 38px; gap:8px; align-items:center; margin-top:4px; font-size:11px;"><span style="color:#94a3b8;">Once inicial</span>${barra(ca)}<b style="text-align:right; color:#e2e8f0;">${Math.round(ca * 100)}%</b></div>
+                  <div style="display:grid; grid-template-columns:86px 1fr 38px; gap:8px; align-items:center; margin-top:4px; font-size:11px;"><span style="color:#94a3b8;">Tras cambios</span>${barra(cd)}<b style="text-align:right; color:#e2e8f0;">${Math.round(cd * 100)}%</b></div>
+                  <div style="font-size:10px; color:#64748b; margin-top:4px;">En rojo, los tiros del Hergar · ${T.partidos} ${T.partidos === 1 ? 'partido' : 'partidos'} desde la v137</div></div>`;
+          } else equipo += `<div style="font-size:11px; color:#64748b; padding:8px 0; border-top:1px solid rgba(255,255,255,.06);">🎯 La cuota de tiros antes y después de los cambios se empieza a apuntar en el próximo partido (v137).</div>`;
+      } else equipo += `<div style="font-size:12px; color:#94a3b8;">Faltan partidos con el minuto de los goles.</div>`;
+      // aportación del banquillo
+      const pct = (a, b) => b > 0 ? a / b : null;
+      const filaAp = (label, v, txt, color) => `<div style="display:grid; grid-template-columns:86px 1fr 62px; gap:8px; align-items:center; padding:5px 0; font-size:11.5px;"><span style="color:#cbd5e1;">${label}</span><div style="height:9px; border-radius:5px; background:rgba(255,255,255,.06); overflow:hidden;"><div style="width:${v == null ? 0 : Math.max(0, Math.min(1, v)) * 100}%; height:100%; background:${color}; border-radius:5px;"></div></div><b style="text-align:right; color:#e2e8f0;">${txt}</b></div>`;
+      const pImp = ap.impTot > 0 ? pct(ap.imp, ap.impTot) : null, pMin = pct(ap.mins, ap.minsTot);
+      equipo += sub('🪑 LO QUE APORTA EL BANQUILLO')
+          + filaAp('Goles', pct(ap.goles, ap.golesTot), `${ap.goles} de ${ap.golesTot}`, '#2ed573')
+          + filaAp('Asistencias', pct(ap.asist, ap.asistTot), `${ap.asist} de ${ap.asistTot}`, '#2ed573')
+          + filaAp('Impacto', pImp, pImp == null ? '—' : Math.round(pImp * 100) + '%', '#2ed573')
+          + filaAp('Minutos', pMin, pMin == null ? '—' : Math.round(pMin * 100) + '%', 'rgba(255,255,255,.35)')
+          + nota('Si el % de impacto es mayor que el % de minutos, el banquillo rinde por encima de lo que juega.');
+      // resumen
+      const frases = [];
+      if (pImp != null && pMin) frases.push(`El banquillo aporta <b style="color:${acento};">un ${Math.round(pImp * 100)} % del impacto jugando un ${Math.round(pMin * 100)} % de los minutos</b>.`);
+      if (gfA != null && gfD != null && e.minD >= 35) {
+          const dif = (gfD - gcD) - (gfA - gcA);
+          frases.push(Math.abs(dif) < 0.3 ? 'Tras los cambios el equipo mantiene la diferencia de goles.' : dif > 0 ? `Tras los cambios el equipo <b style="color:#2ed573;">mejora</b> la diferencia de goles (${bqSig(dif)} por 70').` : `Tras los cambios el equipo <b style="color:#ff6b7a;">empeora</b> la diferencia de goles (${bqSig(dif)} por 70').`);
+      }
+      if (frases.length) equipo += sub('📝 RESUMEN') + `<div style="font-size:12.5px; line-height:1.55; color:#e2e8f0;">${frases.join(' ')}</div>`;
+      equipo += nota(`Cuenta ${e.partidos} de ${B.conDatos + B.sinTitulares} partidos (los que tienen los titulares y el minuto de los goles). Un gol en el mismo minuto del primer cambio cuenta ya como "tras los cambios".`);
+      // ── Pestaña CAMBIOS ──
+      const pill = (d) => { if (!d) return `<span style="flex:none; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:800; background:rgba(255,255,255,.06); color:#94a3b8;">?</span>`; const b = d.gf - d.gc; return `<span style="flex:none; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:800; background:${b > 0 ? 'rgba(46,213,115,.14)' : b < 0 ? 'rgba(255,107,122,.14)' : 'rgba(255,255,255,.06)'}; color:${b > 0 ? '#2ed573' : b < 0 ? '#ff6b7a' : '#94a3b8'};">${b > 0 ? '+' : b < 0 ? '−' : ''}${Math.abs(b)}</span>`; };
+      const filaC = (c, conPartido) => `<div style="padding:9px 0; border-top:1px solid rgba(255,255,255,.06);">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:12.5px;"><span style="min-width:0;"><b style="font-family:'Montserrat',sans-serif; color:#94a3b8; margin-right:6px;">${c.min}'</b><span style="color:#2ed573; font-weight:700;">⬆ ${bqNom(c.entra)}</span>${c.sale ? ` <span style="color:#94a3b8;">⬇ ${bqNom(c.sale)}</span>` : ''}</span>${pill(c.dato)}</div>
+          <div style="font-size:11px; color:#94a3b8; margin-top:3px;">${conPartido ? `J${c.i + 1} vs ${bqEsc(c.p.rival)} (${c.p.golesLocal}-${c.p.golesRival}) · ` : ''}${c.dato ? `con él en el campo: ${c.dato.gf}-${c.dato.gc}` : 'no se puede saber qué pasó con él en el campo'}</div></div>`;
+      const conDato = B.cambios.filter(c => c.dato);
+      const ordenados = conDato.slice().sort((a, b) => ((b.dato.gf - b.dato.gc) - (a.dato.gf - a.dato.gc)) || (b.dato.gf - a.dato.gf));
+      let todos = '';
+      if (!ordenados.length) todos = `<div style="font-size:12px; color:#94a3b8; padding:6px 0;">Aún no hay cambios con datos.</div>`;
+      else if (ordenados.length <= 8) todos = ordenados.map(c => filaC(c, true)).join('');
+      else todos = `<div style="font-size:11px; font-weight:800; color:#2ed573; margin-top:4px;">LOS MEJORES</div>${ordenados.slice(0, 4).map(c => filaC(c, true)).join('')}<div style="font-size:11px; font-weight:800; color:#ff6b7a; margin-top:10px;">LOS QUE MENOS SALIERON BIEN</div>${ordenados.slice(-4).reverse().map(c => filaC(c, true)).join('')}`;
+      const partidosConCambios = [...new Set(B.cambios.map(c => c.i))].sort((a, b) => b - a);
+      const opciones = `<option value="all">Todos los partidos · mejores y peores cambios</option>` + partidosConCambios.map(i => { const p = B.cambios.find(c => c.i === i).p; return `<option value="${i}">J${i + 1} · Hergar ${p.golesLocal}-${p.golesRival} ${bqEsc(p.rival)}</option>`; }).join('');
+      let cambiosH = `<select onchange="bqFiltro('${pref}', this.value)" style="width:100%; min-height:42px; background:#0f172a; color:#e2e8f0; border:1px solid rgba(255,255,255,.12); border-radius:10px; padding:0 10px; font-size:12px; margin-bottom:6px;">${opciones}</select>`
+          + `<div class="${pref}-cf" data-v="all">${todos}</div>`
+          + partidosConCambios.map(i => `<div class="${pref}-cf" data-v="${i}" style="display:none;">${B.cambios.filter(c => c.i === i).sort((a, b) => a.min - b.min).map(c => filaC(c, false)).join('')}</div>`).join('')
+          + nota('Balance = goles a favor menos en contra mientras el niño que entra está en el campo (el mismo dato que su más/menos). Como no se puede volver a entrar, el que sale ya no suma desde ese minuto. "?" = un gol cayó justo en el minuto del cambio y no se sabe si ya estaba.');
+      // ── Pestaña NIÑOS ──
+      const lista = Object.values(B.jug).filter(r => r.entradas > 0);
+      const tabla = (campoT, campoS, d) => {
+          const filas = lista.map(r => ({ r, a: r[campoT], b: r[campoS], dif: (r[campoT] != null && r[campoS] != null) ? r[campoS] - r[campoT] : null }))
+              .sort((x, y) => (x.dif == null) - (y.dif == null) || (y.dif ?? 0) - (x.dif ?? 0) || (y.b ?? -99) - (x.b ?? -99));
+          if (!filas.length) return `<div style="font-size:12px; color:#94a3b8; padding:6px 0;">Aún no ha entrado nadie desde el banquillo.</div>`;
+          return `<div style="display:grid; grid-template-columns:1fr 52px 56px 50px 40px; gap:4px; font-size:10px; font-weight:800; color:#64748b; padding:4px 0; border-bottom:1px solid rgba(255,255,255,.08);"><span>NIÑO</span><span style="text-align:right;">TITULAR</span><span style="text-align:right;">SUPLENTE</span><span style="text-align:right;">DIF.</span><span style="text-align:right;">G+A🔄</span></div>`
+              + filas.map(x => { const gris = x.dif == null; const col = x.dif == null ? '#64748b' : x.dif >= 0 ? '#2ed573' : '#ff6b7a';
+                  return `<div style="display:grid; grid-template-columns:1fr 52px 56px 50px 40px; gap:4px; align-items:center; font-size:12px; padding:7px 0; border-bottom:1px solid rgba(255,255,255,.04); color:${gris ? '#64748b' : '#e2e8f0'};"><span style="font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${bqNom(x.r.j)}${x.dif != null && x.dif >= 0.5 ? ' 💥' : ''}<span style="display:block; font-size:10px; font-weight:600; color:#64748b;">${x.r.entradas} ${x.r.entradas === 1 ? 'entrada' : 'entradas'} · ${x.r.sMin}'</span></span><span style="text-align:right;">${bqSig(x.a, d)}</span><span style="text-align:right;">${bqSig(x.b, d)}</span><span style="text-align:right; font-weight:800; color:${col};">${bqSig(x.dif, d)}</span><span style="text-align:right;">${x.r.gBanq + x.r.aBanq}</span></div>`; }).join('');
+      };
+      const btnM = (k, txt, on) => `<button type="button" class="${pref}-mb" data-k="${k}" data-ac="${acento}" onclick="bqModo('${pref}','${k}')" style="flex:1; min-height:38px; border-radius:9px; font-size:12px; font-weight:700; cursor:pointer; background:transparent; border:1px solid ${on ? acento : 'rgba(255,255,255,.12)'}; color:${on ? acento : '#94a3b8'};">${txt}</button>`;
+      let ninos = `<div style="display:flex; gap:6px; margin-bottom:8px;">${btnM('imp', "Impacto por 70'", true)}${btnM('mm', "Más/menos por 70'", false)}</div>`
+          + `<div class="${pref}-mp" data-k="imp">${tabla('impT', 'impS', 1)}</div><div class="${pref}-mp" data-k="mm" style="display:none;">${tabla('mmT', 'mmS', 1)}</div>`
+          + nota(`Solo los niños que han entrado alguna vez desde el banquillo. Hace falta ${BQ_MIN_ROL}' en cada papel para comparar; si no, sale "—" y van en gris. G+A🔄 = goles y asistencias entrando desde el banquillo. 💥 = rinde bastante más cuando sale desde el banquillo.`);
+      const cand = lista.filter(r => r.mmS != null).sort((a, b) => b.mmS - a.mmS || (b.gBanq + b.aBanq) - (a.gBanq + a.aBanq));
+      const rev = cand[0] || lista.filter(r => r.impS != null).sort((a, b) => b.impS - a.impS)[0];
+      if (rev) ninos += sub('💥 REVULSIVO DE LA TEMPORADA') + `<div style="font-size:12.5px; line-height:1.55; color:#e2e8f0;"><b style="color:${acento};">${bqNom(rev.j)}</b>: ${rev.mmS != null ? `${bqSig(rev.mmS)} de más/menos por 70' saliendo desde el banquillo` : `${bqSig(rev.impS)} de impacto por 70' saliendo desde el banquillo`}${(rev.gBanq + rev.aBanq) ? ` y ${rev.gBanq} ${rev.gBanq === 1 ? 'gol' : 'goles'} + ${rev.aBanq} ${rev.aBanq === 1 ? 'asistencia' : 'asistencias'}` : ''} en ${rev.entradas} ${rev.entradas === 1 ? 'entrada' : 'entradas'}.</div>`;
+      // pestañas
+      const tab = (k, txt, on) => `<button type="button" class="${pref}-tb" data-k="${k}" data-ac="${acento}" onclick="bqTab('${pref}','${k}')" style="flex:1; min-height:40px; border-radius:10px; font-family:'Montserrat',sans-serif; font-weight:800; font-size:12px; cursor:pointer; border:1px solid ${on ? acento : 'rgba(255,255,255,.08)'}; background:${on ? acento : 'rgba(255,255,255,.04)'}; color:${on ? '#0a0e14' : '#94a3b8'};">${txt}</button>`;
+      return avisoTit + `<div style="display:flex; gap:6px; margin-bottom:12px;">${tab('eq', 'Equipo', true)}${tab('ca', 'Cambios', false)}${tab('ni', 'Tit. / Sup.', false)}</div>`
+          + `<div class="${pref}-tp" data-k="eq">${equipo}</div><div class="${pref}-tp" data-k="ca" style="display:none;">${cambiosH}</div><div class="${pref}-tp" data-k="ni" style="display:none;">${ninos}</div>`;
+  }
+  function bqTab(pref, k) {
+      document.querySelectorAll('.' + pref + '-tp').forEach(el => { el.style.display = el.dataset.k === k ? '' : 'none'; });
+      document.querySelectorAll('.' + pref + '-tb').forEach(b => {
+          const on = b.dataset.k === k, ac = b.dataset.ac;
+          b.style.background = on ? ac : 'rgba(255,255,255,.04)'; b.style.borderColor = on ? ac : 'rgba(255,255,255,.08)'; b.style.color = on ? '#0a0e14' : '#94a3b8';
+      });
+  }
+  function bqFiltro(pref, v) { document.querySelectorAll('.' + pref + '-cf').forEach(el => { el.style.display = el.dataset.v === String(v) ? '' : 'none'; }); }
+  function bqModo(pref, k) {
+      document.querySelectorAll('.' + pref + '-mp').forEach(el => { el.style.display = el.dataset.k === k ? '' : 'none'; });
+      document.querySelectorAll('.' + pref + '-mb').forEach(b => { const on = b.dataset.k === k; b.style.borderColor = on ? b.dataset.ac : 'rgba(255,255,255,.12)'; b.style.color = on ? b.dataset.ac : '#94a3b8'; });
+  }
+  window.bqTab = bqTab; window.bqFiltro = bqFiltro; window.bqModo = bqModo;
+  // Apartado de "¿Cómo se calcula el impacto?"
+  function banquilloExplicacionHTML() {
+      return `<div style="font-size:12.5px; line-height:1.55; color:#e2e8f0; padding-top:6px;">
+          <p style="margin:0 0 8px;">Con los titulares de cada partido y los minutos de cada niño se sabe cuándo entró cada suplente: como un cambiado no puede volver a entrar, el que entra juega desde "duración del partido − sus minutos" hasta el final.</p>
+          <p style="margin:0 0 8px;"><strong>Once inicial y tras los cambios:</strong> goles a favor y en contra por cada 70 minutos hasta el primer cambio y desde ese momento. La cuota de tiros de cada tramo se apunta desde la v137.</p>
+          <p style="margin:0 0 8px;"><strong>Lo que aporta el banquillo:</strong> la parte de los goles, las asistencias, el impacto y los minutos del equipo que es de los niños que salen desde el banquillo.</p>
+          <p style="margin:0 0 8px;"><strong>Cada cambio:</strong> goles a favor menos en contra mientras el que entra está en el campo.</p>
+          <p style="margin:0;"><strong>Titular y suplente:</strong> impacto y más/menos por 70 minutos de cada niño cuando empieza de titular y cuando sale desde el banquillo. Hacen falta ${BQ_MIN_ROL} minutos en cada papel.</p>
+      </div>`;
+  }
 
 
   function evolucionJugadorHTML(t, j) {
@@ -4727,7 +4957,7 @@
     const secActivo = !!panelMas.querySelector('.subtab-btn.active');
     btn.setAttribute('aria-expanded', abierto ? 'true' : 'false');
     btn.classList.toggle('sec-activo', secActivo && !abierto);
-    if (txt) txt.textContent = abierto ? 'ocultar ▴' : '7 apartados más ▾';
+    if (txt) txt.textContent = abierto ? 'ocultar ▴' : '8 apartados más ▾';
   }
   function toggleMasTemp() {
     const panelMas = document.getElementById('tmpMasPanel');
@@ -4787,6 +5017,7 @@
     try { if (ultimoMatchData) pintarResumenUltimo(ultimoMatchData); if (tvActivo) tvRender(); } catch (e) { console.error('Resumen:', e); } // 🎬 el botón del resumen necesita la temporada
     try { document.getElementById('minutosGoles').innerHTML = tramosGolHTML(temporada, 'vtr'); } catch (e) { console.error('Minutos:', e); }
     try { document.getElementById('momentosEquipoLista').innerHTML = momentosEquipoHTML(temporada, '#f5a623'); } catch (e) { console.error('Momentos:', e); } // v134
+    try { document.getElementById('banquilloLista').innerHTML = banquilloHTML(temporada, '#f5a623', 'bqv'); } catch (e) { console.error('Banquillo:', e); } // v137
     try { document.getElementById('marcadorEquipoLista').innerHTML = marcadorEquipoHTML(temporada, '#f5a623'); document.getElementById('tirosEquipoLista').innerHTML = tirosEquipoHTML(temporada, '#f5a623'); } catch (e) { console.error('Marcador/tiros:', e); } // v135
     try { document.getElementById('muroLista').innerHTML = muroHTML(temporada, '#f5a623'); } catch (e) { console.error('Muro:', e); } // v134
     try { document.getElementById('sociedadesLista').innerHTML = sociedadesHTML(temporada); } catch (e) { console.error('Sociedades:', e); }
@@ -4888,6 +5119,7 @@
       + csTarjeta('Puntos de los goles y más/menos', puntosMasMenosExplicacionHTML(R.minMinutosRanking || 35)) // v133
       + csTarjeta('Momentos, momento clave y el muro', momentosExplicacionHTML()) // v134
       + csTarjeta('Métricas de los profesionales', proExplicacionHTML()) // v135
+      + csTarjeta('Efecto del banquillo', banquilloExplicacionHTML()) // v137
       + csTarjeta('Cómo se ordena la clasificación',
         `<div style="font-size:12.5px; line-height:1.55; color:#e2e8f0; padding-top:6px;">
           <p style="margin:0 0 8px;">Se usa el impacto por 70 minutos, para poder comparar a quien juega más con quien juega menos.</p>

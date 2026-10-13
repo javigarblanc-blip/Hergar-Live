@@ -20,6 +20,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes, maximum-scale=5">
 <title>HERGAR Live</title>
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js" defer></script>
 <script>
   window.OneSignalDeferred = window.OneSignalDeferred || [];
   OneSignalDeferred.push(async function(OneSignal) {
@@ -925,6 +927,7 @@
 </div>
 
 <script type="module">
+  // v139 (app) · Acta del partido en PDF (3 páginas). En el visor, botón en cada partido si la app lo permite, sin el más/menos de cada niño.
   // v137 (app) · Más análisis → 🔄 Banquillo: el equipo antes y después de los cambios, lo que aporta el banquillo, cambio a cambio y cada niño de titular y de suplente.
   // Visor · 🎬 Resumen del partido tipo tele: cortinilla, minuto y vídeo de cada gol con rótulo (marcador y goleador) desde que arranca el vídeo, tarjetas para goles sin vídeo y del rival, y final con goleadores. Botón en Último partido, en Temporada → Partidos y en la pantalla Final del Modo TV.
   // Visor · Temporada: menú nuevo con 4 apartados grandes (Partidos, Plantilla, Ranking, Récords) y el resto en "Más análisis", que recuerda si se dejó abierto. Abre en Partidos.
@@ -2265,6 +2268,360 @@
       </div>`;
   }
 
+
+  // ── v139 · ACTA DEL PARTIDO EN PDF (misma función en la app y en el visor) ──
+  // Se hace con el partido guardado en la temporada (t.partidos[i]) y lo que cada niño guarda en su historial.
+  // Desde la v139 cada partido guarda también p.acta: momentum, la 1.ª parte, cambios y tarjetas con minuto,
+  // sinergias y la Liga antes/después. En los partidos anteriores esas partes se deducen o no salen.
+  // opts.familias = true quita el más/menos individual (el acta del visor).
+  const ACTA_ROJO = [180, 20, 56], ACTA_AZUL = [29, 78, 216], ACTA_TINTA = [17, 24, 39], ACTA_GRIS = [107, 114, 128];
+  const ACTA_PUESTO_Y = { POR: 0.92, LI: 0.75, DFC: 0.75, LD: 0.75, MCD: 0.61, MI: 0.49, MC: 0.49, MD: 0.49, MP: 0.37, EI: 0.2, ED: 0.2, DC: 0.2 };
+  const ACTA_PUESTO_X = { POR: 1, LI: 0, DFC: 1, LD: 2, MCD: 1, MI: 0, MC: 1, MD: 2, MP: 1, EI: 0, ED: 2, DC: 1 };
+  const ACTA_LINEA_PUESTO = { portero: 'POR', defensa: 'DFC', centrocampista: 'MC', delantero: 'DC' };
+  // El PDF solo sabe escribir letras "normales" (con tildes y ñ): fuera emojis y símbolos raros
+  function actaTxt(s) {
+      return String(s == null ? '' : s).replace(/[—–−]/g, '-').replace(/[“”«»]/g, '"').replace(/[‘’]/g, "'").replace(/…/g, '...')
+          .replace(/[^\x00-\xFF]/g, '').replace(/[ \t]{2,}/g, ' ').trim();
+  }
+  function actaNom(j) { return actaTxt(((j && j.name) || '').split(' ')[0] || '?'); }
+  function actaDec(v, d) { return v == null ? '-' : (v < 0 ? '-' : '') + Math.abs(v).toFixed(d == null ? 2 : d).replace('.', ','); }
+  function actaSig(v, d) { return v == null ? '-' : (v > 0 ? '+' : v < 0 ? '-' : '') + Math.abs(v).toFixed(d == null ? 2 : d).replace('.', ','); }
+  function actaHist(j, p) { return (j.historial || []).find(x => x.fecha === p.fecha && x.rival === p.rival) || null; }
+  function actaImp(h) { const m = h.mins || 0; return h.imp !== undefined ? (Number(h.imp) || 0) : (Number(h.impPond) || 0) * m / 70; }
+  function actaPuesto(h) {
+      if (h && h.puestos && Object.keys(h.puestos).length) return Object.keys(h.puestos).filter(k => h.puestos[k] > 0).sort((a, b) => h.puestos[b] - h.puestos[a])[0] || null;
+      if (h && h.lineas && Object.keys(h.lineas).length) return ACTA_LINEA_PUESTO[Object.keys(h.lineas).sort((a, b) => h.lineas[b] - h.lineas[a])[0]] || null;
+      return null;
+  }
+  // Todo lo que va en el acta, ya calculado (así el dibujo no hace cuentas)
+  function actaDatos(t, i, opts) {
+      opts = opts || {};
+      const ps = (t && t.partidos) || [], p = ps[i];
+      if (!p) return null;
+      const A = p.acta || {};
+      const js = Object.values(t.jugadores || {});
+      const gl = Number(p.golesLocal) || 0, gr = Number(p.golesRival) || 0;
+      const filas = [];
+      js.forEach(j => { const h = actaHist(j, p); if (h && ((h.mins || 0) > 0 || h.goles || h.asistencias)) filas.push({ j, h, mins: h.mins || 0, imp: actaImp(h) }); });
+      const dur = filas.reduce((m, f) => Math.max(m, f.mins), 0) || 70;
+      // peso en el equipo y más/menos de este partido
+      const minsEq = filas.reduce((s, f) => s + f.mins, 0);
+      const media = minsEq > 0 ? filas.reduce((s, f) => s + f.imp, 0) / minsEq * 70 : null;
+      let mm = {};
+      try { mm = (typeof masMenosTemporada === 'function') ? masMenosTemporada(t) : {}; } catch (e) { mm = {}; }
+      const tit = Array.isArray(p.titulares) ? p.titulares.map(String) : [];
+      const jugadores = filas.map(f => {
+          const a = f.h.acc || {};
+          const p70 = f.mins >= 10 ? f.imp / f.mins * 70 : null;
+          const x = mm[f.j.id] ? (mm[f.j.id].partidos || []).find(q => q.i === i) : null;
+          return {
+              id: f.j.id, dorsal: f.j.dorsal, nombre: actaNom(f.j), mins: f.mins, goles: f.h.goles || 0, asist: f.h.asistencias || 0,
+              dp: a.dp || 0, df: a.df || 0, pc: a.pc || 0, pa: a.pa || 0, def: (a.def || 0), reg: a.reg || 0, par: a.par || 0, parD: a.parD || 0,
+              am: a.am || 0, ro: a.ro || 0, imp: f.imp, p70, peso: (p70 != null && media != null) ? p70 - media : null,
+              mm: (x && !x.pendiente) ? (x.gf - x.gc) : null, titular: tit.includes(String(f.j.id)), puesto: actaPuesto(f.h),
+              gcCampo: f.h.gcCampo, recibidos: f.h.golesRecibidos || 0, detalle: f.h.acc !== undefined
+          };
+      }).sort((a, b) => (a.p70 === null) - (b.p70 === null) || (b.p70 ?? b.imp) - (a.p70 ?? a.imp));
+      // goles en orden, con el marcador de cada momento
+      let sec = null;
+      try { sec = (typeof momSecuencia === 'function') ? momSecuencia(p) : null; } catch (e) { sec = null; }
+      const goles = [];
+      if (sec && sec.length) sec.forEach(x => goles.push({ min: x.min, equipo: x.equipo, nombre: x.g.nombre || '', asist: x.g.asistente || '', penalti: !!x.g.penalti, marcador: `${x.despues.h}-${x.despues.r}` }));
+      else if (Array.isArray(p.goles)) p.goles.filter(g => g && (g.equipo === 'hergar' || g.equipo === 'rival')).forEach(g => goles.push({ min: g.min != null ? g.min : g.minuto, equipo: g.equipo, nombre: g.nombre || '', asist: g.asistente || '', penalti: !!g.penalti, marcador: '' }));
+      // cambios: los guardados (v139) o deducidos de los minutos
+      let cambios = Array.isArray(A.cambios) ? A.cambios.slice() : null;
+      if (!cambios && tit.length && typeof bqPartidoInfo === 'function') {
+          try {
+              const inf = bqPartidoInfo(t, p);
+              if (inf) {
+                  const sal = inf.sal.slice().sort((a, b) => a.min - b.min), usadas = new Set();
+                  cambios = inf.ent.slice().sort((a, b) => a.min - b.min).map(e => {
+                      let k = -1, mejor = 99;
+                      sal.forEach((s, si) => { if (usadas.has(si)) return; const d = Math.abs(s.min - e.min); if (d < mejor) { mejor = d; k = si; } });
+                      const s = (k >= 0 && mejor <= 2) ? sal[k] : null; if (s) usadas.add(k);
+                      return { min: e.min, entra: actaNom(e.j), entraD: e.j.dorsal, sale: s ? actaNom(s.j) : '', saleD: s ? s.j.dorsal : '', deducido: true };
+                  });
+              }
+          } catch (e) { cambios = null; }
+      }
+      // tarjetas: con minuto (v139) o solo quién
+      let tarjetas = Array.isArray(A.tarjetas) ? A.tarjetas.slice() : null;
+      if (!tarjetas) {
+          tarjetas = [];
+          jugadores.forEach(x => { for (let k = 0; k < x.am; k++) tarjetas.push({ min: null, nombre: x.nombre, dorsal: x.dorsal, tipo: 'A' }); if (x.ro) tarjetas.push({ min: null, nombre: x.nombre, dorsal: x.dorsal, tipo: 'R' }); });
+      }
+      // tiros y cuota
+      const tN = (Number(p.tirosNuestrosPuerta) || 0) + (Number(p.tirosNuestrosFuera) || 0), tR = (Number(p.tirosRivalesPuerta) || 0) + (Number(p.tirosRivalesFuera) || 0);
+      let cuota = null;
+      if (p.tirosNuestrosPuerta != null && tN + tR > 0) {
+          cuota = { partido: tN / (tN + tR) };
+          if (p.tirosTrasCambio) {
+              const nD = Math.min(tN, Number(p.tirosTrasCambio.n) || 0), rD = Math.min(tR, Number(p.tirosTrasCambio.r) || 0);
+              if ((tN - nD) + (tR - rD) > 0) cuota.antes = (tN - nD) / ((tN - nD) + (tR - rD));
+              if (nD + rD > 0) cuota.despues = nD / (nD + rD);
+          }
+      }
+      const paradas = jugadores.reduce((s, x) => s + x.par, 0);
+      const tot = { gl, gr, tnP: Number(p.tirosNuestrosPuerta) || 0, tnF: Number(p.tirosNuestrosFuera) || 0, trP: Number(p.tirosRivalesPuerta) || 0, trF: Number(p.tirosRivalesFuera) || 0,
+          cf: Number(p.cornersFavor) || 0, cc: Number(p.cornersContra) || 0, ff: Number(p.faltasFavor) || 0, fc: Number(p.faltasContra) || 0, par: paradas,
+          fjN: Number(p.fuerasJuegoNuestros) || 0, fjR: Number(p.fuerasJuegoRival) || 0 };
+      // porteros: los que hicieron paradas o jugaron de portero
+      const porteros = jugadores.filter(x => x.par > 0 || x.puesto === 'POR');
+      // temporada hasta este partido (incluido)
+      const hasta = ps.slice(0, i + 1);
+      const bal = { V: 0, E: 0, D: 0, gf: 0, gc: 0, tN: 0, tR: 0 };
+      hasta.forEach(q => { const a = Number(q.golesLocal) || 0, b = Number(q.golesRival) || 0; bal.gf += a; bal.gc += b; bal[a > b ? 'V' : a < b ? 'D' : 'E']++;
+          if (q.tirosNuestrosPuerta != null) { bal.tN += (Number(q.tirosNuestrosPuerta) || 0) + (Number(q.tirosNuestrosFuera) || 0); bal.tR += (Number(q.tirosRivalesPuerta) || 0) + (Number(q.tirosRivalesFuera) || 0); } });
+      const acum = js.map(j => {
+          let g = 0, mins = 0, imp = 0, pj = 0, gAntes = 0, pjAntes = 0, minAntes = 0;
+          hasta.forEach((q, k) => { const h = actaHist(j, q); if (!h) return; const m = h.mins || 0;
+              g += h.goles || 0; mins += m; imp += actaImp(h); if (m > 0) pj++;
+              if (k < i) { gAntes += h.goles || 0; minAntes += m; if (m > 0) pjAntes++; } });
+          return { j, nombre: actaNom(j), g, mins, imp, pj, gAntes, pjAntes, minAntes };
+      });
+      const goleadores = acum.filter(x => x.g > 0).sort((a, b) => b.g - a.g).slice(0, 8);
+      const top = acum.filter(x => x.mins >= 35).map(x => ({ nombre: x.nombre, v: x.imp / x.mins * 70 })).sort((a, b) => b.v - a.v).slice(0, 5);
+      const hitos = [];
+      acum.forEach(x => {
+          const hoy = jugadores.find(y => String(y.id) === String(x.j.id)); if (!hoy) return;
+          if (hoy.mins > 0 && x.pjAntes === 0) hitos.push(`${x.nombre} debuta en la temporada`);
+          if (hoy.goles > 0 && x.gAntes === 0) hitos.push(`Primer gol de la temporada de ${x.nombre}`);
+          [5, 10, 15, 20, 25, 30, 40, 50].forEach(n => { if (x.gAntes < n && x.g >= n && x.gAntes > 0) hitos.push(`${x.nombre} llega a ${n} goles`); });
+          [10, 20, 30].forEach(n => { if (x.pjAntes < n && x.pj >= n) hitos.push(`${x.nombre} cumple ${n} partidos`); });
+          [500, 1000, 1500, 2000].forEach(n => { if (x.minAntes < n && x.mins >= n) hitos.push(`${x.nombre} supera los ${n} minutos`); });
+      });
+      return {
+          p, i, A, opts, dur, gl, gr, res: gl > gr ? 'VICTORIA' : gl < gr ? 'DERROTA' : 'EMPATE', jugadores, goles, cambios, tarjetas, cuota, tot, porteros,
+          partes: A.descanso || null, momentum: Array.isArray(A.momentum) && A.momentum.length > 1 ? A.momentum : null, liga: A.liga || null,
+          sinergias: Array.isArray(A.sinergias) ? A.sinergias : [], once: jugadores.filter(x => x.titular),
+          temporada: { pj: hasta.length, bal, goleadores, top, hitos: hitos.slice(0, 7), cuota: (bal.tN + bal.tR) > 0 ? bal.tN / (bal.tN + bal.tR) : null }
+      };
+  }
+  function actaPDF(t, i, opts) {
+      const D = actaDatos(t, i, opts);
+      if (!D) throw new Error('No encuentro ese partido.');
+      if (!window.jspdf || !window.jspdf.jsPDF) throw new Error('No se ha podido cargar el generador de PDF (¿sin conexión?).');
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const W = 210, M = 12, CW = W - 2 * M, BOT = 282;
+      const p = D.p;
+      let y = 0;
+      const color = (c) => doc.setTextColor(c[0], c[1], c[2]);
+      const fill = (c) => doc.setFillColor(c[0], c[1], c[2]);
+      const draw = (c) => doc.setDrawColor(c[0], c[1], c[2]);
+      const font = (st, sz) => { doc.setFont('helvetica', st); doc.setFontSize(sz); };
+      const nueva = () => { doc.addPage(); y = 14; };
+      const sitio = (h) => { if (y + h > BOT) nueva(); };
+      const titulo = (txt) => { sitio(12); y += 5; font('bold', 9.5); color(ACTA_ROJO); doc.text(actaTxt(txt), M, y); draw(ACTA_ROJO); doc.setLineWidth(0.5); doc.line(M, y + 1.4, W - M, y + 1.4); y += 4.5; };
+      const tabla = (head, body, extra) => {
+          doc.autoTable(Object.assign({ startY: y, head: [head], body, theme: 'grid', margin: { left: M, right: M },
+              styles: { font: 'helvetica', fontSize: 8, cellPadding: 1.3, halign: 'center', textColor: ACTA_TINTA, lineColor: [229, 231, 235], lineWidth: 0.1 },
+              headStyles: { fillColor: [31, 41, 55], textColor: 255, fontStyle: 'bold' } }, extra || {}));
+          y = doc.lastAutoTable.finalY + 2;
+      };
+      const caja = (x, yy, w, h, lineas) => {
+          fill([248, 250, 252]); draw([229, 231, 235]); doc.setLineWidth(0.2); doc.roundedRect(x, yy, w, h, 1.5, 1.5, 'FD');
+          let ly = yy + 4.6;
+          lineas.forEach(l => { font(l.b ? 'bold' : 'normal', l.s || 8.5); color(l.c || ACTA_TINTA); doc.text(actaTxt(l.t), x + 3, ly); ly += (l.s || 8.5) * 0.48; });
+      };
+      // ═════ PÁGINA 1 · EL PARTIDO ═════
+      fill(ACTA_ROJO); doc.rect(0, 0, W, 34, 'F');
+      const L = D.liga;
+      font('bold', 7.5); doc.setTextColor(255, 220, 225);
+      doc.text(actaTxt(`C.D. HERGAR  ·  ACTA DEL PARTIDO${L && L.j ? `  ·  J${L.j} ${L.v || 1}ª VUELTA` : ''}`), M, 8);
+      font('bold', 17); doc.setTextColor(255, 255, 255);
+      doc.text(actaTxt(`HERGAR ${D.gl} - ${D.gr} ${String(p.rival || 'RIVAL').toUpperCase()}`), M, 18, { maxWidth: CW - 36 });
+      const det = [p.fecha, (L && L.hora) || p.horaInicio || '', L && L.campo ? `${L.campo}${L.casa === true ? ' (casa)' : L.casa === false ? ' (fuera)' : ''}` : (L && L.casa != null ? (L.casa ? 'En casa' : 'Fuera') : ''), p.formacion ? `Formación ${p.formacion}` : '', p.duracion ? `Duración ${p.duracion}` : ''].filter(Boolean).join('  ·  ');
+      font('normal', 8); doc.setTextColor(255, 235, 238); doc.text(actaTxt(det), M, 26, { maxWidth: CW });
+      if (p.mvp && p.mvp !== '-') { font('bold', 8); doc.setTextColor(255, 255, 255); doc.text(actaTxt(`MVP: ${p.mvp}`), M, 31); }
+      doc.setFillColor(255, 255, 255); doc.roundedRect(W - M - 30, 9, 30, 11, 2, 2, 'F');
+      font('bold', 9); color(D.gl > D.gr ? [22, 101, 52] : D.gl < D.gr ? ACTA_ROJO : ACTA_TINTA); doc.text(D.res, W - M - 15, 16, { align: 'center' });
+      y = 40;
+      if (L && L.antes && L.antes.h) {
+          const fila = (n, f) => f ? `${n}: ${f.pos}º · ${f.pts} pts (${f.pj} PJ)` : `${n}: sin datos`;
+          const w2 = (CW - 4) / 2;
+          caja(M, y, w2, 17, [{ t: 'LIGA ANTES DEL PARTIDO', b: true, s: 7, c: ACTA_GRIS }, { t: fila('Hergar', L.antes.h), b: true }, { t: fila(p.rival, L.antes.r) }]);
+          const dl = L.despues || {};
+          caja(M + w2 + 4, y, w2, 17, [{ t: 'LIGA DESPUÉS DEL PARTIDO', b: true, s: 7, c: ACTA_GRIS }, { t: fila('Hergar', dl.h), b: true }, { t: (dl.lideres && dl.lideres.length ? `${dl.lideres.length > 1 ? 'Colíderes' : 'Líder'}: ${dl.lideres.join(' y ')}` : fila(p.rival, dl.r)) }]);
+          y += 20;
+      }
+      titulo('GOLES');
+      if (D.goles.length) {
+          tabla(['Min', 'Gol', 'Asistencia', 'Marcador'], D.goles.map(g => [g.min != null ? `${g.min}'` : '-', actaTxt(g.equipo === 'hergar' ? `${g.nombre || 'Hergar'}${g.penalti ? ' (penalti)' : ''}` : `${p.rival}${g.penalti ? ' (penalti)' : ''}`), actaTxt(g.asist || '-'), g.marcador || '-']),
+              { columnStyles: { 1: { halign: 'left' }, 2: { halign: 'left' } }, didParseCell: (d) => { if (d.section === 'body' && d.column.index === 1) { const g = D.goles[d.row.index]; d.cell.styles.textColor = g.equipo === 'hergar' ? ACTA_ROJO : ACTA_AZUL; d.cell.styles.fontStyle = 'bold'; } } });
+      } else { font('italic', 8.5); color(ACTA_GRIS); doc.text('Sin goles.', M, y + 3); y += 6; }
+      const T = D.tot, P1 = D.partes;
+      const tiroTxt = (a, b) => `${a + b} (${a})`;
+      if (P1) {
+          titulo('POR PARTES');
+          const d2 = (k) => (T[k] || 0) - (P1[k] || 0);
+          tabla(['', '1.ª parte', '2.ª parte', 'Total'], [
+              ['Goles (Hergar - rival)', `${P1.gl}-${P1.gr}`, `${D.gl - P1.gl}-${D.gr - P1.gr}`, `${D.gl}-${D.gr}`],
+              ['Tiros Hergar (a puerta)', tiroTxt(P1.tnP, P1.tnF), tiroTxt(d2('tnP'), d2('tnF')), tiroTxt(T.tnP, T.tnF)],
+              ['Tiros rival (a puerta)', tiroTxt(P1.trP, P1.trF), tiroTxt(d2('trP'), d2('trF')), tiroTxt(T.trP, T.trF)],
+              ['Córners (favor - contra)', `${P1.cf}-${P1.cc}`, `${d2('cf')}-${d2('cc')}`, `${T.cf}-${T.cc}`],
+              ['Faltas (favor - contra)', `${P1.ff}-${P1.fc}`, `${d2('ff')}-${d2('fc')}`, `${T.ff}-${T.fc}`],
+              ['Paradas', `${P1.par || 0}`, `${Math.max(0, T.par - (P1.par || 0))}`, `${T.par}`]
+          ], { columnStyles: { 0: { halign: 'left', fontStyle: 'bold' }, 3: { fontStyle: 'bold' } } });
+      } else if (p.tirosNuestrosPuerta != null) {
+          titulo('ESTADÍSTICAS DEL PARTIDO');
+          tabla(['', 'Hergar', p.rival || 'Rival'], [
+              ['Tiros (a puerta)', tiroTxt(T.tnP, T.tnF), tiroTxt(T.trP, T.trF)], ['Córners', `${T.cf}`, `${T.cc}`], ['Faltas a favor', `${T.ff}`, `${T.fc}`], ['Fueras de juego', `${T.fjN}`, `${T.fjR}`]
+          ], { columnStyles: { 0: { halign: 'left', fontStyle: 'bold' } } });
+          font('italic', 7); color(ACTA_GRIS); doc.text('El detalle por partes se guarda desde la v139.', M, y + 2); y += 4;
+      }
+      if (D.cuota) {
+          titulo('CUOTA DE TIROS (parte de los tiros del partido que son del Hergar)');
+          const barra = (label, v) => {
+              sitio(7); font('normal', 8); color(ACTA_TINTA); doc.text(actaTxt(label), M, y + 3.6);
+              const x0 = M + 38, w = CW - 38, wn = Math.max(0, Math.min(1, v)) * w;
+              fill(ACTA_ROJO); doc.rect(x0, y, wn, 5, 'F'); fill(ACTA_AZUL); doc.rect(x0 + wn, y, w - wn, 5, 'F');
+              font('bold', 7.5); doc.setTextColor(255, 255, 255);
+              if (wn > 9) doc.text(`${Math.round(v * 100)} %`, x0 + 2, y + 3.6);
+              if (w - wn > 9) doc.text(`${Math.round((1 - v) * 100)} %`, x0 + w - 2, y + 3.6, { align: 'right' });
+              y += 7;
+          };
+          barra('Partido', D.cuota.partido);
+          if (D.cuota.antes != null) barra('Con el once inicial', D.cuota.antes);
+          if (D.cuota.despues != null) barra('Tras los cambios', D.cuota.despues);
+      }
+      if (D.momentum) {
+          titulo('MOMENTUM (por encima de la línea, mejor el Hergar)');
+          sitio(40);
+          const x0 = M, w = CW, h = 30, y0 = y;
+          fill([248, 250, 252]); draw([229, 231, 235]); doc.setLineWidth(0.2); doc.rect(x0, y0, w, h, 'FD');
+          const pts = D.momentum.map(q => ({ m: Number(q[0]) || 0, v: Number(q[1]) || 0 }));
+          const maxM = Math.max(D.dur, ...pts.map(q => q.m), 70), amp = Math.max(1, ...pts.map(q => Math.abs(q.v)));
+          const X = (m) => x0 + m / maxM * w, Y = (v) => y0 + h / 2 - v / amp * (h / 2 - 2);
+          doc.setLineDashPattern([1, 1], 0); draw([203, 213, 225]); doc.line(x0, y0 + h / 2, x0 + w, y0 + h / 2);
+          draw([148, 163, 184]); doc.line(X(35), y0, X(35), y0 + h); doc.setLineDashPattern([], 0);
+          font('normal', 6.5); color(ACTA_GRIS); doc.text('Descanso', X(35) + 1, y0 + 3);
+          draw(ACTA_ROJO); doc.setLineWidth(0.6);
+          let prev = { m: 0, v: 0 };
+          pts.forEach(q => { doc.line(X(prev.m), Y(prev.v), X(q.m), Y(q.v)); prev = q; });
+          const vEn = (m) => { let v = 0; pts.forEach(q => { if (q.m <= m) v = q.v; }); return v; };
+          D.goles.forEach(g => { if (g.min == null) return; const c = g.equipo === 'hergar' ? ACTA_ROJO : ACTA_AZUL; fill(c); doc.circle(X(g.min), Y(vEn(g.min)), 1.4, 'F');
+              font('bold', 6.5); color(c); doc.text(actaTxt(`${g.min}'${g.equipo === 'hergar' && g.nombre ? ' ' + g.nombre : ''}`), X(g.min) + 1.8, Y(vEn(g.min)) - 1.6); });
+          doc.setLineWidth(0.2);
+          font('normal', 6.5); color(ACTA_GRIS); doc.text("0'", x0, y0 + h + 3); doc.text("35'", X(35), y0 + h + 3, { align: 'center' }); doc.text(`${maxM}'`, x0 + w, y0 + h + 3, { align: 'right' });
+          y = y0 + h + 5;
+      }
+      // ═════ PÁGINA 2 · LOS JUGADORES ═════
+      nueva();
+      const colW = 84, xR = M + colW + 6, wR = W - M - xR;
+      let yIzq = y, yDer = y;
+      if (D.once.length) {
+          font('bold', 9.5); color(ACTA_ROJO); doc.text('ONCE INICIAL', M, y + 1); draw(ACTA_ROJO); doc.setLineWidth(0.5); doc.line(M, y + 2.4, M + colW, y + 2.4);
+          const py = y + 5, ph = 112;
+          fill([21, 128, 61]); doc.roundedRect(M, py, colW, ph, 2, 2, 'F');
+          doc.setDrawColor(255, 255, 255); doc.setLineWidth(0.3);
+          doc.rect(M + 3, py + 3, colW - 6, ph - 6); doc.line(M + 3, py + ph / 2, M + colW - 3, py + ph / 2); doc.circle(M + colW / 2, py + ph / 2, 9);
+          doc.rect(M + colW / 2 - 18, py + 3, 36, 14); doc.rect(M + colW / 2 - 18, py + ph - 17, 36, 14);
+          const filasY = {};
+          D.once.forEach(x => { const pu = x.puesto || 'MC'; const yy = ACTA_PUESTO_Y[pu] != null ? ACTA_PUESTO_Y[pu] : 0.5; (filasY[yy] = filasY[yy] || []).push({ x, pu }); });
+          Object.keys(filasY).forEach(k => {
+              const fila = filasY[k].sort((a, b) => (ACTA_PUESTO_X[a.pu] ?? 1) - (ACTA_PUESTO_X[b.pu] ?? 1));
+              fila.forEach((o, n) => {
+                  const cx = M + 6 + (colW - 12) * (n + 1) / (fila.length + 1), cy = py + Number(k) * ph;
+                  const sale = (D.cambios || []).find(c => String(c.saleD) === String(o.x.dorsal) && c.sale === o.x.nombre);
+                  fill(o.pu === 'POR' ? [250, 204, 21] : ACTA_ROJO); doc.circle(cx, cy, 3.6, 'F');
+                  font('bold', 7); if (o.pu === 'POR') color(ACTA_TINTA); else doc.setTextColor(255, 255, 255);
+                  doc.text(String(o.x.dorsal ?? ''), cx, cy + 1.1, { align: 'center' });
+                  font('bold', 6.3); doc.setTextColor(255, 255, 255);
+                  const marcas = `${o.x.goles ? ' G' + (o.x.goles > 1 ? o.x.goles : '') : ''}${o.x.asist ? ' A' + (o.x.asist > 1 ? o.x.asist : '') : ''}${sale ? ` (sale ${sale.min}')` : ''}`;
+                  doc.text(actaTxt(o.x.nombre + marcas), cx, cy + 6.6, { align: 'center' });
+              });
+          });
+          yIzq = py + ph + 3;
+      }
+      const tituloDer = (txt) => { font('bold', 9.5); color(ACTA_ROJO); doc.text(actaTxt(txt), xR, yDer + 1); draw(ACTA_ROJO); doc.setLineWidth(0.5); doc.line(xR, yDer + 2.4, W - M, yDer + 2.4); yDer += 5; };
+      const tablaDer = (head, body, extra) => {
+          doc.autoTable(Object.assign({ startY: yDer, head: [head], body, theme: 'grid', margin: { left: xR, right: M }, tableWidth: wR,
+              styles: { font: 'helvetica', fontSize: 7.6, cellPadding: 1.1, halign: 'center', textColor: ACTA_TINTA, lineColor: [229, 231, 235], lineWidth: 0.1 },
+              headStyles: { fillColor: [31, 41, 55], textColor: 255, fontStyle: 'bold' } }, extra || {}));
+          yDer = doc.lastAutoTable.finalY + 4;
+      };
+      tituloDer('CAMBIOS');
+      if (D.cambios && D.cambios.length) {
+          tablaDer(['Min', 'Entra', 'Sale', 'Parte'], D.cambios.map(c => [`${c.min}'`, actaTxt(`${c.entraD != null ? '#' + c.entraD + ' ' : ''}${c.entra}`), actaTxt(c.sale ? `${c.saleD != null ? '#' + c.saleD + ' ' : ''}${c.sale}` : '-'),
+              c.min < 35 ? '1.ª' : c.min === 35 ? 'Descanso' : `2.ª (+${c.min - 35}')`]), { columnStyles: { 1: { halign: 'left' }, 2: { halign: 'left' } } });
+          if (D.cambios.some(c => c.deducido)) { font('italic', 6.5); color(ACTA_GRIS); doc.text('Minutos deducidos de lo que jugó cada uno.', xR, yDer - 1); yDer += 4; }
+      } else { font('italic', 8); color(ACTA_GRIS); doc.text(D.p.titulares ? 'Sin cambios.' : 'Faltan los titulares de este partido.', xR, yDer + 2); yDer += 6; }
+      tituloDer('TARJETAS Y FUERAS DE JUEGO');
+      if (D.tarjetas.length) tablaDer(['Min', 'Jugador', 'Tarjeta'], D.tarjetas.map(c => [c.min != null ? `${c.min}'` : '-', actaTxt(`${c.dorsal != null ? '#' + c.dorsal + ' ' : ''}${c.nombre}`), c.tipo === 'R' ? 'Roja' : c.tipo === 'AA' ? 'Doble amarilla' : 'Amarilla']),
+          { columnStyles: { 1: { halign: 'left' } }, didParseCell: (d) => { if (d.section === 'body' && d.column.index === 2) d.cell.styles.textColor = D.tarjetas[d.row.index].tipo === 'A' ? [161, 98, 7] : ACTA_ROJO; } });
+      else { font('italic', 8); color(ACTA_GRIS); doc.text('Sin tarjetas.', xR, yDer + 2); yDer += 5; }
+      font('normal', 8); color(ACTA_TINTA); doc.text(actaTxt(`Fueras de juego: Hergar ${T.fjN} · Rival ${T.fjR}`), xR, yDer + 1); yDer += 6;
+      if (D.porteros.length) {
+          tituloDer('PORTERÍA');
+          D.porteros.forEach(x => {
+              const enc = x.gcCampo != null ? x.gcCampo : x.recibidos;
+              const pct = (x.par + enc) > 0 ? Math.round(x.par / (x.par + enc) * 100) : null;
+              font('bold', 8.5); color(ACTA_TINTA); doc.text(actaTxt(`${x.nombre} · ${x.mins}'`), xR, yDer + 1);
+              font('normal', 8); doc.text(actaTxt(`${x.par} paradas${x.parD ? ` (${x.parD} difíciles)` : ''} · ${enc} encajados${pct != null ? ` · ${pct} % de paradas` : ''}`), xR, yDer + 5, { maxWidth: wR });
+              yDer += 10;
+          });
+      }
+      y = Math.max(yIzq, yDer) + 2;
+      titulo('JUGADORES (ordenados por impacto por 70 minutos)');
+      const conMM = !D.opts.familias;
+      const head = ['Dor', 'Jugador', 'Min', 'G', 'A', 'Tiros', 'P.Cl', 'P.Ar', 'Def', 'Reg', 'Imp', '/70', 'Peso'].concat(conMM ? ['+/-'] : []);
+      tabla(head, D.jugadores.map(x => [x.dorsal ?? '', actaTxt(x.nombre + (x.titular ? '' : ' *')), x.mins, x.goles || '', x.asist || '', x.detalle ? `${x.dp + x.df} (${x.dp})` : '-',
+          x.detalle ? (x.pc || '') : '-', x.detalle ? (x.pa || '') : '-', x.detalle ? (x.def || '') : '-', x.detalle ? (x.reg || '') : '-', actaSig(x.imp), x.p70 != null ? actaDec(x.p70) : '-', actaSig(x.peso)].concat(conMM ? [x.mm != null ? (x.mm > 0 ? '+' + x.mm : String(x.mm)) : '-'] : [])),
+          { columnStyles: { 1: { halign: 'left' } }, didParseCell: (d) => { if (d.section === 'body' && d.row.index < 3 && D.jugadores[d.row.index].p70 != null) d.cell.styles.fillColor = [236, 253, 245]; } });
+      font('normal', 6.5); color(ACTA_GRIS);
+      doc.text(actaTxt(`* entró desde el banquillo. Peso = su impacto /70 menos la media del equipo en el partido.${conMM ? ' +/- = goles a favor menos en contra con él en el campo.' : ''}`), M, y + 1, { maxWidth: CW }); y += 5;
+      if (D.sinergias.length) {
+          titulo('SINERGIAS DEL PARTIDO (más minutos juntos en el campo)');
+          tabla(['Pareja', 'Minutos juntos'], D.sinergias.slice(0, 5).map(s => [actaTxt(`${s.a} y ${s.b}`), `${s.mins}'`]), { columnStyles: { 0: { halign: 'left' } } });
+      }
+      // ═════ PÁGINA 3 · ANÁLISIS Y TEMPORADA ═════
+      nueva();
+      titulo('ANÁLISIS IA DEL PARTIDO');
+      if (p.analisisIA) {
+          const secciones = /^(RENDIMIENTO|DESTACADOS|A MEJORAR|ROTACIONES|PARA EL PR|CONTEXTO|RESUMEN)/i;
+          String(p.analisisIA).split(/\n+/).forEach(par => {
+              const txt = actaTxt(par); if (!txt) return;
+              const esTit = secciones.test(txt) && txt.length < 60;
+              font(esTit ? 'bold' : 'normal', esTit ? 9 : 8.6); color(esTit ? ACTA_ROJO : ACTA_TINTA);
+              const lineas = doc.splitTextToSize(txt, CW);
+              lineas.forEach(l => { sitio(5); doc.text(l, M, y + 3); y += 4.1; });
+              y += esTit ? 0.5 : 1.6;
+          });
+      } else { font('italic', 8.5); color(ACTA_GRIS); doc.text('Este partido no tiene análisis IA guardado.', M, y + 3); y += 7; }
+      const S = D.temporada;
+      titulo(`CÓMO VA LA TEMPORADA (tras ${S.pj} ${S.pj === 1 ? 'partido' : 'partidos'})`);
+      sitio(48);
+      const w2 = (CW - 4) / 2, b = S.bal;
+      const dl = (L && L.despues && L.despues.h) ? L.despues.h : null;
+      caja(M, y, w2, 22, [{ t: 'BALANCE', b: true, s: 7, c: ACTA_GRIS }, { t: `${b.V} V · ${b.E} E · ${b.D} D  ·  ${b.V * 3 + b.E} puntos`, b: true }, { t: `${b.gf} goles a favor · ${b.gc} en contra` },
+          { t: [dl ? `${dl.pos}º en la Liga` : '', S.cuota != null ? `Cuota de tiros ${Math.round(S.cuota * 100)} %` : ''].filter(Boolean).join('  ·  ') }]);
+      caja(M + w2 + 4, y, w2, 22, [{ t: 'GOLEADORES', b: true, s: 7, c: ACTA_GRIS }].concat(
+          S.goleadores.length ? [{ t: S.goleadores.slice(0, 4).map(g => `${g.nombre} ${g.g}`).join(' · ') }, { t: S.goleadores.slice(4, 8).map(g => `${g.nombre} ${g.g}`).join(' · ') }] : [{ t: 'Sin goles todavía' }]));
+      y += 25;
+      caja(M, y, w2, 26, [{ t: "TOP IMPACTO POR 70' (mín. 35')", b: true, s: 7, c: ACTA_GRIS }].concat(S.top.map((x, n) => ({ t: `${n + 1}. ${x.nombre}  ${actaDec(x.v)}`, b: n === 0 }))));
+      caja(M + w2 + 4, y, w2, 26, [{ t: 'HITOS DE ESTE PARTIDO', b: true, s: 7, c: ACTA_GRIS }].concat(S.hitos.length ? S.hitos.slice(0, 4).map(h => ({ t: '· ' + h, s: 8 })) : [{ t: 'Ninguno esta vez' }]));
+      y += 29;
+      // pie de página
+      const n = doc.getNumberOfPages();
+      for (let k = 1; k <= n; k++) { doc.setPage(k); font('normal', 7); color(ACTA_GRIS); doc.text(actaTxt(`HERGAR F11 · ${p.fecha || ''} · vs ${p.rival || ''} · Página ${k}/${n}`), W / 2, 291, { align: 'center' }); }
+      return doc;
+  }
+  function actaNombreArchivo(p) { return `Hergar_Acta_${String(p.rival || 'rival').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '_')}_${String(p.fecha || '').replace(/\//g, '-')}.pdf`; }
+  function actaDescargar(t, i, opts) {
+      const doc = actaPDF(t, i, opts);
+      const blob = doc.output('blob'), url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = actaNombreArchivo(t.partidos[i]);
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 3000);
+  }
+
+  // El visor descarga el acta sin el más/menos de cada niño, y solo si la app lo permite (Ajustes → Acta en PDF)
+  window.__actaTest = actaPDF;
+  window.descargarActaVisor = function (i) {
+    try { actaDescargar(window.__temporadaActa, i, { familias: true }); }
+    catch (e) { alert('No se ha podido generar el acta: ' + e.message); }
+  };
 
   function evolucionJugadorHTML(t, j) {
     const ps = (t && t.partidos) || [];
@@ -4561,6 +4918,7 @@
   const partidosAbiertos = new Set();
   window.partidoToggle = (el) => { const k = el.dataset.k; if (el.open) partidosAbiertos.add(k); else partidosAbiertos.delete(k); };
   function pintarPartidos(temporada) {
+    window.__temporadaActa = temporada; // v139
     const partidos = (temporada.partidos || []).slice().reverse();
     const cont = document.getElementById('partidosLista');
     if (partidos.length === 0) { cont.innerHTML = '<div class="loader">Sin partidos todavía</div>'; return; }
@@ -4598,6 +4956,7 @@
           ${statsHtml}
           ${actuacionPartidoHtml(temporada, p)}
           ${informeIAPartidoHtml(p)}
+          ${temporada.actaVisor ? `<button type="button" onclick="descargarActaVisor(${(temporada.partidos || []).length - 1 - i})" style="margin-top:8px; width:100%; min-height:42px; border-radius:10px; background:rgba(192,57,43,0.15); border:1px solid rgba(231,76,60,0.45); color:#ff8a80; font-weight:800; font-size:12.5px; cursor:pointer;">📄 Descargar acta (PDF)</button>` : ''}
         </div>
       </details>`;
     }).join('');

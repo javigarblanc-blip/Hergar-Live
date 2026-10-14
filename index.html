@@ -932,6 +932,7 @@
 </div>
 
 <script type="module">
+  // v144 (visor) · Cabecera: con el próximo partido publicado sale el próximo partido (rival, jornada, fecha y hora) en vez del resultado anterior.
   // v142 (app) · Plantilla: iconos de los líderes de la temporada (goles, asistencias, pases al área, pases clave, defensa, defensa clave, regates, eficacia, impacto y mejor compañero).
   // v141 (app) · «Hace mejores a los demás»: solo las acciones de los compañeros (sin bonus de equipo) y «sin él» solo en los partidos que jugó.
   // v140 (app) · «Hace mejores a los demás»: impacto de los compañeros con él y sin él (Sinergias, Ranking, ficha) y 🧲 al mejor compañero en la Plantilla. En el visor, solo los positivos.
@@ -3385,17 +3386,40 @@
     try { if (navigator.vibrate && document.visibilityState === 'visible') navigator.vibrate([180, 80, 180]); } catch (e) {}
   }
 
+  // v144 · Cabecera: con el próximo partido publicado (y sin partido en juego) sale el próximo partido
+  // en vez del resultado anterior, que sigue en Último partido y en Temporada → Partidos.
+  function nombreCortoCabecera(nombre) {
+    const limpio = String(nombre || '').replace(/^(C\.D\.F\.|C\.D\.|C\.F\.|U\.D\.|A\.D\.|D\.)\s*/i, '').replace(/['"]/g, '').trim();
+    return (limpio || 'RIVAL').toUpperCase();
+  }
+  function pintarCabeceraPartido(matchData) {
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    const d = (typeof proximoPartidoActual === 'function') ? proximoPartidoActual() : null;
+    if (d && !(matchData && (matchData.matchRunning || (matchData.previa === true && !matchData.matchFinished)))) {
+      let jor = '';
+      try { jor = `Jornada ${numJornadaGlobalViewer(d.liga, d.p)} · `; } catch (e) {}
+      set('matchMeta', `Próximo partido · ${jor}${d.esCasa ? 'En casa' : 'Fuera'}`);
+      set('scoreLocal', '-'); set('scoreRival', '-');
+      set('rivalName', nombreCortoCabecera(d.rival.nombre));
+      set('timerDisplay', `📅 ${fechaHoraProximoViewer(d.p)}`);
+      return;
+    }
+    if (!matchData) return;
+    const previa = matchData.previa === true && !matchData.matchFinished && !matchData.matchRunning;
+    set('scoreLocal', previa ? '-' : (matchData.golesLocal ?? 0));
+    set('scoreRival', previa ? '-' : (matchData.golesRival ?? 0));
+    set('rivalName', (matchData.rival || 'RIVAL').toUpperCase());
+    set('timerDisplay', previa ? '🕐 Alineación prevista' : formatMinuto(matchData.minuto || 0, matchData.parte, matchData.matchRunning, matchData.matchFinished));
+    set('matchMeta', previa ? 'El partido aún no ha empezado' : (matchData.matchFinished ? 'Partido finalizado' : (matchData.matchRunning ? 'Partido en juego' : 'Partido en pausa')));
+  }
+
   function actualizarVistaPartido(matchData) {
     if (!matchData) return;
     ultimoMatchData = matchData;
     try { avisarGolSiProcede(matchData); } catch (e) { console.error('Aviso de gol:', e); }
     // v3: PREVIA = alineación publicada antes de empezar el partido
     const previa = matchData.previa === true && !matchData.matchFinished && !matchData.matchRunning;
-    document.getElementById('scoreLocal').textContent = previa ? '-' : (matchData.golesLocal ?? 0);
-    document.getElementById('scoreRival').textContent = previa ? '-' : (matchData.golesRival ?? 0);
-    document.getElementById('rivalName').textContent = (matchData.rival || 'RIVAL').toUpperCase();
-    document.getElementById('timerDisplay').textContent = previa ? '🕐 Alineación prevista' : formatMinuto(matchData.minuto || 0, matchData.parte, matchData.matchRunning, matchData.matchFinished);
-    document.getElementById('matchMeta').textContent = previa ? 'El partido aún no ha empezado' : (matchData.matchFinished ? 'Partido finalizado' : (matchData.matchRunning ? 'Partido en juego' : 'Partido en pausa'));
+    pintarCabeceraPartido(matchData);
 
     const liveBanner = document.getElementById('liveBanner');
     const offlineBanner = document.getElementById('offlineBanner');
@@ -6313,6 +6337,7 @@
     if (!liga || !liga.equipos) return;
     ultimaLiga = liga;
     pintarProximoPartido(); // v72
+    try { pintarCabeceraPartido(ultimoMatchData); } catch (e) { console.error('Cabecera:', e); }
     if (tvActivo) tvRender();
     if (!ligaViewerJornadaFijada) {
       const actual = jornadaActualLiga(liga);

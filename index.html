@@ -934,6 +934,8 @@
 <script type="module">
   // v144 (visor) · Cabecera: con el próximo partido publicado sale el próximo partido (rival, jornada, fecha y hora) en vez del resultado anterior.
   // v144 (app + visor) · «Hace mejores a los demás»: el bonus por gol se quita como lo apuntó la app en cada pareja (en goleadas, cada gol nuevo rebaja lo de antes); cifras por compañero y 70'.
+  // v146 (app + visor) · «Hace mejores a los demás»: los partidos con «Llegué tarde» también cuentan, desde el minuto de llegada.
+  // v145 (app + visor) · «Hace mejores a los demás»: la app apunta minuto a minuto las acciones de cada niño y quién está en el campo (partido.minutos); la medida sale de ahí, desde el partido del 17 de octubre.
   // v142 (app) · Plantilla: iconos de los líderes de la temporada (goles, asistencias, pases al área, pases clave, defensa, defensa clave, regates, eficacia, impacto y mejor compañero).
   // v141 (app) · «Hace mejores a los demás»: solo las acciones de los compañeros (sin bonus de equipo) y «sin él» solo en los partidos que jugó.
   // v140 (app) · «Hace mejores a los demás»: impacto de los compañeros con él y sin él (Sinergias, Ranking, ficha) y 🧲 al mejor compañero en la Plantilla. En el visor, solo los positivos.
@@ -2644,124 +2646,61 @@
   function compDec(v) { return v == null ? '—' : (v < 0 ? '−' : '') + Math.abs(v).toFixed(2).replace('.', ','); }
   function compEsc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
   function companerosTemporada(t) {
-      // v141 · Solo cuentan las ACCIONES de los compañeros (sin bonus de equipo por goles, sin descuentos por goles
-      // o tiros del rival y sin portería a cero), y «sin él» solo en los partidos que jugó (mientras estaba en el banquillo).
-      // La parte de equipo se calcula con el minuto de los goles y quién estaba en el campo (titulares + minutos);
-      // los tiros del rival y la portería a cero se reparten por el tiempo en el campo.
-      const RG = (typeof REGLAS_IMPACTO !== 'undefined' && REGLAS_IMPACTO) ? REGLAS_IMPACTO : ((typeof reglasImpacto !== 'undefined' && reglasImpacto) ? reglasImpacto : {});
-      const EQ = Object.assign({ golFavor: 1, golContra: -1, tiroRivalPuerta: -0.15, tiroRivalFuera: -0.05, golesSinReparto: 4 }, RG.equipo || {});
-      const PC = Object.assign({ portero: 1.5, defensa: 1.25, centrocampista: 0.6, delantero: 0 }, RG.porteriaCero || {});
-      const penContra = -Math.abs(((RG.penaltis || {}).contraGolCampo) ?? 0.5);
+      // v145 · Sale del registro minuto a minuto que la app guarda en cada partido desde la v145 (partido.minutos):
+      // por cada niño, los segundos que estuvo en el campo en cada minuto (c) y los puntos de sus ACCIONES en ese
+      // minuto (a), sin la parte de equipo (bonus por gol, goles y tiros del rival, portería a cero).
+      // «Con él»: acciones de los compañeros mientras él está en el campo; «sin él»: mientras está en el banquillo,
+      // solo en los partidos que jugó. Ambas por compañero y por 70'. Los partidos anteriores no tienen ese registro
+      // (las sinergias solo guardan parejas de puestos vecinos) y no entran.
       const js = Object.values((t && t.jugadores) || {});
       const ps = (t && t.partidos) || [];
-      const sin = (t && t.sinergias) || {};
-      const clave = (a, b) => sin[`${a}_${b}`] ? `${a}_${b}` : (sin[`${b}_${a}`] ? `${b}_${a}` : null);
-      const equipoPar = {};                     // parte de equipo de cada pareja mientras coinciden
-      const pp = [];                            // por partido: quién jugó, su parte de acciones y su tramo
-      let sinTitulares = 0;
+      const lee = (s) => String(s || '').split(',').map(x => x === '' ? 0 : (Number(x) || 0));
+      const acum = {};                          // id -> { mX, off, cA, cT, sA, sT }
+      const ac = (id) => acum[id] || (acum[id] = { mX: 0, off: 0, cA: 0, cT: 0, sA: 0, sT: 0 });
+      let partidosConDatos = 0;
       ps.forEach(p => {
-          if (p.manual) return;                 // los cargados a mano no tienen el detalle de las parejas
-          const tit = Array.isArray(p.titulares) && p.titulares.length ? p.titulares.map(String) : null;
-          if (!tit) { sinTitulares++; return; }
-          const filas = [];
-          js.forEach(j => { const h = (j.historial || []).find(x => x.fecha === p.fecha && x.rival === p.rival); if (h && (h.mins || 0) > 0) filas.push({ id: String(j.id), j, h, mins: h.mins }); });
-          if (!filas.length) return;
-          let dur = 0; const mt = /^(\d+):/.exec(String(p.duracion || '')); if (mt) dur = parseInt(mt[1], 10);
-          filas.forEach(f => { if (f.mins > dur) dur = f.mins; });
-          dur = dur || 70;
-          filas.forEach(f => { const esT = tit.includes(f.id); f.a = esT ? 0 : Math.max(0, dur - f.mins); f.b = esT ? f.mins : dur; });
-          const GL = Number(p.golesLocal) || 0, GR = Number(p.golesRival) || 0;
-          const vF = EQ.golFavor * (GL <= EQ.golesSinReparto ? 1 : EQ.golesSinReparto / GL);
-          const gs = Array.isArray(p.goles) ? p.goles.filter(g => g && (g.equipo === 'hergar' || g.equipo === 'rival')) : [];
-          const conMin = gs.length === GL + GR && gs.every(g => (g.min != null ? g.min : g.minuto) != null);
-          const minDe = (g) => Number(g.min != null ? g.min : g.minuto);
-          const trP = Math.max(0, (Number(p.tirosRivalesPuerta) || 0) - GR), trF = Number(p.tirosRivalesFuera) || 0;
-          const rS = (trP * EQ.tiroRivalPuerta + trF * EQ.tiroRivalFuera) / dur;       // por minuto en el campo
-          const enCampo = (f, m) => m >= f.a && (m < f.b || f.b >= dur); // quien entra en ese minuto ya está; quien sale, no
-          // v144 · El bonus por gol a favor se quita tal y como lo apuntó la app en cada momento. Con la regla de la v105,
-          // cada gol nuevo de una goleada rebaja lo que ya llevaban todos, y esa rebaja cae en las parejas que están en el
-          // campo en ese instante (antes se suponía que todos los goles valían lo mismo, y salían negativos los que juegan
-          // los finales de las goleadas). En los partidos de antes de la v105: +1,00 hasta el 4.º gol y +0,30 desde el 5.º.
-          const reglaNueva = Number(p.reglaImpacto) >= 105, recalc105 = !reglaNueva && !!p.recalc105;
-          const LIMG = EQ.golesSinReparto || 4;
-          const vVivo = (k) => EQ.golFavor * (k <= LIMG ? 1 : LIMG / k), vViejo = (k) => EQ.golFavor * (k <= LIMG ? 1 : 0.30);
-          const golesH = conMin ? gs.map((g, n) => ({ g, n })).filter(x => x.g.equipo === 'hergar').sort((x, y) => (minDe(x.g) - minDe(y.g)) || (x.n - y.n)).map(x => x.g) : [];
-          filas.forEach(f => {
-              let n = 0; f.dGol = golesH.map((g, k) => {
-                  if (!enCampo(f, minDe(g))) return null;
-                  const K = k + 1, d = reglaNueva ? (n + 1) * vVivo(K) - n * (K > 1 ? vVivo(K - 1) : 0) : vViejo(K);
-                  n++; return d;
+          const M = p && p.minutos;
+          if (!M || Number(M.v) !== 1 || !M.j) return;
+          const ids = Object.keys(M.j);
+          const ini = Math.max(0, Number(M.ini) || 0); // v146: los minutos sin registro completo (llegó tarde) no cuentan
+          if (!ids.length) return;
+          partidosConDatos++;
+          const C = {}, A = {};
+          let n = 0;
+          ids.forEach(id => { C[id] = lee(M.j[id].c); A[id] = lee(M.j[id].a); for (let k = 0; k < ini; k++) { C[id][k] = 0; A[id][k] = 0; } n = Math.max(n, C[id].length, A[id].length); });
+          const juego = [];                     // segundos de juego de cada minuto
+          for (let k = 0; k < n; k++) juego[k] = Math.max(0, ...ids.map(id => C[id][k] || 0));
+          ids.forEach(x => {
+              const cX = C[x], segsX = cX.reduce((s, v) => s + v, 0);
+              if (segsX <= 0) return;           // no jugó este partido
+              const R = ac(x);
+              R.mX += segsX / 60;
+              for (let k = 0; k < n; k++) R.off += Math.max(0, (juego[k] || 0) - (cX[k] || 0)) / 60;
+              ids.forEach(y => {
+                  if (y === x) return;
+                  const cY = C[y], aY = A[y];
+                  for (let k = 0; k < n; k++) {
+                      const cy = cY[k] || 0, ay = aY[k] || 0, cx = cX[k] || 0;
+                      if (!cy && !ay) continue;
+                      const juntos = Math.min(cx, cy);
+                      const f = cy > 0 ? juntos / cy : (cx > 0 ? 1 : 0);
+                      R.cA += ay * f; R.cT += juntos;
+                      R.sA += ay * (1 - f); R.sT += cy - juntos;
+                  }
               });
-              f.nGolCampo = n;
           });
-          // v105 recalculado: en las parejas el gol y la asistencia desde el 5.º gol quedaron apuntados al 30 %
-          const lineaMax = (li) => { let m = null, v = -1; Object.keys(li || {}).forEach(k => { if ((li[k] || 0) > v) { v = li[k] || 0; m = k; } }); return m; };
-          const ACC = Object.assign({ gol: 0.75, golExtraDefensa: 1.25, golExtraMedio: 0.15, asistencia: 0.40 }, RG.acciones || {});
-          const PEN = ((RG.penaltis || {}).marca) ?? 0.5;
-          const faltaInd = (g, K, f) => {
-              if (!recalc105 || K <= LIMG || !f) return 0;
-              let x = 0;
-              if (g.jugadorId != null && String(g.jugadorId) === f.id) {
-                  let base = g.penalti ? PEN : ACC.gol;
-                  if (!g.penalti) { const li = lineaMax(f.h.lineas); if (li === 'defensa') base += ACC.golExtraDefensa; else if (li === 'centrocampista') base += ACC.golExtraMedio; }
-                  x -= base * 0.7;
-              }
-              if (g.asistenteId != null && String(g.asistenteId) === f.id) x -= ACC.asistencia * 0.7;
-              return x;
-          };
-          filas.forEach(f => {
-              let gF, gC;
-              if (conMin) { gF = (reglaNueva || recalc105) ? f.nGolCampo * vF : f.dGol.reduce((s, d) => s + (d || 0), 0);
-                  gC = gs.filter(g => g.equipo === 'rival' && enCampo(f, minDe(g))).reduce((s, g) => s + (g.penalti ? penContra : EQ.golContra), 0); }
-              else { gF = (Number(f.h.gfCampo) || 0) * vF; gC = (Number(f.h.gcCampo) || 0) * EQ.golContra; }
-              let pc = 0;
-              if ((f.h.gcCampo !== undefined ? Number(f.h.gcCampo) : (conMin ? gs.filter(g => g.equipo === 'rival' && enCampo(f, minDe(g))).length : GR)) === 0) {
-                  const li = f.h.lineas || {}; const tl = Object.values(li).reduce((s, v) => s + v, 0);
-                  const valor = tl > 0 ? Object.keys(li).reduce((s, l) => s + (PC[l] || 0) * li[l] / tl, 0) : 0;
-                  pc = valor * Math.min(1, f.mins / 70);
-              }
-              f.equipo = gF + gC + rS * f.mins + pc; f.pc = pc;
-              const imp = f.h.imp !== undefined ? (Number(f.h.imp) || 0) : (Number(f.h.impPond) || 0) * f.mins / 70;
-              f.acc = imp - f.equipo;           // lo que suma con sus propias acciones
-          });
-          for (let i = 0; i < filas.length; i++) for (let k = i + 1; k < filas.length; k++) {
-              const A = filas[i], B = filas[k];
-              const key = clave(A.id, B.id); if (!key) continue;
-              const a = Math.max(A.a, B.a), b = Math.min(A.b, B.b), ov = b - a; if (ov <= 0) continue;
-              let gF, gC;
-              if (conMin) { const juntos = (g) => { const m = minDe(g); return m >= a && (m < b || b >= dur); };
-                  gF = golesH.reduce((s, g, k) => (A.dGol[k] == null || B.dGol[k] == null) ? s : s + A.dGol[k] + B.dGol[k] + faltaInd(g, k + 1, A) + faltaInd(g, k + 1, B), 0) / 2; // la pareja entera, ÷ 2 porque abajo va × 2
-                  gC = gs.filter(g => g.equipo === 'rival' && juntos(g)).reduce((s, g) => s + (g.penalti ? penContra : EQ.golContra), 0); }
-              else { gF = ((Number(A.h.gfCampo) || 0) * ov / A.mins + (Number(B.h.gfCampo) || 0) * ov / B.mins) / 2 * vF;
-                  gC = ((Number(A.h.gcCampo) || 0) * ov / A.mins + (Number(B.h.gcCampo) || 0) * ov / B.mins) / 2 * EQ.golContra; }
-              equipoPar[key] = (equipoPar[key] || 0) + 2 * (gF + gC + rS * ov) + A.pc * ov / A.mins + B.pc * ov / B.mins;
-          }
-          pp.push({ filas, dur });
       });
       const res = {};
       js.forEach(x => {
-          const idx = String(x.id);
-          let mX = 0, aX = 0, cEq = 0, mEq = 0, off = 0;
-          pp.forEach(P => {
-              const yo = P.filas.find(f => f.id === idx); if (!yo) return;
-              mX += yo.mins; aX += yo.acc; off += Math.max(0, P.dur - yo.mins);
-              P.filas.forEach(f => { if (f.id === idx) return; cEq += f.acc; mEq += f.mins; });
-          });
-          const rX = mX > 0 ? aX / mX : 0;
-          let cCon = 0, mCon = 0;
-          js.forEach(y => {
-              if (String(y.id) === idx) return;
-              const key = clave(x.id, y.id); if (!key) return;
-              const P = sin[key]; if (!(Number(P.segsN) > 0)) return;
-              const tm = Number(P.segsN) / 60;
-              cCon += (Number(P.impN) || 0) - (equipoPar[key] || 0) - rX * tm; mCon += tm;
-          });
-          const cSin = cEq - cCon, mSin = mEq - mCon;
-          const con = mCon > 0 ? cCon / mCon * 70 : null, sinV = mSin > 0 ? cSin / mSin * 70 : null;
-          const ok = mX >= COMP_MIN_JUGADOS && off >= COMP_MIN_SIN && con != null && sinV != null && mSin >= COMP_MIN_SIN;
-          res[x.id] = { j: x, mins: mX, off, con, sin: sinV, efecto: ok ? con - sinV : null, motivo: mX < COMP_MIN_JUGADOS ? 'pocos' : (!ok ? 'siempre' : '') };
+          const R = acum[String(x.id)];
+          if (!R) { res[x.id] = { j: x, mins: 0, off: 0, con: null, sin: null, efecto: null, motivo: 'sinDatos' }; return; }
+          const con = R.cT > 0 ? R.cA / (R.cT / 60) * 70 : null, sinV = R.sT > 0 ? R.sA / (R.sT / 60) * 70 : null;
+          const ok = R.mX >= COMP_MIN_JUGADOS && R.off >= COMP_MIN_SIN && con != null && sinV != null;
+          res[x.id] = { j: x, mins: Math.round(R.mX), off: Math.round(R.off), con, sin: sinV, efecto: ok ? con - sinV : null,
+              motivo: R.mX < COMP_MIN_JUGADOS ? 'pocos' : (!ok ? 'siempre' : '') };
       });
-      Object.defineProperty(res, '__sinTitulares', { value: sinTitulares, enumerable: false });
+      Object.defineProperty(res, '__sinTitulares', { value: 0, enumerable: false });
+      Object.defineProperty(res, '__partidosConDatos', { value: partidosConDatos, enumerable: false });
       return res;
   }
   // El que más hace mejorar a los demás ahora mismo (solo si su efecto es positivo)
@@ -2776,7 +2715,7 @@
       const R = Object.values(companerosTemporada(t));
       const con = R.filter(x => x.efecto != null).sort((a, b) => b.efecto - a.efecto);
       const lista = soloPositivos ? con.filter(x => x.efecto > 0) : con;
-      if (!lista.length) return `<div style="font-size:12px; color:#94a3b8; line-height:1.5;">${soloPositivos ? 'Aún no hay datos suficientes.' : `Aún no hay datos suficientes (hace falta ${COMP_MIN_JUGADOS}' jugados y ${COMP_MIN_SIN}' en el banquillo en los partidos que jugó).`}</div>`;
+      if (!lista.length) return `<div style="font-size:12px; color:#94a3b8; line-height:1.5;">${soloPositivos ? 'Aún no hay datos suficientes: se mide desde el partido del 17 de octubre.' : `Aún no hay datos suficientes. Se mide desde el partido del 17 de octubre (la app apunta las acciones minuto a minuto desde la v145): hace falta ${COMP_MIN_JUGADOS}' jugados y ${COMP_MIN_SIN}' en el banquillo en esos partidos.`}</div>`;
       const maxAbs = Math.max(0.01, ...lista.map(x => Math.abs(x.efecto)));
       const filas = lista.map((x, i) => {
           const v = x.efecto, col = soloPositivos ? acento : (v >= 0 ? '#2ed573' : '#ff6b7a');
@@ -2791,7 +2730,7 @@
               <div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:15px; text-align:right; color:${col};">${compFmt(v)}</div></div>`;
       }).join('');
       const siempre = soloPositivos ? [] : R.filter(x => x.efecto == null && x.motivo === 'siempre').map(x => compEsc((x.j.name || '').split(' ')[0]));
-      return `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin-bottom:6px;">Puntos por acciones de cada compañero por 70' <b style="color:#e2e8f0;">con él</b> en el campo y <b style="color:#e2e8f0;">sin él</b> (en el banquillo, en los mismos partidos). La diferencia es lo que mejora (o empeora) a los demás.</div>`
+      return `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin-bottom:6px;">Puntos por acciones de cada compañero por 70' (desde el 17 de octubre) <b style="color:#e2e8f0;">con él</b> en el campo y <b style="color:#e2e8f0;">sin él</b> (en el banquillo, en los mismos partidos). La diferencia es lo que mejora (o empeora) a los demás.</div>`
           + filas
           + (siempre.length ? `<div style="font-size:10.5px; color:#64748b; margin-top:8px; line-height:1.4;">Sin comparación (casi siempre en el campo): ${siempre.join(', ')}.</div>` : '')
           + `<div style="font-size:10.5px; color:#94a3b8; margin-top:8px; line-height:1.45;">${soloPositivos ? 'Solo salen los que suman. ' : ''}«Sin él» es mientras estaba en el banquillo en los partidos que jugó. Mínimo ${COMP_MIN_JUGADOS}' jugados y ${COMP_MIN_SIN}' en el banquillo. Solo cuentan las acciones de los compañeros (también sus goles y asistencias); no el bonus de equipo por goles ni lo que resta un gol o un tiro del rival.</div>`;
@@ -2810,8 +2749,8 @@
   function companerosExplicacionHTML() {
       return `<div style="font-size:12.5px; line-height:1.55; color:#e2e8f0; padding-top:6px;">
           <p style="margin:0 0 8px;"><strong>Hace mejores a los demás:</strong> impacto medio de los compañeros por cada 70 minutos mientras el niño está en el campo, menos el de mientras está en el banquillo <strong>en esos mismos partidos</strong>. Los partidos que no jugó no cuentan, así que jugar solo goleadas (o solo partidos difíciles) no le favorece ni le perjudica. Si sale positivo, con él los demás rinden más.</p>
-          <p style="margin:0 0 8px;">Solo cuentan las <strong>acciones</strong> de los compañeros: tiros, pases, regates, defensa, paradas, sus goles y asistencias, fallos… No cuenta lo que les toca por estar en el campo (el bonus por gol del equipo, lo que resta un gol o un tiro del rival, la portería a cero): así un gol suyo no infla a los demás y el marcador no decide. Esa parte de equipo se quita con el minuto de cada gol y quién estaba en el campo, tal y como la apuntó la app (en una goleada, cada gol nuevo rebaja lo que ya llevaban los que están en el campo); los tiros del rival y la portería a cero, por el tiempo jugado.</p>
-            <p style="margin:0 0 8px;">Sale de las parejas de las sinergias: lo que suman dos niños mientras coinciden, quitando la parte del propio niño (sus acciones por minuto). Los partidos cargados a mano o sin titulares no entran.</p>
+          <p style="margin:0 0 8px;">Solo cuentan las <strong>acciones</strong> de los compañeros: tiros, pases, regates, defensa, paradas, sus goles y asistencias, fallos… No cuenta lo que les toca por estar en el campo (el bonus por gol del equipo, lo que resta un gol o un tiro del rival, la portería a cero): así un gol suyo no infla a los demás y el marcador no decide. La app apunta minuto a minuto las acciones de cada niño y quién está en el campo, así que se compara con todos los compañeros, segundo a segundo.</p>
+            <p style="margin:0 0 8px;">Se mide desde el partido del 17 de octubre (v145). Antes la app solo guardaba las parejas de puestos vecinos y con eso no se podía calcular bien, así que los partidos anteriores no entran.</p>
           <p style="margin:0;">Hacen falta ${COMP_MIN_JUGADOS}' jugados y ${COMP_MIN_SIN}' en el banquillo en los partidos que jugó; quien casi siempre juega entero no se puede comparar. 🧲 en la plantilla marca al mejor compañero del momento. En el visor solo salen los efectos positivos.</p></div>`;
   }
 

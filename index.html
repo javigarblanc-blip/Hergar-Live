@@ -934,6 +934,7 @@
 <script type="module">
   // v144 (visor) · Cabecera: con el próximo partido publicado sale el próximo partido (rival, jornada, fecha y hora) en vez del resultado anterior.
   // v144 (app + visor) · «Hace mejores a los demás»: el bonus por gol se quita como lo apuntó la app en cada pareja (en goleadas, cada gol nuevo rebaja lo de antes); cifras por compañero y 70'.
+  // v147 (app + visor) · Liga: probabilidades de cada partido en Partidos (y si ganó el favorito) y pestaña 🎯 Jornada en el Pronóstico.
   // v146 (app + visor) · «Hace mejores a los demás»: los partidos con «Llegué tarde» también cuentan, desde el minuto de llegada.
   // v145 (app + visor) · «Hace mejores a los demás»: la app apunta minuto a minuto las acciones de cada niño y quién está en el campo (partido.minutos); la medida sale de ahí, desde el partido del 17 de octubre.
   // v142 (app) · Plantilla: iconos de los líderes de la temporada (goles, asistencias, pases al área, pases clave, defensa, defensa clave, regates, eficacia, impacto y mejor compañero).
@@ -5722,7 +5723,7 @@
       const porVuelta = Math.max(1, ...todos.filter(p => p.vuelta === 1).map(p => p.jornada || 1));
       const P = todos.map(p => {
         const jugado = p.golesLocal != null && p.golesVisitante != null && p.golesLocal !== '' && p.golesVisitante !== '';
-        return { jg: ((p.vuelta || 1) - 1) * porVuelta + (p.jornada || 1), l: IDX[p.local], v: IDX[p.visitante],
+        return { id: p.id, jg: ((p.vuelta || 1) - 1) * porVuelta + (p.jornada || 1), l: IDX[p.local], v: IDX[p.visitante],
                  jugado, gl: jugado ? +p.golesLocal : 0, gv: jugado ? +p.golesVisitante : 0 };
       });
       const nombres = equipos.map(e => e.esHergar ? 'HERGAR' : (e.abrev || e.nombre || '¿?'));
@@ -5851,7 +5852,7 @@
       .pron-como summary{ font-family:'Montserrat',sans-serif; font-weight:800; font-size:12.5px; color:#e2e8f0; cursor:pointer; }
       .pron-como p{ font-size:11.5px; color:#94a3b8; line-height:1.55; margin-top:8px; }
       .pron-foot{ text-align:center; font-size:10px; color:#64748b; margin:4px 0 6px; }
-      .pron-tabs{ display:grid; grid-template-columns:repeat(3,1fr); gap:5px; margin-bottom:10px; }
+      .pron-tabs{ display:grid; grid-template-columns:repeat(4,1fr); gap:5px; margin-bottom:10px; }
       .pron-tab{ padding:9px 4px; border-radius:10px; font-family:'Montserrat',sans-serif; font-weight:800; font-size:11px; color:#94a3b8; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.06); cursor:pointer; }
       .pron-tab.on{ color:#0a0e14; background:#f5a623; border-color:#f5a623; }
       .pron-badge{ display:block; margin-top:10px; font-size:12px; font-weight:700; line-height:1.4; padding:9px 11px; border-radius:11px; }
@@ -6129,6 +6130,192 @@
       return h + `<div class="pron-hint" style="margin-top:8px">A = ataque (goles que mete) · D = defensa (lo poco que encaja), comparados con el mejor del grupo.</div></div>`;
     }
 
+    // ── v147 · PROBABILIDADES DE LA JORNADA (misma función en la app y en el visor) ──
+    // Cada partido de la Liga con su probabilidad de gana local / empate / gana visitante, con el mismo modelo del
+    // Pronóstico: los pendientes con todos los resultados que hay; los jugados, con lo que se sabía antes de jugarse
+    // (resultados hasta la jornada anterior), para ver si ganó el favorito. En la jornada del próximo partido del
+    // Hergar, además, cuánto cambia cada resultado sus opciones de campeón (lo que te juegas).
+    const PRON_JOR_HERGAR = '#ff5577', PRON_JOR_LOCAL = '#4aa3df', PRON_JOR_VIS = '#f5a623';
+    let pronJorCache = { clave: null, val: null };
+    function pronJorNom(n){
+      const s = String(n || '');
+      return s.replace(/^(C\.D\.F\.|C\.D\.|C\.F\.|U\.D\.|A\.D\.|S\.D\.|S\.C\.)\s*/i, '').replace(/\s*C\.F\.?\s*$/i, ' ').replace(/['"]/g, '').replace(/\s+/g, ' ').trim() || s;
+    }
+    function pronJorCalc(D, S){
+      const jug = D.P.filter(p => p.jugado);
+      const Jmax = jug.length ? Math.max(...jug.map(p => p.jg)) : 0;
+      const nivC = {};
+      const niv = (J) => nivC[J] || (nivC[J] = pronNiveles(D.NT, D.P.filter(p => p.jugado && p.jg <= J), J));
+      const porId = {};
+      let ok = 0, n = 0;
+      D.P.forEach(p => {
+        const Jb = p.jugado ? p.jg - 1 : Jmax;
+        const o = { l: p.l, v: p.v, jg: p.jg, jugado: p.jugado, pr: null };
+        if (p.id != null) porId[p.id] = o;
+        if (!D.P.some(x => x.jugado && x.jg <= Jb)) return;   // sin resultados previos no hay pronóstico
+        const R = niv(Jb);
+        const [w, d] = pronGanaEmpata(R.mu*R.att[p.l]*R.def[p.v]*R.h, R.mu*R.att[p.v]*R.def[p.l]/R.h);
+        o.pr = [w, d, Math.max(0, 1 - w - d)];
+        if (p.jugado) {
+          const r = p.gl > p.gv ? 0 : p.gl < p.gv ? 2 : 1;
+          const fav = o.pr.indexOf(Math.max(...o.pr));
+          o.real = r; o.fav = fav; o.pReal = o.pr[r]; o.acierto = r === fav;
+          n++; if (o.acierto) ok++;
+        }
+      });
+      let interes = null;
+      if (S && S.nextH && D.H >= 0) {
+        const champ = S.pos[D.H][0] / S.N;
+        const byId = {};
+        S.keyMatches.forEach((km, i) => {
+          const c = S.cond[i];
+          const vals = ['L', 'E', 'V'].map(k => c[k][1] >= 150 ? c[k][0] / c[k][1] : null);
+          if (km.id != null) byId[km.id] = vals;
+        });
+        interes = { jg: S.nextH.jg, champ, vivo: champ > .005 && champ < .995, byId };
+      }
+      return { porId, ok, n, Jmax, interes };
+    }
+    // Para la lista de Partidos: con caché, se recalcula solo cuando cambian los resultados
+    function pronJornadaInfo(liga){
+      if (!liga || !liga.equipos || !liga.partidos) return null;
+      const clave = JSON.stringify([liga.equipos.map(e => e.id + (e.esHergar ? '*' : '')), liga.partidos.map(p => [p.id, p.local, p.visitante, p.vuelta, p.jornada, p.golesLocal, p.golesVisitante])]);
+      if (pronJorCache.clave === clave) return pronJorCache.val;
+      let val = null;
+      try {
+        const D = pronPreparar(liga);
+        const jug = D.P.filter(p => p.jugado);
+        let S = null;
+        if (D.H >= 0 && jug.length) { const J = Math.max(...jug.map(p => p.jg)); S = pronSimular(D, J, PRON_N, 77 + J); }
+        val = { D, info: pronJorCalc(D, S) };
+      } catch (e) { console.error('Probabilidades de la jornada:', e); }
+      pronJorCache = { clave, val };
+      return val;
+    }
+    function pronJorChip(txt, tipo){
+      const c = ({ ok: ['#2ed573', 'rgba(46,213,115,.14)'], igual: ['#f5a623', 'rgba(245,166,35,.14)'], sorpresa: ['#ff7a90', 'rgba(255,85,119,.16)'],
+        claro: ['#cbd5e1', 'rgba(148,163,184,.14)'], interes: ['#2ed573', 'rgba(46,213,115,.14)'], nuestro: ['#ff7a90', 'rgba(255,85,119,.16)'] })[tipo] || ['#cbd5e1', 'rgba(148,163,184,.14)'];
+      return `<span style="display:inline-block; font-size:10.5px; font-weight:700; color:${c[0]}; background:${c[1]}; border-radius:6px; padding:2px 7px; line-height:1.4;">${pronEsc(txt)}</span>`;
+    }
+    function pronJorBarra(pr, colL, colV, alto){
+      const p = pr.map(x => Math.round(x * 100));
+      return `<div style="display:flex; height:${alto || 8}px; border-radius:4px; overflow:hidden; gap:2px;" role="img" aria-label="Local ${p[0]} %, empate ${p[1]} %, visitante ${p[2]} %">
+          <div style="width:${pr[0]*100}%; background:${colL};"></div><div style="width:${pr[1]*100}%; background:#5b6678;"></div><div style="width:${pr[2]*100}%; background:${colV};"></div></div>
+        <div style="display:flex; justify-content:space-between; font-size:10.5px; font-weight:700; margin-top:3px;">
+          <span style="color:${colL};">${pronPct(pr[0])} %</span><span style="color:#94a3b8;">Empate ${pronPct(pr[1])} %</span><span style="color:${colV};">${pronPct(pr[2])} %</span></div>`;
+    }
+    // Opciones de campeón según el resultado de un partido (null si da casi igual o no aplica)
+    function pronJorInteres(info, id){
+      const I = info && info.interes;
+      if (!I || !I.vivo || !I.byId[id]) return null;
+      const vals = I.byId[id], o = info.porId[id];
+      if (vals.filter(v => v != null).length < 2) return null;
+      // como en «El partido que también te interesa»: solo cuentan los resultados que se dan con cierta frecuencia
+      const prob = vals.map((v, i) => v != null && o && o.pr && o.pr[i] >= .15 ? v : null).filter(v => v != null);
+      const todos = vals.filter(v => v != null);
+      return { vals, rango: prob.length >= 2 ? Math.max(...prob) - Math.min(...prob) : 0, rangoTodo: Math.max(...todos) - Math.min(...todos) };
+    }
+    // Bloque bajo cada partido de la lista de Partidos
+    function pronJorPartidoHTML(D, info, id){
+      const o = info && info.porId[id];
+      if (!o || !o.pr) return '';
+      const H = D.H, esH = o.l === H || o.v === H;
+      const colL = o.l === H ? PRON_JOR_HERGAR : PRON_JOR_LOCAL, colV = o.v === H ? PRON_JOR_HERGAR : PRON_JOR_VIS;
+      const nL = pronJorNom(D.nombres[o.l]), nV = pronJorNom(D.nombres[o.v]);
+      const pc = (x) => pronPct(x) + ' %';
+      let chip = '', extra = '';
+      if (o.jugado) {
+        if (o.acierto) chip = pronJorChip(o.fav === 1 ? `✓ Empate, lo más probable (${pc(o.pReal)})` : `✓ Ganó el favorito (${pc(o.pReal)})`, 'ok');
+        else chip = pronJorChip(o.pReal < .25 ? `Sorpresa (${pc(o.pReal)})` : `Estaba igualado (${pc(o.pReal)})`, o.pReal < .25 ? 'sorpresa' : 'igual');
+        extra = `<span style="font-size:10px; color:#64748b;">Antes del partido</span>`;
+      } else {
+        const max = Math.max(...o.pr), fi = o.pr.indexOf(max), nFav = fi === 0 ? nL : fi === 2 ? nV : '';
+        const favTxt = fi === 1 || max < .45 ? 'Igualado' : (max >= .7 ? `Favorito claro: ${nFav}` : `Favorito: ${nFav}`);
+        const it = pronJorInteres(info, id);
+        if (esH) {
+          chip = pronJorChip(`Nuestro partido · ${favTxt}`, 'nuestro');
+          if (it) { const v = it.vals, g = o.l === H ? v[0] : v[2], p = o.l === H ? v[2] : v[0];
+            extra = `<span style="font-size:10.5px; color:#cbd5e1; line-height:1.45;">Opciones de campeón: ganando ${g == null ? '—' : pc(g)} · empatando ${v[1] == null ? '—' : pc(v[1])} · perdiendo ${p == null ? '—' : pc(p)}</span>`; }
+        } else if (it && it.rango >= .03) {
+          const v = it.vals, ok = v.map((x, i) => [x, i]).filter(x => x[0] != null && o.pr[x[1]] >= .15);
+          const best = Math.max(...ok.map(x => x[0])), worst = Math.min(...ok.map(x => x[0]));
+          const buenos = ok.filter(x => best - x[0] <= .015), peor = ok.find(x => x[0] === worst)[1];
+          const quien = (i) => i === 0 ? nL : nV;
+          let txt;
+          if (buenos.length >= 2 && !buenos.some(x => x[1] === peor)) txt = peor === 1 ? 'Te interesa que no empaten' : `Te interesa que no gane ${quien(peor)}`;
+          else { const b = ok.find(x => x[0] === best)[1]; txt = b === 1 ? 'Te interesa un empate' : `Te interesa que gane ${quien(b)}`; }
+          chip = pronJorChip(txt, 'interes');
+          extra = `<span style="font-size:10.5px; color:#cbd5e1; line-height:1.45;">Tus opciones de campeón: gana ${pronEsc(nL)} ${v[0] == null ? '—' : pc(v[0])} · empate ${v[1] == null ? '—' : pc(v[1])} · gana ${pronEsc(nV)} ${v[2] == null ? '—' : pc(v[2])}</span>`;
+        } else chip = pronJorChip(favTxt, 'claro');
+      }
+      return `<div style="padding:2px 6px 10px; display:flex; flex-direction:column; gap:5px;">
+        <div>${pronJorBarra(o.pr, colL, colV, o.jugado ? 6 : 8)}</div>
+        <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:4px 8px;">${chip}${extra}</div></div>`;
+    }
+    // Resumen arriba de la lista de una jornada
+    function pronJorResumenHTML(info, ids){
+      if (!info) return '';
+      const os = ids.map(id => info.porId[id]).filter(o => o && o.pr);
+      const jug = os.filter(o => o.jugado), pend = os.filter(o => !o.jugado);
+      if (!os.length) return '';
+      if (jug.length) {
+        const ok = jug.filter(o => o.acierto).length;
+        return `<div style="display:flex; align-items:center; gap:10px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06); border-radius:10px; padding:8px 10px; margin-bottom:8px;">
+          <span style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:20px; color:#2ed573; line-height:1;">${ok}/${jug.length}</span>
+          <span style="font-size:11px; color:#cbd5e1; line-height:1.4;">Ganó el favorito en ${ok} de ${jug.length} ${jug.length === 1 ? 'partido' : 'partidos'}${pend.length ? ' jugados' : ''}. La barra es lo que se esperaba antes de jugarse.</span></div>`;
+      }
+      return `<div style="display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:10.5px; color:#94a3b8; margin:0 2px 8px;">
+        <span>Probabilidades de cada partido</span>
+        <span style="display:flex; gap:9px;"><span><span style="display:inline-block; width:8px; height:8px; border-radius:2px; background:${PRON_JOR_LOCAL};"></span> Local</span><span><span style="display:inline-block; width:8px; height:8px; border-radius:2px; background:#5b6678;"></span> Empate</span><span><span style="display:inline-block; width:8px; height:8px; border-radius:2px; background:${PRON_JOR_VIS};"></span> Visitante</span></span></div>`;
+    }
+    // Pestaña 🎯 Jornada del Pronóstico
+    function pronJornadaVistaHTML(D, S){
+      const info = pronJorCalc(D, S), H = D.H;
+      let jg = S && S.nextH ? S.nextH.jg : null;
+      if (jg == null) { const pend = D.P.filter(p => !p.jugado); jg = pend.length ? Math.min(...pend.map(p => p.jg)) : null; }
+      let h = '';
+      if (jg != null) {
+        const ms = D.P.filter(p => p.jg === jg);
+        h += `<div class="pron-card"><div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px;"><div class="pron-h2" style="margin:0;">Jornada ${jg}</div><span style="font-size:10.5px; color:#94a3b8;">Gana local · empate · gana visitante</span></div>`;
+        ms.forEach(p => {
+          const o = info.porId[p.id]; if (!o || !o.pr) return;
+          const colL = p.l === H ? PRON_JOR_HERGAR : PRON_JOR_LOCAL, colV = p.v === H ? PRON_JOR_HERGAR : PRON_JOR_VIS;
+          const res = p.jugado ? `<span style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:12px; color:#f5f7fa;">${p.gl} - ${p.gv}</span>` : '';
+          h += `<div style="padding:8px 0; border-top:1px solid rgba(255,255,255,.06);">
+            <div style="display:flex; justify-content:space-between; gap:8px; font-size:12px; font-weight:700; margin-bottom:5px;"><span style="color:${p.l === H ? '#ff7a90' : '#e2e8f0'};">${pronEsc(pronJorNom(D.nombres[p.l]))}</span>${res}<span style="color:${p.v === H ? '#ff7a90' : '#e2e8f0'}; text-align:right;">${pronEsc(pronJorNom(D.nombres[p.v]))}</span></div>
+            ${pronJorBarra(o.pr, colL, colV, 7)}</div>`;
+        });
+        h += `</div>`;
+        const I = info.interes;
+        if (I && I.jg === jg) {
+          h += `<div class="pron-card" style="border-color:rgba(46,213,115,.35);"><div class="pron-h2" style="color:#2ed573;">Lo que te juegas esta jornada</div>`;
+          if (!I.vivo) h += `<div style="font-size:12px; color:#cbd5e1; line-height:1.5;">${I.champ >= .995 ? 'El campeonato está prácticamente asegurado: ningún resultado de esta jornada lo cambia.' : 'Esta jornada ya no cambia las opciones de ser campeón.'}</div>`;
+          else {
+            h += `<div style="font-size:11px; color:#94a3b8; margin-bottom:4px;">Tus opciones de campeón (ahora ${pronPct(I.champ)} %) según cada resultado</div>`;
+            const lista = ms.filter(p => !p.jugado).map(p => ({ p, it: pronJorInteres(info, p.id) })).filter(x => x.it)
+              .sort((a, b) => ((b.p.l === H || b.p.v === H) - (a.p.l === H || a.p.v === H)) || b.it.rango - a.it.rango);
+            const resto = [];
+            lista.forEach(({ p, it }) => {
+              const esH = p.l === H || p.v === H;
+              if (!esH && it.rango < .03) { resto.push(p); return; }
+              const r = esH ? it.rangoTodo : it.rango; // en nuestro partido cuentan los tres resultados
+          const peso = r >= .08 ? ['Mucho', '#ff7a90'] : r >= .03 ? ['Bastante', '#2ed573'] : ['Poco', '#94a3b8'];
+              const v = it.vals, nL = pronJorNom(D.nombres[p.l]), nV = pronJorNom(D.nombres[p.v]), f = (x) => x == null ? '—' : pronPct(x) + ' %';
+              const txt = esH ? (() => { const g = p.l === H ? v[0] : v[2], q = p.l === H ? v[2] : v[0]; return `Ganando, ${f(g)}. Empatando, ${f(v[1])}. Perdiendo, ${f(q)}.`; })()
+                              : `Gana ${pronEsc(nL)}, ${f(v[0])}. Empate, ${f(v[1])}. Gana ${pronEsc(nV)}, ${f(v[2])}.`;
+              h += `<div style="padding:7px 0; border-top:1px solid rgba(255,255,255,.06);"><div style="display:flex; justify-content:space-between; gap:8px; align-items:center;"><span style="font-size:12px; font-weight:700;">${pronEsc(nL)} – ${pronEsc(nV)}</span><span style="font-size:10.5px; font-weight:800; color:${peso[1]};">${peso[0]}</span></div>
+                <div style="font-size:11.5px; color:#cbd5e1; line-height:1.45; margin-top:2px;">${txt}</div></div>`;
+            });
+            if (resto.length) h += `<div style="padding:7px 0; border-top:1px solid rgba(255,255,255,.06); font-size:11.5px; color:#94a3b8; line-height:1.45;">${resto.length === 1 ? 'El otro partido mueve' : `Los otros ${resto.length} partidos mueven`} tus opciones menos de 3 puntos.</div>`;
+          }
+          h += `</div>`;
+        }
+      }
+      if (info.n) h += `<div class="pron-card" style="display:flex; align-items:center; gap:12px;"><span style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:22px; color:#2ed573; line-height:1;">${info.ok}/${info.n}</span>
+        <div><div style="font-size:12.5px; font-weight:700;">¿Acierta? Ganó el favorito ${info.ok} de ${info.n} veces</div><div style="font-size:11px; color:#94a3b8; line-height:1.4; margin-top:2px;">Cada partido con lo que se sabía antes de jugarse. La primera jornada no cuenta: aún no había resultados.</div></div></div>`;
+      return h || `<div class="pron-card" style="font-size:12px; color:#94a3b8;">Aún no hay partidos con pronóstico.</div>`;
+    }
+
     function pronHTML(D){
       const J = Math.max(...D.P.filter(p => p.jugado).map(p => p.jg));
       const S = pronSimular(D, J, PRON_N, 77 + J);
@@ -6140,10 +6327,11 @@
       const vista = (k, html) => `<div class="pron-vista" data-v="${k}" style="${v===k?'':'display:none'}">${html}</div>`;
       let h = `<div class="pron-root">`;
       if (J < 5) h += `<div class="pron-warn">⚠️ Aún hay pocas jornadas jugadas. El pronóstico es orientativo y se irá afinando cada semana.</div>`;
-      h += `<div class="pron-tabs">${tab('asc','🏆 Ascenso')}${tab('cal','📅 Calendario')}${tab('niv','📊 Nivel')}</div>`;
+      h += `<div class="pron-tabs">${tab('asc','🏆 Ascenso')}${tab('cal','📅 Calendario')}${tab('niv','📊 Nivel')}${tab('jor','🎯 Jornada')}</div>`;
       h += vista('asc', pronAscensoHTML(D, S, J, champ, evo, prev));
       h += vista('cal', pronCalendarioHTML(D, S, champ));
       h += vista('niv', pronNivelHTML(D, S, J));
+      h += vista('jor', pronJornadaVistaHTML(D, S)); // v147
       h += `<details class="pron-card pron-como"><summary>¿Cómo se calcula?</summary>
         <p>1. Con los resultados de la Liga se calcula el nivel de ataque y de defensa de cada equipo. Cuenta a quién le metiste o te metió los goles: marcarle al líder vale más que marcarle al último.</p>
         <p>2. Los partidos recientes pesan más que los antiguos, así que un equipo que viene lanzado sube aunque empezara mal. Con pocas jornadas jugadas todos se parecen a la media, para que un resultado raro no lo descoloque todo.</p>
@@ -6413,7 +6601,8 @@
     const diaDe = (f) => { const iso = isoDe(f); if (!iso) return ''; const d = new Date(iso + 'T12:00:00'); return isNaN(d) ? '' : DIAS[d.getDay()]; };
     let diaActual = null;
     const cont = document.getElementById('ligaViewerPartidos');
-    cont.innerHTML = partidosJornada.map(p => {
+    const pj = pronJornadaInfo(liga); // v147: probabilidades de cada partido
+    cont.innerHTML = (pj ? pronJorResumenHTML(pj.info, partidosJornada.map(p => p.id)) : '') + partidosJornada.map(p => {
       const localEs = esHergarLigaViewer(liga, p.local), visEs = esHergarLigaViewer(liga, p.visitante);
       const jugado = p.golesLocal != null && p.golesVisitante != null;
       const marcador = jugado
@@ -6436,7 +6625,7 @@
         ${marcador}
         ${escudoLigaVisorPorId(liga, p.visitante, 22)}
         <span class="liga-equipo-name ${visEs?'hergar-team':''}">${nombreEquipoLigaViewer(liga, p.visitante)}</span>
-      </div>${cuando}`;
+      </div>${cuando}${pj ? pronJorPartidoHTML(pj.D, pj.info, p.id) : ''}`;
     }).join('');
   }
 

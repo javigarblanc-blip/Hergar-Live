@@ -932,6 +932,8 @@
 </div>
 
 <script type="module">
+  // v142 (app) · Plantilla: iconos de los líderes de la temporada (goles, asistencias, pases al área, pases clave, defensa, defensa clave, regates, eficacia, impacto y mejor compañero).
+  // v141 (app) · «Hace mejores a los demás»: solo las acciones de los compañeros (sin bonus de equipo) y «sin él» solo en los partidos que jugó.
   // v140 (app) · «Hace mejores a los demás»: impacto de los compañeros con él y sin él (Sinergias, Ranking, ficha) y 🧲 al mejor compañero en la Plantilla. En el visor, solo los positivos.
   // v139 (app) · Acta del partido en PDF (3 páginas). En el visor, botón en cada partido si la app lo permite, sin el más/menos de cada niño.
   // v137 (app) · Más análisis → 🔄 Banquillo: el equipo antes y después de los cambios, lo que aporta el banquillo, cambio a cambio y cada niño de titular y de suplente.
@@ -2633,46 +2635,100 @@
   // Impacto medio de los compañeros por 70' con el niño en el campo frente a sin él. Sale de las sinergias de la
   // temporada: por cada pareja se guarda el impacto que suman los dos mientras coinciden (impN) y el tiempo (segsN).
   // A ese impacto se le quita la parte del propio niño (su impacto medio por minuto × el tiempo juntos) y queda lo de
-  // los compañeros. "Sin él" = todo lo que hacen los compañeros en la temporada menos lo que hicieron con él.
+  // los compañeros. "Sin él" = lo que hacen los compañeros en los partidos que jugó, menos lo que hicieron con él.
   const COMP_MIN_JUGADOS = 70, COMP_MIN_SIN = 35;
   function compImp(h) { const m = h.mins || 0; return h.imp !== undefined ? (Number(h.imp) || 0) : (Number(h.impPond) || 0) * m / 70; }
   function compFmt(v) { return v == null ? '—' : (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(2).replace('.', ','); }
   function compDec(v) { return v == null ? '—' : (v < 0 ? '−' : '') + Math.abs(v).toFixed(2).replace('.', ','); }
   function compEsc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
   function companerosTemporada(t) {
+      // v141 · Solo cuentan las ACCIONES de los compañeros (sin bonus de equipo por goles, sin descuentos por goles
+      // o tiros del rival y sin portería a cero), y «sin él» solo en los partidos que jugó (mientras estaba en el banquillo).
+      // La parte de equipo se calcula con el minuto de los goles y quién estaba en el campo (titulares + minutos);
+      // los tiros del rival y la portería a cero se reparten por el tiempo en el campo.
+      const RG = (typeof REGLAS_IMPACTO !== 'undefined' && REGLAS_IMPACTO) ? REGLAS_IMPACTO : ((typeof reglasImpacto !== 'undefined' && reglasImpacto) ? reglasImpacto : {});
+      const EQ = Object.assign({ golFavor: 1, golContra: -1, tiroRivalPuerta: -0.15, tiroRivalFuera: -0.05, golesSinReparto: 4 }, RG.equipo || {});
+      const PC = Object.assign({ portero: 1.5, defensa: 1.25, centrocampista: 0.6, delantero: 0 }, RG.porteriaCero || {});
+      const penContra = -Math.abs(((RG.penaltis || {}).contraGolCampo) ?? 0.5);
       const js = Object.values((t && t.jugadores) || {});
       const ps = (t && t.partidos) || [];
       const sin = (t && t.sinergias) || {};
-      const tot = {};
-      js.forEach(j => { let m = 0, imp = 0; (j.historial || []).forEach(h => { m += h.mins || 0; imp += compImp(h); }); tot[j.id] = { m, imp }; });
-      // minutos que ha jugado el equipo (duración de cada partido)
-      let minEq = 0;
+      const clave = (a, b) => sin[`${a}_${b}`] ? `${a}_${b}` : (sin[`${b}_${a}`] ? `${b}_${a}` : null);
+      const equipoPar = {};                     // parte de equipo de cada pareja mientras coinciden
+      const pp = [];                            // por partido: quién jugó, su parte de acciones y su tramo
+      let sinTitulares = 0;
       ps.forEach(p => {
-          let d = 0; const mt = /^(\d+):/.exec(String(p.duracion || '')); if (mt) d = parseInt(mt[1], 10);
-          js.forEach(j => { const h = (j.historial || []).find(x => x.fecha === p.fecha && x.rival === p.rival); if (h && (h.mins || 0) > d) d = h.mins; });
-          minEq += d || 70;
+          if (p.manual) return;                 // los cargados a mano no tienen el detalle de las parejas
+          const tit = Array.isArray(p.titulares) && p.titulares.length ? p.titulares.map(String) : null;
+          if (!tit) { sinTitulares++; return; }
+          const filas = [];
+          js.forEach(j => { const h = (j.historial || []).find(x => x.fecha === p.fecha && x.rival === p.rival); if (h && (h.mins || 0) > 0) filas.push({ id: String(j.id), j, h, mins: h.mins }); });
+          if (!filas.length) return;
+          let dur = 0; const mt = /^(\d+):/.exec(String(p.duracion || '')); if (mt) dur = parseInt(mt[1], 10);
+          filas.forEach(f => { if (f.mins > dur) dur = f.mins; });
+          dur = dur || 70;
+          filas.forEach(f => { const esT = tit.includes(f.id); f.a = esT ? 0 : Math.max(0, dur - f.mins); f.b = esT ? f.mins : dur; });
+          const GL = Number(p.golesLocal) || 0, GR = Number(p.golesRival) || 0;
+          const vF = EQ.golFavor * (GL <= EQ.golesSinReparto ? 1 : EQ.golesSinReparto / GL);
+          const gs = Array.isArray(p.goles) ? p.goles.filter(g => g && (g.equipo === 'hergar' || g.equipo === 'rival')) : [];
+          const conMin = gs.length === GL + GR && gs.every(g => (g.min != null ? g.min : g.minuto) != null);
+          const minDe = (g) => Number(g.min != null ? g.min : g.minuto);
+          const trP = Math.max(0, (Number(p.tirosRivalesPuerta) || 0) - GR), trF = Number(p.tirosRivalesFuera) || 0;
+          const rS = (trP * EQ.tiroRivalPuerta + trF * EQ.tiroRivalFuera) / dur;       // por minuto en el campo
+          const enCampo = (f, m) => m >= f.a && (m < f.b || f.b >= dur); // quien entra en ese minuto ya está; quien sale, no
+          filas.forEach(f => {
+              let gF, gC;
+              if (conMin) { gF = gs.filter(g => g.equipo === 'hergar' && enCampo(f, minDe(g))).length * vF;
+                  gC = gs.filter(g => g.equipo === 'rival' && enCampo(f, minDe(g))).reduce((s, g) => s + (g.penalti ? penContra : EQ.golContra), 0); }
+              else { gF = (Number(f.h.gfCampo) || 0) * vF; gC = (Number(f.h.gcCampo) || 0) * EQ.golContra; }
+              let pc = 0;
+              if ((f.h.gcCampo !== undefined ? Number(f.h.gcCampo) : (conMin ? gs.filter(g => g.equipo === 'rival' && enCampo(f, minDe(g))).length : GR)) === 0) {
+                  const li = f.h.lineas || {}; const tl = Object.values(li).reduce((s, v) => s + v, 0);
+                  const valor = tl > 0 ? Object.keys(li).reduce((s, l) => s + (PC[l] || 0) * li[l] / tl, 0) : 0;
+                  pc = valor * Math.min(1, f.mins / 70);
+              }
+              f.equipo = gF + gC + rS * f.mins + pc; f.pc = pc;
+              const imp = f.h.imp !== undefined ? (Number(f.h.imp) || 0) : (Number(f.h.impPond) || 0) * f.mins / 70;
+              f.acc = imp - f.equipo;           // lo que suma con sus propias acciones
+          });
+          for (let i = 0; i < filas.length; i++) for (let k = i + 1; k < filas.length; k++) {
+              const A = filas[i], B = filas[k];
+              const key = clave(A.id, B.id); if (!key) continue;
+              const a = Math.max(A.a, B.a), b = Math.min(A.b, B.b), ov = b - a; if (ov <= 0) continue;
+              let gF, gC;
+              if (conMin) { const juntos = (g) => { const m = minDe(g); return m >= a && (m < b || b >= dur); };
+                  gF = gs.filter(g => g.equipo === 'hergar' && juntos(g)).length * vF;
+                  gC = gs.filter(g => g.equipo === 'rival' && juntos(g)).reduce((s, g) => s + (g.penalti ? penContra : EQ.golContra), 0); }
+              else { gF = ((Number(A.h.gfCampo) || 0) * ov / A.mins + (Number(B.h.gfCampo) || 0) * ov / B.mins) / 2 * vF;
+                  gC = ((Number(A.h.gcCampo) || 0) * ov / A.mins + (Number(B.h.gcCampo) || 0) * ov / B.mins) / 2 * EQ.golContra; }
+              equipoPar[key] = (equipoPar[key] || 0) + 2 * (gF + gC + rS * ov) + A.pc * ov / A.mins + B.pc * ov / B.mins;
+          }
+          pp.push({ filas, dur });
       });
-      const par = (a, b) => sin[`${a}_${b}`] || sin[`${b}_${a}`] || null;
-      let cTodos = 0, mTodos = 0;
-      js.forEach(y => { cTodos += tot[y.id].imp; mTodos += tot[y.id].m; });
       const res = {};
       js.forEach(x => {
-          const tx = tot[x.id];
-          const rX = tx.m > 0 ? tx.imp / tx.m : 0;
+          const idx = String(x.id);
+          let mX = 0, aX = 0, cEq = 0, mEq = 0, off = 0;
+          pp.forEach(P => {
+              const yo = P.filas.find(f => f.id === idx); if (!yo) return;
+              mX += yo.mins; aX += yo.acc; off += Math.max(0, P.dur - yo.mins);
+              P.filas.forEach(f => { if (f.id === idx) return; cEq += f.acc; mEq += f.mins; });
+          });
+          const rX = mX > 0 ? aX / mX : 0;
           let cCon = 0, mCon = 0;
           js.forEach(y => {
-              if (y.id === x.id) return;
-              const P = par(x.id, y.id);
-              if (!P || !(Number(P.segsN) > 0)) return;
+              if (String(y.id) === idx) return;
+              const key = clave(x.id, y.id); if (!key) return;
+              const P = sin[key]; if (!(Number(P.segsN) > 0)) return;
               const tm = Number(P.segsN) / 60;
-              cCon += (Number(P.impN) || 0) - rX * tm; mCon += tm;
+              cCon += (Number(P.impN) || 0) - (equipoPar[key] || 0) - rX * tm; mCon += tm;
           });
-          const cSin = (cTodos - tx.imp) - cCon, mSin = (mTodos - tx.m) - mCon;
-          const off = Math.max(0, minEq - tx.m);
+          const cSin = cEq - cCon, mSin = mEq - mCon;
           const con = mCon > 0 ? cCon / mCon * 70 : null, sinV = mSin > 0 ? cSin / mSin * 70 : null;
-          const ok = tx.m >= COMP_MIN_JUGADOS && off >= COMP_MIN_SIN && con != null && sinV != null && mSin >= COMP_MIN_SIN;
-          res[x.id] = { j: x, mins: tx.m, off, con, sin: sinV, efecto: ok ? con - sinV : null, motivo: tx.m < COMP_MIN_JUGADOS ? 'pocos' : (!ok ? 'siempre' : '') };
+          const ok = mX >= COMP_MIN_JUGADOS && off >= COMP_MIN_SIN && con != null && sinV != null && mSin >= COMP_MIN_SIN;
+          res[x.id] = { j: x, mins: mX, off, con, sin: sinV, efecto: ok ? con - sinV : null, motivo: mX < COMP_MIN_JUGADOS ? 'pocos' : (!ok ? 'siempre' : '') };
       });
+      Object.defineProperty(res, '__sinTitulares', { value: sinTitulares, enumerable: false });
       return res;
   }
   // El que más hace mejorar a los demás ahora mismo (solo si su efecto es positivo)
@@ -2687,7 +2743,7 @@
       const R = Object.values(companerosTemporada(t));
       const con = R.filter(x => x.efecto != null).sort((a, b) => b.efecto - a.efecto);
       const lista = soloPositivos ? con.filter(x => x.efecto > 0) : con;
-      if (!lista.length) return `<div style="font-size:12px; color:#94a3b8; line-height:1.5;">${soloPositivos ? 'Aún no hay datos suficientes.' : `Aún no hay datos suficientes (hace falta ${COMP_MIN_JUGADOS}' jugados y ${COMP_MIN_SIN}' del equipo sin él).`}</div>`;
+      if (!lista.length) return `<div style="font-size:12px; color:#94a3b8; line-height:1.5;">${soloPositivos ? 'Aún no hay datos suficientes.' : `Aún no hay datos suficientes (hace falta ${COMP_MIN_JUGADOS}' jugados y ${COMP_MIN_SIN}' en el banquillo en los partidos que jugó).`}</div>`;
       const maxAbs = Math.max(0.01, ...lista.map(x => Math.abs(x.efecto)));
       const filas = lista.map((x, i) => {
           const v = x.efecto, col = soloPositivos ? acento : (v >= 0 ? '#2ed573' : '#ff6b7a');
@@ -2702,10 +2758,10 @@
               <div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:15px; text-align:right; color:${col};">${compFmt(v)}</div></div>`;
       }).join('');
       const siempre = soloPositivos ? [] : R.filter(x => x.efecto == null && x.motivo === 'siempre').map(x => compEsc((x.j.name || '').split(' ')[0]));
-      return `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin-bottom:6px;">Impacto medio de los compañeros por 70' <b style="color:#e2e8f0;">con él</b> en el campo y <b style="color:#e2e8f0;">sin él</b>. La diferencia es lo que mejora (o empeora) a los demás.</div>`
+      return `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin-bottom:6px;">Puntos por acciones de los compañeros por 70' <b style="color:#e2e8f0;">con él</b> en el campo y <b style="color:#e2e8f0;">sin él</b> (en el banquillo, en los mismos partidos). La diferencia es lo que mejora (o empeora) a los demás.</div>`
           + filas
           + (siempre.length ? `<div style="font-size:10.5px; color:#64748b; margin-top:8px; line-height:1.4;">Sin comparación (casi siempre en el campo): ${siempre.join(', ')}.</div>` : '')
-          + `<div style="font-size:10.5px; color:#94a3b8; margin-top:8px; line-height:1.45;">${soloPositivos ? 'Solo salen los que suman. ' : ''}Mínimo ${COMP_MIN_JUGADOS}' jugados y ${COMP_MIN_SIN}' del equipo sin él. Cuenta todo el impacto de los compañeros: sus acciones, sus goles y asistencias y lo que les toca por los goles y tiros con ellos en el campo.</div>`;
+          + `<div style="font-size:10.5px; color:#94a3b8; margin-top:8px; line-height:1.45;">${soloPositivos ? 'Solo salen los que suman. ' : ''}«Sin él» es mientras estaba en el banquillo en los partidos que jugó. Mínimo ${COMP_MIN_JUGADOS}' jugados y ${COMP_MIN_SIN}' en el banquillo. Solo cuentan las acciones de los compañeros (también sus goles y asistencias); no el bonus de equipo por goles ni lo que resta un gol o un tiro del rival.</div>`;
   }
   // Línea de la ficha del niño
   function companeroJugadorHTML(t, j, soloPositivos, acento) {
@@ -2716,13 +2772,52 @@
       const lider = mejorCompaneroId(t) === String(j.id);
       return `<div style="margin-top:10px; background:rgba(255,255,255,.04); border-radius:10px; padding:10px 12px;">
           <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;"><span style="font-size:12.5px; color:#e2e8f0;">🧲 Con él, sus compañeros</span><b style="font-family:'Montserrat',sans-serif; color:${col};">${compFmt(r.efecto)} por 70'</b></div>
-          <div style="font-size:10.5px; color:#94a3b8; margin-top:3px;">Impacto medio de los compañeros: ${compDec(r.con)} con él · ${compDec(r.sin)} sin él${lider ? ' · <b style="color:#f5a623;">el mejor compañero del momento</b>' : ''}</div></div>`;
+          <div style="font-size:10.5px; color:#94a3b8; margin-top:3px;">Acciones de los compañeros por 70': ${compDec(r.con)} con él · ${compDec(r.sin)} sin él${lider ? ' · <b style="color:#f5a623;">el mejor compañero del momento</b>' : ''}</div></div>`;
   }
   function companerosExplicacionHTML() {
       return `<div style="font-size:12.5px; line-height:1.55; color:#e2e8f0; padding-top:6px;">
-          <p style="margin:0 0 8px;"><strong>Hace mejores a los demás:</strong> impacto medio de los compañeros por cada 70 minutos mientras el niño está en el campo, menos el de cuando no está. Si sale positivo, con él los demás rinden más.</p>
-          <p style="margin:0 0 8px;">Sale de las parejas de las sinergias: lo que suman dos niños mientras coinciden, quitando la parte del propio niño (su impacto medio por minuto). Cuenta todo el impacto de los compañeros: acciones, goles, asistencias y lo que les toca por los goles y tiros con ellos en el campo.</p>
-          <p style="margin:0;">Hacen falta ${COMP_MIN_JUGADOS}' jugados y ${COMP_MIN_SIN}' del equipo sin él; quien casi siempre juega no se puede comparar. 🧲 en la plantilla marca al mejor compañero del momento. En el visor solo salen los efectos positivos.</p></div>`;
+          <p style="margin:0 0 8px;"><strong>Hace mejores a los demás:</strong> impacto medio de los compañeros por cada 70 minutos mientras el niño está en el campo, menos el de mientras está en el banquillo <strong>en esos mismos partidos</strong>. Los partidos que no jugó no cuentan, así que jugar solo goleadas (o solo partidos difíciles) no le favorece ni le perjudica. Si sale positivo, con él los demás rinden más.</p>
+          <p style="margin:0 0 8px;">Solo cuentan las <strong>acciones</strong> de los compañeros: tiros, pases, regates, defensa, paradas, sus goles y asistencias, fallos… No cuenta lo que les toca por estar en el campo (el bonus por gol del equipo, lo que resta un gol o un tiro del rival, la portería a cero): así un gol suyo no infla a los demás y el marcador no decide. Esa parte de equipo se quita con el minuto de cada gol y quién estaba en el campo; los tiros del rival y la portería a cero, por el tiempo jugado.</p>
+            <p style="margin:0 0 8px;">Sale de las parejas de las sinergias: lo que suman dos niños mientras coinciden, quitando la parte del propio niño (sus acciones por minuto). Los partidos cargados a mano o sin titulares no entran.</p>
+          <p style="margin:0;">Hacen falta ${COMP_MIN_JUGADOS}' jugados y ${COMP_MIN_SIN}' en el banquillo en los partidos que jugó; quien casi siempre juega entero no se puede comparar. 🧲 en la plantilla marca al mejor compañero del momento. En el visor solo salen los efectos positivos.</p></div>`;
+  }
+
+  // ── v142 · LÍDERES DE LA PLANTILLA (misma función en la app y en el visor) ──
+  // Icono junto al nombre del que lidera cada apartado de la temporada. Empates: lo llevan todos los empatados.
+  // Hace falta tener al menos 1; eficacia de tiro con mínimo 5 tiros; impacto con el mínimo de minutos del ranking.
+  const LIDERES_DEF = [
+      { k: 'goles', ic: '⚽', t: 'Máximo goleador', v: j => j.goles || 0 },
+      { k: 'asist', ic: '👟', t: 'Más asistencias', v: j => j.asistencias || 0 },
+      { k: 'pa', ic: '📯', t: 'Más pases al área', v: j => j.pasesArea || 0 },
+      { k: 'pc', ic: '🔑', t: 'Más pases clave', v: j => j.pasesClave || 0 },
+      { k: 'def', ic: '🛡️', t: 'Más acciones defensivas', v: j => j.accionesDef || 0 },
+      { k: 'defC', ic: '🛡️⭐', t: 'Más acciones defensivas clave', v: j => j.accionesDefClave || 0 },
+      { k: 'reg', ic: '🌀', t: 'Más regates / jugadas individuales', v: j => j.regates || 0 },
+      { k: 'efi', ic: '🎯', t: 'Mejor eficacia de tiro (mín. 5 tiros)', v: j => { const e = (typeof eficaciaTiroJugador === 'function') ? eficaciaTiroJugador(j) : null; return (e && e.tiros >= 5) ? e.goles / e.tiros : 0; } },
+      { k: 'imp', ic: '📈', t: "Mejor impacto por 70'", v: (j, minM) => ((j.minutos || 0) >= minM && (j.minutos || 0) > 0) ? (j.impactoAcum || 0) / j.minutos * 70 : -Infinity, sinMin: true }
+  ];
+  function lideresPlantilla(t, minMinutos) {
+      const js = Object.values((t && t.jugadores) || {});
+      const out = {}, usados = [];
+      const add = (id, d) => { (out[String(id)] = out[String(id)] || []).push(d); if (!usados.includes(d)) usados.push(d); };
+      LIDERES_DEF.forEach(d => {
+          let max = -Infinity;
+          js.forEach(j => { const v = d.v(j, minMinutos); if (v > max) max = v; });
+          if (d.sinMin ? !(max > -Infinity) : !(max > 0)) return;
+          js.forEach(j => { if (Math.abs(d.v(j, minMinutos) - max) < 1e-9) add(j.id, d); });
+      });
+      const mc = (typeof mejorCompaneroId === 'function') ? mejorCompaneroId(t) : null;
+      if (mc) add(mc, { k: 'comp', ic: '🧲', t: 'Mejor compañero del momento: con él, los demás rinden más' });
+      return { porJugador: out, usados };
+  }
+  function lideresIconosHTML(L, id) {
+      const ds = (L && L.porJugador[String(id)]) || [];
+      return ds.length ? ` <span style="font-size:12px; letter-spacing:1px; white-space:nowrap;">${ds.map(d => `<span title="${d.t}">${d.ic}</span>`).join('')}</span>` : '';
+  }
+  function lideresLeyendaHTML(L) {
+      if (!L || !L.usados.length) return '';
+      const orden = LIDERES_DEF.map(d => d.k).concat(['comp']);
+      return `<div style="font-size:11px; color:#94a3b8; margin-top:8px; line-height:1.7;">${L.usados.slice().sort((a, b) => orden.indexOf(a.k) - orden.indexOf(b.k)).map(d => `<span style="white-space:nowrap; margin-right:10px;">${d.ic} ${d.t.replace(' del momento: con él, los demás rinden más', '')}</span>`).join('')}</div>`;
   }
 
   function evolucionJugadorHTML(t, j) {
@@ -4988,14 +5083,14 @@
       const impacto = (j.minutos || 0) > 0 ? (j.impactoAcum || 0) / j.minutos * 70 : 0;
       return { p, j, impacto };
     }).sort((a, b) => (a.p.dorsal || 99) - (b.p.dorsal || 99));
-    const mejorComp = ultimaTemporada ? mejorCompaneroId(ultimaTemporada) : null; // v140
+    const lideres = ultimaTemporada ? lideresPlantilla(ultimaTemporada, minMinutosRanking()) : null; // v142: iconos de líderes (incluye el 🧲)
     const filaHtml = filas.map(({p, j, impacto}) => {
       const color = ESTADO_COLOR_VIEWER[p.estado] || '#94a3b8';
       const label = ESTADO_LABEL_VIEWER[p.estado] || 'Disponible';
       const impStr = (j.minutos || 0) > 0 ? impacto.toFixed(1) : '—';
       return `<tr onclick="abrirPerfilJugadorTemporada('${p.id}')" style="cursor:pointer; border-bottom:1px solid rgba(255,255,255,.05);">
         <td style="padding:9px 8px; color:#8da499; font-weight:700;">${p.dorsal}</td>
-        <td style="padding:9px 8px; color:#e7efe9; font-weight:700; white-space:nowrap;">${escHtml((p.name||'').split(' ')[0])}${mejorComp === String(p.id) ? ' <span title="Mejor compañero del momento" style="font-size:12px;">🧲</span>' : ''}</td>
+        <td style="padding:9px 8px; color:#e7efe9; font-weight:700; white-space:nowrap;">${escHtml((p.name||'').split(' ')[0])}${lideresIconosHTML(lideres, p.id)}</td>
         <td style="padding:9px 8px; text-align:center;">${j.partidos || 0}</td>
         <td style="padding:9px 8px; text-align:center;">${j.minutos || 0}'</td>
         <td style="padding:9px 8px; text-align:center;">${j.goles || 0}</td>
@@ -5021,7 +5116,7 @@
           </thead>
           <tbody>${filaHtml}</tbody>
         </table>
-      </div>${mejorComp ? `<div style="font-size:11px; color:#94a3b8; margin-top:6px;">🧲 Mejor compañero del momento: con él en el campo, los demás rinden más.</div>` : ''}`;
+      </div>${lideresLeyendaHTML(lideres)}`;
   }
 
 

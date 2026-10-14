@@ -933,6 +933,7 @@
 
 <script type="module">
   // v144 (visor) · Cabecera: con el próximo partido publicado sale el próximo partido (rival, jornada, fecha y hora) en vez del resultado anterior.
+  // v144 (app + visor) · «Hace mejores a los demás»: el bonus por gol se quita como lo apuntó la app en cada pareja (en goleadas, cada gol nuevo rebaja lo de antes); cifras por compañero y 70'.
   // v142 (app) · Plantilla: iconos de los líderes de la temporada (goles, asistencias, pases al área, pases clave, defensa, defensa clave, regates, eficacia, impacto y mejor compañero).
   // v141 (app) · «Hace mejores a los demás»: solo las acciones de los compañeros (sin bonus de equipo) y «sin él» solo en los partidos que jugó.
   // v140 (app) · «Hace mejores a los demás»: impacto de los compañeros con él y sin él (Sinergias, Ranking, ficha) y 🧲 al mejor compañero en la Plantilla. En el visor, solo los positivos.
@@ -2677,9 +2678,40 @@
           const trP = Math.max(0, (Number(p.tirosRivalesPuerta) || 0) - GR), trF = Number(p.tirosRivalesFuera) || 0;
           const rS = (trP * EQ.tiroRivalPuerta + trF * EQ.tiroRivalFuera) / dur;       // por minuto en el campo
           const enCampo = (f, m) => m >= f.a && (m < f.b || f.b >= dur); // quien entra en ese minuto ya está; quien sale, no
+          // v144 · El bonus por gol a favor se quita tal y como lo apuntó la app en cada momento. Con la regla de la v105,
+          // cada gol nuevo de una goleada rebaja lo que ya llevaban todos, y esa rebaja cae en las parejas que están en el
+          // campo en ese instante (antes se suponía que todos los goles valían lo mismo, y salían negativos los que juegan
+          // los finales de las goleadas). En los partidos de antes de la v105: +1,00 hasta el 4.º gol y +0,30 desde el 5.º.
+          const reglaNueva = Number(p.reglaImpacto) >= 105, recalc105 = !reglaNueva && !!p.recalc105;
+          const LIMG = EQ.golesSinReparto || 4;
+          const vVivo = (k) => EQ.golFavor * (k <= LIMG ? 1 : LIMG / k), vViejo = (k) => EQ.golFavor * (k <= LIMG ? 1 : 0.30);
+          const golesH = conMin ? gs.map((g, n) => ({ g, n })).filter(x => x.g.equipo === 'hergar').sort((x, y) => (minDe(x.g) - minDe(y.g)) || (x.n - y.n)).map(x => x.g) : [];
+          filas.forEach(f => {
+              let n = 0; f.dGol = golesH.map((g, k) => {
+                  if (!enCampo(f, minDe(g))) return null;
+                  const K = k + 1, d = reglaNueva ? (n + 1) * vVivo(K) - n * (K > 1 ? vVivo(K - 1) : 0) : vViejo(K);
+                  n++; return d;
+              });
+              f.nGolCampo = n;
+          });
+          // v105 recalculado: en las parejas el gol y la asistencia desde el 5.º gol quedaron apuntados al 30 %
+          const lineaMax = (li) => { let m = null, v = -1; Object.keys(li || {}).forEach(k => { if ((li[k] || 0) > v) { v = li[k] || 0; m = k; } }); return m; };
+          const ACC = Object.assign({ gol: 0.75, golExtraDefensa: 1.25, golExtraMedio: 0.15, asistencia: 0.40 }, RG.acciones || {});
+          const PEN = ((RG.penaltis || {}).marca) ?? 0.5;
+          const faltaInd = (g, K, f) => {
+              if (!recalc105 || K <= LIMG || !f) return 0;
+              let x = 0;
+              if (g.jugadorId != null && String(g.jugadorId) === f.id) {
+                  let base = g.penalti ? PEN : ACC.gol;
+                  if (!g.penalti) { const li = lineaMax(f.h.lineas); if (li === 'defensa') base += ACC.golExtraDefensa; else if (li === 'centrocampista') base += ACC.golExtraMedio; }
+                  x -= base * 0.7;
+              }
+              if (g.asistenteId != null && String(g.asistenteId) === f.id) x -= ACC.asistencia * 0.7;
+              return x;
+          };
           filas.forEach(f => {
               let gF, gC;
-              if (conMin) { gF = gs.filter(g => g.equipo === 'hergar' && enCampo(f, minDe(g))).length * vF;
+              if (conMin) { gF = (reglaNueva || recalc105) ? f.nGolCampo * vF : f.dGol.reduce((s, d) => s + (d || 0), 0);
                   gC = gs.filter(g => g.equipo === 'rival' && enCampo(f, minDe(g))).reduce((s, g) => s + (g.penalti ? penContra : EQ.golContra), 0); }
               else { gF = (Number(f.h.gfCampo) || 0) * vF; gC = (Number(f.h.gcCampo) || 0) * EQ.golContra; }
               let pc = 0;
@@ -2698,7 +2730,7 @@
               const a = Math.max(A.a, B.a), b = Math.min(A.b, B.b), ov = b - a; if (ov <= 0) continue;
               let gF, gC;
               if (conMin) { const juntos = (g) => { const m = minDe(g); return m >= a && (m < b || b >= dur); };
-                  gF = gs.filter(g => g.equipo === 'hergar' && juntos(g)).length * vF;
+                  gF = golesH.reduce((s, g, k) => (A.dGol[k] == null || B.dGol[k] == null) ? s : s + A.dGol[k] + B.dGol[k] + faltaInd(g, k + 1, A) + faltaInd(g, k + 1, B), 0) / 2; // la pareja entera, ÷ 2 porque abajo va × 2
                   gC = gs.filter(g => g.equipo === 'rival' && juntos(g)).reduce((s, g) => s + (g.penalti ? penContra : EQ.golContra), 0); }
               else { gF = ((Number(A.h.gfCampo) || 0) * ov / A.mins + (Number(B.h.gfCampo) || 0) * ov / B.mins) / 2 * vF;
                   gC = ((Number(A.h.gcCampo) || 0) * ov / A.mins + (Number(B.h.gcCampo) || 0) * ov / B.mins) / 2 * EQ.golContra; }
@@ -2759,7 +2791,7 @@
               <div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:15px; text-align:right; color:${col};">${compFmt(v)}</div></div>`;
       }).join('');
       const siempre = soloPositivos ? [] : R.filter(x => x.efecto == null && x.motivo === 'siempre').map(x => compEsc((x.j.name || '').split(' ')[0]));
-      return `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin-bottom:6px;">Puntos por acciones de los compañeros por 70' <b style="color:#e2e8f0;">con él</b> en el campo y <b style="color:#e2e8f0;">sin él</b> (en el banquillo, en los mismos partidos). La diferencia es lo que mejora (o empeora) a los demás.</div>`
+      return `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin-bottom:6px;">Puntos por acciones de cada compañero por 70' <b style="color:#e2e8f0;">con él</b> en el campo y <b style="color:#e2e8f0;">sin él</b> (en el banquillo, en los mismos partidos). La diferencia es lo que mejora (o empeora) a los demás.</div>`
           + filas
           + (siempre.length ? `<div style="font-size:10.5px; color:#64748b; margin-top:8px; line-height:1.4;">Sin comparación (casi siempre en el campo): ${siempre.join(', ')}.</div>` : '')
           + `<div style="font-size:10.5px; color:#94a3b8; margin-top:8px; line-height:1.45;">${soloPositivos ? 'Solo salen los que suman. ' : ''}«Sin él» es mientras estaba en el banquillo en los partidos que jugó. Mínimo ${COMP_MIN_JUGADOS}' jugados y ${COMP_MIN_SIN}' en el banquillo. Solo cuentan las acciones de los compañeros (también sus goles y asistencias); no el bonus de equipo por goles ni lo que resta un gol o un tiro del rival.</div>`;
@@ -2773,12 +2805,12 @@
       const lider = mejorCompaneroId(t) === String(j.id);
       return `<div style="margin-top:10px; background:rgba(255,255,255,.04); border-radius:10px; padding:10px 12px;">
           <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;"><span style="font-size:12.5px; color:#e2e8f0;">🧲 Con él, sus compañeros</span><b style="font-family:'Montserrat',sans-serif; color:${col};">${compFmt(r.efecto)} por 70'</b></div>
-          <div style="font-size:10.5px; color:#94a3b8; margin-top:3px;">Acciones de los compañeros por 70': ${compDec(r.con)} con él · ${compDec(r.sin)} sin él${lider ? ' · <b style="color:#f5a623;">el mejor compañero del momento</b>' : ''}</div></div>`;
+          <div style="font-size:10.5px; color:#94a3b8; margin-top:3px;">Acciones por compañero y 70': ${compDec(r.con)} con él · ${compDec(r.sin)} sin él${lider ? ' · <b style="color:#f5a623;">el mejor compañero del momento</b>' : ''}</div></div>`;
   }
   function companerosExplicacionHTML() {
       return `<div style="font-size:12.5px; line-height:1.55; color:#e2e8f0; padding-top:6px;">
           <p style="margin:0 0 8px;"><strong>Hace mejores a los demás:</strong> impacto medio de los compañeros por cada 70 minutos mientras el niño está en el campo, menos el de mientras está en el banquillo <strong>en esos mismos partidos</strong>. Los partidos que no jugó no cuentan, así que jugar solo goleadas (o solo partidos difíciles) no le favorece ni le perjudica. Si sale positivo, con él los demás rinden más.</p>
-          <p style="margin:0 0 8px;">Solo cuentan las <strong>acciones</strong> de los compañeros: tiros, pases, regates, defensa, paradas, sus goles y asistencias, fallos… No cuenta lo que les toca por estar en el campo (el bonus por gol del equipo, lo que resta un gol o un tiro del rival, la portería a cero): así un gol suyo no infla a los demás y el marcador no decide. Esa parte de equipo se quita con el minuto de cada gol y quién estaba en el campo; los tiros del rival y la portería a cero, por el tiempo jugado.</p>
+          <p style="margin:0 0 8px;">Solo cuentan las <strong>acciones</strong> de los compañeros: tiros, pases, regates, defensa, paradas, sus goles y asistencias, fallos… No cuenta lo que les toca por estar en el campo (el bonus por gol del equipo, lo que resta un gol o un tiro del rival, la portería a cero): así un gol suyo no infla a los demás y el marcador no decide. Esa parte de equipo se quita con el minuto de cada gol y quién estaba en el campo, tal y como la apuntó la app (en una goleada, cada gol nuevo rebaja lo que ya llevaban los que están en el campo); los tiros del rival y la portería a cero, por el tiempo jugado.</p>
             <p style="margin:0 0 8px;">Sale de las parejas de las sinergias: lo que suman dos niños mientras coinciden, quitando la parte del propio niño (sus acciones por minuto). Los partidos cargados a mano o sin titulares no entran.</p>
           <p style="margin:0;">Hacen falta ${COMP_MIN_JUGADOS}' jugados y ${COMP_MIN_SIN}' en el banquillo en los partidos que jugó; quien casi siempre juega entero no se puede comparar. 🧲 en la plantilla marca al mejor compañero del momento. En el visor solo salen los efectos positivos.</p></div>`;
   }

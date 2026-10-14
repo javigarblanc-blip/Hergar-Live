@@ -660,6 +660,7 @@
             <option value="echa">🫂 Se le echa de menos</option>
             <option value="wpa">🏆 Victorias añadidas</option>
             <option value="tirosCampo">🎯 Tiros con él en el campo</option>
+            <option value="companeros">🧲 Efecto en los demás</option>
             <option value="goles">⚽ Goles</option>
             <option value="asistencias">👟 Asistencias</option>
             <option value="minutos">⏱ Minutos</option>
@@ -697,6 +698,10 @@
         <div class="card">
           <div class="card-title">🧱 El muro</div>
           <div id="muroLista"><div class="loader">Cargando...</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">🧲 Hacen mejores a los demás</div>
+          <div id="companerosLista"><div class="loader">Cargando...</div></div>
         </div>
       </div>
       <div id="subRachas" class="sub-panel">
@@ -927,6 +932,7 @@
 </div>
 
 <script type="module">
+  // v140 (app) · «Hace mejores a los demás»: impacto de los compañeros con él y sin él (Sinergias, Ranking, ficha) y 🧲 al mejor compañero en la Plantilla. En el visor, solo los positivos.
   // v139 (app) · Acta del partido en PDF (3 páginas). En el visor, botón en cada partido si la app lo permite, sin el más/menos de cada niño.
   // v137 (app) · Más análisis → 🔄 Banquillo: el equipo antes y después de los cambios, lo que aporta el banquillo, cambio a cambio y cada niño de titular y de suplente.
   // Visor · 🎬 Resumen del partido tipo tele: cortinilla, minuto y vídeo de cada gol con rótulo (marcador y goleador) desde que arranca el vídeo, tarjetas para goles sin vídeo y del rival, y final con goleadores. Botón en Último partido, en Temporada → Partidos y en la pantalla Final del Modo TV.
@@ -2623,6 +2629,102 @@
     catch (e) { alert('No se ha podido generar el acta: ' + e.message); }
   };
 
+  // ── v140 · HACE MEJORES A LOS DEMÁS (misma función en la app y en el visor) ──
+  // Impacto medio de los compañeros por 70' con el niño en el campo frente a sin él. Sale de las sinergias de la
+  // temporada: por cada pareja se guarda el impacto que suman los dos mientras coinciden (impN) y el tiempo (segsN).
+  // A ese impacto se le quita la parte del propio niño (su impacto medio por minuto × el tiempo juntos) y queda lo de
+  // los compañeros. "Sin él" = todo lo que hacen los compañeros en la temporada menos lo que hicieron con él.
+  const COMP_MIN_JUGADOS = 70, COMP_MIN_SIN = 35;
+  function compImp(h) { const m = h.mins || 0; return h.imp !== undefined ? (Number(h.imp) || 0) : (Number(h.impPond) || 0) * m / 70; }
+  function compFmt(v) { return v == null ? '—' : (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(2).replace('.', ','); }
+  function compDec(v) { return v == null ? '—' : (v < 0 ? '−' : '') + Math.abs(v).toFixed(2).replace('.', ','); }
+  function compEsc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+  function companerosTemporada(t) {
+      const js = Object.values((t && t.jugadores) || {});
+      const ps = (t && t.partidos) || [];
+      const sin = (t && t.sinergias) || {};
+      const tot = {};
+      js.forEach(j => { let m = 0, imp = 0; (j.historial || []).forEach(h => { m += h.mins || 0; imp += compImp(h); }); tot[j.id] = { m, imp }; });
+      // minutos que ha jugado el equipo (duración de cada partido)
+      let minEq = 0;
+      ps.forEach(p => {
+          let d = 0; const mt = /^(\d+):/.exec(String(p.duracion || '')); if (mt) d = parseInt(mt[1], 10);
+          js.forEach(j => { const h = (j.historial || []).find(x => x.fecha === p.fecha && x.rival === p.rival); if (h && (h.mins || 0) > d) d = h.mins; });
+          minEq += d || 70;
+      });
+      const par = (a, b) => sin[`${a}_${b}`] || sin[`${b}_${a}`] || null;
+      let cTodos = 0, mTodos = 0;
+      js.forEach(y => { cTodos += tot[y.id].imp; mTodos += tot[y.id].m; });
+      const res = {};
+      js.forEach(x => {
+          const tx = tot[x.id];
+          const rX = tx.m > 0 ? tx.imp / tx.m : 0;
+          let cCon = 0, mCon = 0;
+          js.forEach(y => {
+              if (y.id === x.id) return;
+              const P = par(x.id, y.id);
+              if (!P || !(Number(P.segsN) > 0)) return;
+              const tm = Number(P.segsN) / 60;
+              cCon += (Number(P.impN) || 0) - rX * tm; mCon += tm;
+          });
+          const cSin = (cTodos - tx.imp) - cCon, mSin = (mTodos - tx.m) - mCon;
+          const off = Math.max(0, minEq - tx.m);
+          const con = mCon > 0 ? cCon / mCon * 70 : null, sinV = mSin > 0 ? cSin / mSin * 70 : null;
+          const ok = tx.m >= COMP_MIN_JUGADOS && off >= COMP_MIN_SIN && con != null && sinV != null && mSin >= COMP_MIN_SIN;
+          res[x.id] = { j: x, mins: tx.m, off, con, sin: sinV, efecto: ok ? con - sinV : null, motivo: tx.m < COMP_MIN_JUGADOS ? 'pocos' : (!ok ? 'siempre' : '') };
+      });
+      return res;
+  }
+  // El que más hace mejorar a los demás ahora mismo (solo si su efecto es positivo)
+  function mejorCompaneroId(t) {
+      try {
+          const r = Object.values(companerosTemporada(t)).filter(x => x.efecto != null && x.efecto > 0).sort((a, b) => b.efecto - a.efecto)[0];
+          return r ? String(r.j.id) : null;
+      } catch (e) { return null; }
+  }
+  function companerosHTML(t, acento, soloPositivos) {
+      acento = acento || '#2ed573';
+      const R = Object.values(companerosTemporada(t));
+      const con = R.filter(x => x.efecto != null).sort((a, b) => b.efecto - a.efecto);
+      const lista = soloPositivos ? con.filter(x => x.efecto > 0) : con;
+      if (!lista.length) return `<div style="font-size:12px; color:#94a3b8; line-height:1.5;">${soloPositivos ? 'Aún no hay datos suficientes.' : `Aún no hay datos suficientes (hace falta ${COMP_MIN_JUGADOS}' jugados y ${COMP_MIN_SIN}' del equipo sin él).`}</div>`;
+      const maxAbs = Math.max(0.01, ...lista.map(x => Math.abs(x.efecto)));
+      const filas = lista.map((x, i) => {
+          const v = x.efecto, col = soloPositivos ? acento : (v >= 0 ? '#2ed573' : '#ff6b7a');
+          const w = Math.round(Math.abs(v) / maxAbs * (soloPositivos ? 100 : 50));
+          const barra = soloPositivos ? `left:0; width:${w}%;` : (v >= 0 ? `left:50%; width:${w}%;` : `right:50%; width:${w}%;`);
+          const nom = compEsc(((x.j.name || '').split(' ')[0]) || '¿?');
+          return `<div style="display:grid; grid-template-columns:22px 1fr 60px; gap:8px; align-items:center; padding:7px 0; border-top:${i ? '1px solid rgba(255,255,255,.06)' : '0'};">
+              <div style="font-size:11px; color:#94a3b8; font-weight:700; text-align:center;">${i + 1}</div>
+              <div style="min-width:0;"><div style="font-size:13px; font-weight:700; color:#e2e8f0;">${nom}</div>
+                  <div style="font-size:10.5px; color:#94a3b8; margin-top:1px;">Con él ${compDec(x.con)} · sin él ${compDec(x.sin)}</div>
+                  <div style="position:relative; height:5px; background:rgba(255,255,255,.06); border-radius:3px; margin-top:5px; overflow:hidden;"><div style="position:absolute; top:0; bottom:0; ${barra} background:${col}; border-radius:3px;"></div></div></div>
+              <div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:15px; text-align:right; color:${col};">${compFmt(v)}</div></div>`;
+      }).join('');
+      const siempre = soloPositivos ? [] : R.filter(x => x.efecto == null && x.motivo === 'siempre').map(x => compEsc((x.j.name || '').split(' ')[0]));
+      return `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin-bottom:6px;">Impacto medio de los compañeros por 70' <b style="color:#e2e8f0;">con él</b> en el campo y <b style="color:#e2e8f0;">sin él</b>. La diferencia es lo que mejora (o empeora) a los demás.</div>`
+          + filas
+          + (siempre.length ? `<div style="font-size:10.5px; color:#64748b; margin-top:8px; line-height:1.4;">Sin comparación (casi siempre en el campo): ${siempre.join(', ')}.</div>` : '')
+          + `<div style="font-size:10.5px; color:#94a3b8; margin-top:8px; line-height:1.45;">${soloPositivos ? 'Solo salen los que suman. ' : ''}Mínimo ${COMP_MIN_JUGADOS}' jugados y ${COMP_MIN_SIN}' del equipo sin él. Cuenta todo el impacto de los compañeros: sus acciones, sus goles y asistencias y lo que les toca por los goles y tiros con ellos en el campo.</div>`;
+  }
+  // Línea de la ficha del niño
+  function companeroJugadorHTML(t, j, soloPositivos, acento) {
+      if (!t || !j) return '';
+      const r = companerosTemporada(t)[j.id];
+      if (!r || r.efecto == null || (soloPositivos && r.efecto <= 0)) return '';
+      const col = soloPositivos ? (acento || '#f5a623') : (r.efecto >= 0 ? '#2ed573' : '#ff6b7a');
+      const lider = mejorCompaneroId(t) === String(j.id);
+      return `<div style="margin-top:10px; background:rgba(255,255,255,.04); border-radius:10px; padding:10px 12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;"><span style="font-size:12.5px; color:#e2e8f0;">🧲 Con él, sus compañeros</span><b style="font-family:'Montserrat',sans-serif; color:${col};">${compFmt(r.efecto)} por 70'</b></div>
+          <div style="font-size:10.5px; color:#94a3b8; margin-top:3px;">Impacto medio de los compañeros: ${compDec(r.con)} con él · ${compDec(r.sin)} sin él${lider ? ' · <b style="color:#f5a623;">el mejor compañero del momento</b>' : ''}</div></div>`;
+  }
+  function companerosExplicacionHTML() {
+      return `<div style="font-size:12.5px; line-height:1.55; color:#e2e8f0; padding-top:6px;">
+          <p style="margin:0 0 8px;"><strong>Hace mejores a los demás:</strong> impacto medio de los compañeros por cada 70 minutos mientras el niño está en el campo, menos el de cuando no está. Si sale positivo, con él los demás rinden más.</p>
+          <p style="margin:0 0 8px;">Sale de las parejas de las sinergias: lo que suman dos niños mientras coinciden, quitando la parte del propio niño (su impacto medio por minuto). Cuenta todo el impacto de los compañeros: acciones, goles, asistencias y lo que les toca por los goles y tiros con ellos en el campo.</p>
+          <p style="margin:0;">Hacen falta ${COMP_MIN_JUGADOS}' jugados y ${COMP_MIN_SIN}' del equipo sin él; quien casi siempre juega no se puede comparar. 🧲 en la plantilla marca al mejor compañero del momento. En el visor solo salen los efectos positivos.</p></div>`;
+  }
+
   function evolucionJugadorHTML(t, j) {
     const ps = (t && t.partidos) || [];
     const puntos = [];
@@ -3126,6 +3228,7 @@
     try { pesoHtml = puntosMasMenosHTML(ultimaTemporada, j, minMinutosRanking(), '#f5a623') + pesoHtml; } catch (e) { console.error('Puntos/más-menos:', e); } // v133
     try { pesoHtml = claveEchaHTML(ultimaTemporada, j, '#f5a623') + pesoHtml; } catch (e) { console.error('Momento clave:', e); } // v134
     try { pesoHtml = proJugadorHTML(ultimaTemporada, ultimaLiga, j, minMinutosRanking(), '#f5a623') + pesoHtml; } catch (e) { console.error('Victorias añadidas:', e); } // v135
+    try { pesoHtml = companeroJugadorHTML(ultimaTemporada, j, true, '#f5a623') + pesoHtml; } catch (e) { console.error('Compañeros:', e); } // v140
     document.getElementById('perfilDatosContenido').innerHTML = renderFichaDatosHTML(statsDatos) + pesoHtml + sociosJugadorHTML(ultimaTemporada, j.name) + lineasJugadorHTMLV(j); // v95
     try { document.getElementById('perfilEvoContenido').innerHTML = evolucionJugadorHTML(ultimaTemporada, j); mostrarBotonEvo(true); } catch (e) { console.error('Evolución:', e); mostrarBotonEvo(false); }
     mostrarPestanaPerfil('cromo');
@@ -4784,6 +4887,11 @@
     valorPorCriterio.wpa = j => { const r = valWpa(j); return r ? r.v : -99; };
     valorPorCriterio.tirosCampo = j => { const r = valTC(j); return r && r.cuota !== null ? r.cuota : -99; };
     valorPorCriterio.peso = j => valPeso(j) ?? -99;
+    // v140: Efecto en los demás (en el visor, solo los que suman)
+    const esComp = criterio === 'companeros';
+    const compT = esComp ? companerosTemporada(temporada) : null;
+    const valComp = j => (compT && compT[j.id]) || null;
+    valorPorCriterio.companeros = j => { const r = valComp(j); return r && r.efecto != null ? r.efecto : -99; };
     valorPorCriterio.cuota = j => valPeso(j) ?? -99;
     const getVal = valorPorCriterio[criterio] || valorPorCriterio.pond;
     // v41: el ranking de impacto exige un mínimo de minutos; quien no llega aparece aparte, en observación
@@ -4800,6 +4908,7 @@
     if (esTC) lista = lista.filter(j => valTC(j) && valTC(j).cuota !== null && valTC(j).mins >= minRanking);
     const sinEcha = esEcha ? lista.filter(j => !valEcha(j) || valEcha(j).dif === null) : [];
     if (esEcha) lista = lista.filter(j => valEcha(j) && valEcha(j).dif !== null);
+    if (esComp) lista = lista.filter(j => valComp(j) && valComp(j).efecto != null && valComp(j).efecto > 0);
     const enObservacion = esImpacto ? jugadores.filter(j => (j.minutos || 0) < minRanking).sort((a,b) => (b.minutos || 0) - (a.minutos || 0)) : [];
     lista.sort((a,b) => getVal(b) - getVal(a));
     const cont = document.getElementById('rankingLista');
@@ -4818,6 +4927,7 @@
     etiquetaVal.echa = j => { const r = valEcha(j); return `<span style="color:${r.dif >= 0 ? '#2ed573' : '#ff6b7a'};">${(r.dif >= 0 ? '+' : '−') + Math.abs(r.dif).toFixed(1).replace('.', ',')}</span>`; };
     etiquetaVal.puntosGol = j => { const r = valPts(j); return `<span style="color:#f5a623;">${ptsFmt(r.puntos)}</span>`; };
     etiquetaVal.masmenos = j => { const r = valMM(j); return `<span style="color:${r.dif >= 0 ? '#2ed573' : '#ff6b7a'};">${mmFmt(r.dif)}</span>`; };
+    etiquetaVal.companeros = j => { const r = valComp(j); return `<span style="color:#f5a623;">${compFmt(r.efecto)}</span>`; };
     etiquetaVal.peso = j => { const v = valPeso(j); return v === null ? '—' : `<span style="color:${pesoColor(v)};">${pesoFmt(v)}</span>`; };
     etiquetaVal.cuota = j => { const v = valPeso(j); return `<span style="color:${(v ?? 0) >= 1 ? '#2ed573' : '#ff6b7a'};">${pesoFmtCuota(v)}</span>`; };
     const getEtiqueta = etiquetaVal[criterio] || etiquetaVal.pond;
@@ -4878,13 +4988,14 @@
       const impacto = (j.minutos || 0) > 0 ? (j.impactoAcum || 0) / j.minutos * 70 : 0;
       return { p, j, impacto };
     }).sort((a, b) => (a.p.dorsal || 99) - (b.p.dorsal || 99));
+    const mejorComp = ultimaTemporada ? mejorCompaneroId(ultimaTemporada) : null; // v140
     const filaHtml = filas.map(({p, j, impacto}) => {
       const color = ESTADO_COLOR_VIEWER[p.estado] || '#94a3b8';
       const label = ESTADO_LABEL_VIEWER[p.estado] || 'Disponible';
       const impStr = (j.minutos || 0) > 0 ? impacto.toFixed(1) : '—';
       return `<tr onclick="abrirPerfilJugadorTemporada('${p.id}')" style="cursor:pointer; border-bottom:1px solid rgba(255,255,255,.05);">
         <td style="padding:9px 8px; color:#8da499; font-weight:700;">${p.dorsal}</td>
-        <td style="padding:9px 8px; color:#e7efe9; font-weight:700; white-space:nowrap;">${escHtml((p.name||'').split(' ')[0])}</td>
+        <td style="padding:9px 8px; color:#e7efe9; font-weight:700; white-space:nowrap;">${escHtml((p.name||'').split(' ')[0])}${mejorComp === String(p.id) ? ' <span title="Mejor compañero del momento" style="font-size:12px;">🧲</span>' : ''}</td>
         <td style="padding:9px 8px; text-align:center;">${j.partidos || 0}</td>
         <td style="padding:9px 8px; text-align:center;">${j.minutos || 0}'</td>
         <td style="padding:9px 8px; text-align:center;">${j.goles || 0}</td>
@@ -4910,7 +5021,7 @@
           </thead>
           <tbody>${filaHtml}</tbody>
         </table>
-      </div>`;
+      </div>${mejorComp ? `<div style="font-size:11px; color:#94a3b8; margin-top:6px;">🧲 Mejor compañero del momento: con él en el campo, los demás rinden más.</div>` : ''}`;
   }
 
 
@@ -5379,6 +5490,7 @@
     try { document.getElementById('banquilloLista').innerHTML = banquilloHTML(temporada, '#f5a623', 'bqv'); } catch (e) { console.error('Banquillo:', e); } // v137
     try { document.getElementById('marcadorEquipoLista').innerHTML = marcadorEquipoHTML(temporada, '#f5a623'); document.getElementById('tirosEquipoLista').innerHTML = tirosEquipoHTML(temporada, '#f5a623'); } catch (e) { console.error('Marcador/tiros:', e); } // v135
     try { document.getElementById('muroLista').innerHTML = muroHTML(temporada, '#f5a623'); } catch (e) { console.error('Muro:', e); } // v134
+    try { document.getElementById('companerosLista').innerHTML = companerosHTML(temporada, '#f5a623', true); } catch (e) { console.error('Compañeros:', e); } // v140
     try { document.getElementById('sociedadesLista').innerHTML = sociedadesHTML(temporada); } catch (e) { console.error('Sociedades:', e); }
     try { document.getElementById('contextoLista').innerHTML = ctxContextoHTML(temporada); } catch (e) { console.error('Contexto:', e); } // v97
     pintarComparativa(temporada);
@@ -5479,6 +5591,7 @@
       + csTarjeta('Momentos, momento clave y el muro', momentosExplicacionHTML()) // v134
       + csTarjeta('Métricas de los profesionales', proExplicacionHTML()) // v135
       + csTarjeta('Efecto del banquillo', banquilloExplicacionHTML()) // v137
+      + csTarjeta('Hacen mejores a los demás', companerosExplicacionHTML()) // v140
       + csTarjeta('Cómo se ordena la clasificación',
         `<div style="font-size:12.5px; line-height:1.55; color:#e2e8f0; padding-top:6px;">
           <p style="margin:0 0 8px;">Se usa el impacto por 70 minutos, para poder comparar a quien juega más con quien juega menos.</p>

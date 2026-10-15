@@ -569,6 +569,7 @@
     <!-- PARTIDO -->
     <div id="partido" class="panel active">
       <div class="card" id="resumenUltimoCard" style="display:none;"></div>
+      <div class="card" id="recordsHoyCard" style="display:none;"></div>
       <div class="card" id="proximoPartidoCard" style="display:none;"></div>
       <div class="card" id="informeIACard" style="display:none;">
         <div class="card-title">🤖 Informe del partido (IA)</div>
@@ -633,7 +634,7 @@
         <button type="button" class="subtab-btn" onclick="showSub(event,'subRecords')">🏆 Récords</button>
       </div>
       <button type="button" class="tmp-mas" id="tmpMasBtn" onclick="toggleMasTemp()" aria-expanded="false" aria-controls="tmpMasPanel">
-        <span>📊 Más análisis</span><span class="txt" id="tmpMasTxt">8 apartados más ▾</span>
+        <span>📊 Más análisis</span><span class="txt" id="tmpMasTxt">9 apartados más ▾</span>
       </button>
       <div class="tmp-sec" id="tmpMasPanel">
         <button type="button" class="subtab-btn" onclick="showSub(event,'subVideos')">🎥 Goles en vídeo</button>
@@ -645,6 +646,7 @@
         <button type="button" class="subtab-btn" onclick="showSub(event,'subComparativa')">📊 Comparativa</button>
         <button type="button" class="subtab-btn" style="display:none;" onclick="showSub(event,'subHeatmap')">🗺️ Heatmap</button>
         <button type="button" class="subtab-btn" onclick="showSub(event,'subOnceIdeal')">🏅 Once ideal</button>
+        <button type="button" class="subtab-btn" onclick="showSub(event,'subAdn')">🧬 ADN del equipo</button>
       </div>
 
       <div id="subRanking" class="sub-panel">
@@ -726,6 +728,12 @@
         <div class="card">
           <div class="card-title">🎯 Cuota de tiros</div>
           <div id="tirosEquipoLista"><div class="loader">Cargando...</div></div>
+        </div>
+      </div>
+      <div id="subAdn" class="sub-panel">
+        <div class="card">
+          <div class="card-title">🧬 El ADN del equipo</div>
+          <div id="adnLista"><div class="loader">Cargando...</div></div>
         </div>
       </div>
       <div id="subBanquillo" class="sub-panel">
@@ -911,10 +919,12 @@
     <div class="fd-tabs">
       <button id="perfilCromoTabBtn" class="fd-active" onclick="mostrarPestanaPerfil('cromo')">🎴 Cromo</button>
       <button id="perfilDatosTabBtn" onclick="mostrarPestanaPerfil('datos')">📊 Datos</button>
+      <button id="perfilEstiloTabBtn" onclick="mostrarPestanaPerfil('estilo')" style="display:none;">🎨 Estilo</button>
       <button id="perfilEvoTabBtn" onclick="mostrarPestanaPerfil('evo')" style="display:none;">📈 Evolución</button>
     </div>
     <div id="perfilContenido"></div>
     <div id="perfilDatosContenido" style="display:none;"></div>
+    <div id="perfilEstiloContenido" style="display:none;"></div>
     <div id="perfilEvoContenido" style="display:none;"></div>
     <button onclick="document.getElementById('perfilModal').style.display='none';" style="margin-top:14px; width:100%; padding:11px; background:rgba(255,255,255,.06); color:#e2e8f0; border:none; border-radius:10px; font-weight:700; font-family:'Montserrat',sans-serif;">CERRAR</button>
   </div>
@@ -934,6 +944,9 @@
 <script type="module">
   // v144 (visor) · Cabecera: con el próximo partido publicado sale el próximo partido (rival, jornada, fecha y hora) en vez del resultado anterior.
   // v144 (app + visor) · «Hace mejores a los demás»: el bonus por gol se quita como lo apuntó la app en cada pareja (en goleadas, cada gol nuevo rebaja lo de antes); cifras por compañero y 70'.
+  // v152 (app + visor) · «Juega como…»: 3-4 futbolistas por estilo y segundo rasgo; se elige por el tercer rasgo del niño.
+  // v151 (app + visor) · Estilo: nuevo Todoterreno (ataca y defiende) y «Juega como…» con un futbolista por estilo y segundo rasgo.
+  // v150 (app + visor) · Estilo de juego (🎨 en la ficha), 🧬 ADN del equipo y 🏅 récords personales (ficha, último partido y Modo TV).
   // v147 (app + visor) · Liga: probabilidades de cada partido en Partidos (y si ganó el favorito) y pestaña 🎯 Jornada en el Pronóstico.
   // v146 (app + visor) · «Hace mejores a los demás»: los partidos con «Llegué tarde» también cuentan, desde el minuto de llegada.
   // v145 (app + visor) · «Hace mejores a los demás»: la app apunta minuto a minuto las acciones de cada niño y quién está en el campo (partido.minutos); la medida sale de ahí, desde el partido del 17 de octubre.
@@ -1282,13 +1295,14 @@
       </div>`;
   }
   window.mostrarPestanaPerfil = function(cual) {
-    [['cromo', 'perfilContenido', 'perfilCromoTabBtn'], ['datos', 'perfilDatosContenido', 'perfilDatosTabBtn'], ['evo', 'perfilEvoContenido', 'perfilEvoTabBtn']].forEach(([k, cont, btn]) => {
+    [['cromo', 'perfilContenido', 'perfilCromoTabBtn'], ['datos', 'perfilDatosContenido', 'perfilDatosTabBtn'], ['estilo', 'perfilEstiloContenido', 'perfilEstiloTabBtn'], ['evo', 'perfilEvoContenido', 'perfilEvoTabBtn']].forEach(([k, cont, btn]) => {
       const c = document.getElementById(cont), b = document.getElementById(btn);
       if (c) c.style.display = k === cual ? 'block' : 'none';
       if (b) b.classList.toggle('fd-active', k === cual);
     });
   };
-  function mostrarBotonEvo(si) { const b = document.getElementById('perfilEvoTabBtn'); if (b) b.style.display = si ? '' : 'none'; }
+  function mostrarBotonEvo(si) { const b = document.getElementById('perfilEvoTabBtn'); if (b) b.style.display = si ? '' : 'none'; if (!si) mostrarBotonEstilo(false); }
+  function mostrarBotonEstilo(si) { const b = document.getElementById('perfilEstiloTabBtn'); if (b) b.style.display = si ? '' : 'none'; } // v150
 
   // ── Evolución del impacto por 70' partido a partido (ficha de temporada) ──
   // Línea del niño frente a la media del equipo en ese mismo partido. Con menos de 10' el partido no se valora.
@@ -2755,6 +2769,398 @@
           <p style="margin:0;">Hacen falta ${COMP_MIN_JUGADOS}' jugados y ${COMP_MIN_SIN}' en el banquillo en los partidos que jugó; quien casi siempre juega entero no se puede comparar. 🧲 en la plantilla marca al mejor compañero del momento. En el visor solo salen los efectos positivos.</p></div>`;
   }
 
+  // ── v150 · ESTILO DE JUEGO, ADN DEL EQUIPO Y RÉCORDS PERSONALES (misma función en la app y en el visor) ──
+  // Estilo: 6 ejes por cada 70' (Puntería, Disparo, Último pase, Pase al área, Regate, Defensa). Cada eje puntúa de 0
+  // a 100 según a cuántos compañeros supera (100 = el que más del equipo, 50 = la mitad). Cada estilo es la media de
+  // sus ejes y gana el más alto; si el segundo queda a menos de 15 puntos, sale como coletilla. Nada resta: el estilo
+  // dice qué hace, no si lo hace bien. Mínimo 70' en la temporada; el portero es Guardián (no se compara).
+  // Récords: su mejor marca en un partido; se bate superando la anterior (el primer partido solo marca la referencia).
+  const ESTILO_MIN = 70, ESTILO_MIN_TIROS = 5, REC_MIN_IMP = 35, REC_MIN_TIROS = 3;
+  const ESTILO_EJES = [
+    { k: 'pun', n: 'Puntería', top: 'La mejor puntería del equipo', pos: 'en puntería', mas: 'afina más' },
+    { k: 'dis', n: 'Disparo', top: 'El que más tira del equipo', pos: 'en tiros', mas: 'tira más' },
+    { k: 'up', n: 'Último pase', top: 'El que más pases de gol da', pos: 'en último pase', mas: 'da más pases de gol' },
+    { k: 'pa', n: 'Pase al área', top: 'El que más balones mete al área', pos: 'en pases al área', mas: 'mete más balones al área' },
+    { k: 'reg', n: 'Regate', top: 'El que más regatea del equipo', pos: 'en regates', mas: 'regatea más' },
+    { k: 'def', n: 'Defensa', top: 'El que más balones recupera', pos: 'en recuperar balones', mas: 'defiende más' }
+  ];
+  const ESTILOS = {
+    fra: { n: 'Francotirador', pl: 'FRANCOTIRADORES', art: 'EL FRANCOTIRADOR', frase: 'Pocas balas, todas dentro.', col: '#ff7a90', cola: 'con mira de Francotirador', ejes: ['pun'] },
+    pis: { n: 'Pistolero', pl: 'PISTOLEROS', art: 'EL PISTOLERO', frase: 'Dispara a la mínima.', col: '#fb923c', cola: 'con gatillo de Pistolero', ejes: ['dis'] },
+    cer: { n: 'Cerebro', pl: 'CEREBROS', art: 'EL CEREBRO', frase: 'Ve el pase que nadie ve.', col: '#5ab0ff', cola: 'con visión de Cerebro', ejes: ['up', 'pa'] },
+    mag: { n: 'Mago', pl: 'MAGOS', art: 'EL MAGO', frase: 'Se va de su par con el balón.', col: '#ffd27a', cola: 'con toque de Mago', ejes: ['reg'] },
+    mur: { n: 'Muro', pl: 'MUROS', art: 'EL MURO', frase: 'Roba, corta y no deja pasar.', col: '#2ed573', cola: 'con alma de Muro', ejes: ['def'] },
+    tod: { n: 'Todoterreno', pl: 'TODOTERRENO', art: 'TODOTERRENO', frase: 'Ataca, crea y defiende: está en todas.', col: '#c084fc' },
+    gua: { n: 'Guardián', pl: 'GUARDIÁN', art: 'EL GUARDIÁN', frase: 'La última palabra es suya.', col: '#e2e8f0' }
+  };
+  const ESTILO_ORDEN = ['fra', 'pis', 'cer', 'mag', 'mur'];
+  function estEsc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+  function estNom(j) { return ((j && j.name) || '').split(' ')[0] || '¿?'; }
+  function estDec(v, d) { return (Number(v) || 0).toFixed(d == null ? 1 : d).replace('.', ','); }
+  function estEsPortero(j) {
+    const mp = (j && j.minutosPorPosicion) || {};
+    const tot = Object.values(mp).reduce((s, v) => s + (Number(v) || 0), 0);
+    return tot > 0 ? (Number(mp.portero) || 0) * 2 >= tot : false;
+  }
+  function estTiros(j) { return (j.disparosPuerta || 0) + (j.disparosFuera || 0); }
+  function estGolesTiro(j) { const g = j.golesConTiros !== undefined ? (j.golesConTiros || 0) : (j.goles || 0); return Math.min(g, estTiros(j)); }
+  function estValores(j) {
+    const m = (j.minutos || 0) / 70, ti = estTiros(j);
+    return {
+      pun: ti >= ESTILO_MIN_TIROS ? estGolesTiro(j) / ti : null,
+      dis: ti / m,
+      up: ((j.asistencias || 0) + (j.pasesClave || 0)) / m,
+      pa: (j.pasesArea || 0) / m,
+      reg: ((j.regates || 0) + (j.penaltisProvocados || 0)) / m,
+      def: ((j.accionesDef || 0) + 2 * (j.accionesDefClave || 0)) / m
+    };
+  }
+  let estiloCache = { t: null, clave: null, res: null };
+  function estilosTemporada(t) {
+    const js = Object.values((t && t.jugadores) || {});
+    const clave = js.map(j => [j.id, j.minutos, j.goles, estTiros(j), j.asistencias, j.pasesClave, j.pasesArea, j.regates, j.accionesDef, j.accionesDefClave].join(',')).join('|');
+    if (estiloCache.t === t && estiloCache.clave === clave) return estiloCache.res;
+    const res = {};
+    const cand = js.filter(j => (j.minutos || 0) >= ESTILO_MIN && !estEsPortero(j));
+    const V = {}; cand.forEach(j => { V[j.id] = estValores(j); });
+    const pct = {}, rank = {};
+    cand.forEach(j => { pct[j.id] = {}; rank[j.id] = {}; });
+    ESTILO_EJES.forEach(({ k }) => {
+      const con = cand.filter(j => V[j.id][k] != null), n = con.length;
+      con.forEach(j => {
+        const x = V[j.id][k];
+        const menos = con.filter(o => V[o.id][k] < x).length, igual = con.filter(o => V[o.id][k] === x).length;
+        pct[j.id][k] = n > 1 ? Math.round((menos + 0.5 * (igual - 1)) / (n - 1) * 100) : 50;
+        rank[j.id][k] = 1 + con.filter(o => V[o.id][k] > x).length;
+      });
+      cand.filter(j => V[j.id][k] == null).forEach(j => { pct[j.id][k] = null; rank[j.id][k] = null; });
+    });
+    cand.forEach(j => {
+      const p = pct[j.id];
+      const fam = ESTILO_ORDEN.map(f => ({ f, s: ESTILOS[f].ejes.reduce((a, k) => a + (p[k] || 0), 0) / ESTILOS[f].ejes.length }))
+        .sort((a, b) => b.s - a.s || ESTILO_ORDEN.indexOf(a.f) - ESTILO_ORDEN.indexOf(b.f));
+      let estilo = fam[0].f, cola = '', seg = null;
+      // v151 · Todoterreno: sin un estilo que domine (mejor < 80), equilibrado (1.º − 3.º < 20) y que ataca y defiende
+      const fs = {}; fam.forEach(x => { fs[x.f] = x.s; });
+      const atk = ['fra', 'pis', 'cer', 'mag'].sort((a, b) => fs[b] - fs[a] || ESTILO_ORDEN.indexOf(a) - ESTILO_ORDEN.indexOf(b))[0];
+      if (fam[0].s < 80 && fam[0].s - fam[2].s < 20 && fs.mur >= 50 && fs[atk] >= 50) { estilo = 'tod'; seg = atk; }
+      else if (fam[0].s - fam[1].s < 15) { cola = ESTILOS[fam[1].f].cola; seg = fam[1].f; }
+      // superpoderes: sus ejes con mejor puesto (entre los 5 primeros y con algo hecho)
+      const sp = ESTILO_EJES.filter(e => rank[j.id][e.k] != null && rank[j.id][e.k] <= 5 && V[j.id][e.k] > 0)
+        .sort((a, b) => rank[j.id][a.k] - rank[j.id][b.k] || p[b.k] - p[a.k]).slice(0, 2)
+        .map(e => ({ k: e.k, r: rank[j.id][e.k], txt: rank[j.id][e.k] === 1 ? e.top : e.pos.charAt(0).toUpperCase() + e.pos.slice(1) }));
+      let fuerte = null;
+      if (!sp.length) { const e = ESTILO_EJES.filter(e => p[e.k] != null).sort((a, b) => p[b.k] - p[a.k])[0]; if (e) fuerte = e; }
+      res[j.id] = { j, estilo, cola, seg, pct: p, rank: rank[j.id], val: V[j.id], fam, sp, fuerte };
+    });
+    // gemelo de estilo: el hexágono más parecido (100 − diferencia media entre ejes)
+    cand.forEach(j => {
+      let mejor = null;
+      cand.forEach(o => {
+        if (o.id === j.id) return;
+        const d = ESTILO_EJES.reduce((s, e) => s + Math.abs((pct[j.id][e.k] || 0) - (pct[o.id][e.k] || 0)), 0) / ESTILO_EJES.length;
+        const sim = Math.round(100 - d);
+        if (!mejor || sim > mejor.sim) mejor = { o, sim };
+      });
+      if (mejor && mejor.sim >= 75) res[j.id].gemelo = mejor;
+    });
+    js.filter(j => estEsPortero(j) && (j.minutos || 0) >= ESTILO_MIN).forEach(j => { res[j.id] = { j, estilo: 'gua', portero: true }; });
+    { const grupos = {}; Object.values(res).filter(x => !x.portero).forEach(x => { const k = x.estilo + '|' + (x.seg || 'puro'); (grupos[k] = grupos[k] || []).push(x); });
+      Object.values(grupos).forEach(g => g.sort((a, b) => b.fam[0].s - a.fam[0].s || (b.j.minutos || 0) - (a.j.minutos || 0)).forEach((x, i) => { x.jcIdx = i; })); } // v151
+    asignarJuegaComo(res); // v152
+  estiloCache = { t, clave, res };
+    return res;
+  }
+  // v152 · «Juega como…»: 3 o 4 futbolistas por estilo + segundo rasgo. El primero (sin etiqueta) es el típico; los
+  // demás llevan el tercer rasgo que los distingue (fra = afina, pis = tira mucho, cer = asiste, mag = regatea,
+  // mur = defiende/presiona). Al niño le toca el de su tercer rasgo (en los «puros», su segundo), y si varios niños
+  // caen en la misma casilla, se reparten los nombres (el que más destaca elige primero).
+  const JUEGA_COMO = {
+    fra: {
+      puro: [['Lautaro Martínez', 'Siempre en el sitio justo para empujarla.'], ['Osimhen', 'Remata todo lo que le llega.', 'pis'], ['Morata', 'Marca y es el primero en presionar.', 'mur'], ['Ferran Torres', 'Se mueve, encara y define.', 'mag']],
+      pis: [['Haaland', 'Tira mucho y casi todo acaba dentro.'], ['Gyökeres', 'Potencia, conducción y gol.', 'mag'], ['Sørloth', 'Pelea cada balón y la mete.', 'mur'], ['Jonathan David', 'Marca y también la deja de cara.', 'cer']],
+      cer: [['Harry Kane', 'Marca, pero también da el último pase.'], ['Oyarzabal', 'Gol, pase y presión.', 'mur'], ['Lukaku', 'Fuerte, generoso y con gol.', 'pis']],
+      mag: [['Isak', 'Elegante con el balón y letal delante de la portería.'], ['Marcus Thuram', 'Corre, regatea y dispara.', 'pis'], ['Rafael Leão', 'Desborda y la pone o la mete.', 'cer']],
+      mur: [['Julián Álvarez', 'Marca y es el primero en presionar.'], ['Mikel Merino', 'Llega, marca y no deja de trabajar.', 'cer'], ['Havertz', 'Presiona arriba y remata.', 'pis']]
+    },
+    pis: {
+      puro: [['Salah', 'Siempre buscando el disparo.'], ['Darwin Núñez', 'Corre, presiona y dispara.', 'mur'], ['Son Heung-min', 'Rápido, regatea y dispara con las dos piernas.', 'mag']],
+      fra: [['Vlahović', 'Tira mucho y la mete.'], ['Gonçalo Ramos', 'Remata y presiona sin parar.', 'mur']],
+      cer: [['Bruno Fernandes', 'Dispara desde cualquier sitio y reparte juego.'], ['Raphinha', 'Dispara mucho y también da goles.', 'mag'], ['Pulisic', 'Llega, dispara y marca.', 'fra']],
+      mag: [['Mbappé', 'Desborda y remata a la mínima.'], ['Saka', 'Encara, dispara y la pone.', 'cer'], ['Dembélé', 'Regatea con las dos piernas y define.', 'fra']],
+      mur: [['Fede Valverde', 'Dispara de lejos y no para de correr para recuperar.'], ['McTominay', 'Llega desde atrás y marca.', 'fra'], ['Szoboszlai', 'Dispara, pasa y no se cansa nunca.', 'cer']]
+    },
+    cer: {
+      puro: [['Pedri', 'Ve el pase que nadie ve.'], ['Ødegaard', 'Manda en el juego y prueba desde fuera.', 'pis'], ['Frenkie de Jong', 'Saca el balón jugado y corta.', 'mur'], ['Isco', 'Toca, regatea y la esconde.', 'mag']],
+      fra: [['Dani Olmo', 'Crea y llega para marcar.'], ['Álex Baena', 'Último pase y disparo.', 'pis'], ['Arda Güler', 'Zurda mágica: regatea, pasa y marca.', 'mag']],
+      pis: [['Cole Palmer', 'Reparte juego y no se corta en disparar.'], ['Çalhanoğlu', 'Organiza, defiende y dispara de lejos.', 'mur']],
+      mag: [['Wirtz', 'Pasa, regatea y se inventa jugadas.'], ['Xavi Simons', 'Regatea, pasa y dispara.', 'pis'], ['Olise', 'Regatea, asiste y define.', 'fra']],
+      mur: [['Rodri', 'Organiza el juego y corta todo lo que pasa por el centro.'], ['Vitinha', 'Toca, gira y sale de la presión.', 'mag'], ['Kimmich', 'Pasa, defiende y dispara.', 'pis'], ['Zubimendi', 'Siempre bien colocado: corta y la da.', 'fra']]
+    },
+    mag: {
+      puro: [['Doku', 'Encara una y otra vez.'], ['Nico Williams', 'Velocidad, regate y disparo.', 'pis'], ['Kvaratskhelia', 'Regatea y la pone.', 'cer'], ['Garnacho', 'Encara y define.', 'fra']],
+      fra: [['Musiala', 'Se va de dos y la mete.'], ['Rodrygo', 'Regate, disparo y gol.', 'pis'], ['Kudus', 'Regatea, marca y ayuda atrás.', 'mur']],
+      pis: [['Vinícius Jr', 'Desborda y dispara.'], ['Savinho', 'Encara y la pone.', 'cer'], ['Frimpong', 'Sube y baja la banda sin parar.', 'mur']],
+      cer: [['Lamine Yamal', 'Regatea y pone el pase perfecto.'], ['Grealish', 'Protege el balón, regatea y ayuda.', 'mur'], ['Kenan Yıldız', 'Regatea, asiste y dispara.', 'pis']],
+      mur: [['Bernardo Silva', 'Regatea, pero es el primero en apretar cuando se pierde el balón.'], ['Kubo', 'Regatea, dispara y trabaja.', 'pis'], ['João Neves', 'Pequeño, rápido y está en todas.', 'cer']]
+    },
+    mur: {
+      puro: [['Rüdiger', 'Duro, rápido y no deja pasar a nadie.'], ['Rúben Dias', 'El jefe de la defensa, también en el área rival.', 'fra'], ['Saliba', 'Siempre bien colocado y conduce con calma.', 'mag'], ['Huijsen', 'Defiende y la saca jugada desde atrás.', 'cer']],
+      fra: [['Van Dijk', 'Manda atrás y marca de cabeza.'], ['Gvardiol', 'Defiende y se suma al ataque.', 'pis'], ['Laporte', 'Corta y saca el balón jugado.', 'cer']],
+      pis: [['Hakimi', 'Defiende su banda y llega para disparar.'], ['Theo Hernández', 'Recupera y se va como un tren.', 'mag'], ['Alexander-Arnold', 'Defiende y pone balones de gol.', 'cer']],
+      cer: [['Cubarsí', 'Corta y saca el balón jugado desde atrás.'], ['Marquinhos', 'Líder atrás y peligroso arriba.', 'fra'], ['Pau Torres', 'Defiende y conduce con su zurda.', 'mag']],
+      mag: [['Balde', 'Recupera y se va por la banda.'], ['Nuno Mendes', 'Recupera, desborda y dispara.', 'pis'], ['Cucurella', 'No deja pasar a nadie y la pone.', 'cer'], ['Koundé', 'Rápido atrás y con gol.', 'fra']]
+    },
+    tod: {
+      fra: [['Bellingham', 'Está en todas y llega para marcar.'], ['Fabián Ruiz', 'Toca, llega y marca.', 'cer']],
+      pis: [['Declan Rice', 'Recupera, empuja y dispara de lejos.'], ['Enzo Fernández', 'Corta, pasa y dispara.', 'cer']],
+      cer: [['Gavi', 'Presiona, roba y la pasa.'], ['Mac Allister', 'Corta, ordena y dispara.', 'pis'], ['Marcos Llorente', 'Corre todo y se va de su par.', 'mag']],
+      mag: [['Fermín López', 'Llega, desborda y no deja de presionar.'], ['Pablo Barrios', 'Regatea, pasa y recupera.', 'cer']]
+    },
+    gua: [['Courtois', 'Seguridad total bajo palos.', 'pct'], ['Joan García', 'Para y para: siempre tiene trabajo.', 'vol'], ['Unai Simón', 'Aparece en las paradas difíciles.', 'dif']]
+  };
+  // Elige el futbolista de cada niño (se llama al final de estilosTemporada)
+  const JC_TERCERO = 75; // el tercer rasgo cuenta si supera a 3 de cada 4 compañeros
+  function asignarJuegaComo(res) {
+    const lista = Object.values(res), grupos = {};
+    lista.forEach(x => {
+      let celda, pref;
+      if (x.portero) {
+        const j = x.j, ps = j.paradas || 0, tot = ps + (j.golesRecibidos || 0), pj = Math.max(1, j.partidos || 1);
+        celda = JUEGA_COMO.gua;
+        pref = tot && ps / tot >= 0.75 ? 'pct' : (ps && (j.paradasDificiles || 0) / ps >= 0.3 ? 'dif' : (ps / pj >= 3 ? 'vol' : 'pct'));
+        x.jcGrupo = 'gua';
+      } else {
+        const T = JUEGA_COMO[x.estilo]; if (!T) return;
+        celda = T[x.seg || 'puro'] || T.puro || Object.values(T)[0];
+        const fuera = new Set([x.estilo, x.seg, x.estilo === 'tod' ? 'mur' : null]);
+        const otros = (x.fam || []).filter(f => !fuera.has(f.f));
+        pref = otros.length && otros[0].s >= JC_TERCERO ? otros[0].f : null; // su tercer rasgo (en los puros, el segundo), solo si destaca
+        x.jcGrupo = x.estilo + '|' + (x.seg || 'puro');
+      }
+      x.jcCelda = celda; x.jcPref = pref;
+      (grupos[x.jcGrupo] = grupos[x.jcGrupo] || []).push(x);
+    });
+    Object.values(grupos).forEach(g => {
+      const usados = new Set();
+      g.sort((a, b) => ((b.fam && b.fam[0] ? b.fam[0].s : 0) - (a.fam && a.fam[0] ? a.fam[0].s : 0)) || ((b.j.minutos || 0) - (a.j.minutos || 0)));
+      g.forEach(x => {
+        const C = x.jcCelda, libre = (c) => c && !usados.has(c[0]);
+        const elegido = C.find(c => c[2] === x.jcPref && libre(c)) || C.find(c => !c[2] && libre(c)) || C.find(libre) || C.find(c => c[2] === x.jcPref) || C[0];
+        usados.add(elegido[0]); x.jc = elegido;
+      });
+    });
+  }
+  function juegaComo(x) { return x && x.jc ? x.jc : null; }
+  function estPuntos(p, r, c) {
+    return ESTILO_EJES.map((e, i) => {
+      const a = -Math.PI / 2 + i * Math.PI / 3, v = p[e.k] == null ? 0 : p[e.k];
+      const rr = r * Math.max(v, 5) / 100;
+      return `${(c + rr * Math.cos(a)).toFixed(1)},${(c + rr * Math.sin(a)).toFixed(1)}`;
+    }).join(' ');
+  }
+  function estHexSVG(p, col, nombre, otro) {
+    const c = 120, r = 88, full = {}, mid = {};
+    ESTILO_EJES.forEach(e => { full[e.k] = 100; mid[e.k] = 50; });
+    const ejes = ESTILO_EJES.map((e, i) => { const a = -Math.PI / 2 + i * Math.PI / 3; return `<line x1="${c}" y1="${c}" x2="${(c + r * Math.cos(a)).toFixed(1)}" y2="${(c + r * Math.sin(a)).toFixed(1)}" stroke="#232c3b"></line>`; }).join('');
+    const top = Math.max(...ESTILO_EJES.map(e => p[e.k] || 0));
+    const etis = ESTILO_EJES.map((e, i) => {
+      const a = -Math.PI / 2 + i * Math.PI / 3, x = c + (r + 16) * Math.cos(a), y = c + (r + 16) * Math.sin(a) + 4;
+      const anc = Math.abs(Math.cos(a)) < .2 ? 'middle' : (Math.cos(a) > 0 ? 'start' : 'end');
+      const v = p[e.k], dest = v != null && v >= Math.max(70, top - 10);
+      return `<text x="${x.toFixed(1)}" y="${(i === 0 ? y - 4 : i === 3 ? y + 6 : y).toFixed(1)}" text-anchor="${anc}" fill="${dest ? col : '#94a3b8'}" font-size="${dest ? 11.5 : 11}" font-weight="${dest ? 800 : 600}" font-family="Inter, system-ui, sans-serif">${e.n} ${v == null ? '—' : v}</text>`;
+    }).join('');
+    const aria = `Hexágono de estilo de ${estEsc(nombre)}: ` + ESTILO_EJES.map(e => `${e.n} ${p[e.k] == null ? 'sin datos' : p[e.k]}`).join(', ') + '. La línea discontinua es la mitad del equipo.';
+    return `<svg viewBox="-62 -6 364 252" width="100%" style="max-width:330px; display:block; margin:0 auto;" role="img" aria-label="${aria}">
+      <polygon points="${estPuntos(full, r, c)}" fill="none" stroke="#2a3446" stroke-width="1.5"></polygon>${ejes}
+      <polygon points="${estPuntos(mid, r, c)}" fill="none" stroke="#64748b" stroke-width="1.2" stroke-dasharray="4 4"></polygon>
+      ${otro ? `<polygon points="${estPuntos(otro, r, c)}" fill="rgba(90,176,255,.18)" stroke="#5ab0ff" stroke-width="2" stroke-linejoin="round"></polygon>` : ''}
+      <polygon points="${estPuntos(p, r, c)}" fill="${col}40" stroke="${col}" stroke-width="2.5" stroke-linejoin="round"></polygon>${etis}</svg>`;
+  }
+  function estMiniSVG(a, b, colA) {
+    const c = 120, r = 88, full = {}; ESTILO_EJES.forEach(e => { full[e.k] = 100; });
+    return `<svg viewBox="20 20 200 200" width="72" height="72" aria-hidden="true">
+      <polygon points="${estPuntos(full, r, c)}" fill="none" stroke="#2a3446" stroke-width="3"></polygon>
+      <polygon points="${estPuntos(b, r, c)}" fill="rgba(90,176,255,.25)" stroke="#5ab0ff" stroke-width="4" stroke-linejoin="round"></polygon>
+      <polygon points="${estPuntos(a, r, c)}" fill="${colA}40" stroke="${colA}" stroke-width="4" stroke-linejoin="round"></polygon></svg>`;
+  }
+  function estSpDetalle(x, k) {
+    const j = x.j, v = x.val[k];
+    if (k === 'pun') return `${estGolesTiro(j)} goles en ${estTiros(j)} tiros`;
+    return `${estDec(v)} por partido`;
+  }
+  // Pestaña 🎨 Estilo de la ficha del niño
+  function estiloJugadorHTML(t, j) {
+    if (!t || !j) return '';
+    const R = estilosTemporada(t), x = R[j.id];
+    if (!x) return `<div style="text-align:center; padding:22px 10px; color:#94a3b8; font-size:12.5px; line-height:1.5;">🎨 Su estilo sale con ${ESTILO_MIN}' jugados en la temporada (lleva ${j.minutos || 0}').</div>`;
+    const E = ESTILOS[x.estilo];
+    if (x.portero) {
+      const ps = j.paradas || 0, gr = j.golesRecibidos || 0, tot = ps + gr;
+      return `<div style="border-radius:18px; overflow:hidden; border:1px solid rgba(226,232,240,.35); background:#141b27; text-align:center; padding:18px 14px;">
+        <div style="font-size:11px; font-weight:800; letter-spacing:2px; color:#cbd5e1;">SU ESTILO</div>
+        <div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:30px; letter-spacing:1px; color:#fff; line-height:1.15; margin-top:2px;">EL GUARDIÁN</div>
+        <div style="font-size:12px; color:#cbd5e1; margin-top:4px;">${E.frase}</div>
+      ${(() => { const jc = juegaComo(x); return jc ? `<div style="display:inline-block; margin-top:9px; background:#0f1520; border:1px solid #475569; border-radius:12px; padding:7px 12px;"><div style="font-size:13.5px; color:#fff;">⚽ Juega como <b>${estEsc(jc[0])}</b></div><div style="font-size:11px; color:#cbd5e1; margin-top:2px;">${estEsc(jc[1])}</div></div>` : ''; })()}
+        <div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-top:14px;">
+          ${[[ps, 'paradas'], [j.paradasDificiles || 0, 'paradas difíciles'], [tot ? Math.round(ps / tot * 100) + ' %' : '—', 'de paradas']].map(([v, l]) => `<div style="background:#0f1520; border-radius:10px; padding:10px 6px;"><div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:20px;">${v}</div><div style="font-size:10.5px; color:#94a3b8; margin-top:2px;">${l}</div></div>`).join('')}
+        </div>
+        <div style="font-size:10.5px; color:#94a3b8; margin-top:10px; line-height:1.4;">Es el único portero que ha jugado esta temporada, así que no se compara con nadie.</div></div>`;
+    }
+    const col = E.col, nom = estNom(j);
+    const sp = x.sp.length ? x.sp.map((s, i) => `<div style="display:flex; align-items:center; gap:10px; background:${i === 0 && s.r === 1 ? col + '22' : '#0f1520'}; border-radius:12px; padding:9px 11px; margin-top:6px;">
+          <span style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:20px; color:${s.r === 1 ? col : '#cbd5e1'}; min-width:34px;">${s.r}.º</span>
+          <span style="font-size:12.5px; line-height:1.35; color:#e2e8f0;">${estEsc(s.txt)} <span style="color:#94a3b8; font-size:11px;">· ${estSpDetalle(x, s.k)}</span></span></div>`).join('')
+      : (x.fuerte ? `<div style="background:#0f1520; border-radius:12px; padding:9px 11px; margin-top:6px; font-size:12.5px;">Su punto fuerte: <b>${x.fuerte.n}</b></div>` : '');
+    let gem = '';
+    if (x.gemelo) {
+      const o = x.gemelo.o, y = R[o.id], EO = ESTILOS[y.estilo];
+      const mismo = y.estilo === x.estilo;
+      const dif = ESTILO_EJES.map(e => ({ e, d: (y.pct[e.k] || 0) - (x.pct[e.k] || 0) }));
+      const el = dif.slice().sort((a, b) => b.d - a.d)[0], yo = dif.slice().sort((a, b) => a.d - b.d)[0];
+      const frase = (mismo ? `Los dos, ${EO.pl.toLowerCase()}. ` : '') + (el.d >= 10 && yo.d <= -10 ? `${estNom(o)} ${el.e.mas}; ${nom} ${yo.e.mas}.` : 'Juegan casi igual.');
+      gem = `<div style="border-top:1px solid #232c3b; margin-top:12px; padding-top:12px; display:grid; grid-template-columns:72px minmax(0,1fr); gap:12px; align-items:center;">
+        ${estMiniSVG(x.pct, y.pct, col)}
+        <div><div style="font-size:10.5px; font-weight:800; letter-spacing:1.2px; color:#94a3b8;">SU GEMELO DE ESTILO</div>
+          <div style="font-size:14.5px; font-weight:800; margin-top:2px;">${estEsc(estNom(o))} <span style="font-family:'Montserrat',sans-serif; font-weight:900; color:#5ab0ff;">${x.gemelo.sim} %</span> <span style="font-size:11px; color:#94a3b8; font-weight:600;">· ${EO.n}</span></div>
+          <div style="font-size:11.5px; color:#cbd5e1; line-height:1.4; margin-top:2px;">${estEsc(frase)}</div></div></div>`;
+    }
+    return `<div style="border-radius:18px; overflow:hidden; border:1px solid ${col}88; background:#141b27;">
+      <div style="background:linear-gradient(160deg, ${col}33 0%, #141b27 60%); padding:14px 14px 4px; text-align:center;">
+        <div style="font-size:11px; font-weight:800; letter-spacing:2px; color:${col};">SU ESTILO</div>
+        <div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:30px; letter-spacing:1px; color:${col}; line-height:1.15;">${E.art}</div>
+        ${x.cola ? `<div style="font-size:12.5px; color:#e2e8f0;">${x.cola}</div>` : ''}
+        <div style="font-size:11.5px; color:#cbd5e1; margin-top:3px;">${E.frase}</div>
+        ${(() => { const jc = juegaComo(x); return jc ? `<div style="display:inline-block; margin-top:9px; background:rgba(10,14,20,.55); border:1px solid ${col}66; border-radius:12px; padding:7px 12px; max-width:290px;"><div style="font-size:13.5px; color:#fff;">⚽ Juega como <b style="color:${col};">${estEsc(jc[0])}</b></div><div style="font-size:11px; color:#cbd5e1; line-height:1.4; margin-top:2px;">${estEsc(jc[1])}</div></div>` : ''; })()}
+      </div>
+      <div style="padding:4px 6px 0;">${estHexSVG(x.pct, col, nom)}</div>
+      <div style="font-size:10px; color:#94a3b8; text-align:center; padding:0 12px; line-height:1.4;">Sobre 100: a cuántos compañeros supera (100 = el que más del equipo) · discontinua: la mitad del equipo</div>
+      <div style="padding:10px 12px 14px;">
+        <div style="font-size:10.5px; font-weight:800; letter-spacing:1.2px; color:${col};">SUPERPODERES</div>${sp}${gem}</div></div>`;
+  }
+  // 🧬 El ADN del equipo (Temporada → Más análisis)
+  function adnEquipoHTML(t, abrir) {
+    const R = estilosTemporada(t), lista = Object.values(R);
+    if (!lista.length) return `<div style="font-size:12px; color:#94a3b8;">Aún no hay niños con ${ESTILO_MIN}' jugados.</div>`;
+    const orden = ['fra', 'pis', 'cer', 'mag', 'mur', 'tod', 'gua'];
+    const fuerza = (x) => x.portero ? 0 : (x.fam[0] ? x.fam[0].s : 0);
+    let h = `<div style="font-size:11.5px; color:#94a3b8; line-height:1.45; margin-bottom:10px;">Cada niño, por lo que más le distingue de sus compañeros (mínimo ${ESTILO_MIN}'). Toca uno para ver su carta.</div>`;
+    orden.forEach(k => {
+      const g = lista.filter(x => x.estilo === k).sort((a, b) => fuerza(b) - fuerza(a));
+      if (!g.length) return;
+      const E = ESTILOS[k];
+      h += `<div style="background:rgba(255,255,255,.03); border:1px solid ${E.col}55; border-radius:14px; padding:10px 12px; margin-bottom:10px;">
+        <div style="display:flex; align-items:baseline; justify-content:space-between; gap:8px; margin-bottom:4px;"><span style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:15px; letter-spacing:.5px; color:${E.col};">${E.pl}</span><span style="font-size:10.5px; color:#94a3b8; text-align:right;">${E.frase}</span></div>
+        ${g.map(x => {
+          const s = x.sp && x.sp[0];
+          const chip = x.portero ? '' : (s ? `<span style="font-size:10.5px; font-weight:800; white-space:nowrap; border-radius:6px; padding:3px 7px; ${s.r === 1 ? `background:${E.col}; color:#0a0e14;` : 'background:#1e2633; color:#cbd5e1;'}">${s.r === 1 ? '1.º' : s.r + '.º'} ${estEsc(ESTILO_EJES.find(e => e.k === s.k).n.toLowerCase())}</span>` : '');
+          return `<div onclick="${abrir}(${JSON.stringify(x.j.id).replace(/"/g, '&quot;')})" style="display:grid; grid-template-columns:28px minmax(0,1fr) auto; gap:10px; align-items:center; min-height:44px; border-top:1px solid rgba(255,255,255,.06); cursor:pointer;">
+            <span style="width:28px; height:28px; border-radius:50%; background:#1e2633; display:flex; align-items:center; justify-content:center; font-family:'Montserrat',sans-serif; font-weight:800; font-size:11px; color:#e2e8f0;">${estEsc(x.j.dorsal ?? '')}</span>
+            <span style="min-width:0;"><span style="font-size:13px; font-weight:700; color:#e2e8f0;">${estEsc(estNom(x.j))}</span>${(() => { const jc = juegaComo(x), sub = [x.cola, jc ? 'como ' + jc[0] : ''].filter(Boolean).join(' · '); return sub ? `<br><span style="font-size:10.5px; color:#94a3b8;">${estEsc(sub)}</span>` : ''; })()}</span>${chip}</div>`;
+        }).join('')}</div>`;
+    });
+    // gemelos: parejas que se eligen mutuamente o con más parecido
+    const vistos = new Set(), pares = [];
+    lista.filter(x => x.gemelo).sort((a, b) => b.gemelo.sim - a.gemelo.sim).forEach(x => {
+      const a = String(x.j.id), b = String(x.gemelo.o.id), key = [a, b].sort().join('_');
+      if (vistos.has(a) || vistos.has(b) || vistos.has(key)) return;
+      vistos.add(a); vistos.add(b); vistos.add(key); pares.push(x);
+    });
+    if (pares.length) h += `<div style="background:rgba(90,176,255,.06); border:1px solid rgba(90,176,255,.35); border-radius:14px; padding:10px 12px;">
+      <div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:13px; color:#5ab0ff; margin-bottom:4px;">GEMELOS DE ESTILO</div>
+      <div style="font-size:12px; color:#cbd5e1; line-height:1.65;">${pares.slice(0, 6).map(x => `${estEsc(estNom(x.j))} y ${estEsc(estNom(x.gemelo.o))} <b style="color:#5ab0ff;">${x.gemelo.sim} %</b>`).join(' · ')}</div></div>`;
+    h += `<div style="font-size:10.5px; color:#94a3b8; line-height:1.45; margin-top:10px;">Los ejes: Puntería (goles por tiro, mínimo ${ESTILO_MIN_TIROS} tiros), Disparo, Último pase (asistencias y pases clave), Pase al área, Regate (con penaltis provocados) y Defensa (las clave cuentan doble), todo por 70'. Cada uno puntúa según a cuántos compañeros supera. Nada resta.</div>`;
+    return h;
+  }
+
+  // ── Récords personales ──
+  const REC_DEF = [
+    { k: 'goles', n: 'Goles', v: h => h.goles || 0 },
+    { k: 'asis', n: 'Asistencias', v: h => h.asistencias || 0 },
+    { k: 'part', n: 'Participaciones en gol', v: h => (h.goles || 0) + (h.asistencias || 0) },
+    { k: 'tiros', n: 'Tiros', acc: true, v: (h, a) => (a.dp || 0) + (a.df || 0) },
+    { k: 'pun', n: 'Puntería', acc: true, v: (h, a) => { const ti = (a.dp || 0) + (a.df || 0); return ti >= REC_MIN_TIROS ? Math.min(h.goles || 0, ti) / ti : null; }, fmt: v => Math.round(v * 100) + ' %' },
+    { k: 'pc', n: 'Pases clave', acc: true, v: (h, a) => a.pc || 0 },
+    { k: 'pa', n: 'Pases al área', acc: true, v: (h, a) => a.pa || 0 },
+    { k: 'reg', n: 'Regates', acc: true, v: (h, a) => a.reg || 0 },
+    { k: 'def', n: 'Acciones defensivas', acc: true, v: (h, a) => (a.def || 0) + (a.defC || 0) },
+    { k: 'par', n: 'Paradas', acc: true, v: (h, a) => a.par || 0 },
+    { k: 'imp', n: 'Impacto por 70 min', v: h => (h.mins || 0) >= REC_MIN_IMP ? (Number(h.impPond) || 0) : null, fmt: v => estDec(v, 2) }
+  ];
+  function recFmt(d, v) { return d.fmt ? d.fmt(v) : String(v); }
+  // Por jugador: mejores marcas y en qué partido se batieron (índice en t.partidos)
+  function recordsJugador(t, j) {
+    const ps = (t && t.partidos) || [];
+    const idx = (h) => ps.findIndex(p => p.fecha === h.fecha && p.rival === h.rival);
+    const H = ((j && j.historial) || []).map(h => ({ h, i: idx(h) })).filter(x => x.i >= 0 && ((x.h.mins || 0) > 0 || x.h.goles || x.h.asistencias)).sort((a, b) => a.i - b.i);
+    const out = {};
+    REC_DEF.forEach(d => {
+      let best = null; const batidos = [];
+      H.forEach(({ h, i }) => {
+        if (d.acc && h.acc === undefined) return;
+        const v = d.v(h, h.acc || {});
+        if (v == null) return;
+        if (best == null) { best = { v, i, partidos: [i] }; return; }
+        if (v > best.v && (d.k === 'imp' || d.k === 'pun' || v >= 2)) { batidos.push({ i, v, antes: best.v }); best = { v, i, partidos: [i] }; }
+        else if (v === best.v && v > 0) best.partidos.push(i);
+      });
+      if (best && (best.v > 0 || d.k === 'imp')) out[d.k] = { d, best, batidos };
+    });
+    // (pasar de 0 a 1 no cuenta como récord: hace falta al menos 2)
+    // rachas (partidos seguidos que jugó)
+    let gol = 0, golMax = 0, part = 0, partMax = 0;
+    H.forEach(({ h }) => {
+      gol = (h.goles || 0) > 0 ? gol + 1 : 0; golMax = Math.max(golMax, gol);
+      part = ((h.goles || 0) + (h.asistencias || 0)) > 0 ? part + 1 : 0; partMax = Math.max(partMax, part);
+    });
+    return { recs: out, rachas: { gol: golMax, part: partMax, tit: j.rachaMaxTitular || 0 }, H };
+  }
+  // Récords batidos en el partido i de la temporada, de todos los niños
+  function recordsDelPartido(t, i) {
+    const res = [];
+    Object.values((t && t.jugadores) || {}).forEach(j => {
+      const R = recordsJugador(t, j);
+      Object.values(R.recs).forEach(r => {
+        const b = r.batidos.find(x => x.i === i);
+        if (b) res.push({ j, d: r.d, v: b.v, antes: b.antes });
+      });
+    });
+    const ord = REC_DEF.map(d => d.k);
+    return res.sort((a, b) => ord.indexOf(a.d.k) - ord.indexOf(b.d.k) || (Number(a.j.dorsal) || 99) - (Number(b.j.dorsal) || 99));
+  }
+  function recordsDelPartidoHTML(t, i, acento) {
+    const L = recordsDelPartido(t, i);
+    if (!L.length) return '';
+    acento = acento || '#f5a623';
+    return `<div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px;"><span style="font-size:11px; font-weight:800; color:${acento}; letter-spacing:.5px;">🏅 RÉCORDS PERSONALES DE HOY</span><span style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:16px; color:${acento};">${L.length}</span></div>
+      <div style="font-size:11px; color:#94a3b8; margin-bottom:4px;">Cada uno contra sí mismo: su mejor marca en un partido esta temporada.</div>
+      ${L.map(x => `<div style="display:grid; grid-template-columns:34px minmax(0,1fr) auto; gap:10px; align-items:center; padding:8px 0; border-top:1px solid rgba(255,255,255,.06);">
+        <span style="width:34px; height:34px; border-radius:50%; background:${acento}22; color:${acento}; display:flex; align-items:center; justify-content:center; font-family:'Montserrat',sans-serif; font-weight:900; font-size:12px;">${estEsc(x.j.dorsal ?? '')}</span>
+        <span style="min-width:0;"><span style="font-size:13px; font-weight:700; color:#e2e8f0;">${estEsc(estNom(x.j))}</span><br><span style="font-size:11px; color:#cbd5e1;">${estEsc(x.d.n)}</span></span>
+        <span style="text-align:right;"><span style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:18px; color:${acento};">${recFmt(x.d, x.v)}</span><br><span style="font-size:10px; color:#94a3b8;">antes ${recFmt(x.d, x.antes)}</span></span></div>`).join('')}`;
+  }
+  // «🏅 Sus récords» en la ficha del niño
+  function recordsJugadorHTML(t, j, acento) {
+    if (!t || !j) return '';
+    acento = acento || '#f5a623';
+    const R = recordsJugador(t, j), ps = t.partidos || [];
+    const ult = ps.length - 1;
+    const lista = REC_DEF.map(d => R.recs[d.k]).filter(Boolean);
+    if (!lista.length || R.H.length < 1) return '';
+    const cuando = (r) => r.best.partidos.slice(0, 2).map(i => { const p = ps[i]; return p ? `vs ${String(p.rival || '').toLowerCase().replace(/(^|\s)\S/g, c => c.toUpperCase())}${r.best.partidos.length === 1 ? ' · ' + (p.fecha || '').replace(/\/\d{4}$/, '') : ''}` : ''; }).join(' y ') + (r.best.partidos.length > 2 ? ` y ${r.best.partidos.length - 2} más` : '');
+    const rachas = [[R.rachas.gol, 'partidos seguidos marcando'], [R.rachas.part, 'partidos seguidos participando en gol'], [R.rachas.tit, 'partidos seguidos de titular']].filter(x => x[0] >= 2);
+    const nBat = lista.reduce((s, r) => s + r.batidos.length, 0);
+    return `<div style="background:rgba(255,255,255,.03); border:1px solid ${acento}66; border-radius:14px; padding:12px; margin-top:12px;">
+      <div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-size:11px; font-weight:800; color:${acento}; letter-spacing:.5px;">🏅 SUS RÉCORDS</span><span style="font-size:10.5px; color:#94a3b8;">Mejor marca en un partido</span></div>
+      ${lista.map(r => `<div style="display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; align-items:center; padding:8px 0; border-top:1px solid rgba(255,255,255,.06); margin-top:4px;">
+        <span style="min-width:0;"><span style="font-size:12.5px; font-weight:600; color:#e2e8f0;">${estEsc(r.d.n)}</span><br><span style="font-size:10.5px; color:#94a3b8;">${estEsc(cuando(r))}</span></span>
+        <span style="display:flex; align-items:center; gap:6px;">${r.batidos.length && r.batidos[r.batidos.length - 1].i === ult ? `<span style="font-size:9.5px; font-weight:800; color:#0a0e14; background:${acento}; border-radius:5px; padding:2px 6px;">NUEVO</span>` : ''}<span style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:17px; color:${acento};">${recFmt(r.d, r.best.v)}</span></span></div>`).join('')}
+      ${rachas.length || nBat ? `<div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:8px;">
+        ${rachas.map(([v, l]) => `<div style="background:rgba(255,255,255,.04); border-radius:10px; padding:8px 10px;"><div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:16px; color:#e2e8f0;">${v}</div><div style="font-size:10.5px; color:#94a3b8; line-height:1.35;">${l}</div></div>`).join('')}
+        ${nBat ? `<div style="background:rgba(255,255,255,.04); border-radius:10px; padding:8px 10px;"><div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:16px; color:#e2e8f0;">${nBat}</div><div style="font-size:10.5px; color:#94a3b8; line-height:1.35;">${nBat === 1 ? 'récord batido' : 'récords batidos'} esta temporada</div></div>` : ''}</div>` : ''}
+      <div style="font-size:10px; color:#64748b; margin-top:8px; line-height:1.4;">El primer partido marca la referencia; se bate superándola. Tiros, pases, regates, defensa y paradas cuentan desde que la app los guarda partido a partido. Impacto, con ${REC_MIN_IMP}' o más; puntería, con ${REC_MIN_TIROS} tiros o más.</div></div>`;
+  }
+
   // ── v142 · LÍDERES DE LA PLANTILLA (misma función en la app y en el visor) ──
   // Icono junto al nombre del que lidera cada apartado de la temporada. Empates: lo llevan todos los empatados.
   // Hace falta tener al menos 1; eficacia de tiro con mínimo 5 tiros; impacto con el mínimo de minutos del ranking.
@@ -3298,7 +3704,8 @@
     try { pesoHtml = proJugadorHTML(ultimaTemporada, ultimaLiga, j, minMinutosRanking(), '#f5a623') + pesoHtml; } catch (e) { console.error('Victorias añadidas:', e); } // v135
     try { pesoHtml = companeroJugadorHTML(ultimaTemporada, j, true, '#f5a623') + pesoHtml; } catch (e) { console.error('Compañeros:', e); } // v140
     document.getElementById('perfilDatosContenido').innerHTML = renderFichaDatosHTML(statsDatos) + pesoHtml + sociosJugadorHTML(ultimaTemporada, j.name) + lineasJugadorHTMLV(j); // v95
-    try { document.getElementById('perfilEvoContenido').innerHTML = evolucionJugadorHTML(ultimaTemporada, j); mostrarBotonEvo(true); } catch (e) { console.error('Evolución:', e); mostrarBotonEvo(false); }
+    try { document.getElementById('perfilEvoContenido').innerHTML = evolucionJugadorHTML(ultimaTemporada, j) + recordsJugadorHTML(ultimaTemporada, j, '#f5a623'); mostrarBotonEvo(true); } catch (e) { console.error('Evolución:', e); mostrarBotonEvo(false); }
+    try { document.getElementById('perfilEstiloContenido').innerHTML = estiloJugadorHTML(ultimaTemporada, j); mostrarBotonEstilo(true); } catch (e) { console.error('Estilo:', e); mostrarBotonEstilo(false); } // v150
     mostrarPestanaPerfil('cromo');
     document.getElementById('perfilModal').style.display = 'flex';
   };
@@ -3404,6 +3811,7 @@
     pintarInformeIA(matchData);
     pintarProximoPartido();
     try { pintarResumenUltimo(matchData); } catch (e) { console.error('Resumen del partido:', e); }
+    try { pintarRecordsHoy(matchData); } catch (e) { console.error('Récords personales:', e); } // v150
     pintarCampo(matchData);
     pintarBanquilloPrevia(matchData, previa);
     pintarEventos(matchData);
@@ -4410,7 +4818,7 @@
     } else if (r.tipo === 'record') {
       const copa = '<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#f5a623" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4zM17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"></path></svg>';
       cont.innerHTML = `<div class="tv-record">
-        <div style="display:flex; align-items:center; gap:18px;">${copa}<div class="tv-mont" style="font-weight:900; font-size:84px; letter-spacing:6px; color:#f5a623;">${r.hattrick ? '¡HAT-TRICK!' : 'NUEVO RÉCORD'}</div></div>
+        <div style="display:flex; align-items:center; gap:18px;">${copa}<div class="tv-mont" style="font-weight:900; font-size:84px; letter-spacing:6px; color:#f5a623;">${r.hattrick ? '¡HAT-TRICK!' : (r.personal ? 'RÉCORD PERSONAL' : 'NUEVO RÉCORD')}</div></div>
         <div class="tv-mont" style="font-weight:800; font-size:40px; text-align:center; max-width:1100px;">${escHtml(r.hattrick ? r.titulo.replace(/^¡Hat-trick de (.+)!$/, '$1 marca tres goles') : r.titulo)}</div>
         ${r.antes != null ? `<div style="display:flex; align-items:center; gap:40px;">
           <div style="display:flex; flex-direction:column; align-items:center; gap:4px;"><div style="font-size:18px; color:#94a3b8; font-weight:700; letter-spacing:2px;">AHORA</div><div class="tv-mont" style="font-weight:900; font-size:130px; line-height:1;">${escHtml(r.ahora)}</div></div>
@@ -4809,6 +5217,26 @@
   // Sale al terminar el partido y se queda hasta que empieza el siguiente. Los 3 primeros días va arriba;
   // después baja debajo de la tarjeta del próximo partido.
   const DIAS_RESUMEN_ARRIBA = 3;
+  // v150 · 🏅 Récords personales del último partido (bajo el resumen, cuando el partido ya está en la temporada)
+  function pintarRecordsHoy(m) {
+    const card = document.getElementById('recordsHoyCard'), res = document.getElementById('resumenUltimoCard');
+    if (!card) return;
+    const pi = (m && m.matchFinished && res && res.style.display !== 'none') ? indicePartidoDeMatch(m) : -1;
+    const html = pi >= 0 ? recordsDelPartidoHTML(ultimaTemporada, pi, '#f5a623') : '';
+    card.innerHTML = html; card.style.display = html ? 'block' : 'none';
+  }
+  // En el Modo TV, al guardarse el partido: un rótulo por récord personal (una sola vez por partido)
+  let tvRecPersVistos = new Set();
+  function tvRecordsPersonales(m) {
+    if (!tvActivo || !m || !m.matchFinished) return;
+    const pi = indicePartidoDeMatch(m); if (pi < 0) return;
+    const marcador = `HERGAR ${Number(m.golesLocal) || 0} – ${Number(m.golesRival) || 0} ${(m.rival || 'RIVAL').toUpperCase()}`;
+    recordsDelPartido(ultimaTemporada, pi).forEach(x => {
+      const clave = pi + '|' + (ultimaTemporada.partidos[pi].fecha || '') + '|' + x.j.id + '|' + x.d.k;
+      if (tvRecPersVistos.has(clave)) return; tvRecPersVistos.add(clave);
+      tvEncolar({ tipo: 'record', personal: true, titulo: `${estNom(x.j)} · ${x.d.n}`, ahora: recFmt(x.d, x.v), antes: recFmt(x.d, x.antes), marcador, minuto: 'FINAL' });
+    });
+  }
   function pintarResumenUltimo(m) {
     const card = document.getElementById('resumenUltimoCard');
     if (!card) return;
@@ -5518,7 +5946,7 @@
     const secActivo = !!panelMas.querySelector('.subtab-btn.active');
     btn.setAttribute('aria-expanded', abierto ? 'true' : 'false');
     btn.classList.toggle('sec-activo', secActivo && !abierto);
-    if (txt) txt.textContent = abierto ? 'ocultar ▴' : '8 apartados más ▾';
+    if (txt) txt.textContent = abierto ? 'ocultar ▴' : '9 apartados más ▾';
   }
   function toggleMasTemp() {
     const panelMas = document.getElementById('tmpMasPanel');
@@ -5575,10 +6003,11 @@
     pintarRachas(temporada);
     pintarRecords(temporada);
     try { pintarGaleriaVideos(); } catch (e) { console.error('Vídeos:', e); } // v119
-    try { if (ultimoMatchData) pintarResumenUltimo(ultimoMatchData); if (tvActivo) tvRender(); } catch (e) { console.error('Resumen:', e); } // 🎬 el botón del resumen necesita la temporada
+    try { if (ultimoMatchData) { pintarResumenUltimo(ultimoMatchData); pintarRecordsHoy(ultimoMatchData); tvRecordsPersonales(ultimoMatchData); } if (tvActivo) tvRender(); } catch (e) { console.error('Resumen:', e); } // 🎬 el botón del resumen necesita la temporada
     try { document.getElementById('minutosGoles').innerHTML = tramosGolHTML(temporada, 'vtr'); } catch (e) { console.error('Minutos:', e); }
     try { document.getElementById('momentosEquipoLista').innerHTML = momentosEquipoHTML(temporada, '#f5a623'); } catch (e) { console.error('Momentos:', e); } // v134
     try { document.getElementById('banquilloLista').innerHTML = banquilloHTML(temporada, '#f5a623', 'bqv'); } catch (e) { console.error('Banquillo:', e); } // v137
+    try { document.getElementById('adnLista').innerHTML = adnEquipoHTML(temporada, 'abrirPerfilJugadorTemporada'); } catch (e) { console.error('ADN:', e); } // v150
     try { document.getElementById('marcadorEquipoLista').innerHTML = marcadorEquipoHTML(temporada, '#f5a623'); document.getElementById('tirosEquipoLista').innerHTML = tirosEquipoHTML(temporada, '#f5a623'); } catch (e) { console.error('Marcador/tiros:', e); } // v135
     try { document.getElementById('muroLista').innerHTML = muroHTML(temporada, '#f5a623'); } catch (e) { console.error('Muro:', e); } // v134
     try { document.getElementById('companerosLista').innerHTML = companerosHTML(temporada, '#f5a623', true); } catch (e) { console.error('Compañeros:', e); } // v140

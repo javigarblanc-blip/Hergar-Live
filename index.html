@@ -634,7 +634,7 @@
         <button type="button" class="subtab-btn" onclick="showSub(event,'subRecords')">🏆 Récords</button>
       </div>
       <button type="button" class="tmp-mas" id="tmpMasBtn" onclick="toggleMasTemp()" aria-expanded="false" aria-controls="tmpMasPanel">
-        <span>📊 Más análisis</span><span class="txt" id="tmpMasTxt">9 apartados más ▾</span>
+        <span>📊 Más análisis</span><span class="txt" id="tmpMasTxt">10 apartados más ▾</span>
       </button>
       <div class="tmp-sec" id="tmpMasPanel">
         <button type="button" class="subtab-btn" onclick="showSub(event,'subVideos')">🎥 Goles en vídeo</button>
@@ -643,6 +643,7 @@
         <button type="button" class="subtab-btn" onclick="showSub(event,'subMinutos')">⏱ Minutos</button>
         <button type="button" class="subtab-btn" onclick="showSub(event,'subBanquillo')">🔄 Banquillo</button>
         <button type="button" class="subtab-btn" onclick="showSub(event,'subContexto')">🧭 Contexto</button>
+        <button type="button" class="subtab-btn" onclick="showSub(event,'subSuerte')">🍀 Suerte y nivel</button>
         <button type="button" class="subtab-btn" onclick="showSub(event,'subComparativa')">📊 Comparativa</button>
         <button type="button" class="subtab-btn" style="display:none;" onclick="showSub(event,'subHeatmap')">🗺️ Heatmap</button>
         <button type="button" class="subtab-btn" onclick="showSub(event,'subOnceIdeal')">🏅 Once ideal</button>
@@ -747,6 +748,13 @@
           <div class="card-title">🧭 Contexto</div>
           <div style="font-size:11.5px; color:#94a3b8; line-height:1.5; margin-bottom:10px;">Cómo le va al equipo según dónde, cuándo y contra quién juega.</div>
           <div id="contextoLista"><div class="loader">Cargando...</div></div>
+        </div>
+      </div>
+      <div id="subSuerte" class="sub-panel">
+        <div class="card">
+          <div class="card-title">🍀 Suerte y nivel</div>
+          <div style="font-size:11.5px; color:#94a3b8; line-height:1.5;">Cómo rinde el equipo más allá del resultado: si nos entra lo que tiramos y cómo jugamos frente al nivel de cada rival.</div>
+          <div id="suerteNivelLista"><div class="loader">Cargando...</div></div>
         </div>
       </div>
       <div id="subRecords" class="sub-panel">
@@ -2039,6 +2047,295 @@
       return `<details style="margin-top:12px;"><summary style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:12.5px; color:${acento}; cursor:pointer;">📊 Ranking Elo</summary>
           <div style="font-size:11.5px; color:#94a3b8; line-height:1.45; margin:6px 0;">Todos empiezan con ${ELO_BASE}, como en el ranking FIFA. Cada partido suben o bajan según lo esperado: ganar al de arriba da mucho y ganar al de abajo, poco. Las goleadas cuentan algo más y se tiene en cuenta jugar en casa.${E.jugados < 20 ? ' Las primeras jornadas se mueve mucho.' : ''}</div>${eloFilas}${graf}</details>${suerte}`;
   }
+    // ── v153 · 🍀 SUERTE Y NIVEL (misma función en la app y en el visor) ──
+    //  · Termómetro de la suerte (PDO del hockey): % de tiros a puerta del Hergar que son gol + % de tiros a puerta del
+    //    rival que no lo son, ×100. En cada partido lo del Hergar y lo del rival suman 200: 100 = lo justo.
+    //    Solo partidos en directo con tiros (los cargados a mano no tienen). Gol = tiro a puerta (si faltan tiros, se completan).
+    //  · Por encima de lo esperado ("strokes gained" del golf): ataque = goles que le metemos − lo que ese rival encaja de
+    //    media; defensa = lo que ese rival marca de media − goles que nos mete. Medias de sus partidos de Liga sin contar
+    //    los que juega contra nosotros. Mismo cálculo para todos los equipos de la Liga.
+    const SN_FIABLE = 3; // partidos del rival (sin contar los nuestros) para que su media se dé por buena
+    function snDec(v, d) { d = d == null ? 1 : d; return v == null ? '—' : v.toFixed(d).replace('.', ','); }
+    function snSig(v) { return v == null ? '—' : (v > 0.05 ? '+' : v < -0.05 ? '−' : '') + Math.abs(v).toFixed(1).replace('.', ','); }
+    function snColor(v, zona) { zona = zona == null ? 0.05 : zona; return v == null ? '#94a3b8' : v > zona ? '#2ed573' : v < -zona ? '#ff6b7a' : '#f5a623'; }
+    function snTiros(p) {
+        if (!p || p.manual || p.tirosNuestrosPuerta == null || p.tirosRivalesPuerta == null) return null;
+        const gf = Number(p.golesLocal) || 0, gc = Number(p.golesRival) || 0;
+        const tp = Math.max(Number(p.tirosNuestrosPuerta) || 0, gf), tr = Math.max(Number(p.tirosRivalesPuerta) || 0, gc);
+        if (tp + tr === 0) return null;
+        const ac = tp ? gf / tp : 0, pa = tr ? (tr - gc) / tr : 1;
+        return { gf, gc, tp, tr, ac, pa, v: (ac + pa) * 100, poco: tr <= 3 || tp <= 3 };
+    }
+    function snVeredicto(v) {
+        if (v == null) return ['—', '#94a3b8'];
+        if (v >= 115) return ['🍀 Mucha flor', '#2ed573'];
+        if (v >= 104) return ['🙂 Un poco de flor', '#2ed573'];
+        if (v > 96) return ['⚖️ Lo justo', '#f5a623'];
+        if (v > 85) return ['😕 Algo de mala suerte', '#ff6b7a'];
+        return ['🌧️ Mucha mala suerte', '#ff6b7a'];
+    }
+    // Partidos de Liga de cada equipo: para sacar sus medias sin contar los que juega contra un equipo dado
+    function snLigaBase(liga) {
+        if (!liga || !liga.equipos || !liga.partidos || typeof pronPreparar !== 'function') return null;
+        const D = pronPreparar(liga);
+        const jug = D.P.filter(p => p.jugado);
+        if (!jug.length) return null;
+        const por = Array.from({ length: D.NT }, () => []);
+        jug.forEach(p => { por[p.l].push({ gf: p.gl, gc: p.gv, o: p.v }); por[p.v].push({ gf: p.gv, gc: p.gl, o: p.l }); });
+        const media = (i, sin) => { let n = 0, f = 0, c = 0; (por[i] || []).forEach(x => { if (x.o === sin) return; n++; f += x.gf; c += x.gc; }); return { n, gf: n ? f / n : null, gc: n ? c / n : null }; };
+        return { D, por, media, jugados: jug.length };
+    }
+    function snPreparar(t, liga) {
+        const ps = (t && t.partidos) || [];
+        let B = null; try { B = snLigaBase(liga); } catch (e) { B = null; }
+        const H = B ? B.D.H : -1;
+        // Termómetro
+        const S = { gf: 0, gc: 0, tp: 0, tr: 0, partidos: [], acum: [], sinTiros: 0 };
+        // Nivel
+        const N = { partidos: [], sinLiga: 0, pendientes: 0, a: 0, d: 0, acumA: [], acumD: [] };
+        const porPartido = new Map();
+        ps.forEach((p, i) => {
+            const x = snTiros(p);
+            const fila = { i, p };
+            if (x) {
+                S.gf += x.gf; S.gc += x.gc; S.tp += x.tp; S.tr += x.tr;
+                S.partidos.push(Object.assign({ i, p }, x));
+                S.acum.push((S.tp ? S.gf / S.tp : 0) * 100 + (S.tr ? (S.tr - S.gc) / S.tr : 1) * 100);
+                fila.suerte = x.v;
+            } else S.sinTiros++;
+            if (B && H >= 0) {
+                const rv = proRivalLiga(liga, p);
+                if (rv.i < 0 || rv.i === H) N.sinLiga++;
+                else {
+                    const m = B.media(rv.i, H);
+                    if (!m.n) N.pendientes++;
+                    else {
+                        const gf = Number(p.golesLocal) || 0, gc = Number(p.golesRival) || 0;
+                        const a = gf - m.gc, d = m.gf - gc;
+                        const r = { i, p, gf, gc, ec: m.gc, em: m.gf, n: m.n, a, d, t: a + d, fiable: m.n >= SN_FIABLE, nombre: liga.equipos[rv.i].nombre };
+                        N.partidos.push(r); N.a += a; N.d += d;
+                        N.acumA.push(N.a / N.partidos.length); N.acumD.push(N.d / N.partidos.length);
+                        fila.nivel = r.t;
+                    }
+                }
+            }
+            porPartido.set(p, fila);
+        });
+        S.ac = S.tp ? S.gf / S.tp : null; S.pa = S.tr ? (S.tr - S.gc) / S.tr : null;
+        S.v = S.partidos.length ? ((S.ac || 0) + (S.pa == null ? 1 : S.pa)) * 100 : null;
+        const k = N.partidos.length;
+        N.ma = k ? N.a / k : null; N.md = k ? N.d / k : null; N.mt = k ? (N.a + N.d) / k : null;
+        // Resto de la Liga (solo resultados de la Liga)
+        let R = null;
+        if (B) {
+            R = (liga.equipos || []).map((e, i) => {
+                let n = 0, a = 0, d = 0;
+                (B.por[i] || []).forEach(x => { const m = B.media(x.o, i); if (!m.n) return; n++; a += x.gf - m.gc; d += m.gf - x.gc; });
+                return { e, i, n, a: n ? a / n : null, d: n ? d / n : null, t: n ? (a + d) / n : null };
+            }).filter(x => x.n > 0).sort((x, y) => y.t - x.t);
+            R.maxPj = Math.max(0, ...B.por.map(l => l.length));
+        }
+        return { S, N, R, conLiga: !!B, porPartido };
+    }
+    // Línea pequeña en cada partido de la lista: "🍀 113 · 📈 +1,3"
+    function snChipPartido(C, p) {
+        if (!C || !C.porPartido) return '';
+        const f = C.porPartido.get(p);
+        if (!f || (f.suerte == null && f.nivel == null)) return '';
+        const par = [];
+        if (f.suerte != null) par.push(`🍀 <b style="color:${snVeredicto(f.suerte)[1]};">${Math.round(f.suerte)}</b>`);
+        if (f.nivel != null) par.push(`📈 <b style="color:${snColor(f.nivel)};">${snSig(f.nivel)}</b>`);
+        return `<div style="font-size:10.5px; color:#94a3b8; margin-top:4px;">${par.join(' · ')} <span style="color:#64748b;">suerte · nivel</span></div>`;
+    }
+    function snGaugeSVG(v) {
+        const cx = 130, cy = 128, r = 100, min = 60, max = 140;
+        const ang = x => Math.PI * (1 - (Math.min(max, Math.max(min, x)) - min) / (max - min));
+        const pt = (a, rr) => [cx + rr * Math.cos(a), cy - rr * Math.sin(a)];
+        const arc = (v1, v2, c) => { const [x1, y1] = pt(ang(v1), r), [x2, y2] = pt(ang(v2), r); return `<path d="M${x1.toFixed(1)} ${y1.toFixed(1)} A${r} ${r} 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)}" stroke="${c}" stroke-width="16" fill="none"/>`; };
+        let s = arc(60, 85, '#7a2335') + arc(85, 96, '#a8485b') + arc(96, 104, '#6b6f78') + arc(104, 115, '#2f9c63') + arc(115, 140, '#1f7a4b');
+        const [nx, ny] = pt(ang(v), r - 26);
+        s += `<line x1="${cx}" y1="${cy}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" stroke="#fff" stroke-width="4" stroke-linecap="round"/><circle cx="${cx}" cy="${cy}" r="7" fill="#fff"/>`;
+        s += `<text x="26" y="146" fill="#94a3b8" font-size="10" font-family="Inter,sans-serif">Mala suerte</text><text x="234" y="146" text-anchor="end" fill="#94a3b8" font-size="10" font-family="Inter,sans-serif">Flor</text>`;
+        return `<svg viewBox="0 0 260 150" width="100%" style="max-width:280px; display:block; margin:0 auto;">${s}</svg>`;
+    }
+    function snLineas(series, yMin, yMax, ref, refTxt, etiquetas) {
+        const W = 320, Hh = 150, L = 30, R = 10, T = 10, B = 22, n = series[0].v.length;
+        if (!n) return '';
+        const x = i => L + (n === 1 ? (W - L - R) / 2 : i * (W - L - R) / (n - 1));
+        const y = v => T + (yMax - Math.min(yMax, Math.max(yMin, v))) * (Hh - T - B) / (yMax - yMin);
+        let s = '';
+        const pasoY = (yMax - yMin) <= 6 ? 1 : (yMax - yMin) / 4;
+        for (let v = yMin; v <= yMax + 1e-9; v += pasoY) { s += `<line x1="${L}" x2="${W - R}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" stroke="rgba(255,255,255,.06)"/><text x="${L - 4}" y="${(y(v) + 3).toFixed(1)}" text-anchor="end" fill="#94a3b8" font-size="9">${String(Math.round(v * 10) / 10).replace('.', ',')}</text>`; }
+        if (ref != null) s += `<line x1="${L}" x2="${W - R}" y1="${y(ref).toFixed(1)}" y2="${y(ref).toFixed(1)}" stroke="#94a3b8" stroke-dasharray="3 3"/><text x="${W - R}" y="${(y(ref) - 4).toFixed(1)}" text-anchor="end" fill="#94a3b8" font-size="9">${refTxt}</text>`;
+        const paso = Math.max(1, Math.ceil(n / 8));
+        for (let i = 0; i < n; i += paso) s += `<text x="${x(i).toFixed(1)}" y="${Hh - 6}" text-anchor="middle" fill="#94a3b8" font-size="9">${etiquetas[i]}</text>`;
+        series.forEach(se => {
+            s += `<path d="${se.v.map((v, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(v).toFixed(1)).join(' ')}" fill="none" stroke="${se.c}" stroke-width="${se.w || 2.5}" ${se.dash ? 'stroke-dasharray="4 4"' : ''} stroke-linejoin="round"/>`;
+            se.v.forEach((v, i) => { s += `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="3" fill="${se.c}"/>`; });
+        });
+        const ley = series.map(se => `<span><i style="display:inline-block; width:12px; height:3px; border-radius:2px; background:${se.c}; margin-right:5px; vertical-align:middle;"></i>${se.nombre}</span>`).join('');
+        return `<svg viewBox="0 0 ${W} ${Hh}" width="100%" style="display:block;">${s}</svg><div style="display:flex; gap:14px; justify-content:center; font-size:10.5px; color:#94a3b8; margin-top:4px;">${ley}</div>`;
+    }
+    function snBarra(v, escala, col) {
+        const w = Math.min(50, Math.abs(v) / escala * 50);
+        const b = v >= 0 ? `<i style="position:absolute; top:0; left:50%; width:${w}%; height:8px; border-radius:4px; background:${col};"></i>` : `<i style="position:absolute; top:0; left:${50 - w}%; width:${w}%; height:8px; border-radius:4px; background:${col};"></i>`;
+        return `<div style="position:relative; height:8px; background:rgba(255,255,255,.06); border-radius:4px; margin-top:4px;">${b}<span style="position:absolute; left:50%; top:-3px; width:1px; height:14px; background:#64748b;"></span></div>`;
+    }
+    function snRes(gf, gc) { const c = gf > gc ? ['#2ed573', 'rgba(46,213,115,.15)'] : gf < gc ? ['#ff6b7a', 'rgba(255,107,122,.15)'] : ['#f5a623', 'rgba(245,166,35,.15)']; return `<span style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:12px; width:38px; flex-shrink:0; text-align:center; border-radius:7px; padding:3px 0; color:${c[0]}; background:${c[1]};">${gf}-${gc}</span>`; }
+    function snTitulo(txt, acento) { return `<div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:12px; letter-spacing:1px; color:${acento}; margin:0 0 8px;">${txt}</div>`; }
+    function snCaja(html) { return `<div style="background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.07); border-radius:12px; padding:12px; margin-top:10px;">${html}</div>`; }
+    function suerteNivelHTML(t, liga, acento) {
+        acento = acento || '#f5a623';
+        const C = snPreparar(t, liga), S = C.S, N = C.N, esc = momEsc;
+        const etq = arr => arr.map(x => 'J' + (x.i + 1));
+        let h = '';
+        // ── TERMÓMETRO ──
+        if (!S.partidos.length) {
+            h += snCaja(snTitulo('🍀 TERMÓMETRO DE LA SUERTE', acento) + `<div style="font-size:12px; color:#94a3b8;">Aún no hay partidos en directo con tiros apuntados.</div>`);
+        } else {
+            const [vt, vc] = snVeredicto(S.v);
+            const filas = S.partidos.map((x, k) => {
+                const d = x.v - 100, col = d >= 0 ? '#2ed573' : '#ff6b7a';
+                return `<details style="border-top:${k ? '1px solid rgba(255,255,255,.06)' : '0'};"><summary style="list-style:none; cursor:pointer; display:flex; align-items:center; gap:10px; padding:8px 0;">${snRes(x.gf, x.gc)}<div style="flex:1; min-width:0;"><div style="font-size:12.5px; color:#e2e8f0; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">J${x.i + 1} · ${esc(x.p.rival)}</div>${snBarra(d, 60, col)}</div><span style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:14px; width:44px; text-align:right; color:${snVeredicto(x.v)[1]};">${Math.round(x.v)}</span></summary>
+                    <div style="font-size:11.5px; color:#94a3b8; padding:0 0 9px 48px; line-height:1.45;">🎯 ${x.gf} ${x.gf === 1 ? 'gol' : 'goles'} de ${x.tp} a puerta (${Math.round(x.ac * 100)} %) · 🧤 ${x.tr - x.gc} de ${x.tr} parados (${Math.round(x.pa * 100)} %)<br>${snVeredicto(x.v)[0]}${x.poco ? ' · pocos tiros: el número baila mucho' : ''}</div></details>`;
+            }).join('');
+            const graf = S.partidos.length >= 2 ? `<div style="margin-top:12px;"><div style="font-size:11px; font-weight:700; color:#cbd5e1; margin-bottom:4px;">Cómo va evolucionando</div>${snLineas([{ v: S.partidos.map(x => x.v), c: '#64748b', w: 1.5, dash: true, nombre: 'Cada partido' }, { v: S.acum, c: 'rgb(232,70,102)', w: 3, nombre: 'Acumulado' }], 40, 160, 100, '100 = lo justo', etq(S.partidos))}</div>` : '';
+            h += snCaja(snTitulo('🍀 TERMÓMETRO DE LA SUERTE', acento)
+                + `<div style="font-size:11.5px; color:#94a3b8; line-height:1.45; margin-bottom:4px;">¿Nos entra lo que tiramos y paramos lo que nos tiran? 100 es lo normal.</div>`
+                + snGaugeSVG(S.v)
+                + `<div style="text-align:center; font-family:'Montserrat',sans-serif; font-weight:900; font-size:36px; line-height:1; color:#fff; margin-top:2px;">${snDec(S.v)}</div>`
+                + `<div style="text-align:center; font-family:'Montserrat',sans-serif; font-weight:800; font-size:15px; margin-top:4px; color:${vc};">${vt}</div>`
+                + `<div style="display:flex; gap:8px; align-items:center; margin-top:12px;">
+                    <div style="flex:1; background:rgba(255,255,255,.04); border-radius:10px; padding:9px; text-align:center;"><div style="font-size:11px; color:#94a3b8;">🎯 Puntería</div><div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:20px; color:#e2e8f0;">${Math.round(S.ac * 100)} %</div><div style="font-size:10.5px; color:#94a3b8;">${S.gf} goles en ${S.tp} a puerta</div></div>
+                    <div style="font-family:'Montserrat',sans-serif; font-weight:900; color:#64748b;">+</div>
+                    <div style="flex:1; background:rgba(255,255,255,.04); border-radius:10px; padding:9px; text-align:center;"><div style="font-size:11px; color:#94a3b8;">🧤 Paradas</div><div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:20px; color:#e2e8f0;">${S.pa == null ? '—' : Math.round(S.pa * 100) + ' %'}</div><div style="font-size:10.5px; color:#94a3b8;">${S.tr - S.gc} de ${S.tr} a puerta del rival</div></div>
+                </div>`
+                + `<div style="font-size:11px; font-weight:700; color:#cbd5e1; margin:12px 0 2px;">Partido a partido <span style="font-weight:400; color:#94a3b8;">(toca uno para ver el detalle)</span></div>${filas}`
+                + graf
+                + (S.sinTiros ? `<div style="font-size:10.5px; color:#94a3b8; margin-top:6px;">${S.sinTiros} ${S.sinTiros === 1 ? 'partido no tiene' : 'partidos no tienen'} tiros apuntados (cargados a mano) y no cuenta${S.sinTiros === 1 ? '' : 'n'}.</div>` : ''));
+        }
+        // ── POR ENCIMA DE LO ESPERADO ──
+        if (!C.conLiga) {
+            h += snCaja(snTitulo('📈 POR ENCIMA DE LO ESPERADO', acento) + `<div style="font-size:12px; color:#94a3b8;">Hace falta tener resultados en la Liga para saber cómo es cada rival.</div>`);
+        } else if (!N.partidos.length) {
+            h += snCaja(snTitulo('📈 POR ENCIMA DE LO ESPERADO', acento) + `<div style="font-size:12px; color:#94a3b8;">Aún no hay partidos contra rivales de la Liga con resultados suficientes.</div>`);
+        } else {
+            const vt = N.mt > 1 ? '🚀 Muy por encima del nivel de los rivales' : N.mt > 0.2 ? '👍 Por encima de lo esperado' : N.mt > -0.2 ? '⚖️ Lo esperado' : '👎 Por debajo de lo esperado';
+            const best = N.partidos.reduce((b, x) => x.t > b.t ? x : b);
+            const sorpresa = N.partidos.filter(x => x.gf < x.gc && x.t > 0).sort((a, b) => b.t - a.t)[0];
+            const filas = N.partidos.map((x, k) => `<details style="border-top:${k ? '1px solid rgba(255,255,255,.06)' : '0'};"><summary style="list-style:none; cursor:pointer; display:flex; align-items:center; gap:10px; padding:8px 0;">${snRes(x.gf, x.gc)}<div style="flex:1; min-width:0;"><div style="font-size:12.5px; color:#e2e8f0; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">J${x.i + 1} · ${esc(x.p.rival)}${x.fiable ? '' : ' <span style="font-size:10px; color:#64748b;">· poco fiable</span>'}</div><div style="display:flex; gap:6px; margin-top:3px;"><span style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:10.5px; padding:1px 7px; border-radius:6px; background:rgba(255,255,255,.06); color:${snColor(x.a)};">⚽ ${snSig(x.a)}</span><span style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:10.5px; padding:1px 7px; border-radius:6px; background:rgba(255,255,255,.06); color:${snColor(x.d)};">🛡️ ${snSig(x.d)}</span></div></div><span style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:14px; width:44px; text-align:right; color:${snColor(x.t)};">${snSig(x.t)}</span></summary>
+                <div style="font-size:11.5px; color:#94a3b8; padding:0 0 9px 48px; line-height:1.45;">${esc(x.nombre)} encaja ${snDec(x.ec)} de media → le metimos ${x.gf} (${snSig(x.a)})<br>${esc(x.nombre)} marca ${snDec(x.em)} de media → nos metió ${x.gc} (${snSig(x.d)})<br><span style="color:#64748b;">Medias de sus ${x.n} ${x.n === 1 ? 'partido' : 'partidos'} de Liga sin contar los nuestros</span></div></details>`).join('');
+            const graf = N.partidos.length >= 2 ? `<div style="margin-top:12px;"><div style="font-size:11px; font-weight:700; color:#cbd5e1; margin-bottom:4px;">Evolución (media acumulada)</div>${snLineas([{ v: N.acumA, c: '#2ed573', nombre: 'Ataque' }, { v: N.acumD, c: '#6fb6ff', nombre: 'Defensa' }], Math.min(-1, Math.floor(Math.min(...N.acumA, ...N.acumD))), Math.max(2, Math.ceil(Math.max(...N.acumA, ...N.acumD))), 0, '0 = lo esperado', etq(N.partidos))}</div>` : '';
+            h += snCaja(snTitulo('📈 POR ENCIMA DE LO ESPERADO', acento)
+                + `<div style="font-size:11.5px; color:#94a3b8; line-height:1.45;">Cada partido comparado con lo que suele marcar y encajar ese rival. Media por partido:</div>`
+                + `<div style="text-align:center; margin-top:8px;"><div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:42px; line-height:1; color:${snColor(N.mt)};">${snSig(N.mt)}</div><div style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:14px; margin-top:6px; color:#e2e8f0;">${vt}</div></div>`
+                + `<div style="display:flex; gap:8px; margin-top:12px;">
+                    <div style="flex:1; background:rgba(255,255,255,.04); border-radius:10px; padding:9px; text-align:center;"><div style="font-size:11px; color:#94a3b8;">⚽ Ataque</div><div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:20px; color:${snColor(N.ma)};">${snSig(N.ma)}</div><div style="font-size:10.5px; color:#94a3b8;">goles de más</div></div>
+                    <div style="flex:1; background:rgba(255,255,255,.04); border-radius:10px; padding:9px; text-align:center;"><div style="font-size:11px; color:#94a3b8;">🛡️ Defensa</div><div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:20px; color:${snColor(N.md)};">${snSig(N.md)}</div><div style="font-size:10.5px; color:#94a3b8;">goles de menos</div></div>
+                </div>`
+                + `<div style="margin-top:12px; font-size:12px; color:#e2e8f0;">⭐ Mejor partido: <b>${best.gf}-${best.gc} vs ${esc(best.p.rival)}</b> <span style="font-family:'Montserrat',sans-serif; font-weight:900; color:${snColor(best.t)};">${snSig(best.t)}</span></div>`
+                + (sorpresa ? `<div style="display:inline-block; margin-top:8px; font-size:11px; font-weight:700; padding:5px 10px; border-radius:14px; background:rgba(180,20,56,.2); color:#ff8fa3; line-height:1.4;">💡 Perdimos ${sorpresa.gf}-${sorpresa.gc} con ${esc(sorpresa.p.rival)}, pero jugamos por encima de lo esperado (${snSig(sorpresa.t)})</div>` : '')
+                + `<div style="font-size:11px; font-weight:700; color:#cbd5e1; margin:12px 0 2px;">Partido a partido <span style="font-weight:400; color:#94a3b8;">(toca uno para ver qué se esperaba)</span></div>${filas}`
+                + graf
+                + ((N.sinLiga || N.pendientes) ? `<div style="font-size:10.5px; color:#94a3b8; margin-top:6px;">${[N.sinLiga ? `${N.sinLiga} ${N.sinLiga === 1 ? 'partido no es' : 'partidos no son'} contra equipos de la Liga` : '', N.pendientes ? `${N.pendientes} sin resultados del rival todavía` : ''].filter(Boolean).join(' · ')}: no cuenta${N.sinLiga + N.pendientes === 1 ? '' : 'n'}.</div>` : ''));
+        }
+        // ── RESTO DE LA LIGA ──
+        if (C.R && C.R.length) {
+            const filas = C.R.map((x, k) => { const me = !!x.e.esHergar; return `<div style="display:grid; grid-template-columns:20px 1fr auto; gap:8px; align-items:center; padding:7px ${me ? '6px' : '0'}; border-top:${k ? '1px solid rgba(255,255,255,.05)' : '0'}; font-size:12.5px;${me ? ' background:rgba(180,20,56,.18); border-radius:8px;' : ''}"><span style="font-family:'Montserrat',sans-serif; font-weight:800; color:#94a3b8; text-align:center;">${k + 1}</span><span style="min-width:0; color:${me ? '#ff8fa3' : '#e2e8f0'}; font-weight:${me ? 800 : 500};">${esc(x.e.nombre)}<div style="font-size:10.5px; color:#94a3b8; font-weight:400;">⚽ ${snSig(x.a)} · 🛡️ ${snSig(x.d)}</div></span><span style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:15px; color:${snColor(x.t)};">${snSig(x.t)}</span></div>`; }).join('');
+            h += snCaja(snTitulo('🏆 EL RESTO DE LA LIGA', acento)
+                + `<div style="font-size:11.5px; color:#94a3b8; line-height:1.45; margin-bottom:6px;">El mismo cálculo para todos los equipos, con los resultados de la Liga. Media por partido.${C.R.maxPj < 4 ? ' Con tan pocas jornadas aún es poco fiable.' : ''}</div>${filas}`);
+        }
+        // ── CÓMO SE CALCULA ──
+        h += `<details style="margin-top:10px;"><summary style="font-size:11.5px; font-weight:700; color:${acento}; cursor:pointer;">ℹ️ Cómo se calcula</summary><div style="font-size:12.5px; line-height:1.55; color:#e2e8f0; padding-top:6px;">
+            <p style="margin:0 0 8px;"><strong>Termómetro de la suerte:</strong> % de nuestros tiros a puerta que acaban en gol + % de los tiros a puerta del rival que no lo son. En cada partido, lo del Hergar y lo del rival siempre suman 200, así que 100 es lo justo. Por encima, nos está entrando más de lo normal; por debajo, merecemos más de lo que dice el marcador. Viene del hockey, donde los equipos tienden a volver a 100 con el tiempo. Un partido suelto baila mucho: lo que cuenta es el acumulado.</p>
+            <p style="margin:0 0 8px;"><strong>Por encima de lo esperado:</strong> ataque = goles que le metemos − lo que ese rival suele encajar; defensa = lo que ese rival suele marcar − goles que nos mete. Las medias de cada rival salen de sus partidos de Liga sin contar los que juega contra nosotros. Un 1-0 al líder puede valer más que un 6-0 al último. Con menos de ${SN_FIABLE} partidos del rival se marca como poco fiable.</p>
+            <p style="margin:0;">No es lo mismo que la <strong>tabla de la suerte</strong> de la Liga: aquella mira si los puntos cuadran con los goles; el termómetro mira si los goles cuadran con los tiros.</p>
+        </div></details>`;
+        return h;
+    }
+    // ── v154 · ESTADÍSTICAS DE CADA PARTIDO (misma función en la app y en el visor) ──
+    // Las barras HERGAR vs rival del «Último partido», para cualquier partido de la temporada, más paradas, acierto,
+    // cuota de tiros, tiempo por marcador, tarjetas y la suerte/nivel de la v153. Los partidos cargados a mano
+    // muestran solo lo que tienen (goles y tarjetas).
+    function epFila(label, h, r, sufijo) {
+        sufijo = sufijo || '';
+        const tot = h + r;
+        return `<div style="margin-bottom:9px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; font-size:12px; margin-bottom:3px;">
+                <span style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:14px; color:#ff5577; min-width:36px;">${h}${sufijo}</span>
+                <span style="color:#cbd5e1; font-weight:600; text-align:center;">${label}</span>
+                <span style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:14px; color:#cbd5e1; min-width:36px; text-align:right;">${r}${sufijo}</span>
+            </div>
+            <div style="display:flex; gap:${h > 0 && r > 0 ? 3 : 0}px; height:6px; border-radius:3px; overflow:hidden; background:rgba(255,255,255,.06);">
+                ${tot ? `<div style="flex:${h}; background:rgb(180,20,56); border-radius:3px;"></div><div style="flex:${r}; background:#64748b; border-radius:3px;"></div>` : ''}
+            </div>
+        </div>`;
+    }
+    function epTarjetas(t, p) {
+        const am = [], ro = [];
+        Object.values((t && t.jugadores) || {}).forEach(j => {
+            const h = (j.historial || []).find(x => x.fecha === p.fecha && x.rival === p.rival);
+            const a = h && h.acc;
+            if (!a) return;
+            const nom = momEsc(((j.name || '¿?').split(' ')[0]));
+            if (a.am) am.push(nom + (a.am > 1 ? ' ×' + a.am : ''));
+            if (a.ro) ro.push(nom);
+        });
+        return { am, ro };
+    }
+    function estadisticasPartidoHTML(t, p, snCtx, plegado) {
+        if (!p) return '';
+        const n = v => Number(v) || 0;
+        const gl = n(p.golesLocal), gr = n(p.golesRival);
+        const conTiros = !p.manual && p.tirosNuestrosPuerta != null;
+        let h = '';
+        if (conTiros) {
+            const tnP = Math.max(n(p.tirosNuestrosPuerta), gl), trP = Math.max(n(p.tirosRivalesPuerta), gr);
+            const tn = tnP + n(p.tirosNuestrosFuera), tr = trP + n(p.tirosRivalesFuera);
+            const filas = [
+                ['Disparos', tn, tr],
+                ['A puerta', tnP, trP],
+                ['Paradas del portero', Math.max(0, trP - gr), Math.max(0, tnP - gl)],
+                ['Córners', n(p.cornersFavor), n(p.cornersContra)],
+                ['Faltas cometidas', n(p.faltasContra), n(p.faltasFavor)],
+                ['Fueras de juego', n(p.fuerasJuegoNuestros), n(p.fuerasJuegoRival)]
+            ].filter(([, a, b]) => a + b > 0);
+            h += `<div style="display:flex; justify-content:space-between; font-size:10.5px; font-weight:800; letter-spacing:.6px; margin-bottom:8px;"><span style="color:#ff5577;">HERGAR</span><span style="color:#94a3b8;">${momEsc(String(p.rival || 'RIVAL').toUpperCase())}</span></div>`;
+            h += filas.map(([l, a, b]) => epFila(l, a, b)).join('');
+            const acH = tn ? Math.round(gl / tn * 100) : null, acR = tr ? Math.round(gr / tr * 100) : null;
+            if (acH != null || acR != null) h += epFila('Acierto (goles / disparos)', acH ?? 0, acR ?? 0, ' %');
+            const caja = (v, c, txt) => `<div style="flex:1; background:rgba(255,255,255,.04); border-radius:10px; padding:8px; text-align:center;"><div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:18px; color:${c};">${v}</div><div style="font-size:10px; color:#94a3b8; line-height:1.3;">${txt}</div></div>`;
+            const cajas = [];
+            if (tn + tr) { const c = tn / (tn + tr); cajas.push(caja(Math.round(c * 100) + ' %', c >= .5 ? '#2ed573' : '#ff6b7a', 'cuota de tiros')); }
+            const f = snCtx && snCtx.porPartido ? snCtx.porPartido.get(p) : null;
+            if (f && f.suerte != null) cajas.push(caja(Math.round(f.suerte), snVeredicto(f.suerte)[1], '🍀 suerte<br>(100 = lo justo)'));
+            if (f && f.nivel != null) cajas.push(caja(snSig(f.nivel), snColor(f.nivel), '📈 sobre lo<br>esperado'));
+            if (cajas.length) h += `<div style="display:flex; gap:6px; margin-top:4px;">${cajas.join('')}</div>`;
+            const otros = [];
+            if (n(p.pasesClaveTotal)) otros.push(`🔑 ${n(p.pasesClaveTotal)} pases clave`);
+            if (n(p.pasesAreaTotal)) otros.push(`📯 ${n(p.pasesAreaTotal)} pases al área`);
+            if (n(p.accionesDefTotal)) otros.push(`🛡️ ${n(p.accionesDefTotal)} acciones defensivas`);
+            if (otros.length) h += `<div style="font-size:11px; color:#cbd5e1; margin-top:8px; line-height:1.5;">Hergar: ${otros.join(' · ')}</div>`;
+        } else {
+            const f = snCtx && snCtx.porPartido ? snCtx.porPartido.get(p) : null;
+            h += `<div style="font-size:11.5px; color:#94a3b8;">Partido cargado a mano: no tiene tiros ni córners apuntados.${f && f.nivel != null ? ` 📈 Sobre lo esperado: <b style="color:${snColor(f.nivel)};">${snSig(f.nivel)}</b>` : ''}</div>`;
+        }
+        // Tiempo por marcador
+        try {
+            const sec = gl + gr === 0 ? [] : momSecuencia(p);
+            if (sec && !sec.some(x => x.min == null)) {
+                const dur = mmDuracion(p, proFilas(t, p));
+                const s = proEstados(sec, dur, 0, dur);
+                if (s.g + s.e + s.p > 0) h += `<div style="font-size:11px; font-weight:700; color:#cbd5e1; margin:12px 0 4px;">⏳ Tiempo por marcador <span style="font-weight:400; color:#94a3b8;">(${Math.round(s.g)}' ganando · ${Math.round(s.e)}' empatando · ${Math.round(s.p)}' perdiendo)</span></div>${proBarra(s, 18)}${PRO_LEYENDA}`;
+            }
+        } catch (e) {}
+        // Tarjetas
+        const T = epTarjetas(t, p);
+        if (T.am.length || T.ro.length) h += `<div style="font-size:11.5px; color:#cbd5e1; margin-top:10px; line-height:1.5;">${T.am.length ? `🟨 ${T.am.join(', ')}` : ''}${T.am.length && T.ro.length ? ' · ' : ''}${T.ro.length ? `🟥 ${T.ro.join(', ')}` : ''}</div>`;
+        const cuerpo = `<div style="padding-top:8px;">${h}</div>`;
+        if (!plegado) return `<div style="margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.06);"><div style="font-size:11px; font-weight:800; color:#f5a623; letter-spacing:.4px;">📊 ESTADÍSTICAS DEL PARTIDO</div>${cuerpo}</div>`;
+        return `<details style="margin-top:6px; padding-top:6px; border-top:1px solid rgba(255,255,255,0.06);"><summary style="color:#2ed573; font-size:11px; font-weight:800; cursor:pointer;">📊 Estadísticas del partido</summary>${cuerpo}</details>`;
+    }
   // Bloque de la ficha del jugador
   function proJugadorHTML(t, liga, j, minMinutos, acento) {
       if (!t || !j) return '';
@@ -5561,6 +5858,7 @@
     const partidos = (temporada.partidos || []).slice().reverse();
     const cont = document.getElementById('partidosLista');
     if (partidos.length === 0) { cont.innerHTML = '<div class="loader">Sin partidos todavía</div>'; return; }
+    let snCtx = null; try { snCtx = snPreparar(temporada, (typeof ultimaLiga !== 'undefined') ? ultimaLiga : null); } catch (e) { console.error('Suerte y nivel:', e); } // v153
     cont.innerHTML = partidos.map((p, i) => {
       const chipClass = p.resultado === 'V' ? 'streak-win' : p.resultado === 'D' ? 'streak-loss' : 'streak-draw';
       const icon = p.resultado === 'V' ? '✅' : p.resultado === 'D' ? '❌' : '➖';
@@ -5575,7 +5873,6 @@
       const tieneMvp = p.mvp && p.mvp !== '-';
       const resumenPlegado = (goleadoresTxt || tieneMvp) ? `<div style="font-size:11px; color:#cbd5e1; line-height:1.45; margin-top:5px;">${goleadoresTxt ? `<div>⚽ ${escHtml(goleadoresTxt)}</div>` : ''}${tieneMvp ? `<div style="color:#8da499;">⭐ MVP: ${escHtml(p.mvp)}</div>` : ''}</div>` : '';
       const cromoBtn = (tieneMvp && p.mvpId) ? `<div style="display:flex; justify-content:flex-end; margin-top:2px;"><button onclick="abrirCromoMvpGuardado(${i})" style="background:rgba(245,166,35,0.14); border:1px solid rgba(245,166,35,0.4); color:#f5a623; border-radius:6px; padding:3px 9px; font-size:10px; font-weight:700; white-space:nowrap;">🎴 Cromo del MVP</button></div>` : '';
-      const statsHtml = (p.tirosNuestrosPuerta != null) ? `<div style="font-size:9px; color:#64748b; margin-top:4px; padding-top:4px; border-top:1px solid rgba(255,255,255,0.06);">🎯 ${(p.tirosNuestrosPuerta||0)+(p.tirosNuestrosFuera||0)}(${p.tirosNuestrosPuerta||0}) — ${(p.tirosRivalesPuerta||0)+(p.tirosRivalesFuera||0)}(${p.tirosRivalesPuerta||0}) · 🟨 ${p.faltasFavor||0}/${p.faltasContra||0} · ⛳ ${p.cornersFavor||0}/${p.cornersContra||0}${(p.fuerasJuegoNuestros||p.fuerasJuegoRival) ? ` · 🚩 ${p.fuerasJuegoNuestros||0}/${p.fuerasJuegoRival||0}` : ''}</div>` : '';
       const clavePartido = `${p.fecha || ''}|${p.rival || ''}`;
       const abierto = partidosAbiertos.has(clavePartido);
       return `<details class="rank-row partido-det" data-k="${escHtml(clavePartido)}" ${abierto ? 'open' : ''} ontoggle="partidoToggle(this)" style="flex-direction:column; align-items:stretch; gap:2px; display:block;">
@@ -5592,7 +5889,8 @@
           ${golesMin}
           ${resumenFilaHTML(p)}
           ${cromoBtn}
-          ${statsHtml}
+          ${snChipPartido(snCtx, p)}
+          ${estadisticasPartidoHTML(temporada, p, snCtx, false)}
           ${actuacionPartidoHtml(temporada, p)}
           ${informeIAPartidoHtml(p)}
           ${temporada.actaVisor ? `<button type="button" onclick="descargarActaVisor(${(temporada.partidos || []).length - 1 - i})" style="margin-top:8px; width:100%; min-height:42px; border-radius:10px; background:rgba(192,57,43,0.15); border:1px solid rgba(231,76,60,0.45); color:#ff8a80; font-weight:800; font-size:12.5px; cursor:pointer;">📄 Descargar acta (PDF)</button>` : ''}
@@ -5955,7 +6253,7 @@
     const secActivo = !!panelMas.querySelector('.subtab-btn.active');
     btn.setAttribute('aria-expanded', abierto ? 'true' : 'false');
     btn.classList.toggle('sec-activo', secActivo && !abierto);
-    if (txt) txt.textContent = abierto ? 'ocultar ▴' : '9 apartados más ▾';
+    if (txt) txt.textContent = abierto ? 'ocultar ▴' : '10 apartados más ▾';
   }
   function toggleMasTemp() {
     const panelMas = document.getElementById('tmpMasPanel');
@@ -6000,6 +6298,14 @@
     });
   }
 
+  // ── v153 · 🍀 Suerte y nivel: se pinta con la temporada y se repinta al llegar la Liga ──
+  function pintarSuerteNivel() {
+    try {
+      const el = document.getElementById('suerteNivelLista');
+      if (!el || !ultimaTemporada) return;
+      el.innerHTML = suerteNivelHTML(ultimaTemporada, (typeof ultimaLiga !== 'undefined') ? ultimaLiga : null, '#f5a623');
+    } catch (e) { console.error('Suerte y nivel:', e); }
+  }
   // ── Temporada: siempre suscrita, esté o no en vivo un partido ──
   let ultimaTemporada = null;
   onValue(ref(db, 'temporada/temporada'), (snap) => {
@@ -6022,6 +6328,7 @@
     try { document.getElementById('companerosLista').innerHTML = companerosHTML(temporada, '#f5a623', true); } catch (e) { console.error('Compañeros:', e); } // v140
     try { document.getElementById('sociedadesLista').innerHTML = sociedadesHTML(temporada); } catch (e) { console.error('Sociedades:', e); }
     try { document.getElementById('contextoLista').innerHTML = ctxContextoHTML(temporada); } catch (e) { console.error('Contexto:', e); } // v97
+    pintarSuerteNivel(); // v153
     pintarComparativa(temporada);
     pintarHeatmap(temporada);
     pintarOnceIdeal(temporada);
@@ -6933,6 +7240,7 @@
     const liga = snap.val();
     if (!liga || !liga.equipos) return;
     ultimaLiga = liga;
+    try { pintarSuerteNivel(); if (ultimaTemporada) pintarPartidos(ultimaTemporada); } catch (e) { console.error('Suerte y nivel:', e); } // v153
     pintarProximoPartido(); // v72
     try { pintarCabeceraPartido(ultimoMatchData); } catch (e) { console.error('Cabecera:', e); }
     if (tvActivo) tvRender();

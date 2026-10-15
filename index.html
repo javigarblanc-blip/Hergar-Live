@@ -942,6 +942,7 @@
 </div>
 
 <script type="module">
+  // v153 (visor) · Partido: los récords personales del último partido bajan junto al resumen bajo la tarjeta del próximo partido.
   // v144 (visor) · Cabecera: con el próximo partido publicado sale el próximo partido (rival, jornada, fecha y hora) en vez del resultado anterior.
   // v144 (app + visor) · «Hace mejores a los demás»: el bonus por gol se quita como lo apuntó la app en cada pareja (en goleadas, cada gol nuevo rebaja lo de antes); cifras por compañero y 70'.
   // v152 (app + visor) · «Juega como…»: 3-4 futbolistas por estilo y segundo rasgo; se elige por el tercer rasgo del niño.
@@ -5224,6 +5225,7 @@
     const pi = (m && m.matchFinished && res && res.style.display !== 'none') ? indicePartidoDeMatch(m) : -1;
     const html = pi >= 0 ? recordsDelPartidoHTML(ultimaTemporada, pi, '#f5a623') : '';
     card.innerHTML = html; card.style.display = html ? 'block' : 'none';
+    colocarRecordsHoy();
   }
   // En el Modo TV, al guardarse el partido: un rótulo por récord personal (una sola vez por partido)
   let tvRecPersVistos = new Set();
@@ -5323,6 +5325,13 @@
       if (reciente) prox.parentNode.insertBefore(card, prox);
       else prox.parentNode.insertBefore(card, prox.nextSibling);
     }
+    colocarRecordsHoy();
+  }
+  // v153 · Los récords personales van siempre pegados debajo del resumen del último partido: si el resumen baja
+  // bajo la tarjeta del próximo partido, los récords bajan con él (antes se quedaban arriba solos).
+  function colocarRecordsHoy() {
+    const rec = document.getElementById('recordsHoyCard'), res = document.getElementById('resumenUltimoCard');
+    if (rec && res && res.parentNode === rec.parentNode && res.nextSibling !== rec) res.parentNode.insertBefore(rec, res.nextSibling);
   }
 
   function pintarInformeIA(matchData) {

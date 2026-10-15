@@ -2184,6 +2184,18 @@
     function snRes(gf, gc) { const c = gf > gc ? ['#2ed573', 'rgba(46,213,115,.15)'] : gf < gc ? ['#ff6b7a', 'rgba(255,107,122,.15)'] : ['#f5a623', 'rgba(245,166,35,.15)']; return `<span style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:12px; width:38px; flex-shrink:0; text-align:center; border-radius:7px; padding:3px 0; color:${c[0]}; background:${c[1]};">${gf}-${gc}</span>`; }
     function snTitulo(txt, acento) { return `<div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:12px; letter-spacing:1px; color:${acento}; margin:0 0 8px;">${txt}</div>`; }
     function snCaja(html) { return `<div style="background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.07); border-radius:12px; padding:12px; margin-top:10px;">${html}</div>`; }
+    function snExplicacionHTML() {
+        return `<div style="font-size:12.5px; line-height:1.55; color:#e2e8f0; padding-top:6px;">
+            <p style="margin:0 0 8px;"><strong>🎯 Cuota de tiros:</strong> de todos los tiros del partido (los de los dos equipos), qué parte son del Hergar. Un 67 % quiere decir que de cada 3 tiros, 2 fueron nuestros. Por encima del 50 % hemos llegado más que el rival: es la mejor pista de quién ha dominado.</p>
+            <p style="margin:0 0 8px;"><strong>🍀 Termómetro de la suerte:</strong> suma dos cosas: el % de nuestros tiros a puerta que entran y el % de tiros a puerta del rival que paramos. Ejemplo: metemos 3 de 10 (30 %) y paramos 8 de 10 (80 %) → <strong>110</strong>.<br>
+            · <strong>100</strong> = resultado justo.<br>
+            · <strong>Más de 100</strong> = nos entra todo o el portero está inspirado: vamos con flor y puede que no dure.<br>
+            · <strong>Menos de 100</strong> = tiramos y no entra: merecemos más y los goles deberían llegar.<br>
+            En un partido suelto baila mucho; lo que vale es el de la temporada.</p>
+            <p style="margin:0 0 8px;"><strong>📈 Sobre lo esperado:</strong> compara el resultado con el nivel del rival. Ataque = goles que le metemos − lo que ese rival suele encajar; defensa = lo que ese rival suele marcar − goles que nos mete. Ejemplo: ganar 3-1 a un equipo que encaja 1,2 y marca 2,5 de media da +1,8 en ataque y +1,5 en defensa: <strong>+3,3</strong>. Así un 1-0 al líder puede valer más que un 6-0 al último. Las medias salen de sus partidos de Liga sin contar los nuestros; con menos de ${SN_FIABLE} partidos del rival se marca como poco fiable.</p>
+            <p style="margin:0;">No es lo mismo que la <strong>tabla de la suerte</strong> de la Liga: aquella mira si los puntos cuadran con los goles; el termómetro mira si los goles cuadran con los tiros.</p>
+        </div>`;
+    }
     function suerteNivelHTML(t, liga, acento) {
         acento = acento || '#f5a623';
         const C = snPreparar(t, liga), S = C.S, N = C.N, esc = momEsc;
@@ -2246,11 +2258,7 @@
                 + `<div style="font-size:11.5px; color:#94a3b8; line-height:1.45; margin-bottom:6px;">El mismo cálculo para todos los equipos, con los resultados de la Liga. Media por partido.${C.R.maxPj < 4 ? ' Con tan pocas jornadas aún es poco fiable.' : ''}</div>${filas}`);
         }
         // ── CÓMO SE CALCULA ──
-        h += `<details style="margin-top:10px;"><summary style="font-size:11.5px; font-weight:700; color:${acento}; cursor:pointer;">ℹ️ Cómo se calcula</summary><div style="font-size:12.5px; line-height:1.55; color:#e2e8f0; padding-top:6px;">
-            <p style="margin:0 0 8px;"><strong>Termómetro de la suerte:</strong> % de nuestros tiros a puerta que acaban en gol + % de los tiros a puerta del rival que no lo son. En cada partido, lo del Hergar y lo del rival siempre suman 200, así que 100 es lo justo. Por encima, nos está entrando más de lo normal; por debajo, merecemos más de lo que dice el marcador. Viene del hockey, donde los equipos tienden a volver a 100 con el tiempo. Un partido suelto baila mucho: lo que cuenta es el acumulado.</p>
-            <p style="margin:0 0 8px;"><strong>Por encima de lo esperado:</strong> ataque = goles que le metemos − lo que ese rival suele encajar; defensa = lo que ese rival suele marcar − goles que nos mete. Las medias de cada rival salen de sus partidos de Liga sin contar los que juega contra nosotros. Un 1-0 al líder puede valer más que un 6-0 al último. Con menos de ${SN_FIABLE} partidos del rival se marca como poco fiable.</p>
-            <p style="margin:0;">No es lo mismo que la <strong>tabla de la suerte</strong> de la Liga: aquella mira si los puntos cuadran con los goles; el termómetro mira si los goles cuadran con los tiros.</p>
-        </div></details>`;
+        h += `<details style="margin-top:10px;"><summary style="font-size:11.5px; font-weight:700; color:${acento}; cursor:pointer;">ℹ️ Cómo se calcula</summary>${snExplicacionHTML()}</details>`;
         return h;
     }
     // ── v154 · ESTADÍSTICAS DE CADA PARTIDO (misma función en la app y en el visor) ──
@@ -2311,6 +2319,7 @@
             if (f && f.suerte != null) cajas.push(caja(Math.round(f.suerte), snVeredicto(f.suerte)[1], '🍀 suerte<br>(100 = lo justo)'));
             if (f && f.nivel != null) cajas.push(caja(snSig(f.nivel), snColor(f.nivel), '📈 sobre lo<br>esperado'));
             if (cajas.length) h += `<div style="display:flex; gap:6px; margin-top:4px;">${cajas.join('')}</div>`;
+            if (cajas.length) h += `<details style="margin-top:6px;"><summary style="font-size:11px; font-weight:700; color:#f5a623; cursor:pointer;">ℹ️ ¿Qué es la cuota de tiros, la suerte y lo esperado?</summary>${snExplicacionHTML()}</details>`;
             const otros = [];
             if (n(p.pasesClaveTotal)) otros.push(`🔑 ${n(p.pasesClaveTotal)} pases clave`);
             if (n(p.pasesAreaTotal)) otros.push(`📯 ${n(p.pasesAreaTotal)} pases al área`);
@@ -6426,6 +6435,7 @@
       + csTarjeta('Puntos de los goles y más/menos', puntosMasMenosExplicacionHTML(R.minMinutosRanking || 35)) // v133
       + csTarjeta('Momentos, momento clave y el muro', momentosExplicacionHTML()) // v134
       + csTarjeta('Métricas de los profesionales', proExplicacionHTML()) // v135
+      + csTarjeta('Suerte y nivel', snExplicacionHTML()) // v155
       + csTarjeta('Efecto del banquillo', banquilloExplicacionHTML()) // v137
       + csTarjeta('Hacen mejores a los demás', companerosExplicacionHTML()) // v140
       + csTarjeta('Cómo se ordena la clasificación',

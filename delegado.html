@@ -1,0 +1,731 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b0f14">
+<title>Hergar · Delegado</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0b0f14;--card:#121821;--line:rgba(255,255,255,.08);--txt:#e8ecf1;--mute:#94a3b8;--red:rgb(180,20,56);--redL:#ff5577;--g:#2ed573;--teamBg:rgba(46,213,115,.08);--teamBd:rgba(46,213,115,.28);--rivBg:rgba(255,85,119,.08);--rivBd:rgba(255,85,119,.28)}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{overscroll-behavior-y:contain}
+body{background:var(--bg);color:var(--txt);font-family:Inter,sans-serif;font-size:14px;max-width:460px;margin:0 auto;padding:0 12px 40px;user-select:none;-webkit-user-select:none}
+.mont{font-family:Montserrat,sans-serif}
+.scr{display:none}.scr.on{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px}
+.big{width:100%;min-height:56px;border-radius:14px;border:0;font:800 16px Montserrat;color:#fff;background:var(--red);cursor:pointer}
+.big:disabled{opacity:.45}
+.ghost{background:transparent;border:1px solid var(--line);color:var(--txt)}
+h2{font:900 19px Montserrat;margin-bottom:4px}
+.mute{color:var(--mute)}.sm{font-size:12px}
+.ttl{font:800 12px Montserrat;color:#f5a623;letter-spacing:.5px}
+.top{padding:14px 0 8px;text-align:center}
+.top .club{font:900 12px Montserrat;color:var(--redL);letter-spacing:1.5px}
+/* pin */
+.pin{display:flex;gap:8px;justify-content:center;margin:14px 0}
+.pin span{width:50px;height:58px;border-radius:12px;background:#0f141b;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font:900 26px Montserrat}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}
+.pad button{min-height:56px;border-radius:12px;border:1px solid var(--line);background:#0f141b;color:var(--txt);font:800 20px Montserrat}
+.err{color:#ff6b7a;font-size:12.5px;font-weight:700;text-align:center;min-height:18px;margin-top:8px}
+/* campo */
+.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:8px 0}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex-shrink:0;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:#0f141b;color:var(--mute);font:800 12px Montserrat}
+.chip.on{border-color:var(--g);color:var(--g);background:rgba(46,213,115,.1)}
+.pitch{position:relative;width:100%;aspect-ratio:68/88;background:#1d4f33;border-radius:14px;overflow:hidden;border:2px solid #2c6a46}
+.pitch .ln{position:absolute;border:2px solid rgba(255,255,255,.22)}
+.slot{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:2px;width:66px;cursor:pointer}
+.slot .c{width:44px;height:44px;border-radius:50%;background:var(--red);border:2px solid #fff;display:flex;align-items:center;justify-content:center;font:900 15px Montserrat;color:#fff;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+.slot.vacio .c{background:rgba(0,0,0,.35);border:2px dashed rgba(255,255,255,.6);color:rgba(255,255,255,.8);font-size:20px}
+.slot.sel .c{background:#f5a623;color:#0b0f14;transform:scale(1.12)}
+.slot.por .c{background:#2f6fb0}
+.slot .n{font-size:10.5px;font-weight:700;background:rgba(0,0,0,.55);padding:1px 6px;border-radius:6px;white-space:nowrap;max-width:72px;overflow:hidden;text-overflow:ellipsis}
+.slot .p{font-size:8.5px;font-weight:800;color:rgba(255,255,255,.75);letter-spacing:.5px}
+.bench{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.bench span{background:#0f141b;border:1px solid var(--line);border-radius:10px;padding:6px 9px;font-size:12px}
+.bench b{font:900 12px Montserrat;color:#f5a623;margin-right:4px}
+.bench .out{opacity:.45;text-decoration:line-through}
+.hint{font-size:11.5px;color:var(--mute);text-align:center;margin-top:8px;line-height:1.4}
+/* directo */
+.sb{position:sticky;top:0;z-index:5;background:var(--bg);padding:8px 0 6px}
+.score{display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:8px 12px}
+.score .t{font:800 11px Montserrat;width:78px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.score .n{font:900 34px Montserrat}
+.clock{text-align:center;min-width:74px}
+.clock .c{font:900 18px Montserrat;color:#f5a623}
+.clock .c.parado{color:#ff6b7a}
+.clock .p{font-size:10px;color:var(--mute)}
+.ctrl{display:flex;gap:6px;margin-top:6px}
+.ctrl button{flex:1;min-height:44px;border-radius:11px;border:1px solid var(--line);background:#1f2937;color:var(--txt);font:800 12.5px Montserrat}
+.ctrl .go{background:#1f7a4b;border-color:#1f7a4b}
+.ctrl .pause{background:#b45309;border-color:#b45309}
+.ctrl .fin{background:var(--red);border-color:var(--red)}
+.sync{font-size:10.5px;text-align:center;margin-top:5px;color:var(--g)}
+.sync.pend{color:#f5c26b}.sync.bad{color:#ff6b7a}
+.dtabs{display:flex;gap:6px;margin-top:6px}
+.dtabs button{flex:1;min-height:42px;border-radius:11px;border:1px solid var(--line);background:var(--card);color:var(--mute);font:800 13px Montserrat}
+.dtabs button.on{background:#1f2937;border-color:#f5a623;color:#f5a623}
+.sec{font:800 11px Montserrat;letter-spacing:1px;color:var(--mute);margin:12px 2px 6px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.grid.two{grid-template-columns:1fr 1fr}
+.act{min-height:64px;border-radius:12px;font:800 12.5px Montserrat;color:var(--txt);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;border:1px solid;text-align:center;padding:4px}
+.act i{font-style:normal;font-size:20px}
+.act:active{transform:scale(.97)}
+.team{background:var(--teamBg);border-color:var(--teamBd)}
+.riv{background:var(--rivBg);border-color:var(--rivBd)}
+.neu{background:rgba(255,255,255,.04);border-color:var(--line)}
+.act.gol{min-height:78px;font-size:15px}
+.act.gol.team{background:rgba(46,213,115,.16)}
+.act.gol.riv{background:rgba(255,85,119,.16)}
+.act.small{min-height:52px}
+.bloq{opacity:.4;pointer-events:none}
+.aviso{background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.35);color:#f5c26b;border-radius:10px;padding:9px 10px;font-size:12px;font-weight:700;text-align:center;margin-top:8px}
+.feed{margin-top:12px}
+.ev{display:flex;gap:8px;align-items:center;padding:7px 0;border-top:1px solid var(--line);font-size:12.5px}
+.ev:first-child{border-top:0}
+.ev .m{font:800 11px Montserrat;color:#f5a623;width:30px;flex-shrink:0}
+.undo{margin-top:10px}
+.undo button{width:100%;min-height:46px;border-radius:12px;font:800 13px Montserrat}
+/* hoja */
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center;z-index:20}
+.sheet.on{display:flex}
+.sheet .in{background:#121821;width:100%;max-width:460px;border-radius:18px 18px 0 0;padding:16px 14px calc(22px + env(safe-area-inset-bottom));max-height:88vh;overflow:auto}
+.sheet h3{font:900 15px Montserrat;margin-bottom:4px}
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:10px}
+.pbtn{min-height:62px;border-radius:12px;background:#0f141b;border:1px solid var(--line);color:var(--txt);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;padding:3px}
+.pbtn b{font:900 18px Montserrat;color:#f5a623}
+.pbtn span{font-size:11.5px;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pbtn small{font-size:9.5px;color:var(--mute);font-weight:700}
+.opts{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.opts button{min-height:54px;border-radius:12px;border:1px solid var(--line);background:#0f141b;color:var(--txt);font:800 14px Montserrat;text-align:left;padding:0 14px}
+.skip{margin-top:10px;width:100%;min-height:48px;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--txt);font:700 13px Montserrat}
+.row{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px solid var(--line);font-size:13px}
+.row:first-child{border-top:0}
+.row span:last-child{text-align:right;font-weight:700}
+.ok{border-radius:12px;padding:10px;text-align:center;font-weight:700;font-size:13px;margin:10px 0}
+.ok.si{background:rgba(46,213,115,.1);border:1px solid rgba(46,213,115,.3);color:var(--g)}
+.ok.no{background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.35);color:#f5c26b}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#1f2937;border:1px solid var(--line);padding:10px 16px;border-radius:12px;font-weight:700;font-size:13px;opacity:0;transition:.2s;z-index:30;pointer-events:none;max-width:92vw;text-align:center}
+.toast.on{opacity:1}
+.banner{background:rgba(245,166,35,.12);border:1px solid rgba(245,166,35,.4);color:#f5c26b;border-radius:10px;padding:8px 10px;font-size:12px;font-weight:700;text-align:center;margin-bottom:8px;display:none}
+.banner.on{display:block}
+</style>
+</head>
+<body>
+
+<div class="top"><div class="club">C.D. HERGAR · DELEGADO</div></div>
+
+<!-- CARGANDO / ERROR -->
+<section class="scr on" id="sLoad">
+  <div class="card" style="text-align:center"><div class="mute" id="loadTxt">Cargando el partido…</div></div>
+</section>
+
+<!-- PIN -->
+<section class="scr" id="sPin">
+  <div class="card" style="text-align:center">
+    <h2 id="pinRival">Hergar vs —</h2>
+    <div class="mute sm" id="pinMeta"></div>
+    <div class="sm" style="margin-top:14px">Código de 4 cifras que te ha pasado Javi</div>
+    <div class="pin" id="pinBox"><span></span><span></span><span></span><span></span></div>
+    <div class="pad" id="pad"></div>
+    <div class="err" id="pinErr"></div>
+  </div>
+</section>
+
+<!-- ALINEACIÓN -->
+<section class="scr" id="sAli">
+  <div class="card">
+    <div class="ttl">ALINEACIÓN INICIAL</div>
+    <div class="sm mute" style="margin-top:2px" id="aliSub">Elige el sistema y toca cada puesto para poner al niño.</div>
+    <div class="chips" id="formA"></div>
+    <div class="pitch" id="pitchA"></div>
+    <div class="hint">Toca un puesto para elegir o cambiar el niño · para intercambiar dos niños, toca uno y luego el otro</div>
+    <div class="ttl" style="margin-top:12px">BANQUILLO</div>
+    <div class="bench" id="benchA"></div>
+  </div>
+  <button class="big" id="btnEmpezar">▶ Empezar partido</button>
+  <button class="big ghost" id="btnJavi" style="margin-top:8px">↺ Volver a la alineación de Javi</button>
+  <div class="hint">Al pulsar «Empezar» arranca el reloj y las familias lo ven en directo en el visor.</div>
+</section>
+
+<!-- DIRECTO -->
+<section class="scr" id="sDir">
+  <div class="sb">
+    <div class="score">
+      <div class="t" style="color:var(--redL)">HERGAR</div>
+      <div class="n" id="gl">0</div>
+      <div class="clock"><div class="c" id="clk">00:00</div><div class="p" id="parteTxt">1ª parte</div></div>
+      <div class="n" id="gr">0</div>
+      <div class="t" style="text-align:right" id="rivTxt">RIVAL</div>
+    </div>
+    <div class="ctrl">
+      <button id="bReloj" class="go">▶ Reanudar</button>
+      <button id="bDesc">⏸ Descanso</button>
+      <button id="bFin" class="fin">🏁 Final</button>
+    </div>
+    <div class="sync" id="sync">● Conectado</div>
+    <div class="dtabs">
+      <button class="on" data-t="acc">⚡ Acciones</button>
+      <button data-t="cam">🏟️ Campo</button>
+    </div>
+  </div>
+
+  <div id="tAcc">
+    <div class="aviso" id="avisoParado" style="display:none">⏸ El reloj está parado. Las acciones se apuntan en el minuto que marca.</div>
+    <div class="grid two" style="margin-top:6px">
+      <div class="act team gol" data-a="gol"><i>⚽</i>GOL HERGAR</div>
+      <div class="act riv gol" data-r="golR"><i>🥅</i>GOL RIVAL</div>
+    </div>
+    <div class="sec">HERGAR · TOCA Y ELIGE EL NIÑO</div>
+    <div class="grid">
+      <div class="act team" data-a="tp"><i>🎯</i>Tiro a puerta</div>
+      <div class="act team" data-a="tf"><i>💨</i>Tiro fuera</div>
+      <div class="act team" data-a="pc"><i>🔑</i>Pase clave</div>
+      <div class="act team" data-a="def"><i>🛡️</i>Acción defensiva</div>
+      <div class="act team" data-a="pa"><i>📯</i>Pase al área</div>
+      <div class="act team" data-a="reg"><i>🌀</i>Regate</div>
+    </div>
+    <div class="sec">RIVAL · UN TOQUE</div>
+    <div class="grid">
+      <div class="act riv" data-r="par"><i>🧤</i>Parada</div>
+      <div class="act riv" data-r="parD"><i>🧤⭐</i>Parada difícil</div>
+      <div class="act riv" data-r="tfR"><i>💨</i>Tiro fuera</div>
+    </div>
+    <div class="sec">PARTIDO</div>
+    <div class="grid">
+      <div class="act neu" id="aCambio"><i>🔄</i>Cambio</div>
+      <div class="act neu" data-a="am"><i>🟨</i>Amarilla</div>
+      <div class="act neu" data-a="ro"><i>🟥</i>Roja</div>
+    </div>
+    <div class="sec">CÓRNERS</div>
+    <div class="grid two">
+      <div class="act team small" data-r="cf"><i>⛳</i>A favor</div>
+      <div class="act riv small" data-r="cc"><i>⛳</i>En contra</div>
+    </div>
+  </div>
+
+  <div id="tCam" style="display:none">
+    <div class="banner" id="swapBanner"></div>
+    <div class="chips" id="formD"></div>
+    <div class="pitch" id="pitchD"></div>
+    <div class="hint">Toca un niño para cambiarle de puesto o sustituirlo · cambiar el sistema recoloca a todos</div>
+    <div class="ttl" style="margin-top:12px">BANQUILLO</div>
+    <div class="bench" id="benchD"></div>
+  </div>
+
+  <div class="undo"><button class="ghost" id="bUndo">↩ Deshacer lo último</button></div>
+  <div class="card feed">
+    <div class="ttl" style="margin-bottom:4px">LO APUNTADO</div>
+    <div id="feed"></div>
+  </div>
+</section>
+
+<!-- FINAL -->
+<section class="scr" id="sFin">
+  <div class="card" style="text-align:center">
+    <div class="mute sm">Partido terminado</div>
+    <div class="mont" style="font-weight:900;font-size:38px;margin:6px 0"><span style="color:var(--redL)" id="fgl">0</span> – <span id="fgr">0</span></div>
+    <div class="sm" id="fRiv"></div>
+    <div class="ok no" id="fSync">Enviando…</div>
+  </div>
+  <div class="card" id="resumen"></div>
+  <button class="big ghost" id="bReabrir">↩ Me equivoqué: volver al partido</button>
+  <div class="hint">No cierres esta página hasta ver «✔ Enviado». Si se va la cobertura, se envía sola al volver.</div>
+</section>
+
+<div class="sheet" id="sheet">
+  <div class="in">
+    <h3 id="shT"></h3>
+    <div class="sm mute" id="shS"></div>
+    <div id="shBody"></div>
+    <button class="skip" id="shSkip">Cancelar</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
+import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js";
+
+const fb = initializeApp({
+  apiKey: "AIzaSyBtCX0v3z5GTCv-X_5VBtWzXMSGQubL7O8",
+  authDomain: "hergar-fut-11-live.firebaseapp.com",
+  databaseURL: "https://hergar-fut-11-live-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "hergar-fut-11-live",
+  storageBucket: "hergar-fut-11-live.firebasestorage.app",
+  messagingSenderId: "1082733772828",
+  appId: "1:1082733772828:web:60603a24a5528df1fe5fd9"
+});
+const db = getDatabase(fb);
+const SECRET = "KIWIVERDE";
+const CODE = (new URLSearchParams(location.search).get('m') || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+const LKEY = 'hergarDelegado_' + CODE, PKEY = 'hergarDelegado_pin_' + CODE;
+
+// Mismas posiciones y puestos que la pizarra de la app
+const COORD = {"4-3-3":[[50,93],[15,75],[38,77],[62,77],[85,75],[50,57],[28,47],[72,47],[18,22],[50,15],[82,22]],
+"4-4-2":[[50,93],[15,75],[38,77],[62,77],[85,75],[10,47],[36,50],[64,50],[90,47],[35,17],[65,17]],
+"4-2-3-1":[[50,93],[15,75],[38,77],[62,77],[85,75],[35,57],[65,57],[10,34],[50,34],[90,34],[50,14]],
+"3-5-2":[[50,93],[25,75],[50,77],[75,75],[10,47],[31,50],[50,44],[69,50],[90,47],[35,17],[65,17]],
+"3-4-3":[[50,93],[25,75],[50,77],[75,75],[10,50],[36,52],[64,52],[90,50],[17,19],[50,14],[83,19]]};
+const PUESTOS = {"4-3-3":['POR','LI','DFC','DFC','LD','MCD','MC','MC','EI','DC','ED'],"4-4-2":['POR','LI','DFC','DFC','LD','MI','MC','MC','MD','DC','DC'],"4-2-3-1":['POR','LI','DFC','DFC','LD','MCD','MCD','MI','MP','MD','DC'],"3-5-2":['POR','DFC','DFC','DFC','MI','MC','MP','MC','MD','DC','DC'],"3-4-3":['POR','DFC','DFC','DFC','MI','MC','MC','MD','EI','DC','ED']};
+const LINEA = { POR:'portero', LI:'defensa', DFC:'defensa', LD:'defensa', MCD:'centro', MC:'centro', MI:'centro', MD:'centro', MP:'centro', EI:'delantero', ED:'delantero', DC:'delantero' };
+const NOM = { gol:'⚽ Gol', tp:'🎯 Tiro a puerta', tf:'💨 Tiro fuera', pc:'🔑 Pase clave', pa:'📯 Pase al área', def:'🛡️ Acción defensiva', reg:'🌀 Regate', am:'🟨 Amarilla', ro:'🟥 Roja' };
+// Mismo texto que la cronología de la app (lo lee el visor y el Modo TV)
+const LBL = { tp:'🎯 Disparo a puerta', tf:'💨 Disparo fuera / sin peligro', pc:'🔑 Pase clave', pa:'📯 Pase al área', def:'🛡️ Acción defensiva', reg:'🌀 Regate / jugada individual' };
+const IMP = { tp:.30, tf:.10, pc:.25, pa:.15, def:.30, reg:.10 }; // impacto aproximado solo para el directo (Javi lo recalcula al cargarlo)
+
+let D = null;      // lo que publicó Javi: convocados, once, sistema, pin…
+let S = null;      // estado del partido
+let J = {};        // jugadores por id
+let hist = [];     // para deshacer
+let selA = null, swapSel = null;
+let soloLectura = false; // Javi ya cargó el partido en su app: aquí ya no se envía nada
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+const nom = id => J[id] ? String(J[id].name || '').split(' ')[0] : '¿?';
+const etq = id => J[id] ? `#${J[id].dorsal} ${nom(id)}` : '¿?';
+function toast(t) { const e = $('toast'); e.textContent = t; e.classList.add('on'); clearTimeout(e._t); e._t = setTimeout(() => e.classList.remove('on'), 1600); }
+function pantalla(id) { document.querySelectorAll('.scr').forEach(s => s.classList.toggle('on', s.id === id)); window.scrollTo(0, 0); }
+function fmt(s) { s = Math.max(0, s | 0); return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); }
+function reloj() { return S.desde ? S.acum + Math.floor((Date.now() - S.desde) / 1000) : S.acum; }
+function minAhora() { return Math.floor(reloj() / 60); }
+function puesto(i) { return (PUESTOS[S.form] || [])[i] || ''; }
+
+// ── Guardado local + nube ─────────────────────────────────────────────
+function guardarLocal() { try { localStorage.setItem(LKEY, JSON.stringify(S)); } catch (e) {} }
+let pendientes = 0, ultimoError = null, pubTimer = null;
+function pintarSync() {
+  const el = $('sync'), f = $('fSync');
+  let txt, cls;
+  if (ultimoError) { txt = '⚠️ No se pudo enviar: ' + ultimoError; cls = 'bad'; }
+  else if (!navigator.onLine || pendientes > 0) { txt = navigator.onLine ? '⏳ Enviando…' : '📵 Sin cobertura · se guarda en el móvil y se enviará al volver'; cls = 'pend'; }
+  else { txt = S && S.fase === 'directo' ? '● En directo en el visor · guardado en la nube' : '● Guardado en la nube'; cls = ''; }
+  if (el) { el.textContent = txt; el.className = 'sync ' + cls; }
+  if (f) { const ok = soloLectura || (!ultimoError && navigator.onLine && pendientes === 0); f.className = 'ok ' + (ok ? 'si' : 'no'); f.textContent = soloLectura ? '✔ Javi ya ha cargado este partido en su app. ¡Gracias!' : ok ? '✔ Enviado. Javi lo revisará y lo guardará en la temporada.' : txt; }
+}
+window.addEventListener('online', pintarSync); window.addEventListener('offline', pintarSync);
+function publicar(inmediato) {
+  if (!S || S.fase === 'alineacion' || soloLectura) return;
+  clearTimeout(pubTimer);
+  if (!inmediato) { pubTimer = setTimeout(() => publicar(true), 400); return; }
+  S.rev = (S.rev || 0) + 1; guardarLocal();
+  const payload = payloadVisor();
+  pendientes++; pintarSync();
+  set(ref(db, 'matches/' + CODE), payload).then(() => { ultimoError = null; }).catch(e => { ultimoError = (e && e.message) || String(e); })
+    .finally(() => { pendientes = Math.max(0, pendientes - 1); pintarSync(); });
+}
+function cambio() { procesarTiempo(); guardarLocal(); publicar(false); pintarTodo(); }
+
+// ── Lo que lee el visor (mismo formato que la app) ───────────────────
+function payloadVisor() {
+  const c = reloj(), jug = {};
+  Object.keys(J).forEach(id => {
+    const k = S.cnt[id] || {}, secs = S.secs[id] || 0, mins = Math.floor(secs / 60);
+    const enC = S.slots.includes(+id), enB = S.banco.includes(+id);
+    if (!mins && !enC && !enB && !k.g && !k.a) return;
+    const imp = S.imp[id] || 0;
+    jug[id] = { name: J[id].name, dorsal: J[id].dorsal, enCampo: enC, enBanquillo: enB, esPortero: !!S.porteros[id],
+      minutos: mins, goles: k.g || 0, asistencias: k.a || 0, accionesDef: k.def || 0, accionesDefClave: 0, regates: k.reg || 0,
+      pasesArea: k.pa || 0, pasesClave: k.pc || 0, disparosPuerta: (k.tp || 0) + (k.g || 0), disparosFuera: k.tf || 0, fuerasJuego: 0,
+      paradas: (k.par || 0) + (k.parD || 0), paradasDificiles: k.parD || 0, golesRecibidos: k.gr || 0, tirosPuertaEnPorteria: k.tpp || 0,
+      impacto: +imp.toFixed(2), impactoPond: mins > 0 ? +(imp / mins * 70).toFixed(2) : 0, amarillas: k.am || 0, roja: !!k.ro };
+  });
+  const T = S.team;
+  return {
+    secret: SECRET, actualizado: Date.now(), rival: D.rival || 'RIVAL',
+    golesLocal: S.gl, golesRival: S.gr, minuto: Math.floor(c / 60), parte: S.parte,
+    matchRunning: !!S.desde, matchFinished: S.fase === 'final', finalizadoEn: S.finEn || null, previa: false,
+    formacion: S.form, onFieldIds: S.slots.slice(), benchIds: S.banco.slice(), benchSittingTime: {}, zonasEquipo: {},
+    jugadores: jug, eventos: S.lines.slice(-30), momentumData: S.mom,
+    golesMin: S.ev.filter(e => e.k === 'gol' || e.k === 'golR').map(e => ({ min: Math.floor(e.t / 60), equipo: e.k === 'gol' ? 'hergar' : 'rival', nombre: e.k === 'gol' ? nom(e.j) : '' })),
+    tirosNuestrosPuerta: T.tp, tirosNuestrosFuera: T.tf, tirosRivalesPuerta: T.tpR, tirosRivalesFuera: T.tfR,
+    faltasFavor: 0, faltasContra: 0, cornersFavor: T.cf, cornersContra: T.cc, fuerasJuegoNuestros: 0, fuerasJuegoRival: 0,
+    analisisIA: '', resumenIA: '', notasIA: {},
+    delegado: Object.assign({}, D, { st: S })
+  };
+}
+
+// ── Reloj: minutos de cada niño en el campo ──────────────────────────
+function procesarTiempo() {
+  if (!S || S.fase !== 'directo') return;
+  const c = reloj();
+  if (c > S.proc) { const d = c - S.proc; S.slots.forEach(id => { if (id) S.secs[id] = (S.secs[id] || 0) + d; }); S.proc = c; }
+}
+let ultimaPub = 0;
+setInterval(() => {
+  if (!S || S.fase !== 'directo') return;
+  procesarTiempo();
+  const c = reloj();
+  $('clk').textContent = fmt(c);
+  if (S.desde && Date.now() - ultimaPub > 20000) { ultimaPub = Date.now(); publicar(true); }
+}, 500);
+
+// ── Arranque ──────────────────────────────────────────────────────────
+async function cargar() {
+  if (!CODE) { $('loadTxt').innerHTML = 'Este enlace no es válido. Pídele a Javi que te lo mande otra vez.'; return; }
+  let remoto = null;
+  try { const snap = await get(ref(db, 'matches/' + CODE)); remoto = snap.exists() ? snap.val() : null; }
+  catch (e) { remoto = null; }
+  let local = null; try { local = JSON.parse(localStorage.getItem(LKEY) || 'null'); } catch (e) {}
+  let Dloc = null; try { Dloc = JSON.parse(localStorage.getItem(LKEY + '_cfg') || 'null'); } catch (e) {}
+  if (remoto && remoto.delegado) { D = Object.assign({}, remoto.delegado); delete D.st; try { localStorage.setItem(LKEY + '_cfg', JSON.stringify(D)); } catch (e) {} }
+  else if (Dloc) { D = Dloc; if (remoto && local && local.fase && local.fase !== 'alineacion') soloLectura = true; }
+  if (!D) { $('loadTxt').innerHTML = navigator.onLine ? 'No hay ningún partido preparado con este enlace.<br>Pídele a Javi que pulse «📲 Pasar al delegado» y te mande el enlace.' : 'Sin cobertura. Abre el enlace cuando tengas conexión la primera vez.'; return; }
+  J = {}; (D.convocados || []).forEach(p => { J[p.id] = p; });
+  const rem = remoto && remoto.delegado && remoto.delegado.st;
+  S = (rem && (!local || (rem.rev || 0) > (local.rev || 0))) ? rem : local;
+  if (S) normalizar();
+  $('pinRival').textContent = 'Hergar vs ' + (D.rival || 'Rival');
+  $('pinMeta').textContent = [D.fecha, D.hora, D.campo].filter(Boolean).join(' · ');
+  $('rivTxt').textContent = String(D.rival || 'RIVAL').toUpperCase();
+  let pinOk = false; try { pinOk = localStorage.getItem(PKEY) === String(D.pin); } catch (e) {}
+  if (!pinOk) { pedirPin(); return; }
+  entrar();
+}
+function normalizar() {
+  ['slots', 'banco', 'fuera', 'ev', 'lines', 'mom'].forEach(k => { if (!Array.isArray(S[k])) S[k] = S[k] ? Object.values(S[k]) : []; });
+  ['secs', 'imp', 'cnt', 'porteros'].forEach(k => { if (!S[k]) S[k] = {}; });
+  if (!S.team) S.team = { tp: 0, tf: 0, tpR: 0, tfR: 0, cf: 0, cc: 0 };
+  S.slots = S.slots.map(x => x == null ? null : Number(x)); S.banco = S.banco.map(Number); S.fuera = S.fuera.map(Number);
+}
+function nuevoEstado() {
+  const once = Array.isArray(D.once) && D.once.length === 11 && D.once.every(id => J[id]) ? D.once.map(Number) : null;
+  const form = COORD[D.formacion] ? D.formacion : '4-3-3';
+  S = { v: 1, rev: 0, fase: 'alineacion', form, slots: once ? once.slice() : Array(11).fill(null), banco: [], fuera: [],
+    gl: 0, gr: 0, parte: 1, acum: 0, desde: null, proc: 0, fin1: null, fin2: null, finEn: null, horaInicio: null, fecha: null, formInicial: null, onceInicial: null,
+    ev: [], lines: [], mom: [], secs: {}, imp: {}, cnt: {}, porteros: {}, team: { tp: 0, tf: 0, tpR: 0, tfR: 0, cf: 0, cc: 0 } };
+  S.banco = Object.keys(J).map(Number).filter(id => !S.slots.includes(id)).sort((a, b) => (J[a].dorsal || 99) - (J[b].dorsal || 99));
+}
+function entrar() {
+  if (soloLectura) { S.fase = 'final'; pantalla('sFin'); pintarFinal(); $('bReabrir').style.display = 'none'; return; }
+  if (!S) nuevoEstado();
+  if (S.fase === 'alineacion') { pantalla('sAli'); pintarA(); }
+  else if (S.fase === 'directo') { pantalla('sDir'); pintarTodo(); publicar(true); }
+  else { pantalla('sFin'); pintarFinal(); publicar(true); }
+}
+
+// ── PIN ───────────────────────────────────────────────────────────────
+let pinTxt = '';
+function pedirPin() {
+  pantalla('sPin');
+  $('pad').innerHTML = ['1','2','3','4','5','6','7','8','9','','0','⌫'].map(k => k ? `<button data-k="${k}">${k}</button>` : '<span></span>').join('');
+  $('pad').querySelectorAll('button').forEach(b => b.onclick = () => {
+    const k = b.dataset.k;
+    if (k === '⌫') pinTxt = pinTxt.slice(0, -1); else if (pinTxt.length < 4) pinTxt += k;
+    pintarPin();
+    if (pinTxt.length === 4) {
+      if (pinTxt === String(D.pin)) { try { localStorage.setItem(PKEY, pinTxt); } catch (e) {} entrar(); }
+      else { $('pinErr').textContent = 'Código incorrecto. Pregúntaselo a Javi.'; setTimeout(() => { pinTxt = ''; pintarPin(); }, 700); }
+    } else $('pinErr').textContent = '';
+  });
+  pintarPin();
+}
+function pintarPin() { $('pinBox').querySelectorAll('span').forEach((s, i) => s.textContent = pinTxt[i] ? '•' : ''); }
+
+// ── Campo (compartido por alineación y directo) ──────────────────────
+function pitchHTML(sel) {
+  const lines = '<div class="ln" style="left:-2px;right:-2px;top:50%;height:0;border-width:2px 0 0"></div><div class="ln" style="left:50%;top:50%;width:22%;aspect-ratio:1;border-radius:50%;transform:translate(-50%,-50%)"></div><div class="ln" style="left:22%;right:22%;bottom:-2px;height:15%"></div><div class="ln" style="left:22%;right:22%;top:-2px;height:15%"></div>';
+  const coords = COORD[S.form];
+  return lines + coords.map((c, i) => {
+    if (i >= S.slots.length) return '';
+    const id = S.slots[i];
+    return `<div class="slot ${id ? '' : 'vacio'} ${i === 0 ? 'por' : ''} ${sel === i ? 'sel' : ''}" data-i="${i}" style="left:${c[0]}%;top:${c[1]}%"><div class="c">${id ? esc(J[id] ? J[id].dorsal : '?') : '+'}</div><div class="n">${id ? esc(nom(id)) : '—'}</div><div class="p">${puesto(i)}</div></div>`;
+  }).join('');
+}
+function benchHTML() {
+  const b = S.banco.map(id => `<span><b>${esc(J[id] ? J[id].dorsal : '')}</b>${esc(nom(id))}</span>`).join('');
+  const f = S.fuera.map(id => `<span class="out"><b>${esc(J[id] ? J[id].dorsal : '')}</b>${esc(nom(id))}</span>`).join('');
+  return (b + f) || '<span class="mute">Sin suplentes</span>';
+}
+function chips(id, cb) {
+  $(id).innerHTML = Object.keys(COORD).map(f => `<button class="chip ${f === S.form ? 'on' : ''}" data-f="${f}">1-${f}</button>`).join('');
+  $(id).querySelectorAll('.chip').forEach(c => c.onclick = () => cb(c.dataset.f));
+}
+
+// ── Alineación inicial ───────────────────────────────────────────────
+function pintarA() {
+  chips('formA', f => { S.form = f; guardarLocal(); pintarA(); });
+  $('pitchA').innerHTML = pitchHTML(selA);
+  $('pitchA').querySelectorAll('.slot').forEach(s => s.onclick = () => tocarA(+s.dataset.i));
+  $('benchA').innerHTML = benchHTML();
+  const n = S.slots.filter(Boolean).length, b = $('btnEmpezar');
+  b.disabled = n !== 11; b.textContent = n === 11 ? '▶ Empezar partido' : `Faltan ${11 - n} por colocar`;
+  $('btnJavi').style.display = Array.isArray(D.once) && D.once.length === 11 ? '' : 'none';
+  $('aliSub').textContent = Array.isArray(D.once) && D.once.length === 11 ? 'Viene la alineación de Javi. Cámbiala si hace falta.' : 'Elige el sistema y toca cada puesto para poner al niño.';
+}
+function tocarA(i) {
+  if (selA !== null && selA !== i && S.slots[selA] && S.slots[i]) { [S.slots[selA], S.slots[i]] = [S.slots[i], S.slots[selA]]; selA = null; guardarLocal(); pintarA(); toast('↔ Intercambiados'); return; }
+  if (selA === i) { selA = null; pintarA(); return; }
+  if (S.slots[i]) {
+    selA = i; pintarA();
+    hoja(`${puesto(i)} · ${nom(S.slots[i])}`, 'Toca otro niño del campo para intercambiarlos, o elige aquí',
+      `<div class="opts"><button id="oPon">🔁 Poner a otro del banquillo</button><button id="oQuita">⬇ Mandar al banquillo</button></div>`, 'Intercambiar con otro del campo', () => { cerrar(); toast('Toca ahora el otro niño'); });
+    $('oPon').onclick = () => elegirA(i); $('oQuita').onclick = () => { S.banco.push(S.slots[i]); ordenarBanco(); S.slots[i] = null; selA = null; cerrar(); guardarLocal(); pintarA(); };
+    return;
+  }
+  elegirA(i);
+}
+function elegirA(i) {
+  hojaJug(`${puesto(i)} · ¿quién juega aquí?`, 'Banquillo', S.banco.slice(), id => {
+    if (S.slots[i]) S.banco.push(S.slots[i]);
+    S.slots[i] = id; S.banco = S.banco.filter(x => x !== id); ordenarBanco(); selA = null; cerrar(); guardarLocal(); pintarA();
+  });
+}
+function ordenarBanco() { S.banco.sort((a, b) => ((J[a] || {}).dorsal || 99) - ((J[b] || {}).dorsal || 99)); }
+$('btnJavi').onclick = () => {
+  if (!(Array.isArray(D.once) && D.once.length === 11)) return;
+  S.slots = D.once.map(Number); S.form = COORD[D.formacion] ? D.formacion : S.form;
+  S.banco = Object.keys(J).map(Number).filter(id => !S.slots.includes(id)); ordenarBanco(); selA = null; guardarLocal(); pintarA(); toast('Alineación de Javi');
+};
+$('btnEmpezar').onclick = () => {
+  if (S.slots.filter(Boolean).length !== 11) return;
+  if (!confirm('¿Empieza el partido? Arranca el reloj y las familias lo verán en directo.')) return;
+  const ah = new Date();
+  S.fase = 'directo'; S.desde = Date.now(); S.acum = 0; S.proc = 0; S.parte = 1;
+  S.horaInicio = String(ah.getHours()).padStart(2, '0') + ':' + String(ah.getMinutes()).padStart(2, '0');
+  S.fecha = ah.toLocaleDateString('es-ES');
+  S.formInicial = S.form; S.onceInicial = S.slots.slice(); S.porteros = {}; S.porteros[S.slots[0]] = true;
+  guardarLocal();
+  set(ref(db, 'lastMatchCode'), { secret: SECRET, code: CODE, actualizado: Date.now() }).catch(() => {});
+  pantalla('sDir'); pintarTodo(); publicar(true);
+};
+
+// ── Hojas para elegir ────────────────────────────────────────────────
+function hoja(t, s, body, skipTxt, skipCb) {
+  $('shT').textContent = t; $('shS').textContent = s || ''; $('shBody').innerHTML = body;
+  const k = $('shSkip'); k.textContent = skipTxt || 'Cancelar';
+  k.onclick = skipCb || (() => { selA = null; cerrar(); if (S.fase === 'alineacion') pintarA(); });
+  $('sheet').classList.add('on');
+}
+function hojaJug(t, s, lista, cb, skipTxt, skipCb) {
+  const pu = id => { const i = S.slots.indexOf(id); return i >= 0 ? puesto(i) : (S.banco.includes(id) ? 'Banquillo' : ''); };
+  hoja(t, s, `<div class="pgrid">${lista.map(id => `<div class="pbtn" data-id="${id}"><b>${esc(J[id] ? J[id].dorsal : '?')}</b><span>${esc(nom(id))}</span><small>${pu(id)}</small></div>`).join('') || '<div class="sm mute">Nadie disponible</div>'}</div>`, skipTxt, skipCb);
+  $('shBody').querySelectorAll('.pbtn').forEach(b => b.onclick = () => cb(Number(b.dataset.id)));
+}
+function cerrar() { $('sheet').classList.remove('on'); }
+$('sheet').onclick = e => { if (e.target === $('sheet')) { selA = null; cerrar(); if (S && S.fase === 'alineacion') pintarA(); } };
+
+// ── Apuntar sucesos ──────────────────────────────────────────────────
+function snapshot() {
+  hist.push(JSON.stringify({ slots: S.slots, banco: S.banco, fuera: S.fuera, form: S.form, gl: S.gl, gr: S.gr, ev: S.ev, lines: S.lines, mom: S.mom, imp: S.imp, cnt: S.cnt, team: S.team, porteros: S.porteros }));
+  if (hist.length > 25) hist.shift();
+}
+function suceso(e, linea) {
+  procesarTiempo();
+  e.t = reloj(); e.p = S.parte;
+  S.ev.push(e);
+  if (linea) S.lines.push(`[${Math.floor(e.t / 60)}'] ${linea}`);
+  cambio();
+}
+function cnt(id, k, n) { const c = S.cnt[id] || (S.cnt[id] = {}); c[k] = (c[k] || 0) + (n == null ? 1 : n); }
+function imp(id, v) { S.imp[id] = (S.imp[id] || 0) + v; }
+function mom(delta) { const prev = S.mom.length ? S.mom[S.mom.length - 1].acum : 0; S.mom.push({ min: minAhora(), delta, acum: +(prev + delta).toFixed(1) }); }
+function enCampo() { return S.slots.filter(Boolean); }
+function lineaDe(id) { return LINEA[puesto(S.slots.indexOf(id))] || ''; }
+
+function accionJugador(k) {
+  const lista = (k === 'am' || k === 'ro') ? enCampo().concat(S.banco) : enCampo();
+  hojaJug(NOM[k] + ' · ¿quién?', k === 'am' || k === 'ro' ? 'En el campo y en el banquillo' : 'Niños en el campo', lista, id => {
+    if (k === 'gol') {
+      hojaJug(`👟 Gol de ${nom(id)} · ¿quién dio la asistencia?`, 'Si nadie, toca «Sin asistencia»', enCampo().filter(x => x !== id),
+        a => { cerrar(); gol(id, a); }, 'Sin asistencia', () => { cerrar(); gol(id, null); });
+      return;
+    }
+    cerrar(); snapshot();
+    if (k === 'am') { tarjeta(id, false); return; }
+    if (k === 'ro') { tarjeta(id, true); return; }
+    cnt(id, k); imp(id, IMP[k] || 0);
+    if (k === 'tp') S.team.tp++; if (k === 'tf') S.team.tf++;
+    if (k === 'tp') mom(1); if (k === 'tf' || k === 'pc') mom(.5);
+    suceso({ k, j: id }, `${LBL[k]} #${J[id].dorsal} ${nom(id)}`);
+    toast(`✔ ${NOM[k]} · ${nom(id)}`);
+  });
+}
+function gol(id, a) {
+  snapshot();
+  S.gl++; S.team.tp++; cnt(id, 'g');
+  const l = lineaDe(id); imp(id, .75 + (l === 'defensa' ? 1.25 : l === 'centro' ? .15 : 0));
+  enCampo().forEach(x => imp(x, 1));
+  mom(3);
+  S.lines.push(`[${minAhora()}'] ⚽ Gol #${J[id].dorsal} ${nom(id)}`);
+  if (a) { cnt(a, 'a'); imp(a, .40); S.lines.push(`[${minAhora()}'] 👟 Asistencia #${J[a].dorsal} ${nom(a)}`); }
+  suceso({ k: 'gol', j: id, a: a || null }, null);
+  toast(`⚽ ¡Gol de ${nom(id)}!`);
+}
+function tarjeta(id, roja) {
+  const c = S.cnt[id] || {};
+  const am = !roja ? (c.am || 0) + 1 : (c.am || 0);
+  if (!roja) cnt(id, 'am'); else cnt(id, 'ro');
+  const expulsa = roja || am >= 2;
+  const linea = roja ? `🟥 Roja directa #${J[id].dorsal} ${nom(id)} — EXPULSADO` : `🟨 Amarilla #${J[id].dorsal} ${nom(id)}${am >= 2 ? ' → DOBLE AMARILLA = ROJA' : ''}`;
+  if (expulsa) {
+    if (am >= 2 && !roja) cnt(id, 'ro');
+    const i = S.slots.indexOf(id); if (i >= 0) S.slots.splice(i, 1); // como la app: el expulsado sale del campo
+    S.banco = S.banco.filter(x => x !== id);
+  }
+  suceso({ k: roja ? 'ro' : 'am', j: id }, linea);
+  toast(expulsa ? `🟥 Expulsado ${nom(id)}` : `🟨 Amarilla a ${nom(id)}`);
+}
+function accionRival(k) {
+  snapshot();
+  const por = S.slots[0];
+  if (k === 'golR') {
+    S.gr++; S.team.tpR++; enCampo().forEach(x => imp(x, -1));
+    if (por) { cnt(por, 'gr'); cnt(por, 'tpp'); }
+    mom(-3); suceso({ k }, '🥅 Gol rival'); toast('🥅 Gol del rival');
+  } else if (k === 'par' || k === 'parD') {
+    S.team.tpR++;
+    if (por) { cnt(por, k); cnt(por, 'tpp'); imp(por, k === 'parD' ? 1 : .3); }
+    enCampo().forEach(x => { if (x !== por) imp(x, -.15); });
+    suceso({ k }, por ? `🧤 ${k === 'parD' ? 'Parada difícil' : 'Parada'} #${J[por].dorsal} ${nom(por)} +${k === 'parD' ? '1' : '0.3'}` : '🧤 Parada');
+    toast(k === 'parD' ? '🧤⭐ Paradón' : '🧤 Parada');
+  } else if (k === 'tfR') {
+    S.team.tfR++; enCampo().forEach(x => imp(x, -.05)); mom(-.5); suceso({ k }, '💨 Tiro rival fuera'); toast('💨 Tiro fuera del rival');
+  } else if (k === 'cf') {
+    S.team.cf++; mom(.5); suceso({ k }, '⛳ Córner a favor'); toast('⛳ Córner a favor');
+  } else if (k === 'cc') {
+    S.team.cc++; mom(-.5); suceso({ k }, '⛳ Córner en contra'); toast('⛳ Córner en contra');
+  }
+}
+document.querySelectorAll('[data-a]').forEach(b => b.onclick = () => accionJugador(b.dataset.a));
+document.querySelectorAll('[data-r]').forEach(b => b.onclick = () => accionRival(b.dataset.r));
+
+// ── Cambios, puestos y sistema ───────────────────────────────────────
+function sustituir(i) {
+  const s = S.slots[i];
+  hojaJug(`🔄 Sale ${nom(s)} · ¿quién entra?`, `Entra a jugar de ${puesto(i)}`, S.banco.slice(), e => {
+    cerrar(); snapshot();
+    S.slots[i] = e; S.banco = S.banco.filter(x => x !== e); S.fuera.push(s);
+    if (i === 0) S.porteros[e] = true;
+    suceso({ k: 'sub', s, e }, `🔄 Sale #${J[s].dorsal} ${nom(s)} ➡️ Entra #${J[e].dorsal} ${nom(e)}`);
+    toast(`🔄 Entra ${nom(e)} · sale ${nom(s)}`);
+  });
+}
+$('aCambio').onclick = () => {
+  if (!S.banco.length) { toast('No queda nadie en el banquillo'); return; }
+  hojaJug('🔄 ¿Quién sale?', 'Niños en el campo', enCampo(), id => sustituir(S.slots.indexOf(id)));
+};
+function tocarD(i) {
+  if (swapSel !== null) {
+    if (swapSel === i) { swapSel = null; pintarCampo(); return; }
+    snapshot();
+    const a = S.slots[swapSel], b = S.slots[i];
+    S.slots[swapSel] = b; S.slots[i] = a;
+    if (i === 0) S.porteros[a] = true; if (swapSel === 0) S.porteros[b] = true;
+    const txt = `↔ ${nom(a)} pasa a ${puesto(i)} · ${nom(b)} a ${puesto(swapSel)}`;
+    swapSel = null;
+    suceso({ k: 'swap', j: a, x: b }, txt);
+    toast(txt);
+    return;
+  }
+  const id = S.slots[i];
+  hoja(`${nom(id)} · ${puesto(i)}`, '¿Qué quieres hacer?', `<div class="opts"><button id="oSwap">↔ Cambiar de puesto con otro del campo</button><button id="oSub">🔄 Sustituirlo (entra uno del banquillo)</button></div>`);
+  $('oSwap').onclick = () => { cerrar(); swapSel = i; pintarCampo(); };
+  $('oSub').onclick = () => { if (!S.banco.length) { toast('No queda nadie en el banquillo'); return; } sustituir(i); };
+}
+function cambiarSistema(f) {
+  if (f === S.form) return;
+  if (!confirm(`¿Cambiar el sistema a 1-${f}? Cada niño pasa al puesto que tenga en el nuevo dibujo.`)) return;
+  snapshot(); S.form = f;
+  suceso({ k: 'form', f }, `🏟️ Cambio de sistema a 1-${f}`);
+  toast(`🏟️ Ahora 1-${f}`);
+}
+
+// ── Reloj, descanso y final ──────────────────────────────────────────
+$('bReloj').onclick = () => {
+  procesarTiempo();
+  if (S.desde) { S.acum = reloj(); S.desde = null; toast('⏸ Reloj parado'); }
+  else { S.proc = S.acum; S.desde = Date.now(); toast(S.parte === 2 && S.acum === 2100 && !S.ev.some(e => e.p === 2) ? '▶ Empieza la 2ª parte' : '▶ Reloj en marcha'); }
+  cambio();
+};
+$('bDesc').onclick = () => {
+  if (S.parte !== 1) return;
+  if (!confirm('¿Descanso? El reloj se para y la 2ª parte empezará en el 35:00.')) return;
+  procesarTiempo();
+  S.fin1 = reloj(); S.desde = null; S.parte = 2; S.acum = 2100; S.proc = 2100;
+  cambio(); toast('⏸ Descanso');
+};
+$('bFin').onclick = () => {
+  if (!confirm('¿Terminar el partido? Se envía el resultado a Javi.')) return;
+  procesarTiempo();
+  const c = reloj(); S.desde = null; S.acum = c;
+  if (S.parte === 1) { S.fin1 = c; S.fin2 = null; } else S.fin2 = c;
+  S.fase = 'final'; S.finEn = Date.now();
+  guardarLocal(); publicar(true); pantalla('sFin'); pintarFinal();
+};
+$('bReabrir').onclick = () => {
+  if (!confirm('¿Volver al partido? El reloj sigue parado; pulsa ▶ si aún se está jugando.')) return;
+  S.fase = 'directo'; S.finEn = null;
+  if (S.parte === 2) S.fin2 = null; else S.fin1 = null;
+  S.proc = S.acum;
+  guardarLocal(); publicar(true); pantalla('sDir'); pintarTodo();
+};
+$('bUndo').onclick = () => {
+  if (!hist.length) { toast(S.ev.length ? 'Solo se puede deshacer lo apuntado desde que abriste esta pantalla' : 'No hay nada que deshacer'); return; }
+  const ult = S.ev[S.ev.length - 1];
+  if (!confirm('¿Deshacer lo último' + (ult ? ` (${Math.floor(ult.t / 60)}')` : '') + '?')) return;
+  Object.assign(S, JSON.parse(hist.pop()));
+  cambio(); toast('↩ Deshecho');
+};
+document.querySelectorAll('.dtabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.dtabs button').forEach(x => x.classList.toggle('on', x === b));
+  $('tAcc').style.display = b.dataset.t === 'acc' ? '' : 'none';
+  $('tCam').style.display = b.dataset.t === 'cam' ? '' : 'none';
+  swapSel = null; pintarCampo();
+});
+
+// ── Pintar ───────────────────────────────────────────────────────────
+function pintarCampo() {
+  if (S.fase !== 'directo') return;
+  chips('formD', cambiarSistema);
+  $('pitchD').innerHTML = pitchHTML(swapSel);
+  $('pitchD').querySelectorAll('.slot').forEach(s => s.onclick = () => { if (S.slots[+s.dataset.i]) tocarD(+s.dataset.i); });
+  $('benchD').innerHTML = benchHTML();
+  const bn = $('swapBanner'); bn.classList.toggle('on', swapSel !== null);
+  if (swapSel !== null) bn.textContent = `↔ ¿Con quién cambia de puesto ${nom(S.slots[swapSel])}? Toca otro niño (o el mismo para cancelar)`;
+}
+function pintarTodo() {
+  if (!S) return;
+  if (S.fase === 'final') { pintarFinal(); return; }
+  if (S.fase !== 'directo') return;
+  $('gl').textContent = S.gl; $('gr').textContent = S.gr;
+  $('clk').textContent = fmt(reloj()); $('clk').classList.toggle('parado', !S.desde);
+  $('parteTxt').textContent = S.parte === 1 ? '1ª parte' : '2ª parte';
+  const br = $('bReloj');
+  if (S.desde) { br.textContent = '⏸ Parar reloj'; br.className = 'pause'; }
+  else { br.textContent = S.parte === 2 && S.acum === 2100 ? '▶ 2ª parte' : (reloj() === 0 ? '▶ Empezar' : '▶ Reanudar'); br.className = 'go'; }
+  $('bDesc').style.display = S.parte === 1 ? '' : 'none';
+  $('avisoParado').style.display = S.desde ? 'none' : '';
+  $('feed').innerHTML = S.lines.length ? S.lines.slice(-10).reverse().map(l => { const m = /^\[(\d+)'\]\s*(.*)$/.exec(l); return `<div class="ev"><span class="m">${m ? m[1] + "'" : ''}</span>${esc(m ? m[2] : l)}</div>`; }).join('') : '<div class="sm mute">Aún nada. Toca un botón.</div>';
+  pintarCampo(); pintarSync();
+}
+function pintarFinal() {
+  $('fgl').textContent = S.gl; $('fgr').textContent = S.gr; $('fRiv').textContent = 'Hergar vs ' + (D.rival || 'Rival');
+  const n = k => S.ev.filter(e => e.k === k).length;
+  const goles = S.ev.filter(e => e.k === 'gol').map(e => `${nom(e.j)} ${Math.floor(e.t / 60)}'${e.a ? ` (${nom(e.a)})` : ''}`).join(' · ') || '—';
+  $('resumen').innerHTML = `<div class="ttl" style="margin-bottom:6px">RESUMEN</div>
+    <div class="row"><span>⚽ Goles</span><span>${esc(goles)}</span></div>
+    <div class="row"><span>🎯 Tiros Hergar (a puerta)</span><span>${S.team.tp + S.team.tf} (${S.team.tp})</span></div>
+    <div class="row"><span>🧤 Paradas</span><span>${n('par') + n('parD')}${n('parD') ? ` (${n('parD')} difíciles)` : ''}</span></div>
+    <div class="row"><span>🔑 · 📯 · 🛡️ · 🌀</span><span>${n('pc')} · ${n('pa')} · ${n('def')} · ${n('reg')}</span></div>
+    <div class="row"><span>⛳ Córners</span><span>${S.team.cf} – ${S.team.cc}</span></div>
+    <div class="row"><span>🔄 Cambios · ↔ puestos</span><span>${n('sub')} · ${n('swap') + n('form')}</span></div>
+    <div class="row"><span>🟨 🟥 Tarjetas</span><span>${n('am') + n('ro')}</span></div>`;
+  pintarSync();
+}
+
+// Si otro móvil ha seguido el partido, se actualiza (solo si es más nuevo)
+cargar().then(() => {
+  if (!CODE || !D) return;
+  onValue(ref(db, 'matches/' + CODE + '/delegado/st'), snap => {
+    const r = snap.val();
+    if (!r || !S || (r.rev || 0) <= (S.rev || 0)) return;
+    S = r; normalizar(); hist = []; guardarLocal();
+    if (S.fase === 'directo') { pantalla('sDir'); pintarTodo(); } else if (S.fase === 'final') { pantalla('sFin'); pintarFinal(); }
+  }, () => {});
+});
+</script>
+</body>
+</html>

@@ -950,6 +950,7 @@
 </div>
 
 <script type="module">
+  // v158 (visor) · Se abre en 4 s como mucho aunque haya poca cobertura (si no, la última copia guardada); no guarda vídeos ni el tiempo; un solo trabajador en segundo plano para notificaciones y copia (antes había dos peleándose por el mismo sitio).
   // v153 (visor) · Partido: los récords personales del último partido bajan junto al resumen bajo la tarjeta del próximo partido.
   // v144 (visor) · Cabecera: con el próximo partido publicado sale el próximo partido (rival, jornada, fecha y hora) en vez del resultado anterior.
   // v144 (app + visor) · «Hace mejores a los demás»: el bonus por gol se quita como lo apuntó la app en cada pareja (en goleadas, cada gol nuevo rebaja lo de antes); cifras por compañero y 70'.
@@ -7583,7 +7584,7 @@
 
   // Registro del service worker para instalabilidad (PWA)
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(()=>{});
+    navigator.serviceWorker.register('OneSignalSDKWorker.js', { scope: '/Hergar-Live/' }).catch(()=>{}); // v158: un solo trabajador (notificaciones + abrir rápido)
   }
 </script>
 <!-- v119 · REPRODUCTOR DE VÍDEO DE LOS GOLES -->

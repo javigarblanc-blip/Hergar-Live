@@ -114,7 +114,7 @@ h2{font:900 19px Montserrat;margin-bottom:4px}
 </head>
 <body>
 
-<div class="top"><div class="club">C.D. HERGAR · DELEGADO</div></div>
+<div class="top"><div class="club">C.D. HERGAR · DELEGADO</div><div id="pruebaTag" style="display:none; margin-top:6px; font:800 11px Montserrat; color:#0b0f14; background:#f5a623; border-radius:8px; padding:4px 10px; display:none;">🧪 MODO PRUEBA · no sale en el visor de las familias</div></div>
 
 <!-- CARGANDO / ERROR -->
 <section class="scr on" id="sLoad">
@@ -260,6 +260,8 @@ const fb = initializeApp({
 const db = getDatabase(fb);
 const SECRET = "KIWIVERDE";
 const CODE = (new URLSearchParams(location.search).get('m') || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+const PRUEBA = new URLSearchParams(location.search).get('prueba') === '1'; // no cambia el partido que sigue el visor
+if (PRUEBA) { const t = document.getElementById('pruebaTag'); if (t) t.style.display = 'inline-block'; }
 const LKEY = 'hergarDelegado_' + CODE, PKEY = 'hergarDelegado_pin_' + CODE;
 
 // Mismas posiciones y puestos que la pizarra de la app
@@ -301,7 +303,7 @@ function pintarSync() {
   let txt, cls;
   if (ultimoError) { txt = '⚠️ No se pudo enviar: ' + ultimoError; cls = 'bad'; }
   else if (!navigator.onLine || pendientes > 0) { txt = navigator.onLine ? '⏳ Enviando…' : '📵 Sin cobertura · se guarda en el móvil y se enviará al volver'; cls = 'pend'; }
-  else { txt = S && S.fase === 'directo' ? '● En directo en el visor · guardado en la nube' : '● Guardado en la nube'; cls = ''; }
+  else { txt = S && S.fase === 'directo' && !(S.prueba || PRUEBA) ? '● En directo en el visor · guardado en la nube' : '● Guardado en la nube'; cls = ''; }
   if (el) { el.textContent = txt; el.className = 'sync ' + cls; }
   if (f) { const ok = soloLectura || (!ultimoError && navigator.onLine && pendientes === 0); f.className = 'ok ' + (ok ? 'si' : 'no'); f.textContent = soloLectura ? '✔ Javi ya ha cargado este partido en su app. ¡Gracias!' : ok ? '✔ Enviado. Javi lo revisará y lo guardará en la temporada.' : txt; }
 }
@@ -488,7 +490,8 @@ $('btnEmpezar').onclick = () => {
   S.fecha = ah.toLocaleDateString('es-ES');
   S.formInicial = S.form; S.onceInicial = S.slots.slice(); S.porteros = {}; S.porteros[S.slots[0]] = true;
   guardarLocal();
-  set(ref(db, 'lastMatchCode'), { secret: SECRET, code: CODE, actualizado: Date.now() }).catch(() => {});
+  S.prueba = PRUEBA;
+  if (!PRUEBA) set(ref(db, 'lastMatchCode'), { secret: SECRET, code: CODE, actualizado: Date.now() }).catch(() => {});
   pantalla('sDir'); pintarTodo(); publicar(true);
 };
 

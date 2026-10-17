@@ -957,6 +957,7 @@
 </div>
 
 <script type="module">
+  // v162 (visor) · Último partido: el informe IA sale antes que los récords personales del partido.
   // v161 (app + visor) · MVP del partido: impacto por minuto con 20' «de relleno» a la media del equipo, para que quien juega poco no salga beneficiado; recalculados todos los partidos de la temporada. Nueva explicación en «¿Cómo se calcula?».
   // v160 (app + visor) · Temporada → Más análisis → 📊 Medias por partido: goles, tiros, córners, faltas, fueras de juego, tarjetas, indicadores y 1.ª vs 2.ª parte, con filtro Temporada / Últimos 5 / Casa / Fuera.
   // v159 (app + visor) · Sinergias: en observación salen los minutos juntos totales y los medidos, y una nota orientativa ≈ (lo medido + lo que falta estimado con el impacto por minuto de cada niño). No entra en la lista.
@@ -5688,6 +5689,7 @@
     try { ctxPintarTiempoProximo(document.getElementById('proxTiempoVisor'), ctxCampoDe(liga, p.local), ctxDMYaISO(p.fechaPartido || ''), p.hora || ''); } catch (e) { console.error('Tiempo:', e); } // v97
     const informe = document.getElementById('informeIACard');
     if (informe) informe.style.display = 'none'; // la tarjeta sustituye al informe IA
+    colocarRecordsHoy(); // v162
   }
 
 
@@ -5806,12 +5808,16 @@
   }
   // v153 · Los récords personales van siempre pegados debajo del resumen del último partido: si el resumen baja
   // bajo la tarjeta del próximo partido, los récords bajan con él (antes se quedaban arriba solos).
+  // v162 · Si se ve el informe IA del partido, los récords van después del informe (primero el relato, luego el detalle)
   function colocarRecordsHoy() {
-    const rec = document.getElementById('recordsHoyCard'), res = document.getElementById('resumenUltimoCard');
-    if (rec && res && res.parentNode === rec.parentNode && res.nextSibling !== rec) res.parentNode.insertBefore(rec, res.nextSibling);
+    const rec = document.getElementById('recordsHoyCard'), res = document.getElementById('resumenUltimoCard'), inf = document.getElementById('informeIACard');
+    if (!rec || !res || res.parentNode !== rec.parentNode) return;
+    const tras = (inf && inf.parentNode === rec.parentNode && inf.style.display !== 'none') ? inf : res;
+    if (tras.nextSibling !== rec) tras.parentNode.insertBefore(rec, tras.nextSibling);
   }
 
-  function pintarInformeIA(matchData) {
+  function pintarInformeIA(matchData) { pintarInformeIABase(matchData); try { colocarRecordsHoy(); } catch (e) {} } // v162
+  function pintarInformeIABase(matchData) {
     const card = document.getElementById('informeIACard');
     if (!card) return;
     if (proximoPartidoActual()) { card.style.display = 'none'; return; } // v72: mientras esté la tarjeta del próximo partido, no se enseña el informe

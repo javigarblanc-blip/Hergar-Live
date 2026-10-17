@@ -957,6 +957,7 @@
 </div>
 
 <script type="module">
+  // v161 (app + visor) · MVP del partido: impacto por minuto con 20' «de relleno» a la media del equipo, para que quien juega poco no salga beneficiado; recalculados todos los partidos de la temporada. Nueva explicación en «¿Cómo se calcula?».
   // v160 (app + visor) · Temporada → Más análisis → 📊 Medias por partido: goles, tiros, córners, faltas, fueras de juego, tarjetas, indicadores y 1.ª vs 2.ª parte, con filtro Temporada / Últimos 5 / Casa / Fuera.
   // v159 (app + visor) · Sinergias: en observación salen los minutos juntos totales y los medidos, y una nota orientativa ≈ (lo medido + lo que falta estimado con el impacto por minuto de cada niño). No entra en la lista.
   // v158 (visor) · Se abre en 4 s como mucho aunque haya poca cobertura (si no, la última copia guardada); no guarda vídeos ni el tiempo; un solo trabajador en segundo plano para notificaciones y copia (antes había dos peleándose por el mismo sitio).
@@ -2270,6 +2271,19 @@
         // ── CÓMO SE CALCULA ──
         h += `<details style="margin-top:10px;"><summary style="font-size:11.5px; font-weight:700; color:${acento}; cursor:pointer;">ℹ️ Cómo se calcula</summary>${snExplicacionHTML()}</details>`;
         return h;
+    }
+    // ── v161 · MVP DEL PARTIDO: impacto por minuto «acercado a la media» para quien juega poco (misma explicación en app y visor) ──
+    function mvpExplicacionHTML(minMin, relleno) {
+        minMin = minMin || 10; relleno = relleno || 20;
+        const fila = (a, b, c, d, e, neg) => `<div style="display:grid; grid-template-columns:1.4fr .7fr .7fr .8fr .9fr; gap:4px; padding:5px 0; border-top:1px solid rgba(255,255,255,.06); font-size:11.5px; ${neg ? 'font-weight:800; color:#94a3b8; font-size:9.5px; letter-spacing:.4px;' : 'color:#e2e8f0;'}"><span>${a}</span><span style="text-align:center;">${b}</span><span style="text-align:center;">${c}</span><span style="text-align:center;">${d}</span><span style="text-align:center;${neg ? '' : ' font-weight:800; color:#f5a623;'}">${e}</span></div>`;
+        return `<div style="font-size:12.5px; line-height:1.55; color:#e2e8f0; padding-top:6px;">
+            <p style="margin:0 0 8px;">Gana quien más impacto aporta por cada minuto que juega. Pero con pocos minutos esa cuenta engaña: si entras 10' y en ese rato el equipo marca dos goles, parece que has hecho un partidazo, aunque sea más la suerte del momento.</p>
+            <p style="margin:0 0 8px;">Por eso, antes de comparar, a cada niño se le suman <strong>${relleno} minutos al nivel medio del equipo en ese partido</strong>. Es como las valoraciones de un restaurante: uno con dos opiniones de 5 estrellas no está por encima de otro con cien opiniones de 4,8.</p>
+            <p style="margin:0 0 4px;">· <strong>Si juega todo el partido</strong>, esos ${relleno}' casi no le cambian nada.<br>· <strong>Si juega poco</strong>, le acercan a la media: solo gana si lo que hizo en ese rato fue de verdad excepcional.</p>
+            <div style="margin:8px 0;">${fila('', 'Minutos', 'Impacto', "Por 70'", 'Para el MVP', true)}${fila('Entra al final', "15'", '+4', '18,7', '11,4')}${fila('Titular', "70'", '+12', '12,0', '10,7')}</div>
+            <p style="margin:0 0 8px; font-size:11.5px; color:#cbd5e1;">El suplente sigue siendo MVP porque hizo mucho en poco tiempo. Con un +2 en esos 15' se quedaría en 7,4 y lo sería el titular.</p>
+            <p style="margin:0;">Mínimo ${minMin} minutos jugados. Solo cambia quién es el MVP: el impacto de cada niño no se toca.</p>
+        </div>`;
     }
     // ── v160 · 📊 MEDIAS POR PARTIDO (misma función en la app y en el visor) ──
     // Cómo es un partido medio del Hergar, con filtro Temporada / Últimos 5 / Casa / Fuera.
@@ -6604,6 +6618,7 @@
       + csTarjeta('Suerte y nivel', snExplicacionHTML()) // v155
       + csTarjeta('Efecto del banquillo', banquilloExplicacionHTML()) // v137
       + csTarjeta('Hacen mejores a los demás', companerosExplicacionHTML()) // v140
+      + csTarjeta('⭐ MVP del partido', mvpExplicacionHTML(R.minMinutosMVP || 10, R.mvpRelleno || 20)) // v161
       + csTarjeta('Cómo se ordena la clasificación',
         `<div style="font-size:12.5px; line-height:1.55; color:#e2e8f0; padding-top:6px;">
           <p style="margin:0 0 8px;">Se usa el impacto por 70 minutos, para poder comparar a quien juega más con quien juega menos.</p>

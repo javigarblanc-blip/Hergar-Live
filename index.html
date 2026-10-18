@@ -977,6 +977,8 @@
 </div>
 
 <script type="module">
+  // v165 (visor) · Ficha de un niño en un partido: se abre tocándolo en «Actuación de cada jugador» (Temporada → Partidos). Acciones con minutos, impacto, peso ese día, puntos de sus goles o datos de portero, récords de ese día, sus goles en vídeo y ‹ › a sus otros partidos. Sin el más/menos individual.
+  // v166 (visor) · La ficha del partido enseña también el más/menos de ese partido (marcador con él en el campo).
   // v164 (visor) · Con el próximo partido publicado: el titular del informe IA del último partido se toca para leer el informe completo, y los récords personales van plegados en una línea con los nombres.
   // v163 (visor) · ⬇️ Descargar el resumen del partido en vídeo: se vuelve a reproducir dibujado en un lienzo y se graba con el sonido de los goles (MP4 si el móvil lo permite). Botón en Último partido, en Temporada → Partidos y en el final del resumen.
   // v162 (visor) · Último partido: el informe IA sale antes que los récords personales del partido.
@@ -6681,12 +6683,14 @@
             const grande = f.p70 !== null ? num(f.p70) : '—';
             const pequeno = `${num(f.imp)} total`;
             const papel = f.titular === null ? '' : (f.titular ? 'Titular' : 'Entró');
-            return `<div style="padding:7px 0; border-top:1px solid rgba(255,255,255,0.06);">
+            const pi = (t.partidos || []).indexOf(p); // v165: se toca el niño para abrir su ficha del partido
+            return `<div ${pi >= 0 ? `role="button" tabindex="0" onclick="abrirFichaPartido(${pi}, '${esc(f.j.id)}')" onkeydown="if(event.key==='Enter'){abrirFichaPartido(${pi}, '${esc(f.j.id)}')}" ` : ''}style="padding:7px 0; border-top:1px solid rgba(255,255,255,0.06);${pi >= 0 ? ' cursor:pointer;' : ''}">
                 <div style="display:flex; align-items:center; gap:8px;">
                     <span style="width:22px; text-align:center; font-weight:900; color:#f5a623; font-size:12px; font-family:'Montserrat',sans-serif;">${esc(f.j.dorsal ?? '—')}</span>
                     <span style="flex:1; min-width:0; font-size:12.5px; font-weight:700; color:#e2e8f0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc((f.j.name || '').split(' ')[0])}${mvp ? ' <span style="color:#f5a623;">⭐</span>' : ''}</span>
                     <span style="font-size:10.5px; color:#94a3b8; white-space:nowrap;">${[f.puesto, papel, f.mins + "'"].filter(Boolean).join(' · ')}</span>
                     <span style="width:52px; text-align:right; font-family:'Montserrat',sans-serif; font-weight:900; font-size:13px; color:${col};">${grande}</span>
+                    <span style="color:#64748b; font-size:13px;">›</span>
                 </div>
                 <div style="display:flex; align-items:center; gap:8px; margin-top:4px; padding-left:30px;">
                     <div style="flex:1; height:4px; border-radius:3px; background:rgba(255,255,255,0.06);"><div style="width:${ancho}%; height:100%; border-radius:3px; background:${col};"></div></div>
@@ -6698,10 +6702,132 @@
         const sinDetalle = filas.every(f => !f.h.acc);
         return `<details style="margin-top:6px; padding-top:6px; border-top:1px solid rgba(255,255,255,0.06);">
             <summary style="color:#2ed573; font-size:11px; font-weight:800; cursor:pointer;">👥 Actuación de cada jugador (${filas.length})</summary>
-            <div style="font-size:10.5px; color:#94a3b8; line-height:1.45; margin:6px 0 2px;">Ordenados por impacto por 70 minutos, para comparar igual al que jugó 30' y al que jugó 70'. En gris, el impacto total que sumó en el partido. Con menos de 10' no se da el "por 70'" y van al final.${sinDetalle ? ' Este partido es anterior a la v104: solo tiene goles y asistencias, no el resto de acciones.' : ''}</div>
+            <div style="font-size:10.5px; color:#94a3b8; line-height:1.45; margin:6px 0 2px;">Ordenados por impacto por 70 minutos, para comparar igual al que jugó 30' y al que jugó 70'. En gris, el impacto total que sumó en el partido. Con menos de 10' no se da el "por 70'" y van al final. <b style="color:#e2e8f0;">Toca un niño para ver su partido.</b>${sinDetalle ? ' Este partido es anterior a la v104: solo tiene goles y asistencias, no el resto de acciones.' : ''}</div>
             ${filasHtml}
         </details>`;
     }
+
+
+  // ── v165 · FICHA DE UN NIÑO EN UN PARTIDO (solo visor) ─────────────────────
+  // Se abre tocando un niño en «Actuación de cada jugador». Todo sale de la temporada: su historial de ese partido,
+  // los goles del partido (minuto, asistencia, vídeo), el peso en el equipo ese día, los puntos de sus goles, sus
+  // récords y (v166) el más/menos de ese partido. Con ‹ › se pasa a sus otros partidos.
+  function fpEsc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+  function fpNum(n, d) { d = d == null ? 2 : d; return (n > 0 ? '+' : n < 0 ? '−' : '') + Math.abs(n).toFixed(d).replace('.', ','); }
+  function fpHist(j, p) { return (j.historial || []).find(x => x.fecha === p.fecha && x.rival === p.rival) || null; }
+  function fpJugo(h) { return !!h && ((h.mins || 0) > 0 || h.goles || h.asistencias); }
+  function fpModal() {
+    let m = document.getElementById('fichaPartidoModal');
+    if (!m) {
+      document.body.insertAdjacentHTML('beforeend', `<div id="fichaPartidoModal" role="dialog" aria-modal="true" aria-label="Ficha del partido" onclick="if(event.target===this)cerrarFichaPartido()" style="display:none; position:fixed; inset:0; z-index:960; background:rgba(0,0,0,.85); align-items:flex-start; justify-content:center; padding:20px 14px; overflow-y:auto; overscroll-behavior:contain;">
+        <div id="fichaPartidoCaja" style="background:linear-gradient(145deg,#111827,#0f172a); border-radius:20px; padding:16px; max-width:380px; width:100%; border:1px solid rgba(255,255,255,.08); margin:auto 0;"></div></div>`);
+      m = document.getElementById('fichaPartidoModal');
+    }
+    return m;
+  }
+  window.cerrarFichaPartido = () => { const m = document.getElementById('fichaPartidoModal'); if (m) m.style.display = 'none'; document.body.style.overflow = ''; };
+  window.abrirFichaPartido = (pi, jid) => {
+    const t = ultimaTemporada;
+    if (!t || !Array.isArray(t.partidos) || !t.partidos[pi]) return;
+    const j = (t.jugadores || {})[jid] || Object.values(t.jugadores || {}).find(x => String(x.id) === String(jid));
+    if (!j) return;
+    const m = fpModal();
+    document.getElementById('fichaPartidoCaja').innerHTML = fichaPartidoHTML(t, pi, j); m.style.display = 'flex'; m.scrollTop = 0; document.body.style.overflow = 'hidden';
+  };
+  function fichaPartidoHTML(t, pi, j) {
+    const ps = t.partidos, p = ps[pi], h = fpHist(j, p) || {};
+    const a = h.acc || {}, detalle = h.acc !== undefined;
+    const mins = h.mins || 0, imp = (h.imp !== undefined) ? Number(h.imp) || 0 : (Number(h.impPond) || 0) * mins / 70;
+    const p70 = mins >= 10 ? ((h.impPond !== undefined) ? Number(h.impPond) : imp / mins * 70) : null;
+    const nom = fpEsc(estNom(j));
+    const gl = Number(p.golesLocal) || 0, gr = Number(p.golesRival) || 0;
+    const resCol = gl > gr ? '#2ed573' : gl < gr ? '#ff4757' : '#f5a623';
+    const mvp = p.mvpId != null && String(p.mvpId) === String(j.id);
+    // puesto y papel
+    const ORD = ['POR', 'LI', 'DFC', 'LD', 'MCD', 'MC', 'MI', 'MD', 'MP', 'EI', 'ED', 'DC'];
+    let puesto = '';
+    if (h.puestos && Object.keys(h.puestos).length) { const k = ORD.filter(x => h.puestos[x] > 0).sort((x, y) => h.puestos[y] - h.puestos[x])[0]; puesto = k ? PUESTO_LARGO_V[k] : ''; }
+    else if (h.lineas && Object.keys(h.lineas).length) { const l = Object.keys(h.lineas).sort((x, y) => h.lineas[y] - h.lineas[x])[0]; puesto = LINEA_LARGA_V[l] || ''; }
+    const tit = Array.isArray(p.titulares) && p.titulares.length ? p.titulares.map(String).includes(String(j.id)) : null;
+    const papel = tit === null ? '' : (tit ? 'Titular' : 'Entró desde el banquillo');
+    const esPortero = puesto === 'Portero' || (a.par || 0) > 0;
+    // goles del partido de este niño (minuto, asistencia, vídeo) y sus asistencias
+    const goles = (Array.isArray(p.goles) ? p.goles : []).map((g, gi) => ({ g, gi })).filter(x => x.g && x.g.equipo !== 'rival');
+    const suyos = goles.filter(x => String(x.g.jugadorId) === String(j.id) || (x.g.jugadorId == null && x.g.nombre === estNom(j))).sort((x, y) => (x.g.min ?? 99) - (y.g.min ?? 99));
+    const asist = goles.filter(x => String(x.g.asistenteId) === String(j.id) || (x.g.asistenteId == null && x.g.asistente && x.g.asistente === estNom(j))).sort((x, y) => (x.g.min ?? 99) - (y.g.min ?? 99));
+    // cajas
+    const caja = (v, c, txt) => `<div style="background:rgba(255,255,255,.04); border-radius:10px; padding:9px 10px;"><div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:20px; color:${c};">${v}</div><div style="font-size:10.5px; line-height:1.3; color:#94a3b8; margin-top:2px;">${txt}</div></div>`;
+    const cajas = [];
+    cajas.push(p70 !== null ? caja(fpNum(p70), p70 >= 0 ? '#2ed573' : '#ff6b7a', `impacto por 70' · ${fpNum(imp)} total`) : caja(fpNum(imp), '#94a3b8', `impacto total · con menos de 10' no se da el «por 70'»`));
+    try {
+      const r = pesoEquipoTemporada(t)[j.id], x = r && r.partidos.find(q => q.i === pi);
+      if (x && x.valorado) cajas.push(caja(fpNum(x.dif, 1), x.dif >= 0 ? '#2ed573' : '#ff6b7a', `peso: frente a la media de sus compañeros ese día (${fpNum(x.media, 1)})`));
+    } catch (e) {}
+    try { // v166: más/menos del partido, con el marcador mientras jugó
+      const r = masMenosTemporada(t)[j.id], x = r && r.partidos.find(q => q.i === pi && !q.pendiente);
+      if (x) { const d = x.gf - x.gc; cajas.push(caja(`${x.gf}-${x.gc}`, d > 0 ? '#2ed573' : d < 0 ? '#ff6b7a' : '#e2e8f0', `con él en el campo · más/menos ${d > 0 ? '+' : d < 0 ? '−' : ''}${Math.abs(d)}`)); }
+    } catch (e) {}
+    if (esPortero) {
+      const enc = h.gcCampo !== undefined ? Number(h.gcCampo) || 0 : (mins >= 60 ? gr : (Number(h.golesRecibidos) || null));
+      const par = a.par || 0;
+      if (enc != null) cajas.push(caja(enc === 0 ? '🧤 0' : enc, enc === 0 ? '#2ed573' : '#e2e8f0', enc === 0 ? 'portería a cero mientras jugó' : `${enc === 1 ? 'gol encajado' : 'goles encajados'} mientras jugó`));
+      if (detalle && enc != null && par + enc > 0) cajas.push(caja(Math.round(par / (par + enc) * 100) + ' %', '#5dade2', `de paradas (${par} de ${par + enc} a puerta)`));
+    } else {
+      try {
+        const r = puntosGolesTemporada(t).jugadores[j.id];
+        const pts = r ? r.lista.filter(x => x.i === pi).reduce((sm, x) => sm + x.v, 0) : 0;
+        if (suyos.length || pts) cajas.push(caja(ptsFmt(pts), pts > 0 ? '#f5a623' : '#94a3b8', pts >= 2 ? 'valen sus goles: el de la victoria' : pts === 1 ? 'valen sus goles: el del empate' : 'valen sus goles en el resultado'));
+      } catch (e) {}
+    }
+    // acciones
+    const fila = (ic, txt, v, extra) => `<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding:7px 0; border-top:1px solid rgba(255,255,255,.06); font-size:12.5px;"><span style="color:#e2e8f0;">${ic} ${txt}</span><span style="text-align:right;"><b style="font-family:'Montserrat',sans-serif; color:#f5a623;">${v}</b>${extra ? `<span style="display:block; font-size:10.5px; color:#94a3b8;">${extra}</span>` : ''}</span></div>`;
+    const mm = (arr) => arr.map(x => x.g.min != null ? x.g.min + "'" : '').filter(Boolean).join(' · ');
+    let acc = '';
+    if (h.goles || suyos.length) acc += fila('⚽', 'Goles', h.goles || suyos.length, [mm(suyos), suyos.filter(x => x.g.asistente).map(x => 'asist. ' + fpEsc(x.g.asistente)).join(', ')].filter(Boolean).join(' · '));
+    if (h.asistencias || asist.length) acc += fila('👟', 'Asistencias', h.asistencias || asist.length, asist.map(x => `${x.g.min != null ? x.g.min + "' " : ''}a ${fpEsc(x.g.nombre || '¿?')}`).join(' · '));
+    if (detalle) {
+      if (a.dp || a.df) acc += fila('🎯', 'Disparos a puerta / fuera', `${a.dp || 0} / ${a.df || 0}`);
+      [['pc', '🔑', 'Pases clave'], ['pa', '📯', 'Pases al área'], ['reg', '🌀', 'Regates / jugadas individuales'], ['def', '🛡️', 'Acciones defensivas'], ['defC', '🛡️⭐', 'Acciones defensivas clave'], ['par', '🧤', 'Paradas'], ['parD', '✋', 'De ellas, difíciles'], ['fj', '🚩', 'Fueras de juego']]
+        .forEach(([k, ic, txt]) => { if (a[k]) acc += fila(ic, txt, a[k]); });
+      if (a.am) acc += fila('🟨', 'Amarilla', a.am);
+      if (a.ro) acc += fila('🟥', 'Roja', a.ro);
+    }
+    if (!acc) acc = `<div style="font-size:12px; color:#94a3b8; padding:6px 0;">Sin acciones apuntadas en este partido.</div>`;
+    const avisoViejo = detalle ? '' : `<div style="font-size:11px; color:#94a3b8; line-height:1.45; margin-top:6px;">Este partido es anterior a la v104: solo tiene goles y asistencias, no el resto de acciones.</div>`;
+    // récords de ese día
+    let recs = '';
+    try { recs = recordsDelPartido(t, pi).filter(x => String(x.j.id) === String(j.id)).map(x => fila('🏅', fpEsc(x.d.n), recFmt(x.d, x.v), 'antes ' + recFmt(x.d, x.antes))).join(''); } catch (e) {}
+    // vídeos
+    const vids = suyos.filter(x => videoValido(x.g));
+    const videosH = vids.length ? `<div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px;">${vids.map(x => `<button type="button" class="vgal-item" onclick="verVideoPartido(${pi}, ${x.gi})" aria-label="Vídeo del gol del minuto ${x.g.min ?? ''}">
+        ${esVideoGh(x.g.video) ? `<video src="${x.g.video.slice(3)}#t=0.5" preload="metadata" muted playsinline style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; pointer-events:none;"></video>` : `<img src="https://drive.google.com/thumbnail?id=${x.g.video}&sz=w480" alt="" loading="lazy" onerror="this.remove()">`}
+        <span class="pl"><i>▶</i></span><span class="cap">${x.g.min != null ? x.g.min + "'" : 'Gol'}${x.g.asistente ? `<small>asist. ${fpEsc(x.g.asistente)}</small>` : ''}</span></button>`).join('')}</div>` : '';
+    // sus otros partidos
+    const suyosPs = ps.map((q, i) => ({ q, i })).filter(x => fpJugo(fpHist(j, x.q))).map(x => x.i);
+    const pos = suyosPs.indexOf(pi), ant = pos > 0 ? suyosPs[pos - 1] : null, sig = pos >= 0 && pos < suyosPs.length - 1 ? suyosPs[pos + 1] : null;
+    const btnNav = (i, txt) => `<button type="button" ${i == null ? 'disabled' : `onclick="abrirFichaPartido(${i}, '${fpEsc(j.id)}')"`} style="min-height:42px; border-radius:10px; border:1px solid rgba(255,255,255,.15); background:rgba(255,255,255,.04); color:#e2e8f0; font-weight:700; font-size:12px; cursor:pointer; ${i == null ? 'opacity:.3;' : ''}">${txt}</button>`;
+    const titulo = (txt) => `<div style="font-size:11px; font-weight:800; color:#f5a623; letter-spacing:.5px; margin:14px 0 2px;">${txt}</div>`;
+    const f = fotosJugadores[j.id];
+    const avatar = (f && f.foto) ? `<img src="${f.foto}" alt="" style="width:50px; height:50px; border-radius:50%; object-fit:cover; border:2px solid rgb(180,20,56); flex-shrink:0;">`
+      : `<div style="width:50px; height:50px; border-radius:50%; background:rgb(180,20,56); color:#fff; display:flex; align-items:center; justify-content:center; font-family:'Montserrat',sans-serif; font-weight:900; font-size:17px; flex-shrink:0;">${fpEsc(j.dorsal ?? '')}</div>`;
+    return `
+      <div style="display:flex; align-items:center; gap:12px;">
+        ${avatar}
+        <div style="flex:1; min-width:0;">
+          <div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:16px; color:#fff;">${nom}${j.dorsal != null ? ` <span style="color:#94a3b8; font-size:13px;">#${fpEsc(j.dorsal)}</span>` : ''}${mvp ? ' <span style="font-size:12px; color:#f5a623;">⭐ MVP</span>' : ''}</div>
+          <div style="font-size:11.5px; color:#cbd5e1; margin-top:2px;">J${pi + 1} · vs ${fpEsc(p.rival)} · <b style="color:${resCol};">${gl}-${gr}</b> · ${fpEsc(String(p.fecha || '').replace(/\/\d{4}$/, ''))}</div>
+        </div>
+        <button type="button" onclick="cerrarFichaPartido()" aria-label="Cerrar" style="flex:0 0 38px; width:38px; height:38px; border-radius:10px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.06); color:#e2e8f0; font-size:15px; cursor:pointer;">✕</button>
+      </div>
+      <div style="font-size:12px; color:#94a3b8; margin-top:8px;">${[puesto, papel, mins + "' jugados"].filter(Boolean).join(' · ')}</div>
+      <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:10px;">${cajas.join('')}</div>
+      ${titulo('SUS ACCIONES')}${acc}${avisoViejo}
+      ${recs ? titulo('🏅 RÉCORDS DE ESE DÍA') + recs : ''}
+      ${videosH ? titulo('🎥 SUS GOLES EN VÍDEO') + `<div style="margin-top:6px;">${videosH}</div>` : ''}
+      <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:16px;">${btnNav(ant, '‹ Partido anterior')}${btnNav(sig, 'Partido siguiente ›')}</div>
+      <div style="font-size:10.5px; color:#64748b; text-align:center; margin-top:5px;">${pos >= 0 ? `Partido ${pos + 1} de ${suyosPs.length} que ha jugado` : ''}</div>
+      <button type="button" onclick="cerrarFichaPartido(); abrirPerfilJugadorTemporada('${fpEsc(j.id)}')" style="width:100%; margin-top:10px; min-height:44px; border-radius:10px; border:1px solid rgba(245,166,35,.4); background:rgba(245,166,35,.08); color:#f5a623; font-family:'Montserrat',sans-serif; font-weight:800; font-size:12px; cursor:pointer;">Ver su ficha de temporada</button>`;
+  }
 
   function informeIAPartidoHtml(p) {
     if (!p || !p.analisisIA) return '';

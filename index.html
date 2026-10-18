@@ -520,6 +520,26 @@
   .rs-final .gl div.rv { color:#94a3b8; }
   .rs-final .bts { display:flex; gap:14px; margin-top:30px; opacity:0; animation:rsFade .4s 1.8s forwards; }
   .rs-final .bts button { font:700 17px 'Montserrat',sans-serif; color:#fff; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.3); padding:11px 22px; border-radius:30px; cursor:pointer; }
+  /* v163 · descargar el resumen en vídeo */
+  .btn-exportar { width:100%; min-height:42px; margin:2px 0 4px; border-radius:12px; border:1px solid rgba(255,77,109,.5); background:rgba(180,20,56,.12); color:#ff6b85; font-family:'Montserrat',sans-serif; font-weight:800; font-size:12.5px; cursor:pointer; }
+  .ex-modal { position:fixed; inset:0; z-index:10200; background:rgba(5,8,12,.94); display:none; align-items:center; justify-content:center; padding:16px; overscroll-behavior:contain; }
+  .ex-modal.on { display:flex; }
+  .ex-caja { width:100%; max-width:460px; background:#111827; border:1px solid rgba(255,255,255,.08); border-radius:18px; padding:14px; color:#e2e8f0; }
+  .ex-cab { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px; }
+  .ex-cab b { font-family:'Montserrat',sans-serif; font-size:14px; }
+  .ex-x { width:40px; height:40px; flex-shrink:0; border-radius:10px; border:1px solid rgba(255,255,255,.15); background:rgba(255,255,255,.06); color:#fff; font-size:16px; cursor:pointer; }
+  .ex-lienzo { position:relative; aspect-ratio:16/9; background:#000; border-radius:10px; overflow:hidden; }
+  .ex-lienzo canvas, .ex-lienzo video { width:100%; height:100%; display:block; }
+  .ex-rec { position:absolute; top:8px; left:8px; background:rgb(180,20,56); color:#fff; font:700 11px 'Inter',sans-serif; padding:3px 8px; border-radius:5px; display:none; }
+  .ex-estado { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; text-align:center; padding:16px; font-size:13px; color:#cbd5e1; background:#000; line-height:1.5; }
+  .ex-barra { height:6px; background:rgba(255,255,255,.08); border-radius:3px; overflow:hidden; margin-top:12px; }
+  .ex-barra i { display:block; height:100%; width:0; background:rgb(180,20,56); }
+  .ex-info { display:flex; justify-content:space-between; font-size:12px; color:#94a3b8; margin-top:6px; }
+  .ex-aviso { font-size:12px; color:#f5a623; line-height:1.45; margin-top:10px; }
+  .ex-btn { width:100%; min-height:46px; border-radius:12px; border:1px solid rgba(255,255,255,.18); background:rgba(255,255,255,.05); color:#fff; font-family:'Montserrat',sans-serif; font-weight:800; font-size:13px; cursor:pointer; margin-top:8px; }
+  .ex-btn.rojo { background:rgb(180,20,56); border-color:rgb(180,20,56); }
+  .ex-ok { font-family:'Montserrat',sans-serif; font-weight:900; font-size:15px; text-align:center; margin-top:12px; }
+  .ex-sub { font-size:12px; color:#94a3b8; text-align:center; margin-top:3px; line-height:1.45; }
   #videoGolModal { position: fixed; inset: 0; z-index: 10050; background: #000; display: none; flex-direction: column; overscroll-behavior: contain; }
   #videoGolModal.on { display: flex; }
   .vg-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 10px; color: #fff; }
@@ -957,6 +977,7 @@
 </div>
 
 <script type="module">
+  // v163 (visor) · ⬇️ Descargar el resumen del partido en vídeo: se vuelve a reproducir dibujado en un lienzo y se graba con el sonido de los goles (MP4 si el móvil lo permite). Botón en Último partido, en Temporada → Partidos y en el final del resumen.
   // v162 (visor) · Último partido: el informe IA sale antes que los récords personales del partido.
   // v161 (app + visor) · MVP del partido: impacto por minuto con 20' «de relleno» a la media del equipo, para que quien juega poco no salga beneficiado; recalculados todos los partidos de la temporada. Nueva explicación en «¿Cómo se calcula?».
   // v160 (app + visor) · Temporada → Más análisis → 📊 Medias por partido: goles, tiros, córners, faltas, fueras de juego, tarjetas, indicadores y 1.ª vs 2.ª parte, con filtro Temporada / Últimos 5 / Casa / Fuera.
@@ -4737,12 +4758,13 @@
     if (!rsTieneVideos(p)) return '';
     const hs = rsGolesPartido(p).filter(x => x.g.equipo !== 'rival');
     const nv = hs.filter(x => videoValido(x.g)).length;
-    return `<button type="button" class="btn-resumen" onclick="abrirResumenPartido(${pi})"><span class="rp">▶</span><span><b>Ver resumen del partido</b><small>${nv === 1 ? '1 gol en vídeo' : nv + ' goles en vídeo'}</small></span><span class="rt">${hs.slice(0, 16).map(x => `<i class="${videoValido(x.g) ? '' : 'o'}"></i>`).join('')}</span></button>`;
+    return `<button type="button" class="btn-resumen" onclick="abrirResumenPartido(${pi})"><span class="rp">▶</span><span><b>Ver resumen del partido</b><small>${nv === 1 ? '1 gol en vídeo' : nv + ' goles en vídeo'}</small></span><span class="rt">${hs.slice(0, 16).map(x => `<i class="${videoValido(x.g) ? '' : 'o'}"></i>`).join('')}</span></button>`
+      + `<button type="button" class="btn-exportar" onclick="abrirExportarResumen(${pi})">⬇️ Descargar el resumen en vídeo</button>`;
   }
   function resumenFilaHTML(p) {
     const t = ultimaTemporada, pi = t && Array.isArray(t.partidos) ? t.partidos.indexOf(p) : -1;
     if (pi < 0 || !rsTieneVideos(p)) return '';
-    return `<div style="display:flex; justify-content:flex-end; margin-top:5px;"><button type="button" class="btn-resumen-mini" onclick="abrirResumenPartido(${pi})">🎬 Resumen del partido</button></div>`;
+    return `<div style="display:flex; justify-content:flex-end; margin-top:5px;"><button type="button" class="btn-resumen-mini" onclick="abrirResumenPartido(${pi})">🎬 Resumen del partido</button><button type="button" class="btn-resumen-mini" style="margin-left:6px;" onclick="abrirExportarResumen(${pi})">⬇️ Vídeo</button></div>`;
   }
 
   function rsConstruir(p) {
@@ -4863,7 +4885,7 @@
       html = `<div class="rs-final"><div class="k">FINAL</div>
         <div class="res">${rsEscH(94)}<b><span class="h">${Number(p.golesLocal) || 0}</span> – ${Number(p.golesRival) || 0}</b>${rsEscR(p, 94)}</div>
         <div class="gl">${grupos.map((q, i) => `<div class="${q.riv ? 'rv' : ''}" style="animation-delay:${(0.7 + i * 0.12).toFixed(2)}s">${q.riv ? '🥅' : '⚽'} ${escHtml(q.who)}${q.mins.length > 1 ? ' ×' + q.mins.length : ''}<i>${q.mins.filter(v => v != null).map(v => v + "'").join(' ')}</i></div>`).join('')}</div>
-        <div class="bts"><button type="button" onclick="rsDeNuevo()">↺ Volver a verlo</button><button type="button" onclick="cerrarResumen()">Cerrar</button></div></div>`;
+        <div class="bts"><button type="button" onclick="rsDeNuevo()">↺ Volver a verlo</button><button type="button" onclick="exportarDesdeResumen()">⬇ Descargar</button><button type="button" onclick="cerrarResumen()">Cerrar</button></div></div>`;
     }
     capa.innerHTML = html;
     if (paso.tipo === 'video') rsCargarVideo(x);
@@ -4975,6 +4997,505 @@
     else if (e.key === 'ArrowLeft') window.rsAnterior();
     else if (e.key === ' ') { e.preventDefault(); window.rsPausa(); }
     else if (e.key === 'Escape') window.cerrarResumen();
+  });
+
+  // ── v163 · ⬇️ DESCARGAR EL RESUMEN EN VÍDEO ─────────────────────────────────
+  // Se vuelve a reproducir el mismo resumen (los mismos pasos de rsConstruir) dibujado en un lienzo de 1280×720 y se
+  // graba con el sonido de los goles. Graba en tiempo real: tarda lo mismo que dura el resumen. Antes de empezar se
+  // descargan los vídeos para que no haya cortes; cada uno se carga durante la pantalla del minuto de su gol.
+  // Los vídeos de Drive no se pueden grabar (el navegador no deja pintarlos en el lienzo): esos goles salen como tarjeta.
+  const EX_W = 1280, EX_H = 720, EX_FINAL = 4500;
+  let ex = null;
+  function exMime() {
+    const L = ['video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4;codecs=avc1,mp4a', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'];
+    return L.find(t => { try { return MediaRecorder.isTypeSupported(t); } catch (e) { return false; } }) || '';
+  }
+  function exEase(t) { t = Math.max(0, Math.min(1, t)); return 1 - Math.pow(1 - t, 3); }
+  function exP(e, del, dur) { return Math.max(0, Math.min(1, (e - del) / dur)); }
+  function exLS(c, px) { if ('letterSpacing' in c) c.letterSpacing = px + 'px'; }
+  function exFont(c, peso, px, fam) { c.font = `${peso} ${px}px ${fam === 'i' ? "'Inter'" : "'Montserrat'"}, sans-serif`; }
+  function exRadial(c, cx, cy, r, stops) { const g = c.createRadialGradient(cx, cy, 0, cx, cy, r); stops.forEach(s => g.addColorStop(s[0], s[1])); c.fillStyle = g; c.fillRect(0, 0, EX_W, EX_H); }
+  function exRR(c, x, y, w, h, r) { c.beginPath(); if (c.roundRect) c.roundRect(x, y, w, h, r); else c.rect(x, y, w, h); }
+  function exMSS(ms) { const s = Math.max(0, Math.round(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; }
+  function exImg(src) {
+    return new Promise(res => {
+      if (!src) return res(null);
+      const im = new Image();
+      if (!/^data:/.test(src)) im.crossOrigin = 'anonymous';
+      im.onload = () => res(im); im.onerror = () => res(null); im.src = src;
+      setTimeout(() => res(im.complete && im.naturalWidth ? im : null), 8000);
+    });
+  }
+  function exEsperar(el, ev, ms) {
+    return new Promise((res, rej) => {
+      let t = null;
+      const ok = () => { clearTimeout(t); el.removeEventListener(ev, ok); el.removeEventListener('error', ko); res(); };
+      const ko = () => { clearTimeout(t); el.removeEventListener(ev, ok); el.removeEventListener('error', ko); rej(new Error('vídeo')); };
+      el.addEventListener(ev, ok); el.addEventListener('error', ko);
+      t = setTimeout(ko, ms);
+    });
+  }
+  function exDuracion(url) {
+    return new Promise(res => {
+      const v = document.createElement('video'); v.preload = 'metadata'; v.muted = true;
+      const fin = (d) => { v.removeAttribute('src'); try { v.load(); } catch (e) {} res(d); };
+      v.onloadedmetadata = () => fin(isFinite(v.duration) && v.duration > 0 ? v.duration : 10);
+      v.onerror = () => fin(null);
+      setTimeout(() => fin(null), 10000);
+      v.src = url;
+    });
+  }
+
+  // ── Dibujo de cada pantalla (copia de lo que pinta el resumen del visor) ──
+  function exEscudo(c, esc, cx, cy, d) {
+    c.save(); c.beginPath(); c.arc(cx, cy, d / 2, 0, Math.PI * 2); c.closePath();
+    if (esc && esc.img) {
+      c.fillStyle = '#fff'; c.fill(); c.clip();
+      const iw = esc.img.naturalWidth, ih = esc.img.naturalHeight, s = Math.max(d / iw, d / ih);
+      c.drawImage(esc.img, cx - iw * s / 2, cy - ih * s / 2, iw * s, ih * s);
+    } else {
+      c.fillStyle = '#1a2332'; c.fill(); c.lineWidth = Math.max(1, d / 40); c.strokeStyle = 'rgba(255,255,255,.12)'; c.stroke();
+      c.fillStyle = '#94a3b8'; exFont(c, 800, Math.round(d * 0.36)); exLS(c, 0); c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillText((esc && esc.ini) || '?', cx, cy + 1);
+    }
+    c.restore();
+  }
+  function exIntro(c, e) {
+    const p = ex.p;
+    exRadial(c, 640, 324, 753, [[0, '#2a0a12'], [.6, '#0a0204'], [1, '#000']]);
+    c.textAlign = 'center'; c.textBaseline = 'alphabetic';
+    c.globalAlpha = exP(e, 200, 400); exFont(c, 800, 15); exLS(c, 6); c.fillStyle = '#ff4d6d'; c.fillText('RESUMEN DEL PARTIDO', 640, 109);
+    const s = exEase(exP(e, 100, 700));
+    c.save(); c.globalAlpha = .9; c.translate(640, 360); c.transform(1, Math.tan(-4 * Math.PI / 180), 0, 1, 0, 0); c.scale(Math.max(s, .0001), 1);
+    c.fillStyle = 'rgb(180,20,56)'; c.fillRect(-EX_W * 0.6, -80, EX_W * 1.2, 160); c.restore();
+    const pa = exEase(exP(e, 500, 600));
+    c.globalAlpha = pa; exEscudo(c, ex.escH, 491 - 60 * (1 - pa), 320, 150); c.globalAlpha = pa; exEscudo(c, ex.escR, 789 + 60 * (1 - pa), 320, 150);
+    c.globalAlpha = exP(e, 900, 400); exFont(c, 900, 40); exLS(c, 0); c.fillStyle = '#fff'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('VS', 640, 322);
+    const pm = exEase(exP(e, 1100, 500)), dy = 12 * (1 - pm);
+    c.globalAlpha = pm; c.textBaseline = 'alphabetic';
+    exFont(c, 800, 26); exLS(c, 3); c.fillStyle = '#fff'; c.fillText(`HERGAR · ${String(p.rival || 'Rival').toUpperCase()}`, 640, 452 + dy, 1150);
+    exFont(c, 500, 17, 'i'); exLS(c, 0); c.fillStyle = '#d6d8dc'; c.fillText(p.fecha || '', 640, 480 + dy);
+    c.globalAlpha = 1;
+  }
+  function exMinuto(c, e, x) {
+    c.fillStyle = '#000'; c.fillRect(0, 0, EX_W, EX_H);
+    const pz = exEase(exP(e, 0, 500)), s = 1.4 - .4 * pz;
+    c.save(); c.globalAlpha = pz; c.translate(640, 330); c.scale(s, s); exLS(c, 0); c.textBaseline = 'alphabetic';
+    if (x.g.min != null) {
+      const n = String(x.g.min);
+      exFont(c, 900, 158); const wn = c.measureText(n).width;
+      exFont(c, 900, 71); const wa = c.measureText("'").width;
+      const x0 = -(wn + wa) / 2;
+      c.textAlign = 'left'; exFont(c, 900, 158); c.fillStyle = '#fff'; c.fillText(n, x0, 56);
+      exFont(c, 900, 71); c.fillStyle = '#ff4d6d'; c.fillText("'", x0 + wn, 56);
+    } else { exFont(c, 900, 130); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('⚽', 0, 0); }
+    c.restore();
+    c.globalAlpha = exP(e, 200, 400); c.textAlign = 'center'; c.textBaseline = 'alphabetic'; exFont(c, 800, 22); exLS(c, 7); c.fillStyle = '#94a3b8';
+    c.fillText('GOL DEL HERGAR', 640, 440); c.globalAlpha = 1;
+  }
+  function exLT(c, x, e) {
+    const p = ex.p, H = 68, y0 = EX_H - 40 - H;
+    const sc = `HER ${x.h} – ${x.r} ${rsAbrev(p.rival)}`, t1 = '⚽ ' + (x.g.nombre || '¿?'), t2 = rsDetalle(x);
+    exFont(c, 900, 32); exLS(c, 3); const wsc = c.measureText(sc).width; exLS(c, 0);
+    exFont(c, 800, 25); const w1 = c.measureText(t1).width;
+    exFont(c, 600, 15, 'i'); const w2 = c.measureText(t2).width;
+    const wSc = 14 + 40 + 10 + wsc + 14, wWho = 18 + Math.max(w1, w2) + 18, total = wSc + wWho;
+    const x0 = 38 - 1.3 * total * (1 - exEase(exP(e, 0, 350)));
+    c.save();
+    c.fillStyle = '#0b0b0d'; exRR(c, x0, y0, wSc, H, [9, 0, 0, 9]); c.fill();
+    exEscudo(c, ex.escH, x0 + 14 + 20, y0 + H / 2, 40);
+    c.fillStyle = '#fff'; c.textAlign = 'left'; c.textBaseline = 'middle'; exFont(c, 900, 32); exLS(c, 3); c.fillText(sc, x0 + 64, y0 + H / 2 + 1); exLS(c, 0);
+    c.fillStyle = 'rgb(180,20,56)'; exRR(c, x0 + wSc, y0, wWho, H, [0, 9, 9, 0]); c.fill();
+    c.textBaseline = 'alphabetic'; exFont(c, 800, 25); c.fillStyle = '#fff'; c.fillText(t1, x0 + wSc + 18, y0 + 34);
+    exFont(c, 600, 15, 'i'); c.fillStyle = 'rgba(255,255,255,.88)'; c.fillText(t2, x0 + wSc + 18, y0 + 56);
+    if (x.g.min != null) {
+      exFont(c, 900, 16); const tm = x.g.min + "'", wm = c.measureText(tm).width + 16, bx = x0 + total + 9 - wm, by = y0 - 20;
+      c.fillStyle = '#fff'; exRR(c, bx, by, wm, 26, 6); c.fill();
+      c.fillStyle = '#000'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(tm, bx + wm / 2, by + 14);
+    }
+    c.restore();
+  }
+  function exVideo(c, x) {
+    c.fillStyle = '#000'; c.fillRect(0, 0, EX_W, EX_H);
+    const v = ex.v;
+    if (v.readyState >= 2 && v.videoWidth) {
+      const s = Math.min(EX_W / v.videoWidth, EX_H / v.videoHeight), w = v.videoWidth * s, h = v.videoHeight * s;
+      c.drawImage(v, (EX_W - w) / 2, (EX_H - h) / 2, w, h);
+    }
+    if (ex.ltT0) exLT(c, x, performance.now() - ex.ltT0);
+  }
+  function exTarjeta(c, e, x) {
+    const riv = x.riv, p = ex.p;
+    exRadial(c, 640, 360, 734, riv ? [[0, '#1a1d22'], [.7, '#000'], [1, '#000']] : [[0, '#1c0a0f'], [.7, '#000'], [1, '#000']]);
+    const k = (riv ? 'GOL DE ' + String(p.rival || 'Rival').toUpperCase() : 'GOL DEL HERGAR') + (x.g.min != null ? ' · ' + x.g.min + "'" : '');
+    const n = riv ? (p.rival || 'Rival') : (x.g.nombre || '¿?');
+    const d = riv ? (x.g.penalti ? 'Gol del rival, de penalti' : 'Gol del rival') : rsDetalle(x);
+    const piezas = ['HER', String(x.h), '–', String(x.r), rsAbrev(p.rival)];
+    exFont(c, 800, 17); exLS(c, 6); const wk = c.measureText(k).width; exLS(c, 0);
+    exFont(c, 900, 50); const wn = Math.min(c.measureText(n).width, 760);
+    exFont(c, 600, 19, 'i'); const wd = c.measureText(d).width;
+    exFont(c, 900, 32); const ws = piezas.map(t => c.measureText(t).width), wscr = ws.reduce((s, v) => s + v, 0) + 12 * 4 + 28;
+    const wt = Math.min(Math.max(wk, wn, wd, wscr), EX_W - 300), total = 130 + 36 + wt, x0 = (EX_W - total) / 2;
+    const pu = exEase(exP(e, 0, 500)), dy = 35 * (1 - pu), top = 360 - 87 + dy, tx = x0 + 166;
+    c.save(); c.globalAlpha = pu;
+    exEscudo(c, riv ? ex.escR : ex.escH, x0 + 65, 360 + dy, 130);
+    c.textAlign = 'left'; c.textBaseline = 'alphabetic';
+    exFont(c, 800, 17); exLS(c, 6); c.fillStyle = riv ? '#94a3b8' : '#ff4d6d'; c.fillText(k, tx, top + 15, wt); exLS(c, 0);
+    exFont(c, 900, 50); c.fillStyle = '#fff'; c.fillText(n, tx, top + 70, 760);
+    exFont(c, 600, 19, 'i'); c.fillStyle = '#cfd2d6'; c.fillText(d, tx, top + 100, wt);
+    const by = top + 116, bh = 48;
+    c.fillStyle = '#0b0b0d'; exRR(c, tx, by, wscr, bh, 9); c.fill(); c.strokeStyle = 'rgba(255,255,255,.12)'; c.lineWidth = 1; c.stroke();
+    exFont(c, 900, 32); c.textBaseline = 'middle';
+    const pop = 1 + .5 * Math.sin(Math.PI * exP(e, 500, 500));
+    let cx = tx + 14;
+    piezas.forEach((t, i) => {
+      const hl = riv ? i === 3 : i === 1;
+      c.fillStyle = hl && !riv ? '#ff4d6d' : '#fff';
+      if (hl) { c.save(); c.translate(cx + ws[i] / 2, by + bh / 2 + 1); c.scale(pop, pop); c.textAlign = 'center'; c.fillText(t, 0, 0); c.restore(); }
+      else { c.textAlign = 'left'; c.fillText(t, cx, by + bh / 2 + 1); }
+      cx += ws[i] + 12;
+    });
+    c.restore();
+    if (!riv) {
+      c.textAlign = 'center'; c.textBaseline = 'alphabetic'; exFont(c, 500, 14, 'i'); exLS(c, 0); c.fillStyle = '#94a3b8';
+      c.fillText(x.exNota || (x.fallo ? 'No se ha podido cargar el vídeo de este gol' : 'Este gol no tiene vídeo'), 640, EX_H - 44);
+    }
+  }
+  function exFinal(c, e) {
+    const p = ex.p;
+    exRadial(c, 640, 288, 772, [[0, '#2a0a12'], [.7, '#000'], [1, '#000']]);
+    const grupos = [];
+    ex.goles.forEach(y => {
+      const who = y.riv ? (p.rival || 'Rival') : (y.g.nombre || '¿?');
+      let o = grupos.find(q => q.who === who && q.riv === y.riv);
+      if (!o) { o = { who, riv: y.riv, mins: [] }; grupos.push(o); }
+      o.mins.push(y.g.min);
+    });
+    exFont(c, 600, 18, 'i'); exLS(c, 0);
+    const items = grupos.map(q => {
+      const t = `${q.riv ? '🥅' : '⚽'} ${q.who}${q.mins.length > 1 ? ' ×' + q.mins.length : ''}`;
+      const mm = q.mins.filter(v => v != null).map(v => v + "'").join(' ');
+      const w1 = c.measureText(t).width;
+      return { q, t, mm, w1, w: w1 + (mm ? c.measureText(mm).width + 5 : 0) };
+    });
+    const maxW = EX_W * .82, lineas = [[]]; let lw = 0;
+    items.forEach(it => {
+      const fila = lineas[lineas.length - 1], add = (fila.length ? 22 : 0) + it.w;
+      if (fila.length && lw + add > maxW) { lineas.push([it]); lw = it.w; } else { fila.push(it); lw += add; }
+    });
+    const hList = items.length ? lineas.length * 34 - 12 : 0;
+    let y = (EX_H - (24 + 14 + 120 + 22 + hList)) / 2;
+    c.textAlign = 'center'; c.textBaseline = 'alphabetic';
+    c.globalAlpha = exP(e, 0, 400); exFont(c, 800, 19); exLS(c, 9); c.fillStyle = '#ff4d6d'; c.fillText('FINAL', 640, y + 19); exLS(c, 0);
+    y += 38;
+    const pz = exEase(exP(e, 200, 600)), s = 1.4 - .4 * pz;
+    const gl = String(Number(p.golesLocal) || 0), gr = ' – ' + (Number(p.golesRival) || 0);
+    exFont(c, 900, 108); exLS(c, 6); const wa = c.measureText(gl).width, wb = c.measureText(gr).width;
+    const totW = 94 + 30 + wa + wb + 30 + 94;
+    c.save(); c.globalAlpha = pz; c.translate(640, y + 60); c.scale(s, s);
+    exEscudo(c, ex.escH, -totW / 2 + 47, 0, 94); exEscudo(c, ex.escR, totW / 2 - 47, 0, 94);
+    exFont(c, 900, 108); exLS(c, 6); c.textAlign = 'left'; c.textBaseline = 'middle';
+    c.fillStyle = '#ff4d6d'; c.fillText(gl, -totW / 2 + 124, 4); c.fillStyle = '#fff'; c.fillText(gr, -totW / 2 + 124 + wa, 4);
+    c.restore(); exLS(c, 0);
+    y += 142;
+    exFont(c, 600, 18, 'i'); let k = 0;
+    lineas.forEach((ln, li) => {
+      const w = ln.reduce((sm, it, i) => sm + it.w + (i ? 22 : 0), 0);
+      let xx = 640 - w / 2; const yy = y + li * 34 + 18;
+      ln.forEach(it => {
+        const pa = exEase(exP(e, 700 + k * 120, 400)), d = 8 * (1 - pa);
+        c.globalAlpha = pa; c.textAlign = 'left';
+        c.fillStyle = it.q.riv ? '#94a3b8' : '#e3e5e8'; c.fillText(it.t, xx, yy + d);
+        if (it.mm) { c.fillStyle = '#94a3b8'; c.fillText(it.mm, xx + it.w1 + 5, yy + d); }
+        xx += it.w + 22; k++;
+      });
+    });
+    c.globalAlpha = 1;
+  }
+
+  // ── Pantalla de la descarga ──
+  function exModal() {
+    let m = document.getElementById('exModal');
+    if (!m) {
+      document.body.insertAdjacentHTML('beforeend', `<div id="exModal" class="ex-modal" role="dialog" aria-modal="true" aria-label="Descargar el resumen en vídeo"><div class="ex-caja">
+        <div class="ex-cab"><b id="exTitulo">Resumen en vídeo</b><button type="button" class="ex-x" onclick="cerrarExportar()" aria-label="Cerrar">✕</button></div>
+        <div class="ex-lienzo" id="exLienzo"></div>
+        <div id="exAbajo"></div></div></div>`);
+      m = document.getElementById('exModal');
+    }
+    return m;
+  }
+  function exEstado(txt) {
+    const l = document.getElementById('exLienzo');
+    if (l) l.innerHTML = `<div class="ex-estado">${txt}</div>`;
+  }
+  function exPintarGrabando() {
+    const l = document.getElementById('exLienzo');
+    l.innerHTML = ''; l.appendChild(ex.canvas); l.appendChild(ex.v);
+    l.insertAdjacentHTML('beforeend', '<span class="ex-rec" style="display:block;">● Grabando</span>');
+    document.getElementById('exAbajo').innerHTML = `<div class="ex-barra"><i id="exBarra"></i></div>
+      <div class="ex-info"><span id="exPaso">Entrada</span><span id="exQueda">Quedan ${exMSS(ex.total)}</span></div>
+      <div class="ex-aviso">⚠️ No apagues la pantalla ni cambies de app hasta que termine.</div>
+      <button type="button" class="ex-btn" onclick="cerrarExportar()">Cancelar</button>`;
+  }
+  function exProgreso(e) {
+    const ahora = performance.now();
+    if (ex.ultDom && ahora - ex.ultDom < 250) return;
+    ex.ultDom = ahora;
+    const paso = ex.pasos[ex.i];
+    let hecho = ex.antes[ex.i];
+    if (paso.tipo === 'video') hecho += Math.max(0, (ex.v.currentTime || 0) - ex.medios[paso.gol].ini) * 1000;
+    else hecho += Math.min(e, paso.dur);
+    const b = document.getElementById('exBarra'), ps = document.getElementById('exPaso'), q = document.getElementById('exQueda');
+    if (b) b.style.width = (Math.min(1, hecho / ex.total) * 100).toFixed(1) + '%';
+    if (ps) ps.textContent = paso.gol >= 0 ? `Gol ${paso.gol + 1} de ${ex.goles.length}` : (paso.tipo === 'intro' ? 'Entrada' : 'Final');
+    if (q) q.textContent = `Quedan ${exMSS(ex.total - hecho)}`;
+  }
+
+  // ── Preparación: vídeos, escudos, duraciones ──
+  async function exPreparar() {
+    const p = ex.p, tok = ex.tok;
+    exEstado('Preparando…');
+    try { await Promise.all(['900 40px Montserrat', '800 20px Montserrat', '600 18px Inter', '500 17px Inter'].map(f => document.fonts.load(f))); } catch (e) {}
+    const eqR = equipoLigaPorNombre(p.rival);
+    ex.escH = { img: await exImg(ESCUDO_HERGAR_SRC), ini: 'HE' };
+    ex.escR = { img: await exImg(escudoSrcVisor(eqR)), ini: inicialesEquipoViewer(eqR ? eqR.nombre : p.rival) };
+    const conVideo = [];
+    ex.pasos.forEach(s => { if (s.tipo === 'video') conVideo.push(s.gol); });
+    let n = 0;
+    for (const k of conVideo) {
+      if (!ex || tok !== ex.tok) return false;
+      const x = ex.goles[k]; n++;
+      if (!esVideoGh(x.g.video)) { x.exNota = 'El vídeo de este gol está en Drive y no se puede meter en la descarga'; continue; }
+      exEstado(`Descargando los vídeos de los goles…<br><b>${n} de ${conVideo.length}</b>`);
+      try {
+        const r = await fetch(x.g.video.slice(3), { cache: 'no-store' });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const buf = await r.arrayBuffer();
+        const url = URL.createObjectURL(new Blob([buf], { type: r.headers.get('content-type') || 'video/mp4' }));
+        let audio = null;
+        if (ex.ac) { try { audio = await ex.ac.decodeAudioData(buf.slice(0)); } catch (e) { audio = null; } }
+        const dur = await exDuracion(url);
+        if (dur == null) { URL.revokeObjectURL(url); throw new Error('vídeo'); }
+        const ini = Number(x.g.inicio) || 0;
+        ex.medios[k] = { url, audio, dur, ini: ini > 0 && ini < dur - 1 ? ini : 0 };
+        if (!audio) ex.sinSonido++;
+      } catch (e) { x.fallo = true; }
+    }
+    if (!ex || tok !== ex.tok) return false;
+    // los goles cuyo vídeo no se ha podido preparar pasan a tarjeta
+    ex.pasos = ex.pasos.filter(s => !(s.tipo === 'minuto' && !ex.medios[s.gol])).map(s => (s.tipo === 'video' && !ex.medios[s.gol]) ? { tipo: 'tarjeta', dur: 3200, gol: s.gol } : s);
+    ex.pasos.forEach(s => {
+      if (s.tipo === 'intro') s.dur = 3500; else if (s.tipo === 'minuto') s.dur = 1500;
+      else if (s.tipo === 'final') s.dur = EX_FINAL;
+      else if (s.tipo === 'video') s.dur = (ex.medios[s.gol].dur - ex.medios[s.gol].ini) * 1000;
+    });
+    ex.antes = []; let acum = 0;
+    ex.pasos.forEach(s => { ex.antes.push(acum); acum += s.dur; });
+    ex.total = acum;
+    return true;
+  }
+
+  // ── Grabación ──
+  function exGrabar() {
+    const stream = ex.canvas.captureStream(30);
+    const pistas = stream.getVideoTracks().slice();
+    // Pista de sonido: un silencio continuo debajo para que el grabador no se salte las pantallas sin vídeo
+    // (si el sonido no arranca, se graba sin él antes que perder imagen)
+    if (ex.ac && ex.ac.state === 'running') {
+      ex.dest = ex.ac.createMediaStreamDestination();
+      try { const o = ex.ac.createOscillator(), g = ex.ac.createGain(); g.gain.value = 0; o.connect(g); g.connect(ex.dest); o.start(); ex.silencio = o; } catch (e) {}
+      pistas.push(...ex.dest.stream.getAudioTracks());
+    } else ex.sinAudio = true;
+    ex.stream = new MediaStream(pistas);
+    const opts = { videoBitsPerSecond: 2500000, audioBitsPerSecond: 128000 };
+    if (ex.mime) opts.mimeType = ex.mime;
+    let rec;
+    try { rec = new MediaRecorder(ex.stream, opts); } catch (e) { rec = new MediaRecorder(ex.stream); }
+    ex.rec = rec; ex.trozos = [];
+    rec.ondataavailable = (ev) => { if (ev.data && ev.data.size) ex && ex.trozos.push(ev.data); };
+    rec.onstop = exAlParar;
+    ex.fase = 'grabando'; ex.i = 0; ex.t0 = performance.now();
+    exPintarGrabando();
+    try { if ('wakeLock' in navigator) navigator.wakeLock.request('screen').then(w => { if (ex) ex.wake = w; else w.release(); }).catch(() => {}); } catch (e) {}
+    exPaso0();
+    rec.start(1000);
+    ex.raf = requestAnimationFrame(exBucle);
+  }
+  function exPaso0() { exEmpezarPaso(); }
+  function exParaAudio() { if (ex && ex.fuente) { try { ex.fuente.stop(); } catch (e) {} ex.fuente = null; } }
+  // Carga el vídeo de un gol en el reproductor (se hace durante la pantalla del minuto, para que esté listo a tiempo)
+  function exCargar(k) {
+    const v = ex.v, med = ex.medios[k];
+    v.onended = null;
+    const prom = (async () => {
+      v.src = med.url;
+      await exEsperar(v, 'loadeddata', 15000);
+      if (med.ini > 0) { v.currentTime = med.ini; await exEsperar(v, 'seeked', 8000); }
+    })();
+    prom.catch(() => {});
+    ex.carga = { k, prom };
+    return prom;
+  }
+  async function exEmpezarPaso() {
+    const paso = ex.pasos[ex.i], tok = ++ex.tok;
+    exParaAudio(); ex.ltT0 = 0; ex.ultDom = 0;
+    const v = ex.v; v.onended = null;
+    if (paso.tipo !== 'video') {
+      try { v.pause(); } catch (e) {}
+      ex.t0 = performance.now();
+      if (paso.tipo === 'minuto' && ex.medios[paso.gol]) exCargar(paso.gol);
+      return;
+    }
+    const x = ex.goles[paso.gol], med = ex.medios[paso.gol];
+    ex.cambiando = true; ex.t0 = performance.now();
+    try {
+      await ((ex.carga && ex.carga.k === paso.gol) ? ex.carga.prom : exCargar(paso.gol));
+    } catch (e) {
+      if (!ex || tok !== ex.tok) return;
+      x.fallo = true; paso.tipo = 'tarjeta'; ex.total += 3200 - paso.dur; paso.dur = 3200;
+      ex.cambiando = false; ex.t0 = performance.now();
+      return;
+    }
+    if (!ex || tok !== ex.tok) return;
+    ex.cambiando = false; ex.t0 = performance.now();
+    v.onended = () => { if (ex && tok === ex.tok) exSiguiente(); };
+    try { await v.play(); } catch (e) {}
+    if (!ex || tok !== ex.tok) return;
+    ex.ltT0 = performance.now();
+    if (med.audio && ex.ac && ex.dest) {
+      try {
+        const s = ex.ac.createBufferSource(); s.buffer = med.audio;
+        s.connect(ex.dest); s.connect(ex.ac.destination);
+        s.start(0, Math.min(med.ini, Math.max(0, med.audio.duration - .05)));
+        ex.fuente = s;
+      } catch (e) {}
+    }
+  }
+  function exSiguiente() {
+    if (!ex || ex.fase !== 'grabando') return;
+    ex.i++;
+    if (ex.i >= ex.pasos.length) { exTerminar(); return; }
+    exEmpezarPaso();
+  }
+  function exBucle() {
+    if (!ex || ex.fase !== 'grabando') return;
+    const c = ex.ctx, paso = ex.pasos[ex.i], x = ex.goles[paso.gol], e = performance.now() - ex.t0;
+    c.save(); c.globalAlpha = 1; exLS(c, 0);
+    if (paso.tipo === 'intro') exIntro(c, e);
+    else if (paso.tipo === 'minuto') exMinuto(c, e, x);
+    else if (paso.tipo === 'video') exVideo(c, x);
+    else if (paso.tipo === 'tarjeta') exTarjeta(c, e, x);
+    else exFinal(c, e);
+    c.restore();
+    exProgreso(e);
+    if (paso.tipo !== 'video' && !ex.cambiando && e >= paso.dur) exSiguiente();
+    else if (paso.tipo === 'video' && !ex.cambiando && e >= paso.dur + 6000) exSiguiente(); // por si un vídeo se queda parado
+    if (ex && ex.fase === 'grabando') ex.raf = requestAnimationFrame(exBucle);
+  }
+  function exTerminar() {
+    ex.fase = 'parando';
+    exParaAudio(); cancelAnimationFrame(ex.raf);
+    try { ex.v.pause(); } catch (e) {}
+    exEstado('Guardando el vídeo…');
+    try { ex.rec.stop(); } catch (e) { exAlParar(); }
+  }
+  function exNombre(ext) {
+    const p = ex.p, lim = (t) => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '');
+    return `Resumen_Hergar_${Number(p.golesLocal) || 0}-${Number(p.golesRival) || 0}_${lim(p.rival) || 'rival'}_${String(p.fecha || '').replace(/\//g, '-')}.${ext}`;
+  }
+  function exAlParar() {
+    if (!ex || ex.cancelado) return;
+    exSoltar(false);
+    const tipo = (ex.rec && ex.rec.mimeType) || ex.mime || 'video/webm';
+    const mp4 = /mp4/i.test(tipo), ext = mp4 ? 'mp4' : 'webm';
+    ex.blob = new Blob(ex.trozos, { type: mp4 ? 'video/mp4' : 'video/webm' });
+    ex.trozos = [];
+    if (!ex.blob.size) { exFallo('No se ha podido grabar el vídeo en este móvil.'); return; }
+    ex.archivo = exNombre(ext);
+    ex.urlFinal = URL.createObjectURL(ex.blob);
+    ex.fase = 'hecho';
+    const l = document.getElementById('exLienzo');
+    l.innerHTML = `<video src="${ex.urlFinal}" controls playsinline></video>`;
+    let puedeCompartir = false;
+    try { puedeCompartir = !!(navigator.canShare && navigator.canShare({ files: [new File([ex.blob], ex.archivo, { type: ex.blob.type })] })); } catch (e) {}
+    const mb = (ex.blob.size / 1048576).toFixed(1).replace('.', ',');
+    document.getElementById('exAbajo').innerHTML = `
+      <div class="ex-ok">✓ Resumen listo</div>
+      <div class="ex-sub">${ext.toUpperCase()} · ${exMSS(ex.total)} · ${mb} MB${ex.sinAudio ? '<br>Sin sonido: el navegador no ha dejado grabarlo.' : ''}${!ex.sinAudio && ex.sinSonido ? `<br>${ex.sinSonido === 1 ? 'Un gol sale' : ex.sinSonido + ' goles salen'} sin sonido: no se ha podido leer su audio.` : ''}${mp4 ? '' : '<br>Formato WebM: si WhatsApp no lo abre, guárdalo y envíalo como documento.'}</div>
+      ${puedeCompartir ? '<button type="button" class="ex-btn rojo" onclick="exCompartir()">📤 Compartir (WhatsApp…)</button>' : ''}
+      <button type="button" class="ex-btn${puedeCompartir ? '' : ' rojo'}" onclick="exGuardar()">💾 Guardar en el móvil</button>`;
+  }
+  window.exCompartir = async () => {
+    if (!ex || !ex.blob) return;
+    try { await navigator.share({ files: [new File([ex.blob], ex.archivo, { type: ex.blob.type })], title: 'Resumen del partido' }); } catch (e) {}
+  };
+  window.exGuardar = () => {
+    if (!ex || !ex.urlFinal) return;
+    const a = document.createElement('a'); a.href = ex.urlFinal; a.download = ex.archivo;
+    document.body.appendChild(a); a.click(); setTimeout(() => a.remove(), 1000);
+  };
+  // Para la grabación y suelta vídeos y sonido. todo = también el audio y el vídeo terminado.
+  function exSoltar(todo) {
+    if (!ex) return;
+    ex.tok++;
+    cancelAnimationFrame(ex.raf); exParaAudio();
+    if (ex.silencio) { try { ex.silencio.stop(); } catch (e) {} ex.silencio = null; }
+    if (ex.rec && ex.rec.state !== 'inactive') { ex.cancelado = ex.cancelado || ex.fase !== 'parando'; try { ex.rec.stop(); } catch (e) {} }
+    if (ex.stream) ex.stream.getTracks().forEach(t => { try { t.stop(); } catch (e) {} });
+    if (ex.v) { ex.v.onended = null; try { ex.v.pause(); } catch (e) {} ex.v.removeAttribute('src'); try { ex.v.load(); } catch (e) {} }
+    Object.values(ex.medios || {}).forEach(m => { try { URL.revokeObjectURL(m.url); } catch (e) {} });
+    ex.medios = {};
+    if (ex.wake) { try { ex.wake.release(); } catch (e) {} ex.wake = null; }
+    if (todo) {
+      if (ex.ac) { try { ex.ac.close(); } catch (e) {} }
+      if (ex.urlFinal) { try { URL.revokeObjectURL(ex.urlFinal); } catch (e) {} }
+    }
+  }
+  function exFallo(msg) {
+    if (!ex) return;
+    ex.cancelado = true; exSoltar(false); ex.fase = 'error';
+    exEstado(msg);
+    document.getElementById('exAbajo').innerHTML = `<button type="button" class="ex-btn rojo" onclick="exReintentar()">↺ Volver a intentarlo</button><button type="button" class="ex-btn" onclick="cerrarExportar()">Cerrar</button>`;
+  }
+  window.exReintentar = () => { const pi = ex ? ex.pi : null; window.cerrarExportar(); if (pi != null) window.abrirExportarResumen(pi); };
+  window.cerrarExportar = () => {
+    if (ex) { ex.cancelado = true; exSoltar(true); }
+    ex = null;
+    const m = document.getElementById('exModal'); if (m) m.classList.remove('on');
+    if (!tvActivo && !rs) document.body.style.overflow = '';
+  };
+  window.abrirExportarResumen = async (pi) => {
+    const t = ultimaTemporada, p = t && Array.isArray(t.partidos) ? t.partidos[pi] : null;
+    if (!rsTieneVideos(p)) return;
+    if (ex) window.cerrarExportar();
+    const m = exModal(); m.classList.add('on'); document.body.style.overflow = 'hidden';
+    document.getElementById('exTitulo').textContent = `Resumen · Hergar ${Number(p.golesLocal) || 0}-${Number(p.golesRival) || 0} ${p.rival || ''}`;
+    document.getElementById('exAbajo').innerHTML = `<button type="button" class="ex-btn" onclick="cerrarExportar()">Cancelar</button>`;
+    const sePuede = typeof MediaRecorder !== 'undefined' && !!HTMLCanvasElement.prototype.captureStream;
+    if (!sePuede) {
+      exEstado('Este navegador no puede grabar vídeo. Prueba a abrir el visor en Chrome.');
+      document.getElementById('exAbajo').innerHTML = `<button type="button" class="ex-btn" onclick="cerrarExportar()">Cerrar</button>`;
+      return;
+    }
+    // El sonido se prepara aquí, con el toque, para que el navegador lo deje sonar luego
+    let ac = null;
+    try { const AC = window.AudioContext || window.webkitAudioContext; if (AC) { ac = new AC(); ac.resume().catch(() => {}); } } catch (e) { ac = null; }
+    const b = rsConstruir(p);
+    const canvas = document.createElement('canvas'); canvas.width = EX_W; canvas.height = EX_H;
+    const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'auto';
+    v.style.cssText = 'position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; left:0; top:0;';
+    ex = { pi, p, pasos: b.pasos, goles: b.goles, medios: {}, ac, canvas, ctx: canvas.getContext('2d'), v, mime: exMime(),
+      fase: 'preparando', tok: 0, i: 0, t0: 0, total: 0, sinSonido: 0, trozos: [] };
+    const l = document.getElementById('exLienzo'); l.innerHTML = ''; l.appendChild(v);
+    const ok = await exPreparar();
+    if (!ok || !ex) return;
+    if (ex.ac && ex.ac.state !== 'running') { try { await Promise.race([ex.ac.resume(), new Promise(r => setTimeout(r, 1500))]); } catch (e) {} }
+    exGrabar();
+  };
+  window.exportarDesdeResumen = () => { const pi = rs ? rs.pi : null; window.cerrarResumen(); if (pi != null) window.abrirExportarResumen(pi); };
+  document.addEventListener('visibilitychange', () => {
+    if (ex && ex.fase === 'grabando' && document.visibilityState === 'hidden') exFallo('Se ha parado porque se apagó la pantalla o cambiaste de app.<br>Vuelve a intentarlo dejando el visor delante hasta que termine.');
   });
 
   // ── Aviso de récord batido en directo (visor + Modo TV) ──

@@ -36,17 +36,34 @@ h2{font:900 19px Montserrat;margin-bottom:4px}
 .pitch{position:relative;width:100%;aspect-ratio:68/88;background:#1d4f33;border-radius:14px;overflow:hidden;border:2px solid #2c6a46}
 .pitch .ln{position:absolute;border:2px solid rgba(255,255,255,.22)}
 .slot{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:2px;width:66px;cursor:pointer}
-.slot .c{width:44px;height:44px;border-radius:50%;background:var(--red);border:2px solid #fff;display:flex;align-items:center;justify-content:center;font:900 15px Montserrat;color:#fff;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+.slot .c{width:44px;height:44px;border-radius:50%;background:var(--red);border:2px solid #fff;display:flex;align-items:center;justify-content:center;font:900 15px Montserrat;color:#fff;box-shadow:0 2px 6px rgba(0,0,0,.4);transition:transform .12s}
+.slot:active .c{transform:scale(.92)}
 .slot.vacio .c{background:rgba(0,0,0,.35);border:2px dashed rgba(255,255,255,.6);color:rgba(255,255,255,.8);font-size:20px}
-.slot.sel .c{background:#f5a623;color:#0b0f14;transform:scale(1.12)}
+.slot.sel .c{background:#f5a623;color:#0b0f14;transform:scale(1.12);box-shadow:0 0 0 4px rgba(245,166,35,.35)}
 .slot.por .c{background:#2f6fb0}
+.slot.por.sel .c{background:#f5a623}
 .slot .n{font-size:10.5px;font-weight:700;background:rgba(0,0,0,.55);padding:1px 6px;border-radius:6px;white-space:nowrap;max-width:72px;overflow:hidden;text-overflow:ellipsis}
 .slot .p{font-size:8.5px;font-weight:800;color:rgba(255,255,255,.75);letter-spacing:.5px}
 .bench{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .bench span{background:#0f141b;border:1px solid var(--line);border-radius:10px;padding:6px 9px;font-size:12px}
 .bench b{font:900 12px Montserrat;color:#f5a623;margin-right:4px}
 .bench .out{opacity:.45;text-decoration:line-through}
+.bench span.tap{cursor:pointer;padding:9px 11px}
+.bench.activo span.tap{border-color:rgba(245,166,35,.6);background:rgba(245,166,35,.08)}
 .hint{font-size:11.5px;color:var(--mute);text-align:center;margin-top:8px;line-height:1.4}
+.selbar{margin-top:8px;background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.4);border-radius:12px;padding:9px 10px}
+.selbar .t{color:#f5c26b;font-size:12px;font-weight:700;text-align:center;line-height:1.4}
+.selbar .b{display:flex;gap:6px;margin-top:8px}
+.selbar button{flex:1;min-height:42px;border-radius:10px;border:1px solid var(--line);background:#0f141b;color:var(--txt);font:800 12.5px Montserrat}
+/* mini campo para elegir niño */
+.mpitch{width:min(100%,calc(60vh * 68 / 88));margin:10px auto 0}
+.mpitch .slot{width:62px}
+.mpitch .slot .c{width:46px;height:46px;font-size:17px}
+.mpitch .slot .n{font-size:11px;max-width:64px}
+.mpitch .slot.off{pointer-events:none}
+.mbench{margin-top:10px}
+.mbench .pgrid{grid-template-columns:repeat(4,1fr);margin-top:6px}
+.mbench .pbtn{min-height:52px}
 /* directo */
 .sb{position:sticky;top:0;z-index:5;background:var(--bg);padding:8px 0 6px}
 .score{display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:8px 12px}
@@ -90,7 +107,7 @@ h2{font:900 19px Montserrat;margin-bottom:4px}
 /* hoja */
 .sheet{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center;z-index:20}
 .sheet.on{display:flex}
-.sheet .in{background:#121821;width:100%;max-width:460px;border-radius:18px 18px 0 0;padding:16px 14px calc(22px + env(safe-area-inset-bottom));max-height:88vh;overflow:auto}
+.sheet .in{background:#121821;width:100%;max-width:460px;border-radius:18px 18px 0 0;padding:16px 14px calc(22px + env(safe-area-inset-bottom));max-height:92vh;overflow:auto;overscroll-behavior-y:contain}
 .sheet h3{font:900 15px Montserrat;margin-bottom:4px}
 .pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:10px}
 .pbtn{min-height:62px;border-radius:12px;background:#0f141b;border:1px solid var(--line);color:var(--txt);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;padding:3px}
@@ -140,7 +157,7 @@ h2{font:900 19px Montserrat;margin-bottom:4px}
     <div class="sm mute" style="margin-top:2px" id="aliSub">Elige el sistema y toca cada puesto para poner al niño.</div>
     <div class="chips" id="formA"></div>
     <div class="pitch" id="pitchA"></div>
-    <div class="hint">Toca un puesto para elegir o cambiar el niño · para intercambiar dos niños, toca uno y luego el otro</div>
+    <div id="selA"></div>
     <div class="ttl" style="margin-top:12px">BANQUILLO</div>
     <div class="bench" id="benchA"></div>
   </div>
@@ -426,18 +443,21 @@ function pedirPin() {
 }
 function pintarPin() { $('pinBox').querySelectorAll('span').forEach((s, i) => s.textContent = pinTxt[i] ? '•' : ''); }
 
-// ── Campo (compartido por alineación y directo) ──────────────────────
-function pitchHTML(sel) {
-  const lines = '<div class="ln" style="left:-2px;right:-2px;top:50%;height:0;border-width:2px 0 0"></div><div class="ln" style="left:50%;top:50%;width:22%;aspect-ratio:1;border-radius:50%;transform:translate(-50%,-50%)"></div><div class="ln" style="left:22%;right:22%;bottom:-2px;height:15%"></div><div class="ln" style="left:22%;right:22%;top:-2px;height:15%"></div>';
+// ── Campo (compartido por alineación, directo y hojas de elegir) ─────
+const LINEAS_CAMPO = '<div class="ln" style="left:-2px;right:-2px;top:50%;height:0;border-width:2px 0 0"></div><div class="ln" style="left:50%;top:50%;width:22%;aspect-ratio:1;border-radius:50%;transform:translate(-50%,-50%)"></div><div class="ln" style="left:22%;right:22%;bottom:-2px;height:15%"></div><div class="ln" style="left:22%;right:22%;top:-2px;height:15%"></div>';
+// marcados: índices de puesto resaltados en dorado · bloqueados: ids que no se pueden tocar
+function pitchHTML(sel, bloqueados) {
   const coords = COORD[S.form];
-  return lines + coords.map((c, i) => {
+  const marc = Array.isArray(sel) ? sel : [sel];
+  return LINEAS_CAMPO + coords.map((c, i) => {
     if (i >= S.slots.length) return '';
     const id = S.slots[i];
-    return `<div class="slot ${id ? '' : 'vacio'} ${i === 0 ? 'por' : ''} ${sel === i ? 'sel' : ''}" data-i="${i}" style="left:${c[0]}%;top:${c[1]}%"><div class="c">${id ? esc(J[id] ? J[id].dorsal : '?') : '+'}</div><div class="n">${id ? esc(nom(id)) : '—'}</div><div class="p">${puesto(i)}</div></div>`;
+    const off = bloqueados && id && bloqueados.includes(id);
+    return `<div class="slot ${id ? '' : 'vacio'} ${i === 0 ? 'por' : ''} ${marc.includes(i) || off ? 'sel' : ''} ${off ? 'off' : ''}" data-i="${i}" style="left:${c[0]}%;top:${c[1]}%"><div class="c">${id ? esc(J[id] ? J[id].dorsal : '?') : '+'}</div><div class="n">${id ? esc(nom(id)) : '—'}</div><div class="p">${puesto(i)}</div></div>`;
   }).join('');
 }
-function benchHTML() {
-  const b = S.banco.map(id => `<span><b>${esc(J[id] ? J[id].dorsal : '')}</b>${esc(nom(id))}</span>`).join('');
+function benchHTML(tocable) {
+  const b = S.banco.map(id => `<span ${tocable ? `class="tap" data-id="${id}"` : ''}><b>${esc(J[id] ? J[id].dorsal : '')}</b>${esc(nom(id))}</span>`).join('');
   const f = S.fuera.map(id => `<span class="out"><b>${esc(J[id] ? J[id].dorsal : '')}</b>${esc(nom(id))}</span>`).join('');
   return (b + f) || '<span class="mute">Sin suplentes</span>';
 }
@@ -447,27 +467,52 @@ function chips(id, cb) {
 }
 
 // ── Alineación inicial ───────────────────────────────────────────────
+// Toque a un niño → queda marcado. Toque a otro → se intercambian. Toque a un puesto vacío → se mueve allí.
+// Toque a uno del banquillo → entra en ese puesto y el del campo pasa al banquillo.
 function pintarA() {
-  chips('formA', f => { S.form = f; guardarLocal(); pintarA(); });
+  chips('formA', f => { S.form = f; selA = null; guardarLocal(); pintarA(); });
   $('pitchA').innerHTML = pitchHTML(selA);
   $('pitchA').querySelectorAll('.slot').forEach(s => s.onclick = () => tocarA(+s.dataset.i));
-  $('benchA').innerHTML = benchHTML();
+  $('benchA').innerHTML = benchHTML(true);
+  $('benchA').classList.toggle('activo', selA !== null);
+  $('benchA').querySelectorAll('.tap').forEach(s => s.onclick = () => tocarBancoA(Number(s.dataset.id)));
+  const id = selA !== null ? S.slots[selA] : null;
+  if (id) {
+    $('selA').innerHTML = `<div class="selbar"><div class="t">#${esc(J[id] ? J[id].dorsal : '')} ${esc(nom(id))} (${puesto(selA)}) · toca otro niño para intercambiarlos, un puesto vacío para moverlo o uno del banquillo para que entre</div><div class="b"><button id="sbBanco">⬇ Al banquillo</button><button id="sbNo">✕ Soltar</button></div></div>`;
+    $('sbBanco').onclick = () => { S.banco.push(S.slots[selA]); ordenarBanco(); S.slots[selA] = null; selA = null; guardarLocal(); pintarA(); };
+    $('sbNo').onclick = () => { selA = null; pintarA(); };
+  } else {
+    $('selA').innerHTML = '<div class="hint">Toca un niño y luego otro para intercambiarlos · toca un puesto vacío (+) para elegir del banquillo</div>';
+  }
   const n = S.slots.filter(Boolean).length, b = $('btnEmpezar');
   b.disabled = n !== 11; b.textContent = n === 11 ? '▶ Empezar partido' : `Faltan ${11 - n} por colocar`;
   $('btnJavi').style.display = Array.isArray(D.once) && D.once.length === 11 ? '' : 'none';
   $('aliSub').textContent = Array.isArray(D.once) && D.once.length === 11 ? 'Viene la alineación de Javi. Cámbiala si hace falta.' : 'Elige el sistema y toca cada puesto para poner al niño.';
 }
 function tocarA(i) {
-  if (selA !== null && selA !== i && S.slots[selA] && S.slots[i]) { [S.slots[selA], S.slots[i]] = [S.slots[i], S.slots[selA]]; selA = null; guardarLocal(); pintarA(); toast('↔ Intercambiados'); return; }
-  if (selA === i) { selA = null; pintarA(); return; }
-  if (S.slots[i]) {
-    selA = i; pintarA();
-    hoja(`${puesto(i)} · ${nom(S.slots[i])}`, 'Toca otro niño del campo para intercambiarlos, o elige aquí',
-      `<div class="opts"><button id="oPon">🔁 Poner a otro del banquillo</button><button id="oQuita">⬇ Mandar al banquillo</button></div>`, 'Intercambiar con otro del campo', () => { cerrar(); toast('Toca ahora el otro niño'); });
-    $('oPon').onclick = () => elegirA(i); $('oQuita').onclick = () => { S.banco.push(S.slots[i]); ordenarBanco(); S.slots[i] = null; selA = null; cerrar(); guardarLocal(); pintarA(); };
+  const id = S.slots[i];
+  if (selA === null) {
+    if (id) { selA = i; pintarA(); } else elegirA(i);
     return;
   }
-  elegirA(i);
+  if (selA === i) { selA = null; pintarA(); return; }
+  const mov = S.slots[selA];
+  [S.slots[selA], S.slots[i]] = [S.slots[i], S.slots[selA]];
+  selA = null; guardarLocal(); pintarA();
+  toast(id ? `↔ ${nom(mov)} ⇄ ${nom(id)}` : `→ ${nom(mov)} pasa a ${puesto(i)}`);
+}
+function tocarBancoA(bid) {
+  if (selA === null) {
+    const vacio = S.slots.indexOf(null);
+    if (vacio >= 0) { S.slots[vacio] = bid; S.banco = S.banco.filter(x => x !== bid); ordenarBanco(); guardarLocal(); pintarA(); toast(`→ ${nom(bid)} a ${puesto(vacio)}`); }
+    else toast('Toca primero al niño del campo que quieres cambiar');
+    return;
+  }
+  const sale = S.slots[selA];
+  S.slots[selA] = bid; S.banco = S.banco.filter(x => x !== bid);
+  if (sale) S.banco.push(sale);
+  ordenarBanco(); const p = puesto(selA); selA = null; guardarLocal(); pintarA();
+  toast(sale ? `🔁 ${nom(bid)} por ${nom(sale)}` : `→ ${nom(bid)} a ${p}`);
 }
 function elegirA(i) {
   hojaJug(`${puesto(i)} · ¿quién juega aquí?`, 'Banquillo', S.banco.slice(), id => {
@@ -485,6 +530,7 @@ $('btnEmpezar').onclick = () => {
   if (S.slots.filter(Boolean).length !== 11) return;
   if (!confirm('¿Empieza el partido? Arranca el reloj y las familias lo verán en directo.')) return;
   const ah = new Date();
+  selA = null;
   S.fase = 'directo'; S.desde = Date.now(); S.acum = 0; S.proc = 0; S.parte = 1;
   S.horaInicio = String(ah.getHours()).padStart(2, '0') + ':' + String(ah.getMinutes()).padStart(2, '0');
   S.fecha = ah.toLocaleDateString('es-ES');
@@ -505,6 +551,16 @@ function hoja(t, s, body, skipTxt, skipCb) {
 function hojaJug(t, s, lista, cb, skipTxt, skipCb) {
   const pu = id => { const i = S.slots.indexOf(id); return i >= 0 ? puesto(i) : (S.banco.includes(id) ? 'Banquillo' : ''); };
   hoja(t, s, `<div class="pgrid">${lista.map(id => `<div class="pbtn" data-id="${id}"><b>${esc(J[id] ? J[id].dorsal : '?')}</b><span>${esc(nom(id))}</span><small>${pu(id)}</small></div>`).join('') || '<div class="sm mute">Nadie disponible</div>'}</div>`, skipTxt, skipCb);
+  $('shBody').querySelectorAll('.pbtn').forEach(b => b.onclick = () => cb(Number(b.dataset.id)));
+}
+// Elegir niño tocándolo en un campo con cada uno en su puesto (solo los que juegan)
+// o.excl: ids que salen marcados y no se pueden tocar · o.banco: lista extra debajo (tarjetas)
+function hojaCampo(t, s, cb, o) {
+  o = o || {};
+  const extra = (o.banco || []).length
+    ? `<div class="mbench"><div class="ttl">BANQUILLO</div><div class="pgrid">${o.banco.map(id => `<div class="pbtn" data-id="${id}"><b>${esc(J[id] ? J[id].dorsal : '?')}</b><span>${esc(nom(id))}</span></div>`).join('')}</div></div>` : '';
+  hoja(t, s, `<div class="pitch mpitch">${pitchHTML(null, o.excl || [])}</div>${extra}`, o.skipTxt, o.skipCb);
+  $('shBody').querySelectorAll('.slot').forEach(el => el.onclick = () => { const id = S.slots[+el.dataset.i]; if (id) cb(id); });
   $('shBody').querySelectorAll('.pbtn').forEach(b => b.onclick = () => cb(Number(b.dataset.id)));
 }
 function cerrar() { $('sheet').classList.remove('on'); }
@@ -529,11 +585,11 @@ function enCampo() { return S.slots.filter(Boolean); }
 function lineaDe(id) { return LINEA[puesto(S.slots.indexOf(id))] || ''; }
 
 function accionJugador(k) {
-  const lista = (k === 'am' || k === 'ro') ? enCampo().concat(S.banco) : enCampo();
-  hojaJug(NOM[k] + ' · ¿quién?', k === 'am' || k === 'ro' ? 'En el campo y en el banquillo' : 'Niños en el campo', lista, id => {
+  const tarj = k === 'am' || k === 'ro';
+  hojaCampo(NOM[k] + ' · ¿quién?', tarj ? 'Toca al niño en el campo o en el banquillo' : 'Toca al niño en el campo', id => {
     if (k === 'gol') {
-      hojaJug(`👟 Gol de ${nom(id)} · ¿quién dio la asistencia?`, 'Si nadie, toca «Sin asistencia»', enCampo().filter(x => x !== id),
-        a => { cerrar(); gol(id, a); }, 'Sin asistencia', () => { cerrar(); gol(id, null); });
+      hojaCampo(`👟 Gol de ${nom(id)} · ¿quién dio la asistencia?`, 'Si nadie, toca «Sin asistencia»',
+        a => { cerrar(); gol(id, a); }, { excl: [id], skipTxt: 'Sin asistencia', skipCb: () => { cerrar(); gol(id, null); } });
       return;
     }
     cerrar(); snapshot();
@@ -544,7 +600,7 @@ function accionJugador(k) {
     if (k === 'tp') mom(1); if (k === 'tf' || k === 'pc') mom(.5);
     suceso({ k, j: id }, `${LBL[k]} #${J[id].dorsal} ${nom(id)}`);
     toast(`✔ ${NOM[k]} · ${nom(id)}`);
-  });
+  }, { banco: tarj ? S.banco.slice() : [] });
 }
 function gol(id, a) {
   snapshot();
@@ -608,7 +664,7 @@ function sustituir(i) {
 }
 $('aCambio').onclick = () => {
   if (!S.banco.length) { toast('No queda nadie en el banquillo'); return; }
-  hojaJug('🔄 ¿Quién sale?', 'Niños en el campo', enCampo(), id => sustituir(S.slots.indexOf(id)));
+  hojaCampo('🔄 ¿Quién sale?', 'Toca al niño que sale', id => sustituir(S.slots.indexOf(id)));
 };
 function tocarD(i) {
   if (swapSel !== null) {

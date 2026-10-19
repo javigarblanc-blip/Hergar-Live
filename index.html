@@ -810,6 +810,14 @@
           </select>
           <div id="comparativaLista"><div class="loader">Cargando...</div></div>
         </div>
+        <div class="card">
+          <div class="card-title">👥 Jugador contra jugador</div>
+          <div id="compVsJugadores"><div class="loader">Cargando...</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">🆚 Comparar dos partidos</div>
+          <div id="compVsPartidos"><div class="loader">Cargando...</div></div>
+        </div>
       </div>
       <div id="subHeatmap" class="sub-panel">
         <div class="card">
@@ -978,6 +986,8 @@
 
 <script type="module">
   // v165 (visor) · Ficha de un niño en un partido: se abre tocándolo en «Actuación de cada jugador» (Temporada → Partidos). Acciones con minutos, impacto, peso ese día, puntos de sus goles o datos de portero, récords de ese día, sus goles en vídeo y ‹ › a sus otros partidos. Sin el más/menos individual.
+  // v168 (visor) · El acta PDF del visor sale completa, igual que la de la app (con el más/menos de cada niño).
+  // v167 (visor) · Comparativa: «Jugador contra jugador» (totales o por 70') y «Comparar dos partidos», pasadas de la app.
   // v166 (visor) · La ficha del partido enseña también el más/menos de ese partido (marcador con él en el campo).
   // v164 (visor) · Con el próximo partido publicado: el titular del informe IA del último partido se toca para leer el informe completo, y los récords personales van plegados en una línea con los nombres.
   // v163 (visor) · ⬇️ Descargar el resumen del partido en vídeo: se vuelve a reproducir dibujado en un lienzo y se graba con el sonido de los goles (MP4 si el móvil lo permite). Botón en Último partido, en Temporada → Partidos y en el final del resumen.
@@ -3146,10 +3156,10 @@
       setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 3000);
   }
 
-  // El visor descarga el acta sin el más/menos de cada niño, y solo si la app lo permite (Ajustes → Acta en PDF)
+  // El visor descarga el acta solo si la app lo permite (Ajustes → Acta en PDF). v168: completa, con el más/menos de cada niño
   window.__actaTest = actaPDF;
   window.descargarActaVisor = function (i) {
-    try { actaDescargar(window.__temporadaActa, i, { familias: true }); }
+    try { actaDescargar(window.__temporadaActa, i, {}); }
     catch (e) { alert('No se ha podido generar el acta: ' + e.message); }
   };
 
@@ -6708,6 +6718,112 @@
     }
 
 
+  // ── v167 · COMPARATIVA: JUGADOR CONTRA JUGADOR Y DOS PARTIDOS (pasada de la app al visor) ──
+  // La evolución de cada niño ya está en su ficha (pestaña Evolución), así que no se repite aquí.
+  const CV_A = '#ff5577', CV_B = '#4dabf7';
+  let cvJ1 = '', cvJ2 = '', cvModo = 'tot', cvP1 = '', cvP2 = '';
+  function cvEsc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+  function cvDec(v, d) { return (Number(v) || 0).toFixed(d).replace('.', ','); }
+  // Una fila: los dos valores con su barra; menos = mejor para las filas «invertidas»
+  function cvFila(label, a, b, fmt, invertido) {
+    const va = Number(a) || 0, vb = Number(b) || 0;
+    const mejorA = invertido ? va < vb : va > vb, mejorB = invertido ? vb < va : vb > va;
+    const base = Math.max(Math.abs(va), Math.abs(vb), 0.0001);
+    const w = v => Math.round(Math.max(0, v) / base * 100);
+    return `<div style="padding:6px 0; border-top:1px solid rgba(255,255,255,.05);">
+      <div style="display:grid; grid-template-columns:62px 1fr 62px; align-items:baseline;">
+        <span style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:14px; color:${mejorA ? CV_A : '#94a3b8'};">${fmt(a)}</span>
+        <span style="text-align:center; font-size:11.5px; font-weight:700; color:#cbd5e1;">${label}</span>
+        <span style="text-align:right; font-family:'Montserrat',sans-serif; font-weight:900; font-size:14px; color:${mejorB ? CV_B : '#94a3b8'};">${fmt(b)}</span>
+      </div>
+      <div style="display:flex; gap:4px; height:6px; margin-top:4px;">
+        <div style="flex:1; display:flex; justify-content:flex-end; background:rgba(255,255,255,.04); border-radius:3px; overflow:hidden;"><div style="width:${w(va)}%; background:${CV_A}; opacity:${mejorA ? 1 : .45}; border-radius:3px;"></div></div>
+        <div style="flex:1; display:flex; background:rgba(255,255,255,.04); border-radius:3px; overflow:hidden;"><div style="width:${w(vb)}%; background:${CV_B}; opacity:${mejorB ? 1 : .45}; border-radius:3px;"></div></div>
+      </div></div>`;
+  }
+  const cvSel = (id, val, opciones, accion) => `<select id="${id}" onchange="${accion}" style="flex:1; min-width:0; min-height:42px; padding:6px 8px; border-radius:9px; background:#0f172a; color:#e2e8f0; border:1px solid rgba(255,255,255,.12); font-size:12px;">${opciones.map(o => `<option value="${cvEsc(o.v)}" ${String(o.v) === String(val) ? 'selected' : ''}>${cvEsc(o.t)}</option>`).join('')}</select>`;
+  function cvJugadoresHTML(t) {
+    const js = Object.values(t.jugadores || {}).filter(j => (j.minutos || 0) > 0 || (j.partidos || 0) > 0).sort((a, b) => (Number(a.dorsal) || 99) - (Number(b.dorsal) || 99));
+    if (js.length < 2) return '<div class="loader">Hacen falta al menos dos jugadores con minutos</div>';
+    const porMin = js.slice().sort((x, y) => (y.minutos || 0) - (x.minutos || 0)); // por defecto, los dos con más minutos
+    if (!js.some(j => String(j.id) === String(cvJ1))) cvJ1 = String(porMin[0].id);
+    if (!js.some(j => String(j.id) === String(cvJ2)) || String(cvJ2) === String(cvJ1)) cvJ2 = String(porMin.find(j => String(j.id) !== String(cvJ1)).id);
+    const ops = js.map(j => ({ v: j.id, t: `#${j.dorsal ?? ''} ${(j.name || '').split(' ')[0]}` }));
+    const a = js.find(j => String(j.id) === String(cvJ1)), b = js.find(j => String(j.id) === String(cvJ2));
+    const p70 = cvModo === 'p70';
+    const val = (j, v) => p70 ? ((j.minutos || 0) > 0 ? (Number(v) || 0) / j.minutos * 70 : 0) : (Number(v) || 0);
+    const fN = x => p70 ? cvDec(x, 2) : String(Math.round(Number(x) || 0));
+    const imp70 = j => (j.minutos || 0) > 0 ? (j.impactoAcum || 0) / j.minutos * 70 : 0;
+    let peso = {}; try { peso = pesoEquipoTemporada(t); } catch (e) {}
+    const tiros = j => (j.disparosPuerta || 0) + (j.disparosFuera || 0);
+    const efi = j => { const e = eficaciaTiroJugador(j); return e ? e.pct : 0; };
+    const filas = [];
+    if (!p70) { filas.push(cvFila('Partidos', a.partidos, b.partidos, fN)); filas.push(cvFila('Minutos', a.minutos, b.minutos, fN)); }
+    filas.push(cvFila(`Impacto por 70'`, imp70(a), imp70(b), x => cvDec(x, 2)));
+    if (peso[a.id] && peso[b.id] && peso[a.id].peso != null && peso[b.id].peso != null) filas.push(cvFila('Peso en el equipo', peso[a.id].peso, peso[b.id].peso, x => (x >= 0 ? '+' : '−') + cvDec(Math.abs(x), 2)));
+    [['Goles', 'goles'], ['Asistencias', 'asistencias'], ['Pases clave', 'pasesClave'], ['Pases al área', 'pasesArea'], ['Regates', 'regates'], ['Acciones defensivas', 'accionesDef'], ['Acc. def. clave', 'accionesDefClave']]
+      .forEach(([l, k]) => filas.push(cvFila(l, val(a, a[k]), val(b, b[k]), fN)));
+    filas.push(cvFila('Disparos', val(a, tiros(a)), val(b, tiros(b)), fN));
+    if (efi(a) || efi(b)) filas.push(cvFila('Eficacia de tiro', efi(a), efi(b), x => Math.round(x) + ' %'));
+    if ((a.paradas || 0) + (b.paradas || 0) > 0) filas.push(cvFila('Paradas', val(a, a.paradas), val(b, b.paradas), fN));
+    filas.push(cvFila('Tarjetas', val(a, (a.amarillas || 0) + (a.rojas || 0)), val(b, (b.amarillas || 0) + (b.rojas || 0)), fN, true));
+    const boton = (k, txt) => `<button type="button" onclick="cvModoSet('${k}')" style="flex:1; min-height:38px; border-radius:9px; font-size:12px; font-weight:700; cursor:pointer; border:1px solid ${cvModo === k ? '#f5a623' : 'rgba(255,255,255,.12)'}; background:${cvModo === k ? 'rgba(245,166,35,.14)' : 'transparent'}; color:${cvModo === k ? '#f5a623' : '#94a3b8'};">${txt}</button>`;
+    const cab = (j, c) => `<div onclick="abrirPerfilJugadorTemporada('${cvEsc(j.id)}')" style="cursor:pointer; text-align:center; flex:1; min-width:0;"><div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:14px; color:${c};">${cvEsc((j.name || '').split(' ')[0])}</div><div style="font-size:10.5px; color:#94a3b8;">${j.partidos || 0} PJ · ${j.minutos || 0}'</div></div>`;
+    return `<div style="display:flex; gap:8px; align-items:center;">${cvSel('cvJ1', cvJ1, ops, "cvJugSet(1,this.value)")}<span style="color:#64748b; font-size:12px;">vs</span>${cvSel('cvJ2', cvJ2, ops, "cvJugSet(2,this.value)")}</div>
+      <div style="display:flex; gap:6px; margin:10px 0;">${boton('tot', 'Totales')}${boton('p70', "Por 70'")}</div>
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">${cab(a, CV_A)}<span style="color:#64748b; font-weight:800;">⚔️</span>${cab(b, CV_B)}</div>
+      ${filas.join('')}
+      <div style="font-size:10.5px; color:#94a3b8; line-height:1.45; margin-top:8px;">En color, el mejor de los dos en cada fila. «Por 70'» iguala a quien juega más y a quien juega menos. Toca un nombre para abrir su ficha.</div>`;
+  }
+  function cvPartidosHTML(t) {
+    const ps = (t.partidos || []);
+    if (ps.length < 2) return '<div class="loader">Hacen falta al menos dos partidos</div>';
+    const ops = ps.map((p, i) => ({ v: i, t: `J${i + 1} · ${p.golesLocal}-${p.golesRival} ${p.rival}` })).reverse();
+    if (!(cvP1 !== '' && ps[cvP1])) cvP1 = String(ps.length - 1);
+    if (!(cvP2 !== '' && ps[cvP2]) || cvP2 === cvP1) cvP2 = String(ps.length - 2);
+    const a = ps[cvP1], b = ps[cvP2], n = v => Number(v) || 0;
+    const fN = x => String(Math.round(n(x)));
+    const tiros = p => n(p.tirosNuestrosPuerta) + n(p.tirosNuestrosFuera), tirosR = p => n(p.tirosRivalesPuerta) + n(p.tirosRivalesFuera);
+    const conT = p => !p.manual && p.tirosNuestrosPuerta != null;
+    const filas = [cvFila('Goles a favor', a.golesLocal, b.golesLocal, fN), cvFila('Goles en contra', a.golesRival, b.golesRival, fN, true)];
+    if (conT(a) && conT(b)) {
+      filas.push(cvFila('Disparos', tiros(a), tiros(b), fN));
+      filas.push(cvFila('A puerta', a.tirosNuestrosPuerta, b.tirosNuestrosPuerta, fN));
+      const ef = p => tiros(p) ? n(p.golesLocal) / tiros(p) * 100 : 0;
+      filas.push(cvFila('Acierto (gol / disparo)', ef(a), ef(b), x => Math.round(x) + ' %'));
+      const cu = p => tiros(p) + tirosR(p) ? tiros(p) / (tiros(p) + tirosR(p)) * 100 : 0;
+      filas.push(cvFila('Cuota de tiros', cu(a), cu(b), x => Math.round(x) + ' %'));
+      filas.push(cvFila('Disparos del rival', tirosR(a), tirosR(b), fN, true));
+      if (a.pasesClaveTotal != null && b.pasesClaveTotal != null) filas.push(cvFila('Pases clave', a.pasesClaveTotal, b.pasesClaveTotal, fN));
+      if (a.pasesAreaTotal != null && b.pasesAreaTotal != null) filas.push(cvFila('Pases al área', a.pasesAreaTotal, b.pasesAreaTotal, fN));
+      if (a.accionesDefTotal != null && b.accionesDefTotal != null) filas.push(cvFila('Acciones defensivas', a.accionesDefTotal, b.accionesDefTotal, fN));
+      filas.push(cvFila('Córners a favor', a.cornersFavor, b.cornersFavor, fN));
+      filas.push(cvFila('Córners en contra', a.cornersContra, b.cornersContra, fN, true));
+      filas.push(cvFila('Faltas cometidas', a.faltasContra, b.faltasContra, fN, true));
+      if (n(a.fuerasJuegoNuestros) + n(b.fuerasJuegoNuestros) > 0) filas.push(cvFila('Fueras de juego', a.fuerasJuegoNuestros, b.fuerasJuegoNuestros, fN, true));
+    }
+    try {
+      const C = snPreparar(t, (typeof ultimaLiga !== 'undefined') ? ultimaLiga : null);
+      const fa = C.porPartido.get(a), fb = C.porPartido.get(b);
+      if (fa && fb && fa.nivel != null && fb.nivel != null) filas.push(cvFila('Sobre lo esperado', fa.nivel, fb.nivel, x => (x >= 0 ? '+' : '−') + cvDec(Math.abs(x), 1)));
+    } catch (e) {}
+    const res = p => n(p.golesLocal) > n(p.golesRival) ? '#2ed573' : n(p.golesLocal) < n(p.golesRival) ? '#ff4757' : '#f5a623';
+    const cab = (p, i, c) => `<div style="text-align:center; flex:1; min-width:0;"><div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:13px; color:${c}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">J${Number(i) + 1} · ${cvEsc(p.rival)}</div><div style="font-size:11px; font-weight:800; color:${res(p)};">${p.golesLocal}-${p.golesRival}</div><div style="font-size:10.5px; color:#94a3b8;">${p.mvp && p.mvp !== '-' ? '⭐ ' + cvEsc(p.mvp) : ''}</div></div>`;
+    return `<div style="display:flex; gap:8px; align-items:center;">${cvSel('cvP1', cvP1, ops, "cvParSet(1,this.value)")}<span style="color:#64748b; font-size:12px;">vs</span>${cvSel('cvP2', cvP2, ops, "cvParSet(2,this.value)")}</div>
+      <div style="display:flex; align-items:center; gap:8px; margin:10px 0 4px;">${cab(a, cvP1, CV_A)}<span style="color:#64748b; font-weight:800;">⚔️</span>${cab(b, cvP2, CV_B)}</div>
+      ${filas.join('')}
+      ${(conT(a) && conT(b)) ? '' : '<div style="font-size:11px; color:#94a3b8; margin-top:8px;">Alguno de los dos no tiene las estadísticas del directo (cargado a mano): solo se comparan los goles.</div>'}
+      <div style="font-size:10.5px; color:#94a3b8; line-height:1.45; margin-top:8px;">En color, el mejor de los dos en cada fila (en los goles en contra, faltas y disparos del rival, el que tiene menos).</div>`;
+  }
+  function pintarCompVs(t) {
+    const a = document.getElementById('compVsJugadores'), b = document.getElementById('compVsPartidos');
+    if (a) a.innerHTML = cvJugadoresHTML(t);
+    if (b) b.innerHTML = cvPartidosHTML(t);
+  }
+  window.cvJugSet = (k, v) => { if (k === 1) cvJ1 = v; else cvJ2 = v; if (ultimaTemporada) document.getElementById('compVsJugadores').innerHTML = cvJugadoresHTML(ultimaTemporada); };
+  window.cvModoSet = (m) => { cvModo = m; if (ultimaTemporada) document.getElementById('compVsJugadores').innerHTML = cvJugadoresHTML(ultimaTemporada); };
+  window.cvParSet = (k, v) => { if (k === 1) cvP1 = v; else cvP2 = v; if (ultimaTemporada) document.getElementById('compVsPartidos').innerHTML = cvPartidosHTML(ultimaTemporada); };
+
   // ── v165 · FICHA DE UN NIÑO EN UN PARTIDO (solo visor) ─────────────────────
   // Se abre tocando un niño en «Actuación de cada jugador». Todo sale de la temporada: su historial de ese partido,
   // los goles del partido (minuto, asistencia, vídeo), el peso en el equipo ese día, los puntos de sus goles, sus
@@ -7207,6 +7323,7 @@
     try { document.getElementById('contextoLista').innerHTML = ctxContextoHTML(temporada); } catch (e) { console.error('Contexto:', e); } // v97
     pintarSuerteNivel(); // v153
     pintarComparativa(temporada);
+    try { pintarCompVs(temporada); } catch (e) { console.error('Comparativa:', e); } // v167
     pintarHeatmap(temporada);
     pintarOnceIdeal(temporada);
     pintarPlantillaTabla();

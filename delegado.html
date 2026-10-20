@@ -197,7 +197,7 @@ h2{font:900 19px Montserrat;margin-bottom:4px}
     <div class="sec">HERGAR · TOCA Y ELIGE EL NIÑO</div>
     <div class="grid">
       <div class="act team" data-a="tp"><i>🎯</i>Tiro a puerta</div>
-      <div class="act team" data-a="tf"><i>💨</i>Tiro fuera</div>
+      <div class="act team" data-a="tf"><i>💨</i>Tiro sin peligro</div>
       <div class="act team" data-a="pc"><i>🔑</i>Pase clave</div>
       <div class="act team" data-a="def"><i>🛡️</i>Acción defensiva</div>
       <div class="act team" data-a="pa"><i>📯</i>Pase al área</div>
@@ -207,7 +207,7 @@ h2{font:900 19px Montserrat;margin-bottom:4px}
     <div class="grid">
       <div class="act riv" data-r="par"><i>🧤</i>Parada</div>
       <div class="act riv" data-r="parD"><i>🧤⭐</i>Parada difícil</div>
-      <div class="act riv" data-r="tfR"><i>💨</i>Tiro fuera</div>
+      <div class="act riv" data-r="tfR"><i>💨</i>Tiro sin peligro</div>
     </div>
     <div class="sec">PARTIDO</div>
     <div class="grid">
@@ -289,7 +289,7 @@ const COORD = {"4-3-3":[[50,93],[15,75],[38,77],[62,77],[85,75],[50,57],[28,47],
 "3-4-3":[[50,93],[25,75],[50,77],[75,75],[10,50],[36,52],[64,52],[90,50],[17,19],[50,14],[83,19]]};
 const PUESTOS = {"4-3-3":['POR','LI','DFC','DFC','LD','MCD','MC','MC','EI','DC','ED'],"4-4-2":['POR','LI','DFC','DFC','LD','MI','MC','MC','MD','DC','DC'],"4-2-3-1":['POR','LI','DFC','DFC','LD','MCD','MCD','MI','MP','MD','DC'],"3-5-2":['POR','DFC','DFC','DFC','MI','MC','MP','MC','MD','DC','DC'],"3-4-3":['POR','DFC','DFC','DFC','MI','MC','MC','MD','EI','DC','ED']};
 const LINEA = { POR:'portero', LI:'defensa', DFC:'defensa', LD:'defensa', MCD:'centro', MC:'centro', MI:'centro', MD:'centro', MP:'centro', EI:'delantero', ED:'delantero', DC:'delantero' };
-const NOM = { gol:'⚽ Gol', tp:'🎯 Tiro a puerta', tf:'💨 Tiro fuera', pc:'🔑 Pase clave', pa:'📯 Pase al área', def:'🛡️ Acción defensiva', reg:'🌀 Regate', am:'🟨 Amarilla', ro:'🟥 Roja' };
+const NOM = { gol:'⚽ Gol', tp:'🎯 Tiro a puerta', tf:'💨 Tiro sin peligro', pc:'🔑 Pase clave', pa:'📯 Pase al área', def:'🛡️ Acción defensiva', reg:'🌀 Regate', am:'🟨 Amarilla', ro:'🟥 Roja' };
 // Mismo texto que la cronología de la app (lo lee el visor y el Modo TV)
 const LBL = { tp:'🎯 Disparo a puerta', tf:'💨 Disparo fuera / sin peligro', pc:'🔑 Pase clave', pa:'📯 Pase al área', def:'🛡️ Acción defensiva', reg:'🌀 Regate / jugada individual' };
 const IMP = { tp:.30, tf:.10, pc:.25, pa:.15, def:.30, reg:.10 }; // impacto aproximado solo para el directo (Javi lo recalcula al cargarlo)
@@ -641,7 +641,7 @@ function accionRival(k) {
     suceso({ k }, por ? `🧤 ${k === 'parD' ? 'Parada difícil' : 'Parada'} #${J[por].dorsal} ${nom(por)} +${k === 'parD' ? '1' : '0.3'}` : '🧤 Parada');
     toast(k === 'parD' ? '🧤⭐ Paradón' : '🧤 Parada');
   } else if (k === 'tfR') {
-    S.team.tfR++; enCampo().forEach(x => imp(x, -.05)); mom(-.5); suceso({ k }, '💨 Tiro rival fuera'); toast('💨 Tiro fuera del rival');
+    S.team.tfR++; enCampo().forEach(x => imp(x, -.05)); mom(-.5); suceso({ k }, '💨 Tiro rival sin peligro'); toast('💨 Tiro sin peligro del rival');
   } else if (k === 'cf') {
     S.team.cf++; mom(.5); suceso({ k }, '⛳ Córner a favor'); toast('⛳ Córner a favor');
   } else if (k === 'cc') {

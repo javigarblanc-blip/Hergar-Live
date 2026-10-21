@@ -202,6 +202,9 @@ h2{font:900 19px Montserrat;margin-bottom:4px}
       <div class="act team" data-a="def"><i>🛡️</i>Acción defensiva</div>
       <div class="act team" data-a="pa"><i>📯</i>Pase al área</div>
       <div class="act team" data-a="reg"><i>🌀</i>Regate</div>
+      <div class="act team" data-a="defC"><i>🛡️⭐</i>Def. clave</div>
+      <div class="act neu" data-a="fa"><i>❌</i>Fallo</div>
+      <div class="act neu" data-a="faI"><i>💥</i>Fallo importante</div>
     </div>
     <div class="sec">RIVAL · UN TOQUE</div>
     <div class="grid">
@@ -289,10 +292,10 @@ const COORD = {"4-3-3":[[50,93],[15,75],[38,77],[62,77],[85,75],[50,57],[28,47],
 "3-4-3":[[50,93],[25,75],[50,77],[75,75],[10,50],[36,52],[64,52],[90,50],[17,19],[50,14],[83,19]]};
 const PUESTOS = {"4-3-3":['POR','LI','DFC','DFC','LD','MCD','MC','MC','EI','DC','ED'],"4-4-2":['POR','LI','DFC','DFC','LD','MI','MC','MC','MD','DC','DC'],"4-2-3-1":['POR','LI','DFC','DFC','LD','MCD','MCD','MI','MP','MD','DC'],"3-5-2":['POR','DFC','DFC','DFC','MI','MC','MP','MC','MD','DC','DC'],"3-4-3":['POR','DFC','DFC','DFC','MI','MC','MC','MD','EI','DC','ED']};
 const LINEA = { POR:'portero', LI:'defensa', DFC:'defensa', LD:'defensa', MCD:'centro', MC:'centro', MI:'centro', MD:'centro', MP:'centro', EI:'delantero', ED:'delantero', DC:'delantero' };
-const NOM = { gol:'⚽ Gol', tp:'🎯 Tiro a puerta', tf:'💨 Tiro sin peligro', pc:'🔑 Pase clave', pa:'📯 Pase al área', def:'🛡️ Acción defensiva', reg:'🌀 Regate', am:'🟨 Amarilla', ro:'🟥 Roja' };
+const NOM = { defC:'🛡️⭐ Acción defensiva clave', fa:'❌ Fallo', faI:'💥 Fallo importante', gol:'⚽ Gol', tp:'🎯 Tiro a puerta', tf:'💨 Tiro sin peligro', pc:'🔑 Pase clave', pa:'📯 Pase al área', def:'🛡️ Acción defensiva', reg:'🌀 Regate', am:'🟨 Amarilla', ro:'🟥 Roja' };
 // Mismo texto que la cronología de la app (lo lee el visor y el Modo TV)
-const LBL = { tp:'🎯 Disparo a puerta', tf:'💨 Disparo fuera / sin peligro', pc:'🔑 Pase clave', pa:'📯 Pase al área', def:'🛡️ Acción defensiva', reg:'🌀 Regate / jugada individual' };
-const IMP = { tp:.30, tf:.10, pc:.25, pa:.15, def:.30, reg:.10 }; // impacto aproximado solo para el directo (Javi lo recalcula al cargarlo)
+const LBL = { defC:'🛡️⭐ Acción defensiva clave', fa:'❌ Fallo', faI:'💥 Fallo importante', tp:'🎯 Disparo a puerta', tf:'💨 Disparo fuera / sin peligro', pc:'🔑 Pase clave', pa:'📯 Pase al área', def:'🛡️ Acción defensiva', reg:'🌀 Regate / jugada individual' };
+const IMP = { tp:.30, tf:.10, pc:.25, pa:.15, def:.30, reg:.10, defC:1, fa:-.20, faI:-.50 }; // impacto aproximado solo para el directo (Javi lo recalcula al cargarlo)
 
 let D = null;      // lo que publicó Javi: convocados, once, sistema, pin…
 let S = null;      // estado del partido
@@ -346,7 +349,7 @@ function payloadVisor() {
     if (!mins && !enC && !enB && !k.g && !k.a) return;
     const imp = S.imp[id] || 0;
     jug[id] = { name: J[id].name, dorsal: J[id].dorsal, enCampo: enC, enBanquillo: enB, esPortero: !!S.porteros[id],
-      minutos: mins, goles: k.g || 0, asistencias: k.a || 0, accionesDef: k.def || 0, accionesDefClave: 0, regates: k.reg || 0,
+      minutos: mins, goles: k.g || 0, asistencias: k.a || 0, accionesDef: k.def || 0, accionesDefClave: k.defC || 0, regates: k.reg || 0,
       pasesArea: k.pa || 0, pasesClave: k.pc || 0, disparosPuerta: (k.tp || 0) + (k.g || 0), disparosFuera: k.tf || 0, fuerasJuego: 0,
       paradas: (k.par || 0) + (k.parD || 0), paradasDificiles: k.parD || 0, golesRecibidos: k.gr || 0, tirosPuertaEnPorteria: k.tpp || 0,
       impacto: +imp.toFixed(2), impactoPond: mins > 0 ? +(imp / mins * 70).toFixed(2) : 0, amarillas: k.am || 0, roja: !!k.ro };
@@ -357,7 +360,7 @@ function payloadVisor() {
     golesLocal: S.gl, golesRival: S.gr, minuto: Math.floor(c / 60), parte: S.parte,
     matchRunning: !!S.desde, matchFinished: S.fase === 'final', finalizadoEn: S.finEn || null, previa: false,
     formacion: S.form, onFieldIds: S.slots.slice(), benchIds: S.banco.slice(), benchSittingTime: {}, zonasEquipo: {},
-    jugadores: jug, eventos: S.lines.slice(-30), momentumData: S.mom,
+    jugadores: jug, eventos: S.lines.filter(l => l.indexOf('❌ Fallo') < 0 && l.indexOf('💥 Fallo') < 0).slice(-30), momentumData: S.mom,
     golesMin: S.ev.filter(e => e.k === 'gol' || e.k === 'golR').map(e => ({ min: Math.floor(e.t / 60), equipo: e.k === 'gol' ? 'hergar' : 'rival', nombre: e.k === 'gol' ? nom(e.j) : '' })),
     tirosNuestrosPuerta: T.tp, tirosNuestrosFuera: T.tf, tirosRivalesPuerta: T.tpR, tirosRivalesFuera: T.tfR,
     faltasFavor: 0, faltasContra: 0, cornersFavor: T.cf, cornersContra: T.cc, fuerasJuegoNuestros: 0, fuerasJuegoRival: 0,
@@ -769,6 +772,7 @@ function pintarFinal() {
     <div class="row"><span>🎯 Tiros Hergar (a puerta)</span><span>${S.team.tp + S.team.tf} (${S.team.tp})</span></div>
     <div class="row"><span>🧤 Paradas</span><span>${n('par') + n('parD')}${n('parD') ? ` (${n('parD')} difíciles)` : ''}</span></div>
     <div class="row"><span>🔑 · 📯 · 🛡️ · 🌀</span><span>${n('pc')} · ${n('pa')} · ${n('def')} · ${n('reg')}</span></div>
+    <div class="row"><span>🛡️⭐ Def. clave · ❌ Fallos</span><span>${n('defC')} · ${n('fa') + n('faI')}${n('faI') ? ` (${n('faI')} importantes)` : ''}</span></div>
     <div class="row"><span>⛳ Córners</span><span>${S.team.cf} – ${S.team.cc}</span></div>
     <div class="row"><span>🔄 Cambios · ↔ puestos</span><span>${n('sub')} · ${n('swap') + n('form')}</span></div>
     <div class="row"><span>🟨 🟥 Tarjetas</span><span>${n('am') + n('ro')}</span></div>`;

@@ -180,6 +180,53 @@
   .tmp-sec .subtab-btn { display:flex; align-items:center; justify-content:center; gap:4px; min-width:0; min-height:44px; border-radius:10px;
     font-size:11px; color:#cbd5e1; cursor:pointer; }
   .tmp-sec .subtab-btn.active { background:rgba(245,166,35,.16); color:#f5a623; border-color:#f5a623; }
+  /* v179 · La semana del Hergar */
+  .sem-story { position:relative; height:500px; border-radius:16px; overflow:hidden; background:linear-gradient(160deg,#151e2e,#0b111b); border:1px solid rgba(255,255,255,.09); user-select:none; -webkit-user-select:none; }
+  #semanaModal .sem-story { height:min(640px, 86vh); }
+  .sem-bars { position:absolute; top:8px; left:10px; right:10px; display:flex; gap:4px; z-index:5; }
+  .sem-bars i { flex:1; height:3px; border-radius:2px; background:rgba(255,255,255,.25); overflow:hidden; }
+  .sem-bars b { display:block; height:100%; width:0; background:#fff; }
+  .sem-x { position:absolute; top:16px; right:8px; z-index:6; width:34px; height:34px; border-radius:50%; border:0; background:rgba(0,0,0,.35); color:#fff; font-size:15px; cursor:pointer; }
+  .sem-slide { position:absolute; inset:0; padding:58px 18px 18px; display:none; flex-direction:column; }
+  .sem-slide.on { display:flex; }
+  .sem-tap-izq, .sem-tap-der { position:absolute; top:52px; bottom:0; z-index:4; cursor:pointer; }
+  .sem-tap-izq { left:0; width:30%; } .sem-tap-der { right:0; width:70%; }
+  .sem-k { font-family:'Montserrat',sans-serif; font-weight:800; font-size:10.5px; letter-spacing:1.1px; color:#f5a623; }
+  .sem-t { font-family:'Montserrat',sans-serif; font-weight:900; font-size:24px; line-height:1.15; color:#fff; margin-top:6px; }
+  .sem-s { font-size:12.5px; color:#cbd5e1; margin-top:8px; line-height:1.5; }
+  .sem-marc { display:flex; align-items:center; justify-content:center; gap:14px; margin:auto 0 6px; font-family:'Montserrat',sans-serif; font-weight:900; font-size:56px; color:#fff; letter-spacing:-1px; }
+  .sem-marc .sem-h { color:#ff5577; }
+  .sem-esc { width:40px; height:40px; border-radius:50%; object-fit:cover; background:#fff; }
+  .sem-vs { text-align:center; font-family:'Montserrat',sans-serif; font-weight:800; font-size:12px; color:#94a3b8; }
+  .sem-mvp { margin-top:auto; display:flex; gap:11px; align-items:center; background:rgba(245,166,35,.1); border:1px solid rgba(245,166,35,.38); border-radius:12px; padding:10px; }
+  .sem-foto { width:48px; height:48px; border-radius:50%; object-fit:cover; border:2px solid #f5a623; flex-shrink:0; }
+  .sem-dorsal { display:flex; align-items:center; justify-content:center; background:radial-gradient(circle at 35% 30%, #ff7a95, rgb(180,20,56)); color:#fff; font-family:'Montserrat',sans-serif; font-weight:900; font-size:18px; }
+  .sem-mvp-n { font-family:'Montserrat',sans-serif; font-weight:900; font-size:17px; color:#fff; }
+  .sem-mvp-d { font-size:11px; color:#cbd5e1; margin-top:1px; }
+  .sem-vid { margin-top:14px; flex:1; min-height:0; border-radius:12px; overflow:hidden; position:relative; background:linear-gradient(135deg,#1d4f33,#0b2417); }
+  .sem-vid video, .sem-vid img { width:100%; height:100%; object-fit:cover; display:block; }
+  .sem-low { position:absolute; left:8px; right:8px; bottom:8px; background:rgba(0,0,0,.65); border-left:3px solid #ff5577; border-radius:6px; padding:6px 9px; font-family:'Montserrat',sans-serif; font-weight:800; font-size:11.5px; color:#fff; }
+  .sem-lista { margin-top:14px; display:flex; flex-direction:column; gap:8px; }
+  .sem-it { display:flex; gap:10px; align-items:center; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.07); border-radius:11px; padding:9px 10px; font-size:12px; line-height:1.35; color:#cbd5e1; }
+  .sem-it i { font-style:normal; font-size:20px; } .sem-it b { color:#fff; font-weight:800; }
+  .sem-tabla { margin-top:14px; display:flex; flex-direction:column; gap:4px; }
+  .sem-fila { display:grid; grid-template-columns:24px 1fr 30px 34px; gap:6px; align-items:center; font-size:12.5px; padding:7px 9px; border-radius:8px; background:rgba(255,255,255,.04); color:#e2e8f0; }
+  .sem-fila.h { background:rgba(180,20,56,.24); border:1px solid rgba(255,85,119,.45); font-weight:800; }
+  .sem-fila span:nth-child(3) { text-align:right; font-weight:800; } .sem-fila span:nth-child(4) { text-align:right; font:800 11px 'Montserrat',sans-serif; }
+  .sem-story .up { color:#2ed573; } .sem-story .down { color:#ff6b7a; }
+  .sem-corte { text-align:center; color:#64748b; font-size:11px; line-height:1; }
+  .sem-prob { margin-top:14px; font-size:12.5px; color:#cbd5e1; } .sem-prob b { color:#fff; }
+  .sem-barra { height:8px; border-radius:4px; background:rgba(255,255,255,.08); margin-top:6px; overflow:hidden; } .sem-barra b { display:block; height:100%; background:#ff5577; border-radius:4px; }
+  .sem-next { margin-top:16px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:13px; }
+  .sem-next-f { font-size:11.5px; color:#94a3b8; } .sem-next-r { font-family:'Montserrat',sans-serif; font-weight:900; font-size:18px; color:#fff; margin:5px 0; } .sem-next-d { font-size:12px; color:#cbd5e1; line-height:1.5; }
+  .sem-btn { width:100%; display:flex; align-items:center; gap:10px; text-align:left; background:rgba(245,166,35,.08); border:1px solid rgba(245,166,35,.38); border-radius:12px; padding:8px 10px; color:#e2e8f0; font:600 12px 'Inter',sans-serif; cursor:pointer; }
+  .sem-btn b { font-family:'Montserrat',sans-serif; font-weight:800; font-size:12.5px; color:#f5a623; } .sem-btn small { color:#94a3b8; font-size:11px; }
+  .sem-ring { width:38px; height:38px; border-radius:50%; padding:2px; background:conic-gradient(#f5a623, #ff5577, #f5a623); flex-shrink:0; }
+  .sem-ring i { width:100%; height:100%; border-radius:50%; background:#111827; display:flex; align-items:center; justify-content:center; font-style:normal; font-size:16px; }
+  .sem-ver { margin-left:auto; color:#f5a623; font-weight:800; }
+  #semanaModal { position:fixed; inset:0; z-index:950; background:rgba(0,0,0,.92); display:none; align-items:center; justify-content:center; padding:12px; }
+  #semanaModal.on { display:flex; }
+  #semanaModalCont { width:100%; max-width:420px; }
   /* v177 · bloques de «Más análisis» y buscador */
   .tmp-blq { grid-column:1 / -1; display:flex; align-items:baseline; gap:8px; margin:6px 2px 0; }
   .tmp-blq:first-child { margin-top:0; }
@@ -605,7 +652,9 @@
     <!-- PARTIDO -->
     <div id="partido" class="panel active">
       <div class="card" id="miHijoElegirCard" style="display:none; border-color:rgba(245,166,35,.45); background:rgba(245,166,35,.05);"></div>
+      <div id="semanaCard" style="display:none; margin-bottom:10px;"></div>
       <div class="card" id="resumenUltimoCard" style="display:none;"></div>
+      <div id="semanaFranja" style="display:none; margin-bottom:10px;"></div>
       <div class="card" id="recordsHoyCard" style="display:none;"></div>
       <div class="card" id="proximoPartidoCard" style="display:none;"></div>
       <div class="card" id="informeIACard" style="display:none;">
@@ -718,6 +767,7 @@
       </div>
 
       <div id="subPartidos" class="sub-panel active">
+        <div id="semanaTempCard" style="display:none; margin-bottom:10px;"></div>
         <div class="card">
           <div class="card-title">Historial de partidos</div>
           <div id="partidosLista"><div class="loader">Cargando...</div></div>
@@ -974,6 +1024,7 @@
   </div>
 </div>
 
+<div id="semanaModal" role="dialog" aria-modal="true" aria-label="La semana del Hergar"><div id="semanaModalCont"></div></div>
 <div id="perfilModal" style="display:none; position:fixed; inset:0; z-index:900; background:rgba(0,0,0,.85); align-items:center; justify-content:center; padding:20px;">
   <div style="background:linear-gradient(145deg,#111827,#0f172a); border-radius:20px; padding:20px; max-width:340px; width:100%; border:1px solid rgba(255,255,255,.08); max-height:88vh; overflow-y:auto;">
     <div class="fd-tabs">
@@ -1002,6 +1053,8 @@
 </div>
 
 <script type="module">
+  // v180 (visor) · La semana del Hergar: fuera el botón de compartir la imagen (de momento).
+  // v179 (visor) · 📰 La semana del Hergar: 5 historias del último partido (resultado y MVP, gol de la jornada, récords y rachas, Liga, lo que viene). Sale cuando todos los goles tienen vídeo o a las 24 h; se ve entera una vez arriba en Partido y luego queda como franja bajo el resultado; con el próximo partido publicado pasa a Temporada → Partidos. En directo no sale. (v180: sin compartir de momento.)
   // v178 (visor) · Mi hijo: fuera los récords (están en su ficha) y nueva tarjeta «Su estilo» con el «Juega como…» y sus superpoderes, sacados de sus estadísticas de la temporada.
   // v177 (visor) · Temporada: «Más análisis» en tres bloques (⚽ Goles · 👥 Jugadores · 🏟️ Equipo) y buscador arriba (tarjetas de Temporada y Liga, cosas que van dentro de una tarjeta y niños).
   // v176 (visor) · ⭐ Mi hijo: cada familia puede elegir a su jugador (se guarda solo en ese móvil) y le sale una 5.ª pestaña con su página: último partido, goles en vídeo, temporada con evolución y récords. Se puede cambiar o quitar (vuelven las 4 pestañas). En directo no cambia nada.
@@ -4369,6 +4422,7 @@
     const previa = matchData.previa === true && !matchData.matchFinished && !matchData.matchRunning;
     pintarCabeceraPartido(matchData);
     try { mhPintarElegir(); } catch (e) {} // v176: la tarjeta de elegir no sale con el partido en juego
+    try { semActualizar(); } catch (e) {} // v179
 
     const liveBanner = document.getElementById('liveBanner');
     const offlineBanner = document.getElementById('offlineBanner');
@@ -7890,6 +7944,7 @@
     try { if (ultimoMatchData) { pintarResumenUltimo(ultimoMatchData); pintarRecordsHoy(ultimoMatchData); tvRecordsPersonales(ultimoMatchData); } if (tvActivo) tvRender(); } catch (e) { console.error('Resumen:', e); } // 🎬 el botón del resumen necesita la temporada
     tmpCambio(); // v175: el resto, al abrirlo
     mhActualizar(); // v176
+    semActualizar(); // v179
   });
 
   // ── v176 · ⭐ MI HIJO: cada familia elige a su jugador una vez y tiene su página en una 5.ª pestaña ──
@@ -8097,6 +8152,272 @@
   }
   window.mhActualizar = mhActualizar;
 
+  // ── v179 · 📰 LA SEMANA DEL HERGAR: resumen del último partido en 5 historias (tipo WhatsApp) ──
+  // Sale cuando todos los goles del Hergar de ese partido tienen vídeo o, como mucho, 24 h después del partido.
+  // La primera vez se ve entera arriba en Partido; después queda como una franja fina bajo el resultado.
+  // Con el próximo partido publicado sale de Partido y queda en Temporada → Partidos. En directo no sale nunca.
+  const SEM_VISTA_KEY = 'hergarLive_semanaVista';
+  let semCache = { clave: null, slides: null };
+  let semPlayer = null; // reproductor activo (en línea o en la ventana)
+  let semPintado = '';  // lo que hay pintado ahora en Partido (para no reiniciar las historias con cada dato)
+  function semLeerVista() { try { return localStorage.getItem(SEM_VISTA_KEY); } catch (e) { return null; } }
+  function semMarcarVista(id) { try { localStorage.setItem(SEM_VISTA_KEY, id); } catch (e) {} }
+  function semFinPartido(p) {
+    const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(String(p.fecha || '').trim());
+    if (!m) return null;
+    const h = /^(\d{1,2}):(\d{2})/.exec(String(p.horaInicio || '')) || [null, '12', '00'];
+    const d = /^(\d{1,3}):(\d{2})/.exec(String(p.duracion || '')) || [null, '70', '00'];
+    return new Date(+m[3], +m[2] - 1, +m[1], +h[1], +h[2]).getTime() + (+d[1] * 60 + +d[2]) * 1000;
+  }
+  // ¿Hay semana y está lista? (no calcula las historias: eso solo al verlas)
+  function semInfo() {
+    const t = ultimaTemporada, ps = (t && t.partidos) || [];
+    if (!ps.length) return null;
+    const pi = ps.length - 1, p = ps[pi];
+    const id = `${p.fecha || ''}|${p.rival || ''}|${pi}`;
+    const gH = (Array.isArray(p.goles) ? p.goles : []).filter(g => g && g.equipo !== 'rival');
+    const nGoles = Number(p.golesLocal) || 0;
+    const todosConVideo = nGoles === 0 || (gH.length >= nGoles && gH.every(g => videoValido(g)));
+    const fin = semFinPartido(p);
+    const listo = todosConVideo || (fin != null && Date.now() >= fin + 24 * 3600 * 1000);
+    return { t, ps, pi, p, id, listo, nVideos: gH.filter(g => videoValido(g)).length };
+  }
+  const semEsc = s => escHtml(s);
+  const semNom = n => String(n || '').split(' ')[0];
+  function semLigaPartido(liga, p) {
+    if (!liga || !liga.equipos || !liga.partidos) return null;
+    const H = liga.equipos.find(e => e.esHergar), R = equipoLigaPorNombre(p.rival);
+    if (!H || !R) return null;
+    const lps = liga.partidos.filter(x => x.golesLocal != null && x.golesVisitante != null && ((x.local === H.id && x.visitante === R.id) || (x.local === R.id && x.visitante === H.id)));
+    if (!lps.length) return null;
+    const f = String(p.fecha || '');
+    const lp = lps.find(x => x.fechaPartido === f || x.fecha === f) || lps.sort((a, b) => numJornadaGlobalViewer(liga, b) - numJornadaGlobalViewer(liga, a))[0];
+    return { H, R, lp, J: numJornadaGlobalViewer(liga, lp) };
+  }
+  function semCaja(ico, tit, det) { return `<div class="sem-it"><i>${ico}</i><span><b>${tit}</b>${det ? `<br>${det}` : ''}</span></div>`; }
+
+  function semSlides(info) {
+    const { t, ps, pi, p } = info, liga = ultimaLiga;
+    const n = v => Number(v) || 0;
+    const gl = n(p.golesLocal), gr = n(p.golesRival);
+    const L = semLigaPartido(liga, p);
+    const jTxt = L ? `J${L.lp.jornada}${L.lp.vuelta > 1 ? ' · ' + L.lp.vuelta + 'ª vuelta' : ''}` : `Partido ${pi + 1}`;
+    const out = [];
+    // 1 · Resultado y MVP
+    {
+      const tit = gl > gr ? '¡Victoria!' : gl < gr ? 'Derrota' : 'Empate';
+      const goles = (Array.isArray(p.goles) ? p.goles : []).filter(g => g && g.equipo !== 'rival').sort((a, b) => n(a.min) - n(b.min));
+      const glin = goles.length ? '⚽ ' + goles.map(g => `${semEsc(semNom(g.nombre) || '¿?')}${g.min != null ? ' ' + g.min + "'" : ''}`).join(' · ') : '';
+      let mvp = '';
+      const j = p.mvpId != null && t.jugadores ? t.jugadores[p.mvpId] : null;
+      if (j || p.mvp) {
+        const h = j ? (j.historial || []).find(x => x.fecha === p.fecha && x.rival === p.rival) : null;
+        const f = j && fotosJugadores[j.id];
+        const foto = f && f.foto ? `<img src="${f.foto}" alt="" class="sem-foto">` : `<div class="sem-foto sem-dorsal">${semEsc(j ? j.dorsal : '')}</div>`;
+        const extra = h ? [h.goles ? `${h.goles} ${h.goles === 1 ? 'gol' : 'goles'}` : '', h.asistencias ? `${h.asistencias} ${h.asistencias === 1 ? 'asistencia' : 'asistencias'}` : '', h.impPond != null ? `${(h.impPond >= 0 ? '+' : '−') + Math.abs(h.impPond).toFixed(1).replace('.', ',')} de impacto por 70'` : ''].filter(Boolean).join(' · ') : '';
+        mvp = `<div class="sem-mvp">${foto}<div><div class="sem-k">⭐ MVP DEL PARTIDO</div><div class="sem-mvp-n">${semEsc(j ? semNom(j.name) : String(p.mvp).replace(/^#\d+\s*/, ''))}</div>${extra ? `<div class="sem-mvp-d">${extra}</div>` : ''}</div></div>`;
+      }
+      out.push(`<div class="sem-k">📰 LA SEMANA DEL HERGAR · ${jTxt}</div><div class="sem-t">${tit}</div>
+        <div class="sem-marc"><img src="${ESCUDO_HERGAR_SRC}" alt="" class="sem-esc"><span><b class="sem-h">${gl}</b> – ${gr}</span>${escudoEquipoVisorHTML(equipoLigaPorNombre(p.rival), 40, p.rival)}</div>
+        <div class="sem-vs">HERGAR vs ${semEsc(String(p.rival || 'RIVAL').toUpperCase())}</div>
+        ${glin ? `<div class="sem-s" style="text-align:center;">${glin}</div>` : ''}${mvp}`);
+    }
+    // 2 · El gol de la jornada (con vídeo)
+    {
+      const cand = (Array.isArray(p.goles) ? p.goles : []).map((g, gi) => ({ g, gi })).filter(x => x.g && x.g.equipo !== 'rival' && videoValido(x.g));
+      if (cand.length) {
+        const pos = g => g.pos && g.pos.x != null && g.pos.y != null ? { x: Number(g.pos.x), y: Number(g.pos.y) } : null;
+        let el = null, por = '';
+        // si en este partido se marcó el gol más lejano de la temporada (y tiene vídeo), ese es el gol de la jornada
+        try { const R = recordsTemporada(t), x = R.raw.golLejanoJug; if (x && x.p === p && x.vid && x.vid[0] === pi) { el = cand.find(c => c.gi === x.vid[1]) || null; if (el) por = 'record'; } } catch (e) {}
+        const gz = el ? [] : cand.filter(x => pos(x.g) && !x.g.penalti && x.g.origen !== 'falta' && x.g.origen !== 'penalti');
+        if (gz.length) { el = gz.sort((a, b) => gzIndice(pos(b.g)) - gzIndice(pos(a.g)))[0]; por = 'golazo'; }
+        else if (!el) { const cd = cand.filter(x => pos(x.g) && !x.g.penalti); if (cd.length) { el = cd.sort((a, b) => gzDist(pos(b.g)) - gzDist(pos(a.g)))[0]; por = 'lejos'; } }
+        if (!el) el = cand[0];
+        const g = el.g, ps2 = pos(g);
+        const goles = (p.goles || []).filter(Boolean).slice().sort((a, b) => n(a.min) - n(b.min));
+        let a = 0, b = 0; for (const x of goles) { if (x.equipo === 'rival') b++; else a++; if (x === g) break; }
+        let sub = '';
+        if (ps2 && !g.penalti) {
+          const d = Math.round(gzDist(ps2));
+          let rec = ''; try { const R = recordsTemporada(t); if (R.raw.golLejano && Math.round(R.raw.golLejano.valor) === d && R.raw.golLejanoJug && R.raw.golLejanoJug.p === p) rec = ' · ¡el gol más lejano de la temporada!'; } catch (e) {}
+          if (por === 'record') rec = ' · ¡el gol más lejano de la temporada!';
+          sub = (por === 'golazo' ? `Índice golazo ${gzF1(gzIndice(ps2))} · ` : '') + `desde ${d} m${rec}`;
+        } else if (g.penalti) sub = 'De penalti';
+        out.push(`<div class="sem-k">💥 EL GOL DE LA JORNADA</div><div class="sem-t">${semEsc(semNom(g.nombre) || '¿?')}${g.min != null ? `, minuto ${g.min}` : ''}</div>
+          ${sub ? `<div class="sem-s">${sub}</div>` : ''}
+          <div class="sem-vid"><video src="${rsSrcVideo(g.video)}" muted playsinline preload="auto"${esVideoGh(g.video) ? ' crossorigin="anonymous"' : ''}></video>
+            <div class="sem-low">HERGAR ${a}-${b} · ⚽ ${semEsc(String(semNom(g.nombre) || '').toUpperCase())} ${g.min != null ? g.min + "'" : ''}</div></div>`);
+      }
+    }
+    // 3 · Récords y rachas
+    {
+      const items = [];
+      try {
+        if (pi > 0) {
+          const R1 = recordsTemporada(t), R0 = recordsTemporada(Object.assign({}, t, { partidos: ps.slice(0, pi) }));
+          const mejor = (k, menor) => R1.raw[k] && (!R0.raw[k] || (menor ? R1.raw[k].valor < R0.raw[k].valor : R1.raw[k].valor > R0.raw[k].valor));
+          if (mejor('mayorVictoria')) items.push(semCaja('🏆', 'Mayor victoria de la temporada', semEsc(R1.raw.mayorVictoria.det.replace(/ · \d+\/\d+$/, ''))));
+          else if (mejor('masGoles')) items.push(semCaja('⚽', 'Más goles en un partido', `${R1.raw.masGoles.valor} goles`));
+          if (mejor('golRapido', true)) items.push(semCaja('⚡', 'Gol más rápido de la temporada', `${semEsc(R1.raw.golRapido.det.split(' vs ')[0])} · minuto ${R1.raw.golRapido.valor}`));
+          if (mejor('golLejano')) items.push(semCaja('🚀', 'Gol más lejano de la temporada', `${semEsc(R1.raw.golLejano.det.split(' vs ')[0])} · ${Math.round(R1.raw.golLejano.valor)} m${R0.raw.golLejano ? ` (antes ${Math.round(R0.raw.golLejano.valor)} m)` : ''}`));
+          if (mejor('jugGoles')) items.push(semCaja('🎩', 'Más goles de un jugador en un partido', semEsc(R1.raw.jugGoles.det.split(' vs ')[0]) + ` · ${R1.raw.jugGoles.valor}`));
+        }
+        const R = recordsTemporada(t);
+        R.equipo.filter(r => r.vivo && /^(\d+)/.test(String(r.v)) && parseInt(r.v, 10) >= 2 && r.t !== 'Porterías a cero').slice(0, 2)
+          .forEach(r => items.push(semCaja(r.ico, `${parseInt(r.v, 10)} ${r.t.toLowerCase()}`, 'Racha en marcha')));
+        const pers = recordsDelPartido(t, pi);
+        pers.slice(0, Math.max(0, 5 - items.length)).forEach(x => items.push(semCaja('🏅', `${semEsc(semNom(x.j.name))}: ${semEsc(x.d.n.toLowerCase())}`, `${semEsc(recFmt(x.d, x.v))}${x.antes != null ? ` · su récord era ${semEsc(recFmt(x.d, x.antes))}` : ''}`)));
+        if (pers.length > Math.max(0, 5 - items.length) && items.length >= 5) items[4] = items[4]; // como mucho 5
+      } catch (e) { console.error('Semana · récords:', e); }
+      if (items.length) out.push(`<div class="sem-k">🏆 RÉCORDS Y RACHAS</div><div class="sem-t">Lo que se batió</div><div class="sem-lista">${items.slice(0, 5).join('')}</div>`);
+    }
+    // 4 · Cómo queda la Liga
+    if (L) {
+      try {
+        const J = L.J, numJ = x => numJornadaGlobalViewer(liga, x);
+        const desp = ligaClasifViewer(Object.assign({}, liga, { partidos: liga.partidos.filter(x => numJ(x) <= J) }));
+        const ant = J > 1 ? ligaClasifViewer(Object.assign({}, liga, { partidos: liga.partidos.filter(x => numJ(x) < J) })) : null;
+        const fH = desp.find(f => f.id === L.H.id);
+        const posAnt = id => { const f = ant && ant.find(x => x.id === id); return f ? f.pos : null; };
+        const dH = posAnt(L.H.id) != null ? posAnt(L.H.id) - fH.pos : 0;
+        const tit = fH.pos === 1 ? (dH > 0 ? '¡Líderes!' : 'Seguimos líderes') : dH > 0 ? `Subimos al ${fH.pos}.º` : dH < 0 ? `Bajamos al ${fH.pos}.º` : `Seguimos ${fH.pos}.º`;
+        const desde = Math.max(1, Math.min(fH.pos - 1, desp.length - 3)), filas = desp.filter(f => f.pos >= desde && f.pos < desde + 4);
+        if (!filas.some(f => f.pos === 1)) filas.unshift(desp[0]);
+        const nomEq = id => { const e = liga.equipos.find(x => x.id === id); return e ? (e.esHergar ? 'C.D. Hergar B' : (e.nombre || e.abrev || '')) : ''; };
+        const tabla = filas.map((f, i) => {
+          const d = posAnt(f.id) != null ? posAnt(f.id) - f.pos : 0;
+          const corte = i > 0 && f.pos - filas[i - 1].pos > 1 ? '<div class="sem-corte">· · ·</div>' : '';
+          return corte + `<div class="sem-fila ${f.id === L.H.id ? 'h' : ''}"><span>${f.pos}</span><span>${semEsc(nomEq(f.id))}</span><span>${f.pts}</span><span class="${d > 0 ? 'up' : d < 0 ? 'down' : ''}">${d > 0 ? '▲' + d : d < 0 ? '▼' + (-d) : ''}</span></div>`;
+        }).join('');
+        let prob = '';
+        try {
+          const D = pronPreparar(liga);
+          if (D.H >= 0 && D.P.some(x => !x.jugado)) {
+            const S1 = pronSimular(D, J, 3000, 77 + J), c1 = S1.pos[D.H][0] / S1.N;
+            let dl = '';
+            if (J > 1) { const S0 = pronSimular(D, J - 1, 3000, 76 + J), c0 = S0.pos[D.H][0] / S0.N, dd = Math.round((c1 - c0) * 100); if (dd) dl = ` <span class="${dd > 0 ? 'up' : 'down'}">(${dd > 0 ? '+' : ''}${dd})</span>`; }
+            prob = `<div class="sem-prob">🔮 Probabilidad de ser campeón: <b>${pronPct(c1)} %</b>${dl}<div class="sem-barra"><b style="width:${Math.round(c1 * 100)}%"></b></div></div>`;
+          }
+        } catch (e) { console.error('Semana · pronóstico:', e); }
+        out.push(`<div class="sem-k">📋 CÓMO QUEDA LA LIGA</div><div class="sem-t">${tit}</div><div class="sem-tabla">${tabla}</div>${prob}`);
+      } catch (e) { console.error('Semana · Liga:', e); }
+    }
+    // 5 · Lo que viene
+    if (liga && liga.equipos && liga.partidos) {
+      try {
+        const H = liga.equipos.find(e => e.esHergar);
+        const J = L ? L.J : 0;
+        const pend = liga.partidos.filter(x => H && (x.local === H.id || x.visitante === H.id) && (x.golesLocal == null || x.golesVisitante == null) && numJornadaGlobalViewer(liga, x) > J)
+          .sort((a, b) => numJornadaGlobalViewer(liga, a) - numJornadaGlobalViewer(liga, b));
+        const pub = liga.proximoPublicado && liga.partidos.find(x => x.id === liga.proximoPublicado.id && (x.golesLocal == null || x.golesVisitante == null));
+        const lp = pub || pend[0];
+        if (lp) {
+          const esCasa = lp.local === H.id, R = liga.equipos.find(e => e.id === (esCasa ? lp.visitante : lp.local));
+          const tabla = ligaClasifViewer(liga), fR = R && tabla.find(f => f.id === R.id);
+          const campo = (() => { try { const c = campoPartidoLiga(liga, lp); return c && c.nombre ? c.nombre : ''; } catch (e) { return ''; } })();
+          const prev = liga.partidos.filter(x => x !== lp && x.golesLocal != null && x.golesVisitante != null && R && ((x.local === H.id && x.visitante === R.id) || (x.local === R.id && x.visitante === H.id)))
+            .map(x => { const a = x.local === H.id ? x.golesLocal : x.golesVisitante, b = x.local === H.id ? x.golesVisitante : x.golesLocal; return `${a}-${b}`; });
+          const fecha = lp.fechaPartido || lp.fecha || '', hora = lp.hora || '';
+          const nombreR = R ? (R.nombre || R.abrev || 'Rival') : 'Rival';
+          out.push(`<div class="sem-k">📅 LO QUE VIENE</div><div class="sem-t">Próximo partido</div>
+            <div class="sem-next"><div class="sem-next-f">${semEsc([fecha, hora].filter(Boolean).join(' · '))}${campo ? ' · ' + semEsc(campo) : ''}</div>
+              <div class="sem-next-r">${esCasa ? `HERGAR vs ${semEsc(nombreR.toUpperCase())}` : `${semEsc(nombreR.toUpperCase())} vs HERGAR`}</div>
+              <div class="sem-next-d">${fR ? `${semEsc(nombreR)} va ${fR.pos}.º con ${fR.pts} ${fR.pts === 1 ? 'punto' : 'puntos'}` : ''}${prev.length ? `<br>Cara a cara esta temporada: ${prev.join(', ')} (Hergar primero)` : '<br>Primer partido contra ellos esta temporada'}</div></div>
+            <div class="sem-s" style="text-align:center; margin-top:auto;">¡Nos vemos en el campo! 🔴</div>`);
+        }
+      } catch (e) { console.error('Semana · próximo:', e); }
+    }
+    return out;
+  }
+  function semClaveDatos(info) {
+    const liga = ultimaLiga;
+    return info.id + '|' + info.nVideos + '|' + (liga ? (liga.partidos || []).filter(x => x.golesLocal != null).length + '|' + JSON.stringify(liga.proximoPublicado || null) : '-') + '|' + Object.keys(fotosJugadores || {}).length;
+  }
+  function semObtenerSlides(info) {
+    const clave = semClaveDatos(info);
+    if (semCache.clave !== clave) semCache = { clave, slides: semSlides(info) };
+    return semCache.slides;
+  }
+
+  // Reproductor de historias
+  function semParar() { if (semPlayer) { clearTimeout(semPlayer.timer); semPlayer.vivo = false; const v = semPlayer.cont.querySelector('video'); if (v) { try { v.pause(); } catch (e) {} } semPlayer = null; } }
+  function semReproducir(cont, slides, alTerminar, alCerrar) {
+    semParar();
+    const P = { cont, slides, i: 0, timer: null, vivo: true, alTerminar };
+    semPlayer = P;
+    cont.innerHTML = `<div class="sem-story"><div class="sem-bars">${slides.map(() => '<i><b></b></i>').join('')}</div>
+      <button type="button" class="sem-x" aria-label="Cerrar">✕</button>
+      ${slides.map(h => `<div class="sem-slide">${h}</div>`).join('')}<div class="sem-tap-izq"></div><div class="sem-tap-der"></div></div>`;
+    const st = cont.querySelector('.sem-story');
+    const ir = (k) => {
+      if (!P.vivo) return;
+      clearTimeout(P.timer);
+      if (k >= slides.length) { if (alTerminar) alTerminar(); return; }
+      P.i = Math.max(0, k);
+      st.querySelectorAll('.sem-slide').forEach((s, j) => s.classList.toggle('on', j === P.i));
+      st.querySelectorAll('.sem-bars i').forEach((b, j) => { const x = b.querySelector('b'); x.style.transition = 'none'; x.style.width = j < P.i ? '100%' : '0%'; });
+      st.querySelectorAll('video').forEach(v => { try { v.pause(); } catch (e) {} });
+      const v = st.querySelectorAll('.sem-slide')[P.i].querySelector('video');
+      let dur = 6000;
+      if (v) { try { v.currentTime = 0; v.play().catch(() => {}); } catch (e) {} dur = (v.duration && isFinite(v.duration)) ? Math.min(15000, Math.max(4000, v.duration * 1000 + 500)) : 10000; v.onended = () => ir(P.i + 1); }
+      const barra = st.querySelectorAll('.sem-bars i b')[P.i];
+      requestAnimationFrame(() => { barra.style.transition = `width ${dur}ms linear`; barra.style.width = '100%'; });
+      P.timer = setTimeout(() => ir(P.i + 1), dur);
+    };
+    st.querySelector('.sem-tap-der').onclick = () => ir(P.i + 1);
+    st.querySelector('.sem-tap-izq').onclick = () => ir(P.i - 1);
+    st.querySelector('.sem-x').onclick = () => { semParar(); if (alCerrar) alCerrar(); };
+    ir(0);
+    return P;
+  }
+  // Ventana a pantalla completa (desde la franja o desde Temporada)
+  window.semAbrir = () => {
+    const info = semInfo(); if (!info || !info.listo) return;
+    const slides = semObtenerSlides(info); if (!slides.length) return;
+    const m = document.getElementById('semanaModal'), c = document.getElementById('semanaModalCont');
+    m.classList.add('on'); document.body.style.overflow = 'hidden';
+    const cerrar = () => { semParar(); m.classList.remove('on'); document.body.style.overflow = ''; c.innerHTML = ''; semMarcarVista(info.id); semActualizar(); };
+    semReproducir(c, slides, cerrar, cerrar);
+  };
+  // Qué se ve en Partido y en Temporada → Partidos
+  function semActualizar() {
+    try {
+      const card = document.getElementById('semanaCard'), franja = document.getElementById('semanaFranja'), temp = document.getElementById('semanaTempCard');
+      if (!card || !franja || !temp) return;
+      const info = semInfo();
+      const disponible = !!(info && info.listo);
+      const titulo = disponible ? `vs ${escHtml(info.p.rival || '')} (${Number(info.p.golesLocal) || 0}-${Number(info.p.golesRival) || 0})` : '';
+      // Temporada → Partidos: siempre que haya semana
+      temp.style.display = disponible ? '' : 'none';
+      temp.innerHTML = disponible ? `<button type="button" class="sem-btn" onclick="semAbrir()"><span class="sem-ring"><i>📰</i></span><span><b>La semana del Hergar</b><br><small>Último partido · ${titulo}</small></span><span class="sem-ver">Ver ▸</span></button>` : '';
+      // Partido: nunca en directo ni con el próximo partido publicado
+      const enPartido = disponible && !mhEnJuego() && !proximoPartidoActual();
+      const modo = !enPartido ? '' : (semLeerVista() === info.id ? 'franja' : 'completo');
+      const clave = modo + '|' + (info ? semClaveDatos(info) : '');
+      if (modo !== 'completo' && semPlayer && semPlayer.cont === card) semParar();
+      if (modo === 'completo') {
+        franja.style.display = 'none'; franja.innerHTML = '';
+        if (semPintado !== clave || !card.innerHTML) {
+          const slides = semObtenerSlides(info);
+          if (!slides.length) { card.style.display = 'none'; semPintado = clave; return; }
+          card.style.display = '';
+          const fin = () => { semMarcarVista(info.id); semActualizar(); };
+          semReproducir(card, slides, fin, fin);
+        }
+      } else {
+        card.style.display = 'none'; card.innerHTML = '';
+        franja.style.display = modo === 'franja' ? '' : 'none';
+        franja.innerHTML = modo === 'franja' ? `<button type="button" class="sem-btn" onclick="semAbrir()"><span class="sem-ring"><i>📰</i></span><span><b>La semana del Hergar</b><br><small>${titulo} · toca para verla otra vez</small></span><span class="sem-ver">▸</span></button>` : '';
+        const res = document.getElementById('resumenUltimoCard');
+        if (modo === 'franja' && res && res.parentNode === franja.parentNode && res.nextSibling !== franja) res.parentNode.insertBefore(franja, res.nextSibling);
+      }
+      semPintado = clave;
+    } catch (e) { console.error('Semana:', e); }
+  }
+  window.semActualizar = semActualizar;
+  setInterval(() => { try { semActualizar(); } catch (e) {} }, 10 * 60 * 1000); // por si se cumplen las 24 h con el visor abierto
+
   // ── v177 · 🔎 BUSCADOR DE TEMPORADA: busca por el título de cada tarjeta (Temporada y Liga), por palabras de
   // las cosas que van dentro de una tarjeta (gol más lejano, muro, golazo…) y por niños (abre su ficha) ──
   const BUSCA_EXTRA = [
@@ -8260,6 +8581,7 @@
   onValue(ref(db, 'plantilla_fotos'), (snap) => {
     fotosJugadores = snap.val() || {};
     try { mhPintarPagina(); } catch (e) {} // v176
+    try { semActualizar(); } catch (e) {} // v179
     if (ultimoPerfilAbiertoId != null) reabrirPerfilActual();
     if (typeof pintarProximoPartido === 'function') pintarProximoPartido();
     if (ultimaLiga) { try { pintarLigaEquipos(ultimaLiga); renderLigaViewerJornada(); pintarLigaClasificacion(ultimaLiga); } catch (e) {} }
@@ -9139,6 +9461,7 @@
     ultimaLiga = liga;
     try { tmpCambio(); if (ultimaTemporada) pintarPartidos(ultimaTemporada); } catch (e) { console.error('Suerte y nivel:', e); } // v153 · v175: con la Liga nueva, cada apartado se recalcula al abrirlo
     pintarProximoPartido(); // v72
+    try { semActualizar(); } catch (e) {} // v179
     if (ultimoMatchData) { try { pintarResumenUltimo(ultimoMatchData); pintarRecordsHoy(ultimoMatchData); } catch (e) { console.error('Resumen:', e); } } // v164: al publicar o quitar el próximo partido
     try { pintarCabeceraPartido(ultimoMatchData); } catch (e) { console.error('Cabecera:', e); }
     if (tvActivo) tvRender();

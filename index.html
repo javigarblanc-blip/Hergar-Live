@@ -1053,6 +1053,7 @@
 </div>
 
 <script type="module">
+  // v184 (visor) · Acta PDF: el once inicial colocado como en la pizarra (bandas abiertas y a la altura de su línea).
   // v181 (visor) · «Mi hijo» pasa a llamarse «jugador favorito» en todo lo que se ve (elegir, cambiar y quitar).
   // v180 (visor) · La semana del Hergar: fuera el botón de compartir la imagen (de momento).
   // v179 (visor) · 📰 La semana del Hergar: 5 historias del último partido (resultado y MVP, gol de la jornada, récords y rachas, Liga, lo que viene). Sale cuando todos los goles tienen vídeo o a las 24 h; se ve entera una vez arriba en Partido y luego queda como franja bajo el resultado; con el próximo partido publicado pasa a Temporada → Partidos. En directo no sale. (v180: sin compartir de momento.)
@@ -2863,6 +2864,33 @@
   const ACTA_PUESTO_Y = { POR: 0.92, LI: 0.75, DFC: 0.75, LD: 0.75, MCD: 0.61, MI: 0.49, MC: 0.49, MD: 0.49, MP: 0.37, EI: 0.2, ED: 0.2, DC: 0.2 };
   const ACTA_PUESTO_X = { POR: 1, LI: 0, DFC: 1, LD: 2, MCD: 1, MI: 0, MC: 1, MD: 2, MP: 1, EI: 0, ED: 2, DC: 1 };
   const ACTA_LINEA_PUESTO = { portero: 'POR', defensa: 'DFC', centrocampista: 'MC', delantero: 'DC' };
+    // v184 · ACTA: el once colocado como en la pizarra. Cada niño va al hueco de su puesto en la formación con la que
+    // empezó el partido (los dos DFC o los dos MCD, de izquierda a derecha); si su puesto no está en esa formación, al
+    // hueco libre más cercano de su línea. Devuelve null si no se puede (y el acta los pone por filas como antes).
+    const ACTA_PUESTOS_FORM = {
+        "4-3-3":   ['POR', 'LI', 'DFC', 'DFC', 'LD', 'MCD', 'MC', 'MC', 'EI', 'DC', 'ED'],
+        "4-4-2":   ['POR', 'LI', 'DFC', 'DFC', 'LD', 'MI', 'MC', 'MC', 'MD', 'DC', 'DC'],
+        "4-2-3-1": ['POR', 'LI', 'DFC', 'DFC', 'LD', 'MCD', 'MCD', 'MI', 'MP', 'MD', 'DC'],
+        "3-5-2":   ['POR', 'DFC', 'DFC', 'DFC', 'MI', 'MC', 'MP', 'MC', 'MD', 'DC', 'DC'],
+        "3-4-3":   ['POR', 'DFC', 'DFC', 'DFC', 'MI', 'MC', 'MC', 'MD', 'EI', 'DC', 'ED']
+    };
+    function actaPuntosPizarra(once, form) {
+        const pus = ACTA_PUESTOS_FORM[form], co = (typeof COORDENADAS_FORMACIONES !== 'undefined') && COORDENADAS_FORMACIONES[form];
+        if (!pus || !co || !Array.isArray(once) || !once.length || once.length > 11) return null;
+        const LIN = { POR: 'P', LI: 'D', DFC: 'D', LD: 'D', MCD: 'M', MI: 'M', MC: 'M', MD: 'M', MP: 'M', EI: 'A', ED: 'A', DC: 'A' };
+        const libres = pus.map((pu, i) => ({ pu, x: co[i].x, y: co[i].y, usado: false }));
+        const pref = (pu) => 10 + 40 * (ACTA_PUESTO_X[pu] ?? 1);
+        const orden = once.map(x => ({ x, pu: x.puesto || 'MC' })).sort((a, b) => (ACTA_PUESTO_X[a.pu] ?? 1) - (ACTA_PUESTO_X[b.pu] ?? 1));
+        const out = [], pend = [];
+        orden.forEach(o => { const s = libres.filter(l => !l.usado && l.pu === o.pu).sort((a, b) => a.x - b.x)[0]; if (s) { s.usado = true; out.push({ o, s }); } else pend.push(o); });
+        pend.forEach(o => {
+            const cand = libres.filter(l => !l.usado), mismo = cand.filter(l => LIN[l.pu] === LIN[o.pu]);
+            const s = (mismo.length ? mismo : cand).sort((a, b) => Math.abs(a.x - pref(o.pu)) - Math.abs(b.x - pref(o.pu)))[0];
+            if (s) { s.usado = true; out.push({ o, s }); }
+        });
+        return out.length === once.length ? out : null;
+    }
+
   // El PDF solo sabe escribir letras "normales" (con tildes y ñ): fuera emojis y símbolos raros
   function actaTxt(s) {
       return String(s == null ? '' : s).replace(/[—–−]/g, '-').replace(/[“”«»]/g, '"').replace(/[‘’]/g, "'").replace(/…/g, '...')
@@ -3102,22 +3130,28 @@
           doc.setDrawColor(255, 255, 255); doc.setLineWidth(0.3);
           doc.rect(M + 3, py + 3, colW - 6, ph - 6); doc.line(M + 3, py + ph / 2, M + colW - 3, py + ph / 2); doc.circle(M + colW / 2, py + ph / 2, 9);
           doc.rect(M + colW / 2 - 18, py + 3, 36, 14); doc.rect(M + colW / 2 - 18, py + ph - 17, 36, 14);
-          const filasY = {};
-          D.once.forEach(x => { const pu = x.puesto || 'MC'; const yy = ACTA_PUESTO_Y[pu] != null ? ACTA_PUESTO_Y[pu] : 0.5; (filasY[yy] = filasY[yy] || []).push({ x, pu }); });
-          Object.keys(filasY).forEach(k => {
-              const fila = filasY[k].sort((a, b) => (ACTA_PUESTO_X[a.pu] ?? 1) - (ACTA_PUESTO_X[b.pu] ?? 1));
-              fila.forEach((o, n) => {
-                  const cx = M + 6 + (colW - 12) * (n + 1) / (fila.length + 1), cy = py + Number(k) * ph;
-                  const sale = (D.cambios || []).find(c => String(c.saleD) === String(o.x.dorsal) && c.sale === o.x.nombre);
-                  fill(o.pu === 'POR' ? [250, 204, 21] : ACTA_ROJO); doc.circle(cx, cy, 3.6, 'F');
-                  font('bold', 7); if (o.pu === 'POR') color(ACTA_TINTA); else doc.setTextColor(255, 255, 255);
-                  doc.text(String(o.x.dorsal ?? ''), cx, cy + 1.1, { align: 'center' });
-                  font('bold', 6.3); doc.setTextColor(255, 255, 255);
-                  const marcas = `${o.x.goles ? ' G' + (o.x.goles > 1 ? o.x.goles : '') : ''}${o.x.asist ? ' A' + (o.x.asist > 1 ? o.x.asist : '') : ''}${sale ? ` (sale ${sale.min}')` : ''}`;
-                  doc.text(actaTxt(o.x.nombre + marcas), cx, cy + 6.6, { align: 'center' });
-              });
-          });
-          yIzq = py + ph + 3;
+          // v184 · cada niño donde está en la pizarra (misma colocación de la formación del partido); si no cuadra, por filas
+            const pintarActa = (o, cx, cy) => {
+                const sale = (D.cambios || []).find(c => String(c.saleD) === String(o.x.dorsal) && c.sale === o.x.nombre);
+                fill(o.pu === 'POR' ? [250, 204, 21] : ACTA_ROJO); doc.circle(cx, cy, 3.6, 'F');
+                font('bold', 7); if (o.pu === 'POR') color(ACTA_TINTA); else doc.setTextColor(255, 255, 255);
+                doc.text(String(o.x.dorsal ?? ''), cx, cy + 1.1, { align: 'center' });
+                font('bold', 6.3); doc.setTextColor(255, 255, 255);
+                const marcas = `${o.x.goles ? ' G' + (o.x.goles > 1 ? o.x.goles : '') : ''}${o.x.asist ? ' A' + (o.x.asist > 1 ? o.x.asist : '') : ''}${sale ? ` (sale ${sale.min}')` : ''}`;
+                doc.text(actaTxt(o.x.nombre + marcas), cx, cy + 6.6, { align: 'center' });
+            };
+            const puntos = actaPuntosPizarra(D.once, D.p && (D.p.formacionInicial || D.p.formacion));
+            if (puntos) {
+                puntos.forEach(({ o, s }) => pintarActa(o, M + colW * Math.min(87, Math.max(13, s.x)) / 100, py + ph * (0.04 + 0.9 * s.y / 100)));
+            } else {
+                const filasY = {};
+                D.once.forEach(x => { const pu = x.puesto || 'MC'; const yy = ACTA_PUESTO_Y[pu] != null ? ACTA_PUESTO_Y[pu] : 0.5; (filasY[yy] = filasY[yy] || []).push({ x, pu }); });
+                Object.keys(filasY).forEach(k => {
+                    const fila = filasY[k].sort((a, b) => (ACTA_PUESTO_X[a.pu] ?? 1) - (ACTA_PUESTO_X[b.pu] ?? 1));
+                    fila.forEach((o, n) => pintarActa(o, M + 6 + (colW - 12) * (n + 1) / (fila.length + 1), py + Number(k) * ph));
+                });
+            }
+            yIzq = py + ph + 3;
       }
       const tituloDer = (txt) => { font('bold', 9.5); color(ACTA_ROJO); doc.text(actaTxt(txt), xR, yDer + 1); draw(ACTA_ROJO); doc.setLineWidth(0.5); doc.line(xR, yDer + 2.4, W - M, yDer + 2.4); yDer += 5; };
       const tablaDer = (head, body, extra) => {

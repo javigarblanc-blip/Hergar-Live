@@ -588,6 +588,7 @@
   <div class="content">
     <!-- PARTIDO -->
     <div id="partido" class="panel active">
+      <div class="card" id="miHijoElegirCard" style="display:none; border-color:rgba(245,166,35,.45); background:rgba(245,166,35,.05);"></div>
       <div class="card" id="resumenUltimoCard" style="display:none;"></div>
       <div class="card" id="recordsHoyCard" style="display:none;"></div>
       <div class="card" id="proximoPartidoCard" style="display:none;"></div>
@@ -612,7 +613,11 @@
         <div class="card-title">Últimos eventos</div>
         <div id="eventosLista"><div class="loader">Esperando datos del partido...</div></div>
       </div>
+      <button type="button" id="miHijoVolverLink" onclick="mhVolverAElegir()" style="display:none; width:100%; min-height:40px; margin:2px 0 10px; border-radius:10px; border:1px dashed rgba(245,166,35,.45); background:transparent; color:#f5a623; font-weight:700; font-size:12px; cursor:pointer;">⭐ Elegir a mi jugador</button>
     </div>
+
+    <!-- MI HIJO (v176) -->
+    <div id="mihijo" class="panel"><div id="miHijoContenido"></div></div>
 
     <!-- EN VIVO -->
     <div id="envivo" class="panel">
@@ -630,12 +635,6 @@
         </table>
         <div class="sub-caption">🛡️ Acciones defensivas · Pond. = impacto normalizado a 70 min</div>
         <div class="sub-caption" style="text-align:left; margin-top:2px;">👆 Toca un jugador para ver su Perfil</div>
-      </div>
-
-      <div class="card" style="display:none;">
-        <div class="card-title">🗺️ Geo — zonas de acción del partido</div>
-        <canvas id="geoCanvas" width="360" height="480" style="width:100%; border-radius:10px;"></canvas>
-        <div id="geoStats" class="sub-caption" style="text-align:center; margin-top:6px;"></div>
       </div>
 
       <div class="card">
@@ -667,7 +666,6 @@
         <button type="button" class="subtab-btn" onclick="showSub(event,'subContexto')">🧭 Contexto</button>
         <button type="button" class="subtab-btn" onclick="showSub(event,'subSuerte')">🍀 Suerte y nivel</button>
         <button type="button" class="subtab-btn" onclick="showSub(event,'subComparativa')">📊 Comparativa</button>
-        <button type="button" class="subtab-btn" style="display:none;" onclick="showSub(event,'subHeatmap')">🗺️ Heatmap</button>
         <button type="button" class="subtab-btn" onclick="showSub(event,'subOnceIdeal')">🏅 Once ideal</button>
         <button type="button" class="subtab-btn" onclick="showSub(event,'subAdn')">🧬 ADN del equipo</button>
       </div>
@@ -831,23 +829,7 @@
           <div id="compVsPartidos"><div class="loader">Cargando...</div></div>
         </div>
       </div>
-      <div id="subHeatmap" class="sub-panel">
-        <div class="card">
-          <div class="card-title">🗺️ Heatmap de temporada</div>
-          <div style="display:flex; gap:5px; margin-bottom:8px;">
-            <select id="heatmapFiltroSelect" onchange="rerenderHeatmap()" style="flex:1; padding:6px; border-radius:8px; background:#0f172a; color:#e2e8f0; border:1px solid rgba(255,255,255,.1); font-size:11px;">
-              <option value="todo">Todo</option>
-              <option value="ofensivo">Ofensivas</option>
-              <option value="defensivo">Defensivas</option>
-            </select>
-            <select id="heatmapRivalSelect" onchange="rerenderHeatmap()" style="flex:1; padding:6px; border-radius:8px; background:#0f172a; color:#e2e8f0; border:1px solid rgba(255,255,255,.1); font-size:11px;">
-              <option value="todos">Todos los partidos</option>
-            </select>
-          </div>
-          <canvas id="heatmapCanvas" width="360" height="480" style="width:100%; border-radius:10px;"></canvas>
-          <div id="heatmapStats" class="sub-caption" style="text-align:center; margin-top:6px;"></div>
-        </div>
-      </div>
+
       <div id="subVideos" class="sub-panel">
         <div class="card">
           <div class="card-title">🎥 Goles en vídeo</div>
@@ -940,10 +922,11 @@
 
 <div class="bottom-tabbar-wrap">
 <div class="bottom-tabbar">
-  <div class="bottom-tab active" onclick="showTab('partido')"><span class="ic">⚽</span>Partido</div>
-  <div class="bottom-tab" onclick="showTab('envivo')"><span class="ic">📊</span>En vivo</div>
-  <div class="bottom-tab" onclick="showTab('temporada')"><span class="ic">🏆</span>Temporada</div>
-  <div class="bottom-tab" onclick="showTab('liga')"><span class="ic">📋</span>Liga</div>
+  <div class="bottom-tab active" data-t="partido" onclick="showTab('partido')"><span class="ic">⚽</span>Partido</div>
+  <div class="bottom-tab" id="tabMiHijo" data-t="mihijo" onclick="showTab('mihijo')" style="display:none;"><span class="ic">⭐</span><span id="tabMiHijoNom" style="max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Mi jugador</span></div>
+  <div class="bottom-tab" data-t="envivo" onclick="showTab('envivo')"><span class="ic">📊</span>En vivo</div>
+  <div class="bottom-tab" data-t="temporada" onclick="showTab('temporada')"><span class="ic">🏆</span>Temporada</div>
+  <div class="bottom-tab" data-t="liga" onclick="showTab('liga')"><span class="ic">📋</span>Liga</div>
 </div>
 </div>
 
@@ -997,6 +980,8 @@
 </div>
 
 <script type="module">
+  // v176 (visor) · ⭐ Mi hijo: cada familia puede elegir a su jugador (se guarda solo en ese móvil) y le sale una 5.ª pestaña con su página: último partido, goles en vídeo, temporada con evolución y récords. Se puede cambiar o quitar (vuelven las 4 pestañas). En directo no cambia nada.
+  // v175 (visor) · Repaso técnico: cada apartado de Temporada se calcula al abrirlo (y se repinta solo si llegan datos nuevos), en vez de calcular los ~25 a la vez cada vez que llega la temporada. Fuera la pestaña Heatmap y la tarjeta Geo (ocultas) y un bloque apagado del Mapa de goles. Lo que se ve no cambia.
   // v174 (app + visor) · Goles cruzados: ⛳ balón parado (1 gol cada X córners / faltas, a favor y en contra), 💥 índice golazo (sin penaltis ni faltas), 🆚 cómo marcamos según el rival (Elo) y línea en el próximo partido, ⏱ origen de los goles por tramos, 🏆 gol más lejano (con faltas; récord del club, personal y aviso en directo) y ⚡ Oportunista en el Estilo y el ADN.
   // v173 (visor) · Mapa de goles: chips de origen sobre el campo para ver solo los goles de un origen (se combina con el filtro por niño); cada chip hace también de leyenda de colores.
   // v172 (app + visor) · Campo de cada partido: se puede elegir en la app (el de otro equipo de la Liga o uno nuevo) y el visor lo usa en la tarjeta del próximo partido (tiempo y «Cómo llegar»).
@@ -1193,42 +1178,7 @@
       </tr>`).join('');
   }
 
-  function pintarGeo(matchData) {
-    const canvas = document.getElementById('geoCanvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const W = canvas.width, H = canvas.height;
-    ctx.clearRect(0,0,W,H);
-    ctx.fillStyle = '#1a5c32'; ctx.fillRect(0,0,W,H);
-    ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.moveTo(0,H/2); ctx.lineTo(W,H/2); ctx.stroke();
-    ctx.strokeStyle = 'rgba(255,255,255,.2)'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(0,H/3); ctx.lineTo(W,H/3); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0,2*H/3); ctx.lineTo(W,2*H/3); ctx.stroke();
-    const zonasEquipo = matchData.zonasEquipo || { of:{}, def:{} };
-    const of = zonasEquipo.of || {}, def = zonasEquipo.def || {};
-    const zonas = {};
-    Object.keys(ZONAS_COORD_PCT).forEach(z => { zonas[z] = (parseInt(of[z])||0) + (parseInt(def[z])||0); });
-    const maxVal = Math.max(...Object.values(zonas), 1);
-    let total = 0;
-    Object.keys(ZONAS_COORD_PCT).forEach(zStr => {
-      const z = parseInt(zStr);
-      const val = zonas[z] || 0;
-      if (val === 0) return;
-      total += val;
-      const intensidad = val / maxVal;
-      const pos = { x: W*ZONAS_COORD_PCT[z].x/100, y: H*ZONAS_COORD_PCT[z].y/100 };
-      const r = 30 * (0.5 + 0.5*intensidad);
-      const grad = ctx.createRadialGradient(pos.x,pos.y,0,pos.x,pos.y,r);
-      grad.addColorStop(0, `rgba(255, ${Math.round(200*(1-intensidad))}, 0, ${0.5+0.45*intensidad})`);
-      grad.addColorStop(1, 'rgba(255,100,0,0)');
-      ctx.beginPath(); ctx.arc(pos.x,pos.y,r,0,2*Math.PI); ctx.fillStyle = grad; ctx.fill();
-      ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.font = `bold ${8+Math.round(3*intensidad)}px Inter`; ctx.textAlign='center';
-      ctx.fillText(val, pos.x, pos.y+3);
-    });
-    const statsEl = document.getElementById('geoStats');
-    if (statsEl) statsEl.textContent = total > 0 ? `${total} acciones registradas` : 'Sin acciones registradas todavía';
-  }
+
 
   function pintarRotacion(matchData) {
     const cont = document.getElementById('rotacionLista');
@@ -4394,6 +4344,7 @@
     // v3: PREVIA = alineación publicada antes de empezar el partido
     const previa = matchData.previa === true && !matchData.matchFinished && !matchData.matchRunning;
     pintarCabeceraPartido(matchData);
+    try { mhPintarElegir(); } catch (e) {} // v176: la tarjeta de elegir no sale con el partido en juego
 
     const liveBanner = document.getElementById('liveBanner');
     const offlineBanner = document.getElementById('offlineBanner');
@@ -4414,7 +4365,6 @@
     try { pintarWP(matchData); } catch (e) { console.error('Probabilidad en directo:', e); }
     pintarTablaJugadores(matchData);
     pintarMomentum(matchData);
-    pintarGeo(matchData);
     pintarRotacion(matchData);
     try { tvAlActualizarPartido(matchData); } catch (e) { console.error('Modo TV:', e); }
   }
@@ -7229,54 +7179,8 @@
     2:{x:50,y:90}, 5:{x:50,y:73}, 8:{x:50,y:57}, 11:{x:50,y:40}, 14:{x:50,y:23},
     3:{x:17,y:90}, 6:{x:17,y:73}, 9:{x:17,y:57}, 12:{x:17,y:40}, 15:{x:17,y:23}
   };
-  function dibujarHeatmapViewer(zonasData) {
-    const canvas = document.getElementById('heatmapCanvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const W = canvas.width, H = canvas.height;
-    ctx.clearRect(0,0,W,H);
-    ctx.fillStyle = '#1a5c32'; ctx.fillRect(0,0,W,H);
-    ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.moveTo(0,H/2); ctx.lineTo(W,H/2); ctx.stroke();
-    ctx.strokeStyle = 'rgba(255,255,255,.2)'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(0,H/3); ctx.lineTo(W,H/3); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0,2*H/3); ctx.lineTo(W,2*H/3); ctx.stroke();
-    const maxVal = Math.max(...Object.values(zonasData).map(v => parseInt(v)||0), 1);
-    let total = 0;
-    Object.keys(ZONAS_COORD_PCT).forEach(zStr => {
-      const z = parseInt(zStr);
-      const val = parseInt(zonasData[z]) || 0;
-      if (val === 0) return;
-      total += val;
-      const intensidad = val / maxVal;
-      const pos = { x: W*ZONAS_COORD_PCT[z].x/100, y: H*ZONAS_COORD_PCT[z].y/100 };
-      const r = 30 * (0.5 + 0.5*intensidad);
-      const grad = ctx.createRadialGradient(pos.x,pos.y,0,pos.x,pos.y,r);
-      grad.addColorStop(0, `rgba(255, ${Math.round(200*(1-intensidad))}, 0, ${0.5+0.45*intensidad})`);
-      grad.addColorStop(1, 'rgba(255,100,0,0)');
-      ctx.beginPath(); ctx.arc(pos.x,pos.y,r,0,2*Math.PI); ctx.fillStyle = grad; ctx.fill();
-      ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.font = `bold ${8+Math.round(3*intensidad)}px Inter`; ctx.textAlign='center';
-      ctx.fillText(val, pos.x, pos.y+3);
-    });
-    const statsEl = document.getElementById('heatmapStats');
-    if (statsEl) statsEl.textContent = total > 0 ? `${total} acciones registradas` : 'Sin acciones registradas aún';
-  }
-  function pintarHeatmap(t) {
-    const filtro = document.getElementById('heatmapFiltroSelect')?.value || 'todo';
-    const rivalSel = document.getElementById('heatmapRivalSelect');
-    if (rivalSel && rivalSel.options.length <= 1) {
-      const rivales = [...new Set((t.partidos||[]).map(p => p.rival))];
-      rivalSel.innerHTML = '<option value="todos">Todos los partidos</option>' + rivales.map(r => `<option value="${r}">${r}</option>`).join('');
-    }
-    const rivalFiltro = rivalSel?.value || 'todos';
-    let base = (rivalFiltro !== 'todos' && t.zonasPorRival?.[rivalFiltro]) ? t.zonasPorRival[rivalFiltro] : (t.zonasEquipo || {of:{},def:{}});
-    const of = base.of || {}, def = base.def || {};
-    let zonas = {};
-    if (filtro === 'todo') { Object.keys(ZONAS_COORD_PCT).forEach(z => { zonas[z] = (of[z]||0)+(def[z]||0); }); }
-    else if (filtro === 'ofensivo') zonas = {...of};
-    else zonas = {...def};
-    dibujarHeatmapViewer(zonas);
-  }
+
+
 
   function obtenerCuposFormacion(formacion) {
     const esquema = formacion.split('-').map(Number);
@@ -7344,8 +7248,9 @@
   function showTab(id){
     document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
     document.getElementById(id).classList.add('active');
-    const map = {partido:0, envivo:1, temporada:2, liga:3};
-    document.querySelectorAll('.bottom-tab').forEach((b,i)=>b.classList.toggle('active', i===map[id]));
+    document.querySelectorAll('.bottom-tab').forEach(b=>b.classList.toggle('active', b.dataset.t===id)); // v176: por nombre (hay una 5.ª pestaña opcional)
+    if (id === 'mihijo') { try { mhPintarPagina(); } catch (e) { console.error('Mi hijo:', e); } }
+    if (id === 'temporada') tmpPintarVisible(); // v175
   }
   function showSub(ev, id){
     const btn = ev.currentTarget || ev.target.closest('.subtab-btn') || ev.target;
@@ -7354,7 +7259,7 @@
     document.getElementById(id).classList.add('active');
     panel.querySelectorAll('.subtab-btn').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
-    if (panel.id === 'temporada') actualizarMasTemp();
+    if (panel.id === 'temporada') { actualizarMasTemp(); tmpPintarVisible(); } // v175
   }
   // ── Temporada · "Más análisis": se despliega y el visor recuerda si lo dejaste abierto ──
   function masTempAbierto() { try { return localStorage.getItem('hergarLive_masAnalisis') === '1'; } catch (e) { return false; } }
@@ -7528,15 +7433,7 @@
     if (zonas) h += `<div style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:11px; letter-spacing:.5px; color:#f5a623; margin:14px 0 4px;">DESDE DÓNDE${eq === 'C' ? ' NOS MARCAN' : ''}</div>${zonas}`;
     // origen
     h += `<div style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:11px; letter-spacing:.5px; color:#f5a623; margin:14px 0 4px;">CÓMO LLEGARON</div>${mgBarras(lista, MG_LISTA[eq], eq === 'F' ? 'rgb(180,20,56)' : '#2b6ea3')}`;
-    const conO = lista.filter(x => x.origen);
-    if (false && conO.length >= 3) { // v171: la frase pasa a la tarjeta «Así marcamos»
-      const par = conO.filter(x => MG_PARADO.includes(x.origen)).length;
-      const top = MG_LISTA[eq].map(k => [k, conO.filter(x => x.origen === k).length]).sort((a, b) => b[1] - a[1])[0];
-      const frase = eq === 'F'
-        ? `Lo que más goles nos da: <b>${MG_ORIG[top[0]][0].toLowerCase()}</b> (${top[1]} de ${conO.length}). A balón parado llega el ${Math.round(par / conO.length * 100)} % de nuestros goles.`
-        : `Lo que más nos castiga: <b>${MG_ORIG[top[0]][0].toLowerCase()}</b> (${top[1]} de ${conO.length}). A balón parado nos llega el ${Math.round(par / conO.length * 100)} % de los goles en contra.`;
-      h += `<div style="font-size:12px; line-height:1.5; color:#cbd5e1; background:rgba(255,255,255,.03); border-left:3px solid #f5a623; border-radius:6px; padding:8px 10px; margin-top:10px;">${frase}</div>`;
-    }
+
     // v174 · balón parado, golazos y según el rival
     if (!mgJug) { try { h += mgBalonParadoHTML(t, eq); } catch (e) { console.error('Balón parado:', e); } }
     if (eq === 'F') { try { h += mgGolazosHTML(t, nomDe, mgJug || null); } catch (e) { console.error('Golazos:', e); } }
@@ -7905,42 +7802,257 @@
   }
   // ── Temporada: siempre suscrita, esté o no en vivo un partido ──
   let ultimaTemporada = null;
+  // v175 · Cada apartado de Temporada se calcula la primera vez que se abre (y vuelve a calcularse solo si llegan datos
+  // nuevos). Antes se calculaban todos a la vez cada vez que llegaba la temporada, aunque se estuviera mirando el Partido.
+  // «📅 Partidos» se sigue pintando siempre al momento: es el apartado que se abre primero y prepara los datos del acta.
+  const TMP_PINTA = {
+    subRanking: (t) => pintarRanking(t),
+    subPlantilla: () => pintarPlantillaTabla(),
+    subRecords: (t) => pintarRecords(t),
+    subMedias: () => pintarSuerteNivel(),
+    subSuerte: () => pintarSuerteNivel(),
+    subMapaGoles: () => pintarMapaGoles(),
+    subVideos: () => pintarGaleriaVideos(),
+    subSinergias: (t) => {
+      pintarSinergias(t);
+      try { document.getElementById('muroLista').innerHTML = muroHTML(t, '#f5a623'); } catch (e) { console.error('Muro:', e); } // v134
+      try { document.getElementById('companerosLista').innerHTML = companerosHTML(t, '#f5a623', true); } catch (e) { console.error('Compañeros:', e); } // v140
+      try { document.getElementById('sociedadesLista').innerHTML = sociedadesHTML(t); } catch (e) { console.error('Sociedades:', e); }
+    },
+    subRachas: (t) => pintarRachas(t),
+    subMinutos: (t) => {
+      try { document.getElementById('minutosGoles').innerHTML = tramosGolHTML(t, 'vtr'); } catch (e) { console.error('Minutos:', e); }
+      try { document.getElementById('origenTramos').innerHTML = origenTramosHTML(t); } catch (e) { console.error('Origen por tramos:', e); } // v174
+      try { document.getElementById('momentosEquipoLista').innerHTML = momentosEquipoHTML(t, '#f5a623'); } catch (e) { console.error('Momentos:', e); } // v134
+      try { document.getElementById('marcadorEquipoLista').innerHTML = marcadorEquipoHTML(t, '#f5a623'); document.getElementById('tirosEquipoLista').innerHTML = tirosEquipoHTML(t, '#f5a623'); } catch (e) { console.error('Marcador/tiros:', e); } // v135
+    },
+    subBanquillo: (t) => { try { document.getElementById('banquilloLista').innerHTML = banquilloHTML(t, '#f5a623', 'bqv'); } catch (e) { console.error('Banquillo:', e); } }, // v137
+    subContexto: (t) => { try { document.getElementById('contextoLista').innerHTML = ctxContextoHTML(t); } catch (e) { console.error('Contexto:', e); } }, // v97
+    subComparativa: (t) => { pintarComparativa(t); try { pintarCompVs(t); } catch (e) { console.error('Comparativa:', e); } }, // v167
+    subOnceIdeal: (t) => pintarOnceIdeal(t),
+    subAdn: (t) => { try { document.getElementById('adnLista').innerHTML = adnEquipoHTML(t, 'abrirPerfilJugadorTemporada'); } catch (e) { console.error('ADN:', e); } } // v150
+  };
+  let tmpPintado = {}; // apartados ya calculados con los datos actuales
+  function tmpPintar(id) {
+    if (!TMP_PINTA[id] || tmpPintado[id]) return;
+    if (!ultimaTemporada && id !== 'subPlantilla') return; // la Plantilla se puede ver aunque aún no haya temporada
+    tmpPintado[id] = true;
+    try { TMP_PINTA[id](ultimaTemporada); } catch (e) { console.error('Temporada · ' + id + ':', e); }
+  }
+  // Pinta el apartado que se está viendo (si la pestaña Temporada está abierta)
+  function tmpPintarVisible() {
+    const panel = document.getElementById('temporada');
+    if (!panel || !panel.classList.contains('active')) return;
+    const sub = panel.querySelector('.sub-panel.active');
+    if (sub) tmpPintar(sub.id);
+  }
+  // Llegan datos nuevos: lo calculado deja de valer (todo o solo algunos apartados) y se repinta lo que se ve
+  function tmpCambio(ids) {
+    if (ids) ids.forEach(id => { delete tmpPintado[id]; }); else tmpPintado = {};
+    tmpPintarVisible();
+  }
+  // Red de seguridad: se abra como se abra un apartado (botón, enlace o cualquier otro camino), se pinta si hace falta
+  try {
+    const obs = new MutationObserver(() => tmpPintarVisible());
+    const pT = document.getElementById('temporada');
+    if (pT) { obs.observe(pT, { attributes: true, attributeFilter: ['class'] }); pT.querySelectorAll('.sub-panel').forEach(sp => obs.observe(sp, { attributes: true, attributeFilter: ['class'] })); }
+  } catch (e) { console.error('Temporada · observador:', e); }
+
   onValue(ref(db, 'temporada/temporada'), (snap) => {
     const temporada = snap.val();
     if (!temporada) return;
     ultimaTemporada = temporada;
-    pintarRanking(temporada);
     pintarPartidos(temporada);
-    pintarSinergias(temporada);
-    pintarRachas(temporada);
-    pintarRecords(temporada);
-    try { pintarGaleriaVideos(); } catch (e) { console.error('Vídeos:', e); } // v119
-    pintarMapaGoles(); // v169
     try { if (ultimoMatchData) { pintarResumenUltimo(ultimoMatchData); pintarRecordsHoy(ultimoMatchData); tvRecordsPersonales(ultimoMatchData); } if (tvActivo) tvRender(); } catch (e) { console.error('Resumen:', e); } // 🎬 el botón del resumen necesita la temporada
-    try { document.getElementById('minutosGoles').innerHTML = tramosGolHTML(temporada, 'vtr'); } catch (e) { console.error('Minutos:', e); }
-    try { document.getElementById('origenTramos').innerHTML = origenTramosHTML(temporada); } catch (e) { console.error('Origen por tramos:', e); } // v174
-    try { document.getElementById('momentosEquipoLista').innerHTML = momentosEquipoHTML(temporada, '#f5a623'); } catch (e) { console.error('Momentos:', e); } // v134
-    try { document.getElementById('banquilloLista').innerHTML = banquilloHTML(temporada, '#f5a623', 'bqv'); } catch (e) { console.error('Banquillo:', e); } // v137
-    try { document.getElementById('adnLista').innerHTML = adnEquipoHTML(temporada, 'abrirPerfilJugadorTemporada'); } catch (e) { console.error('ADN:', e); } // v150
-    try { document.getElementById('marcadorEquipoLista').innerHTML = marcadorEquipoHTML(temporada, '#f5a623'); document.getElementById('tirosEquipoLista').innerHTML = tirosEquipoHTML(temporada, '#f5a623'); } catch (e) { console.error('Marcador/tiros:', e); } // v135
-    try { document.getElementById('muroLista').innerHTML = muroHTML(temporada, '#f5a623'); } catch (e) { console.error('Muro:', e); } // v134
-    try { document.getElementById('companerosLista').innerHTML = companerosHTML(temporada, '#f5a623', true); } catch (e) { console.error('Compañeros:', e); } // v140
-    try { document.getElementById('sociedadesLista').innerHTML = sociedadesHTML(temporada); } catch (e) { console.error('Sociedades:', e); }
-    try { document.getElementById('contextoLista').innerHTML = ctxContextoHTML(temporada); } catch (e) { console.error('Contexto:', e); } // v97
-    pintarSuerteNivel(); // v153
-    pintarComparativa(temporada);
-    try { pintarCompVs(temporada); } catch (e) { console.error('Comparativa:', e); } // v167
-    pintarHeatmap(temporada);
-    pintarOnceIdeal(temporada);
-    pintarPlantillaTabla();
+    tmpCambio(); // v175: el resto, al abrirlo
+    mhActualizar(); // v176
   });
+
+  // ── v176 · ⭐ MI HIJO: cada familia elige a su jugador una vez y tiene su página en una 5.ª pestaña ──
+  // La elección se guarda solo en este móvil (localStorage). 'equipo' = eligió ver solo el equipo (4 pestañas).
+  // En directo no cambia nada: ni se resalta al niño ni sale nada suyo en Partido / En vivo.
+  const MH_KEY = 'hergarLive_miHijo';
+  let mhCambiando = false; // se está eligiendo otro niño desde su página
+  function mhLeer() { try { return localStorage.getItem(MH_KEY); } catch (e) { return null; } }
+  function mhGuardar(v) { try { if (v == null) localStorage.removeItem(MH_KEY); else localStorage.setItem(MH_KEY, String(v)); } catch (e) {} }
+  function mhIdElegido() { const v = mhLeer(); return v && v !== 'equipo' ? v : null; }
+  function mhNombre(n) { return String(n || '').split(' ')[0]; }
+  function mhPlantilla() {
+    const m = {};
+    (Array.isArray(ultimaPlantilla) ? ultimaPlantilla : Object.values(ultimaPlantilla || {})).forEach(p => { if (p && p.id != null) m[String(p.id)] = { id: p.id, name: p.name, dorsal: p.dorsal }; });
+    Object.values((ultimaTemporada && ultimaTemporada.jugadores) || {}).forEach(j => { if (j && j.id != null && !m[String(j.id)]) m[String(j.id)] = { id: j.id, name: j.name, dorsal: j.dorsal }; });
+    return Object.values(m).sort((a, b) => (Number(a.dorsal) || 99) - (Number(b.dorsal) || 99) || String(a.name).localeCompare(String(b.name), 'es'));
+  }
+  function mhJugador(id) {
+    const j = ultimaTemporada && ultimaTemporada.jugadores && ultimaTemporada.jugadores[id];
+    if (j) return j;
+    const p = mhPlantilla().find(x => String(x.id) === String(id));
+    return p ? { id: p.id, name: p.name, dorsal: p.dorsal, partidos: 0, minutos: 0, goles: 0, asistencias: 0, historial: [] } : null;
+  }
+  function mhEnJuego() { const m = ultimoMatchData; return !!(m && !m.matchFinished && !(m.previa === true && !m.matchRunning)); }
+  function mhRejilla(accion) {
+    const ps = mhPlantilla();
+    if (!ps.length) return '<div class="loader">Cargando la plantilla…</div>';
+    return `<div style="display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:7px;">${ps.map(p => `<button type="button" data-mh="${escHtml(p.id)}" data-acc="${accion}" style="min-height:60px; border-radius:12px; background:#0f141b; border:1px solid rgba(255,255,255,.08); color:#e2e8f0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; cursor:pointer; padding:3px; min-width:0;"><b style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:18px; color:#f5a623;">${escHtml(p.dorsal ?? '')}</b><span style="font-size:11px; font-weight:600; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escHtml(mhNombre(p.name))}</span></button>`).join('')}</div>`;
+  }
+  function mhConectar(cont) {
+    cont.querySelectorAll('[data-mh]').forEach(b => b.onclick = () => mhElegir(b.dataset.mh));
+  }
+  function mhElegir(id) {
+    mhGuardar(id); mhCambiando = false;
+    mhActualizar();
+    showTab('mihijo'); window.scrollTo(0, 0);
+  }
+  window.mhSoloEquipo = () => { mhGuardar('equipo'); mhCambiando = false; mhActualizar(); };
+  window.mhQuitar = () => {
+    if (!confirm('¿Quitar a tu jugador? Volverás a ver solo el equipo (4 pestañas). Puedes elegirlo otra vez cuando quieras desde la pestaña Partido.')) return;
+    mhGuardar('equipo'); mhCambiando = false;
+    showTab('partido'); mhActualizar(); window.scrollTo(0, 0);
+  };
+  window.mhCambiar = (on) => { mhCambiando = !!on; mhPintarPagina(); window.scrollTo(0, 0); };
+  window.mhVolverAElegir = () => { mhGuardar(null); mhActualizar(); const c = document.getElementById('miHijoElegirCard'); if (c) c.scrollIntoView({ block: 'start' }); };
+
+  // Tarjeta de Partido: la primera vez para elegir; si eligió «solo el equipo», un enlace discreto al final
+  function mhPintarElegir() {
+    const card = document.getElementById('miHijoElegirCard'), link = document.getElementById('miHijoVolverLink');
+    if (!card || !link) return;
+    const v = mhLeer();
+    const mostrar = v == null && !mhEnJuego() && mhPlantilla().length > 0;
+    card.style.display = mostrar ? '' : 'none';
+    if (mostrar) {
+      card.innerHTML = `<div class="card-title" style="color:#f5a623;">⭐ ¿Quién es tu jugador?</div>
+        <div style="font-size:12px; color:#cbd5e1; margin-bottom:10px; line-height:1.45;">Elige a tu hijo y tendrás su página en una pestaña propia. Se guarda solo en este móvil.</div>
+        ${mhRejilla('elegir')}
+        <button type="button" onclick="mhSoloEquipo()" style="width:100%; min-height:42px; margin-top:10px; border-radius:10px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.04); color:#e2e8f0; font-weight:700; font-size:12px; cursor:pointer;">Solo quiero ver el equipo</button>`;
+      mhConectar(card);
+    } else card.innerHTML = '';
+    link.style.display = v === 'equipo' && !mhEnJuego() ? '' : 'none';
+  }
+
+  function mhChips(h) {
+    const a = (h && h.acc) || {}, out = [];
+    [['dp', '🎯', 'a puerta'], ['df', '💨', 'sin peligro'], ['pc', '🔑', 'pases clave'], ['pa', '📯', 'pases al área'], ['reg', '🌀', 'regates'], ['def', '🛡️', 'acc. defensivas'], ['defC', '🛡️⭐', 'acc. def. clave'], ['par', '🧤', 'paradas'], ['parD', '🧤⭐', 'paradas difíciles'], ['fj', '🚩', 'fueras de juego']]
+      .forEach(([k, ic, tx]) => { if (a[k]) out.push(`${ic} ${a[k]} ${tx}`); });
+    if (a.am) out.push('🟨 amarilla'); if (a.ro) out.push('🟥 roja');
+    return out;
+  }
+  function mhKpis(arr) {
+    return `<div style="display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px;">${arr.map(([v, l, col]) => `<div style="background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06); border-radius:10px; padding:8px 2px; text-align:center; min-width:0;"><div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:18px; color:${col || '#f5f7fa'};">${v}</div><div style="font-size:9.5px; color:#94a3b8; font-weight:700;">${l}</div></div>`).join('')}</div>`;
+  }
+  const mhNum = n => (n > 0 ? '+' : n < 0 ? '−' : '') + Math.abs(n).toFixed(1).replace('.', ',');
+
+  function mhPintarPagina() {
+    const cont = document.getElementById('miHijoContenido');
+    if (!cont) return;
+    const id = mhIdElegido();
+    if (!id) { cont.innerHTML = ''; return; }
+    if (mhCambiando) {
+      cont.innerHTML = `<div class="card"><div class="card-title" style="color:#f5a623;">🔁 Elige a tu jugador</div>${mhRejilla('elegir')}
+        <button type="button" onclick="mhCambiar(false)" style="width:100%; min-height:42px; margin-top:10px; border-radius:10px; border:1px solid rgba(255,255,255,.12); background:transparent; color:#e2e8f0; font-weight:700; font-size:12px; cursor:pointer;">Cancelar</button></div>`;
+      mhConectar(cont); return;
+    }
+    const j = mhJugador(id);
+    if (!j) { cont.innerHTML = '<div class="card"><div class="loader">Cargando…</div></div>'; return; }
+    const t = ultimaTemporada || { partidos: [], jugadores: {} };
+    const nom = escHtml(mhNombre(j.name));
+    let h = '';
+    // Cabecera
+    const f = fotosJugadores[id];
+    const foto = f && f.foto ? `<img src="${f.foto}" alt="" style="width:64px; height:64px; border-radius:50%; object-fit:cover; border:2px solid ${CROMO_COLOR}; flex-shrink:0;">`
+      : `<div style="width:64px; height:64px; border-radius:50%; background:radial-gradient(circle at 35% 30%, #ff7a95, rgb(180,20,56)); border:2px solid rgba(255,255,255,.8); display:flex; align-items:center; justify-content:center; font-family:'Montserrat',sans-serif; font-weight:900; font-size:24px; color:#fff; flex-shrink:0;">${escHtml(j.dorsal ?? '')}</div>`;
+    let pos = ''; try { pos = etiquetaPosicionV(j); } catch (e) {}
+    let est = ''; try { const x = estilosTemporada(t)[j.id]; const E = x && ESTILOS[x.estilo]; if (E) est = `<span style="display:inline-block; margin-top:6px; font-family:'Montserrat',sans-serif; font-weight:800; font-size:10.5px; padding:3px 9px; border-radius:8px; color:${E.col}; background:rgba(255,255,255,.05); border:1px solid ${E.col}55;">🎨 ${escHtml(E.n)}</span>`; } catch (e) {}
+    h += `<div class="card"><div style="display:flex; gap:12px; align-items:center;">${foto}<div style="min-width:0;">
+      <div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:19px;">${nom}</div>
+      <div style="font-size:11.5px; color:#94a3b8; margin-top:2px;">#${escHtml(j.dorsal ?? '')}${pos ? ' · ' + escHtml(pos) : ''}</div>${est}</div></div></div>`;
+    // Su último partido
+    const ps = t.partidos || [];
+    let ult = null;
+    for (let i = ps.length - 1; i >= 0; i--) {
+      const hh = (j.historial || []).find(x => x.fecha === ps[i].fecha && x.rival === ps[i].rival);
+      if (hh && ((hh.mins || 0) > 0 || hh.goles || hh.asistencias)) { ult = { p: ps[i], i, h: hh }; break; }
+    }
+    if (ult) {
+      const { p, i, h: hh } = ult, mins = hh.mins || 0;
+      const imp = hh.imp !== undefined ? hh.imp : (hh.impPond || 0) * mins / 70;
+      const p70 = mins >= 10 ? (hh.impPond !== undefined ? hh.impPond : imp / mins * 70) : null;
+      const ref = p70 ?? imp;
+      const mvp = p.mvpId != null && String(p.mvpId) === String(j.id);
+      const noEsElUltimo = i !== ps.length - 1;
+      const chips = mhChips(hh);
+      h += `<div class="card"><div class="card-title">⚽ Su último partido · vs ${escHtml(p.rival || '')} (${p.golesLocal ?? 0}-${p.golesRival ?? 0})</div>
+        ${noEsElUltimo ? `<div style="font-size:11px; color:#94a3b8; margin:-4px 0 8px;">No jugó el último partido del equipo (vs ${escHtml(ps[ps.length - 1].rival || '')}).</div>` : ''}
+        ${mvp ? `<div style="display:inline-block; font-family:'Montserrat',sans-serif; font-weight:800; font-size:10.5px; color:#0a0e14; background:#f5a623; border-radius:8px; padding:3px 9px; margin-bottom:8px;">⭐ MVP DEL PARTIDO</div>` : ''}
+        ${mhKpis([[mins + "'", 'MINUTOS'], [mhNum(ref), p70 !== null ? "IMPACTO /70'" : 'IMPACTO', ref >= 0 ? '#2ed573' : '#ff6b7a'], [hh.goles || 0, 'GOLES'], [hh.asistencias || 0, 'ASIST.']])}
+        ${chips.length ? `<div style="display:flex; flex-wrap:wrap; gap:5px; margin-top:8px;">${chips.map(c => `<span style="font-size:11px; background:rgba(46,213,115,.08); border:1px solid rgba(46,213,115,.25); border-radius:8px; padding:4px 7px;">${c}</span>`).join('')}</div>` : ''}
+        <button type="button" onclick="abrirFichaPartido(${i}, '${escHtml(j.id)}')" style="width:100%; min-height:40px; margin-top:10px; border-radius:10px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.04); color:#e2e8f0; font-weight:700; font-size:12px; cursor:pointer;">Ver su partido completo →</button></div>`;
+    } else {
+      h += `<div class="card"><div class="card-title">⚽ Su último partido</div><div style="font-size:12px; color:#94a3b8;">Aún no ha jugado ningún partido esta temporada.</div></div>`;
+    }
+    // Sus goles en vídeo
+    let vids = [];
+    try {
+      vids = golesConVideo(t).filter(x => x.g.jugadorId != null ? String(x.g.jugadorId) === String(j.id) : mhNombre(x.g.nombre) === mhNombre(j.name))
+        .sort((a, b) => (b.pi - a.pi) || ((a.g.min ?? 999) - (b.g.min ?? 999)));
+    } catch (e) { vids = []; }
+    if (vids.length) {
+      h += `<div class="card"><div class="card-title">🎥 Sus goles en vídeo (${vids.length})</div><div style="display:flex; gap:8px; overflow-x:auto; padding-bottom:2px; scrollbar-width:none;">${vids.map((x, k) => `<button type="button" data-mhv="${k}" aria-label="Vídeo de su gol vs ${escHtml(x.p.rival || '')}" style="position:relative; flex-shrink:0; width:136px; height:78px; border-radius:10px; overflow:hidden; border:1px solid rgba(255,255,255,.1); background:linear-gradient(135deg,#1d4f33,#0f2e1f); cursor:pointer; padding:0;">
+        ${esVideoGh(x.g.video) ? `<video src="${x.g.video.slice(3)}#t=0.5" preload="metadata" muted playsinline style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; pointer-events:none;"></video>` : ''}
+        <span style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:30px; height:30px; border-radius:50%; background:rgba(0,0,0,.55); color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px;">▶</span>
+        <span style="position:absolute; left:0; right:0; bottom:0; padding:4px 6px; background:linear-gradient(transparent, rgba(0,0,0,.75)); color:#fff; font-size:10px; font-weight:700; text-align:left;">vs ${escHtml(x.p.rival || '')}${x.g.min != null ? ' · ' + x.g.min + "'" : ''}</span></button>`).join('')}</div></div>`;
+    }
+    // Su temporada
+    const evo = [];
+    ps.forEach((p, i) => { const hh = (j.historial || []).find(x => x.fecha === p.fecha && x.rival === p.rival); const mins = hh ? (hh.mins || 0) : 0; if (hh && mins >= EVO_MIN) { const imp = hh.imp !== undefined ? hh.imp : (hh.impPond || 0) * mins / 70; evo.push({ i, v: hh.impPond !== undefined ? Number(hh.impPond) : imp / mins * 70 }); } });
+    let spark = '';
+    if (evo.length >= 2) {
+      const W = 300, H = 60, P = 6, mn = Math.min(0, ...evo.map(e => e.v)), mx = Math.max(...evo.map(e => e.v), 1);
+      const X = k => P + k * (W - 2 * P) / (evo.length - 1), Y = v => P + (1 - (v - mn) / ((mx - mn) || 1)) * (H - 2 * P);
+      spark = `<svg viewBox="0 0 ${W} ${H}" width="100%" height="60" preserveAspectRatio="none" role="img" aria-label="Impacto por 70 minutos partido a partido" style="margin-top:10px;">
+        ${mn < 0 ? `<line x1="${P}" x2="${W - P}" y1="${Y(0)}" y2="${Y(0)}" stroke="rgba(255,255,255,.15)" stroke-dasharray="3 3"/>` : ''}
+        <polyline fill="none" stroke="#f5a623" stroke-width="2.5" stroke-linejoin="round" points="${evo.map((e, k) => X(k).toFixed(1) + ',' + Y(e.v).toFixed(1)).join(' ')}"/>
+        ${evo.map((e, k) => `<circle cx="${X(k).toFixed(1)}" cy="${Y(e.v).toFixed(1)}" r="3.5" fill="#f5a623"/>`).join('')}</svg>
+        <div style="font-size:10.5px; color:#94a3b8; text-align:center;">Su impacto por 70' partido a partido</div>`;
+    }
+    h += `<div class="card"><div class="card-title">📅 Su temporada</div>${mhKpis([[j.partidos || 0, 'PARTIDOS'], [(j.minutos || 0) + "'", 'MINUTOS'], [j.goles || 0, 'GOLES'], [j.asistencias || 0, 'ASIST.']])}${spark}</div>`;
+    // Sus récords (los mismos de su ficha)
+    try { const rec = recordsJugadorHTML(t, j, '#f5a623'); if (rec) h += `<div class="card">${rec}</div>`; } catch (e) { console.error('Mi hijo · récords:', e); }
+    // Botones
+    const btn = 'width:100%; min-height:44px; border-radius:10px; font-weight:700; font-size:12.5px; cursor:pointer; margin-bottom:8px;';
+    h += `<button type="button" onclick="abrirPerfilJugadorTemporada('${escHtml(j.id)}')" style="${btn} border:1px solid #f5a623; background:rgba(245,166,35,.1); color:#f5a623;">Ver su ficha completa →</button>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+        <button type="button" onclick="mhCambiar(true)" style="${btn} border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.04); color:#e2e8f0;">🔁 Cambiar de jugador</button>
+        <button type="button" onclick="mhQuitar()" style="${btn} border:1px solid rgba(255,255,255,.12); background:transparent; color:#94a3b8;">✕ Quitar a mi jugador</button>
+      </div>
+      <div style="font-size:10.5px; color:#64748b; text-align:center; margin:2px 0 8px;">Tu elección se guarda solo en este móvil.</div>`;
+    cont.innerHTML = h;
+    cont.querySelectorAll('[data-mhv]').forEach(b => b.onclick = () => abrirListaVideo(vids, Number(b.dataset.mhv)));
+  }
+
+  // Pestaña de abajo: aparece solo si hay un jugador elegido
+  function mhActualizar() {
+    try {
+      const id = mhIdElegido(), tab = document.getElementById('tabMiHijo');
+      if (tab) {
+        let nombre = '';
+        if (id) { const j = mhJugador(id); nombre = j ? mhNombre(j.name) : ''; }
+        tab.style.display = id ? '' : 'none';
+        const n = document.getElementById('tabMiHijoNom'); if (n) n.textContent = nombre || 'Mi jugador';
+        const panel = document.getElementById('mihijo');
+        if (!id && panel && panel.classList.contains('active')) showTab('partido');
+      }
+      mhPintarElegir();
+      mhPintarPagina();
+    } catch (e) { console.error('Mi hijo:', e); }
+  }
+  window.mhActualizar = mhActualizar;
 
   // Las reglas del impacto viajan con la temporada (temporada/reglas): así app y visor muestran siempre los mismos números
   onValue(ref(db, 'temporada/reglas'), (snap) => {
     const r = snap.val();
     if (r && r.acciones && r.equipo && r.porteriaCero) {
       reglasImpacto = r;
-      if (ultimaTemporada) { pintarRanking(ultimaTemporada); pintarComparativa(ultimaTemporada); }
+      if (ultimaTemporada) tmpCambio(['subRanking', 'subComparativa']); // v175
     }
   }, (err) => { console.error('Firebase reglas read error:', err); });
 
@@ -7949,7 +8061,8 @@
   let ultimaPlantilla = [];
   onValue(ref(db, 'temporada/plantilla'), (snap) => {
     ultimaPlantilla = snap.val() || [];
-    pintarPlantillaTabla();
+    tmpCambio(['subPlantilla']); // v175
+    try { mhActualizar(); } catch (e) {} // v176
   }, (err) => { console.error('Firebase plantilla read error:', err); });
 
   // ── Fotos de jugadores: en un path aparte, así solo se transmiten cuando cambian de verdad
@@ -7964,6 +8077,7 @@
   }
   onValue(ref(db, 'plantilla_fotos'), (snap) => {
     fotosJugadores = snap.val() || {};
+    try { mhPintarPagina(); } catch (e) {} // v176
     if (ultimoPerfilAbiertoId != null) reabrirPerfilActual();
     if (typeof pintarProximoPartido === 'function') pintarProximoPartido();
     if (ultimaLiga) { try { pintarLigaEquipos(ultimaLiga); renderLigaViewerJornada(); pintarLigaClasificacion(ultimaLiga); } catch (e) {} }
@@ -8045,7 +8159,6 @@
   };
 
   window.rerenderComparativa = () => { if (ultimaTemporada) pintarComparativa(ultimaTemporada); };
-  window.rerenderHeatmap = () => { if (ultimaTemporada) pintarHeatmap(ultimaTemporada); };
   window.rerenderOnceIdeal = () => { if (ultimaTemporada) pintarOnceIdeal(ultimaTemporada); };
   window.rerenderRanking = () => { if (ultimaTemporada) pintarRanking(ultimaTemporada); };
 
@@ -8842,7 +8955,7 @@
     const liga = snap.val();
     if (!liga || !liga.equipos) return;
     ultimaLiga = liga;
-    try { pintarSuerteNivel(); if (ultimaTemporada) pintarPartidos(ultimaTemporada); } catch (e) { console.error('Suerte y nivel:', e); } // v153
+    try { tmpCambio(); if (ultimaTemporada) pintarPartidos(ultimaTemporada); } catch (e) { console.error('Suerte y nivel:', e); } // v153 · v175: con la Liga nueva, cada apartado se recalcula al abrirlo
     pintarProximoPartido(); // v72
     if (ultimoMatchData) { try { pintarResumenUltimo(ultimoMatchData); pintarRecordsHoy(ultimoMatchData); } catch (e) { console.error('Resumen:', e); } } // v164: al publicar o quitar el próximo partido
     try { pintarCabeceraPartido(ultimoMatchData); } catch (e) { console.error('Cabecera:', e); }

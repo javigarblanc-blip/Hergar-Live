@@ -180,6 +180,22 @@
   .tmp-sec .subtab-btn { display:flex; align-items:center; justify-content:center; gap:4px; min-width:0; min-height:44px; border-radius:10px;
     font-size:11px; color:#cbd5e1; cursor:pointer; }
   .tmp-sec .subtab-btn.active { background:rgba(245,166,35,.16); color:#f5a623; border-color:#f5a623; }
+  /* v177 · bloques de «Más análisis» y buscador */
+  .tmp-blq { grid-column:1 / -1; display:flex; align-items:baseline; gap:8px; margin:6px 2px 0; }
+  .tmp-blq:first-child { margin-top:0; }
+  .tmp-blq b { font-family:'Montserrat',sans-serif; font-weight:800; font-size:12px; color:#e2e8f0; }
+  .tmp-blq span { font-size:10.5px; color:#64748b; }
+  .tmp-busca { display:flex; align-items:center; gap:8px; background:#0f141b; border:1px solid rgba(255,255,255,.12); border-radius:12px; padding:0 12px; min-height:46px; margin-bottom:8px; }
+  .tmp-busca:focus-within { border-color:rgba(245,166,35,.6); }
+  .tmp-busca input { flex:1; min-width:0; background:transparent; border:0; outline:0; color:#e2e8f0; font:600 14px 'Inter',sans-serif; }
+  .tmp-busca input::placeholder { color:#64748b; font-weight:500; }
+  .tmp-busca button { background:none; border:0; color:#94a3b8; font-size:15px; padding:6px; cursor:pointer; }
+  .tmp-res { display:flex; flex-direction:column; gap:6px; margin-bottom:10px; }
+  .tmp-res-it { text-align:left; background:rgba(245,166,35,.06); border:1px solid rgba(245,166,35,.25); border-radius:10px; padding:8px 10px; color:#e2e8f0; font:600 12.5px 'Inter',sans-serif; cursor:pointer; }
+  .tmp-res-it small { display:block; color:#94a3b8; font-size:11px; font-weight:500; margin-top:2px; }
+  .tmp-res-no { background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06); border-radius:10px; padding:9px 10px; color:#94a3b8; font-size:12px; line-height:1.45; }
+  @keyframes buscaFlash { 0%,100% { box-shadow:0 0 0 0 rgba(245,166,35,0); } 25%,60% { box-shadow:0 0 0 3px rgba(245,166,35,.75); } }
+  .busca-flash { animation:buscaFlash 1.8s ease; border-radius:12px; }
   .rank-row { display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid rgba(255,255,255,.04); }
   .rank-pos { font-family:'Montserrat',sans-serif; font-weight:900; font-size:13px; color:#475569; width:18px; }
   .rank-name { flex:1; font-weight:700; font-size:12.5px; color:#e2e8f0; }
@@ -645,7 +661,10 @@
 
     <!-- TEMPORADA -->
     <div id="temporada" class="panel">
-      <!-- Menú de Temporada: 4 principales arriba y el resto en "Más análisis" -->
+      <!-- v177 · buscador -->
+      <div class="tmp-busca"><span aria-hidden="true">🔎</span><input id="tmpBuscaIn" type="text" enterkeyhint="search" autocomplete="off" placeholder="Buscar: gol lejano, portero, un niño…" aria-label="Buscar en Temporada y Liga"><button type="button" id="tmpBuscaX" aria-label="Borrar búsqueda" style="display:none;">✕</button></div>
+      <div class="tmp-res" id="tmpBuscaRes" style="display:none;" aria-live="polite"></div>
+      <!-- Menú de Temporada: 4 principales arriba y el resto en "Más análisis" (v177: en tres bloques) -->
       <div class="tmp-main">
         <button type="button" class="subtab-btn active" onclick="showSub(event,'subPartidos')">📅 Partidos</button>
         <button type="button" class="subtab-btn" onclick="showSub(event,'subPlantilla')">👥 Plantilla</button>
@@ -653,20 +672,23 @@
         <button type="button" class="subtab-btn" onclick="showSub(event,'subRecords')">🏆 Récords</button>
       </div>
       <button type="button" class="tmp-mas" id="tmpMasBtn" onclick="toggleMasTemp()" aria-expanded="false" aria-controls="tmpMasPanel">
-        <span>📊 Más análisis</span><span class="txt" id="tmpMasTxt">12 apartados más ▾</span>
+        <span>📊 Más análisis</span><span class="txt" id="tmpMasTxt">12 apartados en 3 bloques ▾</span>
       </button>
       <div class="tmp-sec" id="tmpMasPanel">
-        <button type="button" class="subtab-btn" onclick="showSub(event,'subMedias')">📊 Medias</button>
+        <div class="tmp-blq"><b>⚽ Goles</b><span>Dónde, cómo y cuándo marcamos</span></div>
         <button type="button" class="subtab-btn" onclick="showSub(event,'subMapaGoles')">🎯 Mapa de goles</button>
         <button type="button" class="subtab-btn" onclick="showSub(event,'subVideos')">🎥 Goles en vídeo</button>
-        <button type="button" class="subtab-btn" onclick="showSub(event,'subSinergias')">🔗 Sinergias</button>
-        <button type="button" class="subtab-btn" onclick="showSub(event,'subRachas')">🔥 Rachas</button>
         <button type="button" class="subtab-btn" onclick="showSub(event,'subMinutos')">⏱ Minutos</button>
+        <div class="tmp-blq"><b>👥 Jugadores</b><span>Quién juega, con quién y cómo rinde</span></div>
+        <button type="button" class="subtab-btn" onclick="showSub(event,'subOnceIdeal')">🏅 Once ideal</button>
+        <button type="button" class="subtab-btn" onclick="showSub(event,'subComparativa')">📊 Comparativa</button>
+        <button type="button" class="subtab-btn" onclick="showSub(event,'subSinergias')">🔗 Sinergias</button>
         <button type="button" class="subtab-btn" onclick="showSub(event,'subBanquillo')">🔄 Banquillo</button>
+        <div class="tmp-blq"><b>🏟️ Equipo</b><span>Cómo es el equipo y cómo va</span></div>
+        <button type="button" class="subtab-btn" onclick="showSub(event,'subMedias')">📊 Medias</button>
+        <button type="button" class="subtab-btn" onclick="showSub(event,'subRachas')">🔥 Rachas</button>
         <button type="button" class="subtab-btn" onclick="showSub(event,'subContexto')">🧭 Contexto</button>
         <button type="button" class="subtab-btn" onclick="showSub(event,'subSuerte')">🍀 Suerte y nivel</button>
-        <button type="button" class="subtab-btn" onclick="showSub(event,'subComparativa')">📊 Comparativa</button>
-        <button type="button" class="subtab-btn" onclick="showSub(event,'subOnceIdeal')">🏅 Once ideal</button>
         <button type="button" class="subtab-btn" onclick="showSub(event,'subAdn')">🧬 ADN del equipo</button>
       </div>
 
@@ -980,6 +1002,8 @@
 </div>
 
 <script type="module">
+  // v178 (visor) · Mi hijo: fuera los récords (están en su ficha) y nueva tarjeta «Su estilo» con el «Juega como…» y sus superpoderes, sacados de sus estadísticas de la temporada.
+  // v177 (visor) · Temporada: «Más análisis» en tres bloques (⚽ Goles · 👥 Jugadores · 🏟️ Equipo) y buscador arriba (tarjetas de Temporada y Liga, cosas que van dentro de una tarjeta y niños).
   // v176 (visor) · ⭐ Mi hijo: cada familia puede elegir a su jugador (se guarda solo en ese móvil) y le sale una 5.ª pestaña con su página: último partido, goles en vídeo, temporada con evolución y récords. Se puede cambiar o quitar (vuelven las 4 pestañas). En directo no cambia nada.
   // v175 (visor) · Repaso técnico: cada apartado de Temporada se calcula al abrirlo (y se repinta solo si llegan datos nuevos), en vez de calcular los ~25 a la vez cada vez que llega la temporada. Fuera la pestaña Heatmap y la tarjeta Geo (ocultas) y un bloque apagado del Mapa de goles. Lo que se ve no cambia.
   // v174 (app + visor) · Goles cruzados: ⛳ balón parado (1 gol cada X córners / faltas, a favor y en contra), 💥 índice golazo (sin penaltis ni faltas), 🆚 cómo marcamos según el rival (Elo) y línea en el próximo partido, ⏱ origen de los goles por tramos, 🏆 gol más lejano (con faltas; récord del club, personal y aviso en directo) y ⚡ Oportunista en el Estilo y el ADN.
@@ -7270,7 +7294,7 @@
     const secActivo = !!panelMas.querySelector('.subtab-btn.active');
     btn.setAttribute('aria-expanded', abierto ? 'true' : 'false');
     btn.classList.toggle('sec-activo', secActivo && !abierto);
-    if (txt) txt.textContent = abierto ? 'ocultar ▴' : '12 apartados más ▾';
+    if (txt) txt.textContent = abierto ? 'ocultar ▴' : '12 apartados en 3 bloques ▾';
   }
   function toggleMasTemp() {
     const panelMas = document.getElementById('tmpMasPanel');
@@ -7931,8 +7955,8 @@
 
   function mhChips(h) {
     const a = (h && h.acc) || {}, out = [];
-    [['dp', '🎯', 'a puerta'], ['df', '💨', 'sin peligro'], ['pc', '🔑', 'pases clave'], ['pa', '📯', 'pases al área'], ['reg', '🌀', 'regates'], ['def', '🛡️', 'acc. defensivas'], ['defC', '🛡️⭐', 'acc. def. clave'], ['par', '🧤', 'paradas'], ['parD', '🧤⭐', 'paradas difíciles'], ['fj', '🚩', 'fueras de juego']]
-      .forEach(([k, ic, tx]) => { if (a[k]) out.push(`${ic} ${a[k]} ${tx}`); });
+    [['dp', '🎯', 'a puerta', 'a puerta'], ['df', '💨', 'sin peligro', 'sin peligro'], ['pc', '🔑', 'pase clave', 'pases clave'], ['pa', '📯', 'pase al área', 'pases al área'], ['reg', '🌀', 'regate', 'regates'], ['def', '🛡️', 'acción defensiva', 'acciones defensivas'], ['defC', '🛡️⭐', 'acción def. clave', 'acciones def. clave'], ['par', '🧤', 'parada', 'paradas'], ['parD', '🧤⭐', 'parada difícil', 'paradas difíciles'], ['fj', '🚩', 'fuera de juego', 'fueras de juego']]
+      .forEach(([k, ic, uno, varios]) => { if (a[k]) out.push(`${ic} ${a[k]} ${a[k] === 1 ? uno : varios}`); });
     if (a.am) out.push('🟨 amarilla'); if (a.ro) out.push('🟥 roja');
     return out;
   }
@@ -7961,10 +7985,38 @@
     const foto = f && f.foto ? `<img src="${f.foto}" alt="" style="width:64px; height:64px; border-radius:50%; object-fit:cover; border:2px solid ${CROMO_COLOR}; flex-shrink:0;">`
       : `<div style="width:64px; height:64px; border-radius:50%; background:radial-gradient(circle at 35% 30%, #ff7a95, rgb(180,20,56)); border:2px solid rgba(255,255,255,.8); display:flex; align-items:center; justify-content:center; font-family:'Montserrat',sans-serif; font-weight:900; font-size:24px; color:#fff; flex-shrink:0;">${escHtml(j.dorsal ?? '')}</div>`;
     let pos = ''; try { pos = etiquetaPosicionV(j); } catch (e) {}
-    let est = ''; try { const x = estilosTemporada(t)[j.id]; const E = x && ESTILOS[x.estilo]; if (E) est = `<span style="display:inline-block; margin-top:6px; font-family:'Montserrat',sans-serif; font-weight:800; font-size:10.5px; padding:3px 9px; border-radius:8px; color:${E.col}; background:rgba(255,255,255,.05); border:1px solid ${E.col}55;">🎨 ${escHtml(E.n)}</span>`; } catch (e) {}
     h += `<div class="card"><div style="display:flex; gap:12px; align-items:center;">${foto}<div style="min-width:0;">
       <div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:19px;">${nom}</div>
-      <div style="font-size:11.5px; color:#94a3b8; margin-top:2px;">#${escHtml(j.dorsal ?? '')}${pos ? ' · ' + escHtml(pos) : ''}</div>${est}</div></div></div>`;
+      <div style="font-size:11.5px; color:#94a3b8; margin-top:2px;">#${escHtml(j.dorsal ?? '')}${pos ? ' · ' + escHtml(pos) : ''}</div></div></div></div>`;
+    // Su estilo: «Juega como…» y superpoderes (lo mismo que su pestaña Estilo, en corto)
+    try {
+      const x = estilosTemporada(t)[j.id], E = x && ESTILOS[x.estilo];
+      if (!x || !E) {
+        if ((j.minutos || 0) > 0) h += `<div class="card"><div class="card-title">🎨 Su estilo</div><div style="font-size:12px; color:#94a3b8; line-height:1.5;">Su estilo y el «Juega como…» salen con ${ESTILO_MIN}' jugados en la temporada (lleva ${j.minutos || 0}').</div></div>`;
+      } else {
+        const jc = juegaComo(x), col = E.col || '#f5a623';
+        let lineas = '';
+        if (x.portero) {
+          const pst = j.porteroStats || {}, par = pst.paradas != null ? pst.paradas : (j.paradas || 0), tot = par + (j.golesRecibidos || 0);
+          const pct = pst.pct != null ? pst.pct : (tot ? Math.round(par / tot * 100) : null);
+          lineas = [pct != null ? `${pct} % de paradas` : null, `${par} paradas esta temporada`, pst.rachaRecord ? `Récord sin encajar: ${pst.rachaRecord}'` : null].filter(Boolean)
+            .map(tx => `<div style="background:#0f1520; border-radius:10px; padding:8px 11px; margin-top:6px; font-size:12.5px; color:#e2e8f0;">${escHtml(tx)}</div>`).join('');
+        } else if (x.sp && x.sp.length) {
+          lineas = x.sp.map((sp, i) => `<div style="display:flex; align-items:center; gap:10px; background:${i === 0 && sp.r === 1 ? col + '22' : '#0f1520'}; border-radius:10px; padding:8px 11px; margin-top:6px;">
+            <span style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:18px; color:${sp.r === 1 ? col : '#cbd5e1'}; min-width:30px;">${sp.r}.º</span>
+            <span style="font-size:12.5px; line-height:1.35; color:#e2e8f0;">${escHtml(sp.txt)} <span style="color:#94a3b8; font-size:11px;">· ${estSpDetalle(x, sp.k)}</span></span></div>`).join('');
+        } else if (x.fuerte) lineas = `<div style="background:#0f1520; border-radius:10px; padding:8px 11px; margin-top:6px; font-size:12.5px;">Su punto fuerte: <b>${escHtml(x.fuerte.n)}</b></div>`;
+        h += `<div class="card" style="border-color:${col}55; background:linear-gradient(160deg, ${col}14, rgba(255,255,255,.02));">
+          <div class="card-title">🎨 Su estilo</div>
+          <div style="text-align:center;">
+            <div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:24px; letter-spacing:.5px; color:${col}; line-height:1.1;">${escHtml(E.art || E.n)}</div>
+            ${x.cola ? `<div style="font-size:12px; color:#cbd5e1; margin-top:2px;">${escHtml(x.cola)}</div>` : ''}
+            ${jc ? `<div style="display:inline-block; margin-top:10px; background:#0f1520; border:1px solid ${col}66; border-radius:12px; padding:8px 14px;"><div style="font-size:14px; color:#fff;">⚽ Juega como <b style="color:${col};">${escHtml(jc[0])}</b></div><div style="font-size:11.5px; color:#cbd5e1; margin-top:2px;">${escHtml(jc[1])}</div></div>` : ''}
+          </div>
+          ${lineas ? `<div style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:10.5px; letter-spacing:1px; color:${col}; margin-top:12px;">${x.portero ? 'SUS NÚMEROS' : 'SUPERPODERES'}</div>${lineas}` : ''}
+        </div>`;
+      }
+    } catch (e) { console.error('Mi hijo · estilo:', e); }
     // Su último partido
     const ps = t.partidos || [];
     let ult = null;
@@ -8015,11 +8067,9 @@
         <div style="font-size:10.5px; color:#94a3b8; text-align:center;">Su impacto por 70' partido a partido</div>`;
     }
     h += `<div class="card"><div class="card-title">📅 Su temporada</div>${mhKpis([[j.partidos || 0, 'PARTIDOS'], [(j.minutos || 0) + "'", 'MINUTOS'], [j.goles || 0, 'GOLES'], [j.asistencias || 0, 'ASIST.']])}${spark}</div>`;
-    // Sus récords (los mismos de su ficha)
-    try { const rec = recordsJugadorHTML(t, j, '#f5a623'); if (rec) h += `<div class="card">${rec}</div>`; } catch (e) { console.error('Mi hijo · récords:', e); }
     // Botones
     const btn = 'width:100%; min-height:44px; border-radius:10px; font-weight:700; font-size:12.5px; cursor:pointer; margin-bottom:8px;';
-    h += `<button type="button" onclick="abrirPerfilJugadorTemporada('${escHtml(j.id)}')" style="${btn} border:1px solid #f5a623; background:rgba(245,166,35,.1); color:#f5a623;">Ver su ficha completa →</button>
+    h += `<button type="button" onclick="abrirPerfilJugadorTemporada('${escHtml(j.id)}')" style="${btn} border:1px solid #f5a623; background:rgba(245,166,35,.1); color:#f5a623;">Ver su ficha completa (récords, evolución, estilo…) →</button>
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
         <button type="button" onclick="mhCambiar(true)" style="${btn} border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.04); color:#e2e8f0;">🔁 Cambiar de jugador</button>
         <button type="button" onclick="mhQuitar()" style="${btn} border:1px solid rgba(255,255,255,.12); background:transparent; color:#94a3b8;">✕ Quitar a mi jugador</button>
@@ -8046,6 +8096,138 @@
     } catch (e) { console.error('Mi hijo:', e); }
   }
   window.mhActualizar = mhActualizar;
+
+  // ── v177 · 🔎 BUSCADOR DE TEMPORADA: busca por el título de cada tarjeta (Temporada y Liga), por palabras de
+  // las cosas que van dentro de una tarjeta (gol más lejano, muro, golazo…) y por niños (abre su ficha) ──
+  const BUSCA_EXTRA = [
+    // [texto que se muestra, apartado, texto a buscar dentro del apartado, palabras clave]
+    ['🚀 Gol más lejano', 'subRecords', 'Gol más lejano', 'lejano distancia metros largo'],
+    ['💥 Índice golazo', 'subMapaGoles', 'GOLAZO', 'golazo dificil bonito'],
+    ['⛳ Balón parado: córners y faltas', 'subMapaGoles', 'BALÓN PARADO', 'corner corners falta faltas balon parado estrategia'],
+    ['🆚 Cómo marcamos según el rival', 'subMapaGoles', 'SEGÚN EL RIVAL', 'rival elo nivel segun'],
+    ['📍 Desde dónde marcamos', 'subMapaGoles', 'DESDE DÓNDE', 'zona zonas lado izquierda derecha centro'],
+    ['⭐ MVP de cada partido', 'subPartidos', '', 'mvp mejor jugador partido'],
+    ['🧮 ¿Cómo se calcula el impacto?', 'subRanking', '¿Cómo se calcula', 'como se calcula impacto puntos formula explicacion'],
+    ['🔮 Pronóstico de la Liga', 'subLigaPron', '', 'pronostico campeon ascenso probabilidad probabilidades jornada calendario nivel'],
+    ['📅 Partidos de la Liga: horarios y resultados', 'subLigaPartidos', '', 'partidos jornada horario horarios resultados liga calendario'],
+    ['👤 Estilo, más/menos, peso y evolución de cada niño', 'subPlantilla', '', 'estilo juega como mas menos peso evolucion ficha nino ninos']
+  ];
+  // Palabras de más para las tarjetas (se buscan también por estas)
+  const BUSCA_SINONIMOS = {
+    'el muro': 'encajar imbatido porteria cero defensa portero', 'hacen mejores': 'companeros', 'sociedades goleadoras': 'socios pareja parejas asistente asistencias',
+    'conexiones tacticas': 'pareja parejas juntos lineas sinergias', 'como llegan los goles': 'origen tramos', 'momentos del partido': 'remontada remontar remontadas primero reaccion puntos',
+    'cuando marcamos': 'minutos tramos goles', 'tiempo por marcador': 'ganando perdiendo empatando', 'cuota de tiros': 'tiros disparos', 'rachas': 'racha seguidos invictos',
+    'top 5': 'mejores comparativa', 'jugador contra jugador': 'comparar ninos vs', 'comparar dos partidos': 'partidos vs', 'efecto del banquillo': 'cambios suplentes titular titulares',
+    'contexto': 'tiempo lluvia calor hora campo', 'suerte': 'pdo esperado nivel sobre lo esperado', 'medias': 'promedio media goles tiros faltas', 'records': 'record maximo marcas',
+    'once ideal': 'mejores alineacion', 'adn': 'estilo estilos equipo', 'clasificacion': 'tabla puntos elo', 'historial de partidos': 'resultados partidos mvp acta',
+    'plantilla completa': 'jugadores ninos lesionado sancionado', 'ranking': 'impacto mejores', 'goles en video': 'video videos', 'mapa de goles': 'zona zonas origen'
+  };
+  let buscaIndice = null;
+  const buscaNorm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
+  function buscaRuta(subId) {
+    const sub = document.getElementById(subId); if (!sub) return '';
+    const panel = sub.closest('.panel'); if (!panel) return '';
+    const bt = [...panel.querySelectorAll('.subtab-btn')].find(b => (b.getAttribute('onclick') || '').includes("'" + subId + "'"));
+    const nomBt = bt ? bt.textContent.trim() : '';
+    if (panel.id === 'liga') return 'Liga → ' + nomBt;
+    const blq = bt && bt.closest('#tmpMasPanel') ? (() => { let x = bt.previousElementSibling; while (x && !x.classList.contains('tmp-blq')) x = x.previousElementSibling; return x ? x.querySelector('b').textContent : ''; })() : '';
+    return 'Temporada → ' + (blq ? 'Más análisis → ' + blq + ' → ' : '') + nomBt;
+  }
+  function buscaConstruir() {
+    const out = [];
+    document.querySelectorAll('#temporada .sub-panel, #liga .sub-panel').forEach(sp => {
+      sp.querySelectorAll('.card-title').forEach(ct => {
+        const tit = ct.textContent.replace(/\s+/g, ' ').trim();
+        if (!tit) return;
+        const n = buscaNorm(tit), extra = Object.keys(BUSCA_SINONIMOS).filter(k => n.includes(k)).map(k => BUSCA_SINONIMOS[k]).join(' ');
+        out.push({ tipo: 'tarjeta', txt: tit, sub: sp.id, el: ct, clave: n + ' ' + extra });
+      });
+    });
+    BUSCA_EXTRA.forEach(([txt, sub, dentro, kw]) => out.push({ tipo: 'tarjeta', txt, sub, dentro, clave: buscaNorm(txt + ' ' + kw) }));
+    out.push({ tipo: 'portero', txt: '🧤 Ficha del portero: % de paradas y racha sin encajar', clave: buscaNorm('portero porteros paradas parada % racha sin encajar imbatido guardian') });
+    return out;
+  }
+  function buscaResultados(q) {
+    const palabras = buscaNorm(q).split(' ').filter(w => w.length >= 2);
+    if (!palabras.length) return [];
+    if (!buscaIndice) buscaIndice = buscaConstruir();
+    const vistos = new Set(), res = [];
+    buscaIndice.forEach(e => {
+      if (!palabras.every(w => e.clave.includes(w))) return;
+      const k = e.sub + '|' + buscaNorm(e.txt).replace(/[^a-z0-9]/g, '');
+      if (vistos.has(k)) return; vistos.add(k);
+      res.push(e);
+    });
+    // niños: abre su ficha
+    try {
+      mhPlantilla().forEach(p => {
+        const nn = buscaNorm(p.name);
+        if (palabras.every(w => nn.includes(w) || String(p.dorsal) === w)) res.unshift({ tipo: 'nino', txt: '👤 ' + mhNombre(p.name) + (p.dorsal != null ? ' · #' + p.dorsal : ''), id: p.id });
+      });
+    } catch (e) {}
+    return res.slice(0, 8);
+  }
+  let buscaUlt = [];
+  function buscaPintar() {
+    const inp = document.getElementById('tmpBuscaIn'), box = document.getElementById('tmpBuscaRes'), x = document.getElementById('tmpBuscaX');
+    if (!inp || !box) return;
+    const q = inp.value;
+    if (x) x.style.display = q ? '' : 'none';
+    if (buscaNorm(q).length < 2) { box.innerHTML = ''; box.style.display = 'none'; buscaUlt = []; return; }
+    buscaUlt = buscaResultados(q);
+    box.style.display = '';
+    box.innerHTML = buscaUlt.length
+      ? buscaUlt.map((e, i) => `<button type="button" class="tmp-res-it" data-i="${i}">${escHtml(e.txt)}<small>${e.tipo === 'nino' || e.tipo === 'portero' ? 'Abre su ficha' : escHtml(buscaRuta(e.sub)) + (e.sub === 'subPlantilla' && e.dentro === '' ? ' · toca un niño' : '')}</small></button>`).join('')
+      : `<div class="tmp-res-no">No encuentro nada con «${escHtml(q.trim())}». Prueba con otra palabra (gol, portero, córner, racha, un nombre…).</div>`;
+    box.querySelectorAll('.tmp-res-it').forEach(b => b.onclick = () => buscaIr(buscaUlt[Number(b.dataset.i)]));
+  }
+  function buscaLimpiar() { const inp = document.getElementById('tmpBuscaIn'); if (inp) { inp.value = ''; inp.blur(); } buscaPintar(); }
+  function buscaIr(e) {
+    if (!e) return;
+    buscaLimpiar();
+    if (e.tipo === 'nino') { try { window.abrirPerfilJugadorTemporada(e.id); } catch (er) { console.error('Buscar:', er); } return; }
+    if (e.tipo === 'portero') {
+      try {
+        const ps = Object.values((ultimaTemporada && ultimaTemporada.jugadores) || {}).filter(j => j.porteroStats && j.porteroStats.partidos > 0).sort((a, b) => b.porteroStats.partidos - a.porteroStats.partidos);
+        if (ps.length) { window.abrirPerfilJugadorTemporada(ps[0].id); return; }
+      } catch (er) { console.error('Buscar:', er); }
+      e = { tipo: 'tarjeta', sub: 'subPlantilla' };
+    }
+    const sub = document.getElementById(e.sub); if (!sub) return;
+    const panel = sub.closest('.panel');
+    showTab(panel.id);
+    const bt = [...panel.querySelectorAll('.subtab-btn')].find(b => (b.getAttribute('onclick') || '').includes("'" + e.sub + "'"));
+    if (bt) {
+      const mas = bt.closest('#tmpMasPanel');
+      if (mas && !mas.classList.contains('abierto')) { mas.classList.add('abierto'); actualizarMasTemp(); }
+      bt.click();
+    }
+    setTimeout(() => {
+      let dest = e.el || null;
+      if (!dest && e.dentro) {
+        if (e.dentro.startsWith('#')) dest = sub.querySelector(e.dentro);
+        else {
+          const w = buscaNorm(e.dentro);
+          const cands = [...sub.querySelectorAll('*')].filter(n => n.children.length === 0 || [...n.childNodes].some(c => c.nodeType === 3 && c.textContent.trim()));
+          dest = cands.find(n => buscaNorm([...n.childNodes].filter(c => c.nodeType === 3).map(c => c.textContent).join(' ')).includes(w)) || null;
+        }
+      }
+      if (!dest) dest = sub;
+      const card = dest.closest('.card') || dest;
+      const irA = e.el ? card : dest; // título de tarjeta → la tarjeta; algo de dentro → justo ahí
+      try { irA.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (er) { irA.scrollIntoView(); }
+      const fl = !e.el && dest !== card && dest.offsetHeight < card.offsetHeight * .6 ? dest : card;
+      document.querySelectorAll('.busca-flash').forEach(x => x.classList.remove('busca-flash')); void fl.offsetWidth; fl.classList.add('busca-flash');
+      setTimeout(() => fl.classList.remove('busca-flash'), 1900);
+    }, 120);
+  }
+  (() => {
+    const inp = document.getElementById('tmpBuscaIn');
+    if (!inp) return;
+    inp.addEventListener('input', buscaPintar);
+    inp.addEventListener('keydown', ev => { if (ev.key === 'Enter' && buscaUlt.length) { ev.preventDefault(); buscaIr(buscaUlt[0]); } if (ev.key === 'Escape') buscaLimpiar(); });
+    const x = document.getElementById('tmpBuscaX'); if (x) x.onclick = buscaLimpiar;
+  })();
 
   // Las reglas del impacto viajan con la temporada (temporada/reglas): así app y visor muestran siempre los mismos números
   onValue(ref(db, 'temporada/reglas'), (snap) => {

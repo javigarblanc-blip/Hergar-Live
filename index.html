@@ -678,7 +678,7 @@
         <div class="card-title">Últimos eventos</div>
         <div id="eventosLista"><div class="loader">Esperando datos del partido...</div></div>
       </div>
-      <button type="button" id="miHijoVolverLink" onclick="mhVolverAElegir()" style="display:none; width:100%; min-height:40px; margin:2px 0 10px; border-radius:10px; border:1px dashed rgba(245,166,35,.45); background:transparent; color:#f5a623; font-weight:700; font-size:12px; cursor:pointer;">⭐ Elegir a mi jugador</button>
+      <button type="button" id="miHijoVolverLink" onclick="mhVolverAElegir()" style="display:none; width:100%; min-height:40px; margin:2px 0 10px; border-radius:10px; border:1px dashed rgba(245,166,35,.45); background:transparent; color:#f5a623; font-weight:700; font-size:12px; cursor:pointer;">⭐ Elegir jugador favorito</button>
     </div>
 
     <!-- MI HIJO (v176) -->
@@ -995,7 +995,7 @@
 <div class="bottom-tabbar-wrap">
 <div class="bottom-tabbar">
   <div class="bottom-tab active" data-t="partido" onclick="showTab('partido')"><span class="ic">⚽</span>Partido</div>
-  <div class="bottom-tab" id="tabMiHijo" data-t="mihijo" onclick="showTab('mihijo')" style="display:none;"><span class="ic">⭐</span><span id="tabMiHijoNom" style="max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Mi jugador</span></div>
+  <div class="bottom-tab" id="tabMiHijo" data-t="mihijo" onclick="showTab('mihijo')" style="display:none;"><span class="ic">⭐</span><span id="tabMiHijoNom" style="max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Favorito</span></div>
   <div class="bottom-tab" data-t="envivo" onclick="showTab('envivo')"><span class="ic">📊</span>En vivo</div>
   <div class="bottom-tab" data-t="temporada" onclick="showTab('temporada')"><span class="ic">🏆</span>Temporada</div>
   <div class="bottom-tab" data-t="liga" onclick="showTab('liga')"><span class="ic">📋</span>Liga</div>
@@ -1053,6 +1053,7 @@
 </div>
 
 <script type="module">
+  // v181 (visor) · «Mi hijo» pasa a llamarse «jugador favorito» en todo lo que se ve (elegir, cambiar y quitar).
   // v180 (visor) · La semana del Hergar: fuera el botón de compartir la imagen (de momento).
   // v179 (visor) · 📰 La semana del Hergar: 5 historias del último partido (resultado y MVP, gol de la jornada, récords y rachas, Liga, lo que viene). Sale cuando todos los goles tienen vídeo o a las 24 h; se ve entera una vez arriba en Partido y luego queda como franja bajo el resultado; con el próximo partido publicado pasa a Temporada → Partidos. En directo no sale. (v180: sin compartir de momento.)
   // v178 (visor) · Mi hijo: fuera los récords (están en su ficha) y nueva tarjeta «Su estilo» con el «Juega como…» y sus superpoderes, sacados de sus estadísticas de la temporada.
@@ -7984,7 +7985,7 @@
   }
   window.mhSoloEquipo = () => { mhGuardar('equipo'); mhCambiando = false; mhActualizar(); };
   window.mhQuitar = () => {
-    if (!confirm('¿Quitar a tu jugador? Volverás a ver solo el equipo (4 pestañas). Puedes elegirlo otra vez cuando quieras desde la pestaña Partido.')) return;
+    if (!confirm('¿Quitar tu jugador favorito? Volverás a ver solo el equipo (4 pestañas). Puedes elegir otro cuando quieras desde la pestaña Partido.')) return;
     mhGuardar('equipo'); mhCambiando = false;
     showTab('partido'); mhActualizar(); window.scrollTo(0, 0);
   };
@@ -7999,8 +8000,8 @@
     const mostrar = v == null && !mhEnJuego() && mhPlantilla().length > 0;
     card.style.display = mostrar ? '' : 'none';
     if (mostrar) {
-      card.innerHTML = `<div class="card-title" style="color:#f5a623;">⭐ ¿Quién es tu jugador?</div>
-        <div style="font-size:12px; color:#cbd5e1; margin-bottom:10px; line-height:1.45;">Elige a tu hijo y tendrás su página en una pestaña propia. Se guarda solo en este móvil.</div>
+      card.innerHTML = `<div class="card-title" style="color:#f5a623;">⭐ Elige tu jugador favorito</div>
+        <div style="font-size:12px; color:#cbd5e1; margin-bottom:10px; line-height:1.45;">Elige a tu jugador favorito y tendrás su página en una pestaña propia. Se guarda solo en este móvil.</div>
         ${mhRejilla('elegir')}
         <button type="button" onclick="mhSoloEquipo()" style="width:100%; min-height:42px; margin-top:10px; border-radius:10px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.04); color:#e2e8f0; font-weight:700; font-size:12px; cursor:pointer;">Solo quiero ver el equipo</button>`;
       mhConectar(card);
@@ -8026,7 +8027,7 @@
     const id = mhIdElegido();
     if (!id) { cont.innerHTML = ''; return; }
     if (mhCambiando) {
-      cont.innerHTML = `<div class="card"><div class="card-title" style="color:#f5a623;">🔁 Elige a tu jugador</div>${mhRejilla('elegir')}
+      cont.innerHTML = `<div class="card"><div class="card-title" style="color:#f5a623;">🔁 Elige tu jugador favorito</div>${mhRejilla('elegir')}
         <button type="button" onclick="mhCambiar(false)" style="width:100%; min-height:42px; margin-top:10px; border-radius:10px; border:1px solid rgba(255,255,255,.12); background:transparent; color:#e2e8f0; font-weight:700; font-size:12px; cursor:pointer;">Cancelar</button></div>`;
       mhConectar(cont); return;
     }
@@ -8126,8 +8127,8 @@
     const btn = 'width:100%; min-height:44px; border-radius:10px; font-weight:700; font-size:12.5px; cursor:pointer; margin-bottom:8px;';
     h += `<button type="button" onclick="abrirPerfilJugadorTemporada('${escHtml(j.id)}')" style="${btn} border:1px solid #f5a623; background:rgba(245,166,35,.1); color:#f5a623;">Ver su ficha completa (récords, evolución, estilo…) →</button>
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-        <button type="button" onclick="mhCambiar(true)" style="${btn} border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.04); color:#e2e8f0;">🔁 Cambiar de jugador</button>
-        <button type="button" onclick="mhQuitar()" style="${btn} border:1px solid rgba(255,255,255,.12); background:transparent; color:#94a3b8;">✕ Quitar a mi jugador</button>
+        <button type="button" onclick="mhCambiar(true)" style="${btn} border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.04); color:#e2e8f0;">🔁 Cambiar favorito</button>
+        <button type="button" onclick="mhQuitar()" style="${btn} border:1px solid rgba(255,255,255,.12); background:transparent; color:#94a3b8;">✕ Quitar favorito</button>
       </div>
       <div style="font-size:10.5px; color:#64748b; text-align:center; margin:2px 0 8px;">Tu elección se guarda solo en este móvil.</div>`;
     cont.innerHTML = h;
@@ -8142,7 +8143,7 @@
         let nombre = '';
         if (id) { const j = mhJugador(id); nombre = j ? mhNombre(j.name) : ''; }
         tab.style.display = id ? '' : 'none';
-        const n = document.getElementById('tabMiHijoNom'); if (n) n.textContent = nombre || 'Mi jugador';
+        const n = document.getElementById('tabMiHijoNom'); if (n) n.textContent = nombre || 'Favorito';
         const panel = document.getElementById('mihijo');
         if (!id && panel && panel.classList.contains('active')) showTab('partido');
       }

@@ -1053,6 +1053,8 @@
 </div>
 
 <script type="module">
+  // v188 (app + visor) · Rivales en común: contra cada equipo cuentan como mucho los 2 últimos partidos de cada uno; con más de 5 rivales en común, los 5 con más Elo (selector «Los 5 más fuertes / Todos»).
+  // v187 (app + visor) · 🔁 Rivales en común: el Hergar y el próximo rival comparados por sus resultados contra los mismos equipos (tarjeta del próximo partido, tras el Cara a cara, con detalle por goles y por puntos; también al tocar un equipo en Liga → Equipos).
   // v185 (visor) · Acta PDF: línea de tiempo, mapa de goles, media de los otros partidos en «Por partes» y efecto del banquillo.
   // v184 (visor) · Acta PDF: el once inicial colocado como en la pizarra (bandas abiertas y a la altura de su línea).
   // v181 (visor) · «Mi hijo» pasa a llamarse «jugador favorito» en todo lo que se ve (elegir, cambiar y quitar).
@@ -6494,11 +6496,147 @@
         <div class="prox-vsl" style="text-align:center; margin:10px 0 6px;">Últimos 5 partidos (el más reciente a la derecha)</div>
         <div class="prox-forma"><div>${bolas(proxForma(D, H, 5))}</div><div>${bolas(proxForma(D, riv, 5))}</div></div></div>`;
     }
+    // v187 · Rivales en común (justo después del cara a cara)
+    try { if (H >= 0 && riv != null) h += rcHTML(liga, H, riv, true); } catch (e) { console.error('Rivales en común:', e); }
     // A seguir
     const js = proxASeguir(ultimaTemporada);
     if (js.length) h += `<div class="prox-sec"><div class="prox-t">👀 A seguir</div>${js.map(x => `<div class="prox-seg"><span>${x.ico}</span><span>${x.t}</span></div>`).join('')}</div>`;
     return h;
   }
+
+  // ── v187 · RIVALES EN COMÚN (mismo código en la app y en el visor) ──
+  // Compara a dos equipos de la Liga por sus resultados contra los mismos rivales.
+  //  · Para cada rival común: media de la diferencia de goles y de los puntos de cada uno contra él
+  //    (si se han enfrentado varias veces al mismo equipo, cuenta la media: todos los rivales pesan igual).
+  //  · Ventaja = media de (diferencia de goles de A − la de B) en esos rivales.
+  //  · Aviso si uno jugó bastante más en casa que el otro contra esos rivales.
+  //  · Contra cada equipo cuentan como mucho los 2 últimos partidos de cada uno.
+  //  · Con más de 5 rivales en común, se usan los 5 con más Elo (se pueden ver todos en el detalle).
+  const RC_MAX_PARTIDOS = 2, RC_MAX_RIVALES = 5;
+  function rcCalcular(liga, iA, iB, limite) {
+    const D = pronPreparar(liga);
+    const jug = D.P.filter(p => p.jugado);
+    const de = (i, p) => { const casa = p.l === i; const gf = casa ? p.gl : p.gv, gc = casa ? p.gv : p.gl; return { gf, gc, casa, pts: gf > gc ? 3 : gf === gc ? 1 : 0, jg: p.jg }; };
+    const contra = (i, x) => jug.filter(p => (p.l === i && p.v === x) || (p.l === x && p.v === i)).sort((a, b) => a.jg - b.jg).slice(-RC_MAX_PARTIDOS).map(p => de(i, p));
+    const lado = (rs) => ({ rs, n: rs.length, dg: rs.reduce((s, r) => s + r.gf - r.gc, 0) / rs.length, pts: rs.reduce((s, r) => s + r.pts, 0) / rs.length, casa: rs.filter(r => r.casa).length });
+    let comunes = [];
+    const soloA = [], soloB = [];
+    for (let x = 0; x < D.NT; x++) {
+      if (x === iA || x === iB) continue;
+      const a = contra(iA, x), b = contra(iB, x);
+      if (a.length && b.length) comunes.push({ x, nombre: D.nombres[x], A: lado(a), B: lado(b) });
+      else if (a.length) soloA.push({ x, nombre: D.nombres[x], rs: a });
+      else if (b.length) soloB.push({ x, nombre: D.nombres[x], rs: b });
+    }
+    const total = comunes.length;
+    let recortado = false;
+    if (limite && comunes.length > limite) {
+      let elo = {};
+      try { const E = eloLiga(liga); if (E) E.equipos.forEach(x => { elo[x.i] = x.elo; }); } catch (e) { elo = {}; }
+      comunes = comunes.slice().sort((a, b) => (elo[b.x] || 0) - (elo[a.x] || 0)).slice(0, limite);
+      recortado = true;
+    }
+    const suma = (k, s) => comunes.reduce((t, c) => t + c[s][k], 0);
+    const reg = (s) => { const r = { V: 0, E: 0, D: 0 }; comunes.forEach(c => c[s].rs.forEach(x => r[x.gf > x.gc ? 'V' : x.gf === x.gc ? 'E' : 'D']++)); return r; };
+    const nA = comunes.reduce((t, c) => t + c.A.n, 0), nB = comunes.reduce((t, c) => t + c.B.n, 0);
+    const casaA = nA ? suma('casa', 'A') / nA : 0, casaB = nB ? suma('casa', 'B') / nB : 0;
+    const difs = comunes.map(c => c.A.dg - c.B.dg);
+    return {
+      D, comunes, soloA, soloB, total, recortado, nombreA: D.nombres[iA], nombreB: D.nombres[iB],
+      ptsA: suma('pts', 'A'), ptsB: suma('pts', 'B'), dgA: suma('dg', 'A'), dgB: suma('dg', 'B'),
+      regA: reg('A'), regB: reg('B'), nA, nB, casaA: suma('casa', 'A'), casaB: suma('casa', 'B'), fracCasaA: casaA, fracCasaB: casaB,
+      ventaja: difs.length ? difs.reduce((s, v) => s + v, 0) / difs.length : 0,
+      mejorA: difs.filter(v => v > 0.001).length, mejorB: difs.filter(v => v < -0.001).length, iguales: difs.filter(v => Math.abs(v) <= 0.001).length
+    };
+  }
+  function rcEsc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+  function rcNum(v, d) { const r = Math.round(v * Math.pow(10, d)) / Math.pow(10, d); return (Number.isInteger(r) ? String(r) : r.toFixed(d)).replace('.', ','); }
+  function rcSigno(v, d) { const t = rcNum(Math.abs(v), d); return (v > 0.001 ? '+' : v < -0.001 ? '−' : '') + t; }
+  // tituloLargo: nombre del rival para las frases (p. ej. «el Cabrerizos»)
+  function rcHTML(liga, iA, iB, conMarco) {
+    if (!liga || iA == null || iB == null || iA < 0 || iB < 0) return '';
+    const Rt = rcCalcular(liga, iA, iB, null);
+    const marco = (dentro) => conMarco
+      ? `<div style="background:rgba(255,255,255,.025); border:1px solid rgba(255,85,119,.2); border-radius:12px; padding:11px; margin-bottom:10px;">${dentro}</div>`
+      : `<div style="margin-top:12px; padding-top:10px; border-top:1px solid rgba(255,255,255,.08);">${dentro}</div>`;
+    if (Rt.comunes.length <= RC_MAX_RIVALES) { const x = rcBloque(Rt, ''); return x ? marco(x) : ''; }
+    const Rf = rcCalcular(liga, iA, iB, RC_MAX_RIVALES);
+    const sel = (on) => { const b = (k, t, act) => `<button type="button" onclick="rcVer(this,'${k}')" style="flex:1; min-height:36px; border-radius:9px; border:none; font-family:'Montserrat',sans-serif; font-weight:800; font-size:11px; background:${act ? 'rgba(255,255,255,.14)' : 'transparent'}; color:${act ? '#e2e8f0' : '#94a3b8'};">${t}</button>`;
+      return `<div style="display:flex; gap:6px; background:rgba(255,255,255,.04); border-radius:11px; padding:4px; margin-bottom:9px;">${b('f', 'Los ' + RC_MAX_RIVALES + ' más fuertes', on === 'f')}${b('t', 'Todos (' + Rt.total + ')', on === 't')}</div>`; };
+    return marco(`<div class="rc-ver" data-v="f">${rcBloque(Rf, sel('f'))}</div><div class="rc-ver" data-v="t" style="display:none;">${rcBloque(Rt, sel('t'))}</div>`);
+  }
+  function rcBloque(R, selector) {
+    const HC = '#ff5577', RC = '#4dabf7';
+    const nA = rcEsc(R.nombreA), nB = rcEsc(R.nombreB);
+    const cab = `<div style="display:flex; justify-content:space-between; align-items:baseline; gap:8px; margin-bottom:9px;"><span style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:11.5px; color:#e2e8f0;">🔁 Rivales en común</span><span style="font-size:11px; color:#94a3b8;">${R.recortado ? 'los ' + R.comunes.length + ' más fuertes (Elo)' : R.comunes.length ? (R.comunes.length === 1 ? '1 equipo' : R.comunes.length + ' equipos') : ''}</span></div>${selector}`;
+    if (!R.comunes.length) {
+      if (!R.soloA.length || !R.soloB.length) return '';
+      return cab + `<div style="font-size:12px; color:#94a3b8; line-height:1.45;">Todavía no habéis jugado contra ningún equipo en común.</div>`;
+    }
+    const regTxt = (r) => `${r.V}V ${r.E}E ${r.D}D`;
+    const caja = (nom, col, fondo, pts, reg, dg) => `<div style="background:${fondo}; border-radius:10px; padding:8px 10px;">
+        <div style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:10.5px; color:${col}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${nom}</div>
+        <div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:20px; color:#e2e8f0;">${rcNum(pts, 1)} pts</div>
+        <div style="font-size:10.5px; color:#cbd5e1;">${reg} · goles ${rcSigno(dg, 1) || '0'}</div></div>`;
+    const v = R.ventaja;
+    const frase = Math.abs(v) < 0.05
+      ? `Contra los mismos equipos, a los dos les ha ido igual: misma diferencia de goles de media.`
+      : `Contra ${R.recortado ? 'los ' + R.comunes.length + ' rivales en común más fuertes' : 'los mismos equipos'}, ${v > 0 ? 'el ' + nA : 'el ' + nB} ha sacado de media <b style="color:${v > 0 ? HC : RC};">${rcNum(Math.abs(v), 1)} ${Math.abs(v) === 1 ? 'gol' : 'goles'} más por partido</b> que ${v > 0 ? 'el ' + nB : 'el ' + nA}.`;
+    const chip = (r) => { const c = r.gf > r.gc ? ['rgba(46,213,115,.16)', '#7bed9f'] : r.gf === r.gc ? ['rgba(148,163,184,.16)', '#cbd5e1'] : ['rgba(255,107,122,.16)', '#ff9da4'];
+      return `<span style="display:inline-block; min-width:34px; text-align:center; font-weight:800; font-size:11.5px; border-radius:6px; padding:2px 4px; margin:1px; background:${c[0]}; color:${c[1]};">${r.gf}-${r.gc}</span>`; };
+    const filas = R.comunes.map(c => `<div style="display:grid; grid-template-columns:minmax(0,1fr) 84px 84px; gap:6px; align-items:center; padding:5px 0; border-top:1px solid rgba(255,255,255,.06); font-size:12px;">
+        <span style="color:#e2e8f0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${rcEsc(c.nombre)}</span>
+        <span style="text-align:center;">${c.A.rs.map(chip).join('')}</span><span style="text-align:center;">${c.B.rs.map(chip).join('')}</span></div>`).join('');
+    // Detalle: barras por goles y por puntos
+    const barras = (modo) => {
+      const vals = R.comunes.map(c => modo === 'g' ? c.A.dg - c.B.dg : c.A.pts - c.B.pts);
+      const max = Math.max(modo === 'g' ? 2 : 1, ...vals.map(Math.abs));
+      return R.comunes.map((c, k) => {
+        const d = vals[k], w = Math.round(Math.min(1, Math.abs(d) / max) * 50), col = d > 0.001 ? HC : d < -0.001 ? RC : '#64748b';
+        const uni = modo === 'g' ? (Math.abs(d) === 1 ? ' gol' : ' goles') : (Math.abs(d) === 1 ? ' pt' : ' pts');
+        const barra = Math.abs(d) <= 0.001 ? 'left:calc(50% - 3px); width:6px; background:#64748b;' : (d > 0 ? `left:50%; width:${w}%; background:${col};` : `right:50%; width:${w}%; background:${col};`);
+        const cs = (s) => s.rs.map(r => r.casa ? 'casa' : 'fuera').join(', ');
+        return `<div style="padding:7px 0; border-top:1px solid rgba(255,255,255,.06);">
+          <div style="display:flex; justify-content:space-between; gap:8px; font-size:12px;"><span style="color:#e2e8f0; font-weight:700;">${rcEsc(c.nombre)}</span><span style="font-family:'Montserrat',sans-serif; font-weight:900; color:${d > 0.001 ? HC : d < -0.001 ? RC : '#94a3b8'};">${Math.abs(d) <= 0.001 ? 'igual' : rcSigno(d, 1) + uni}</span></div>
+          <div style="font-size:10.5px; color:#94a3b8; margin:2px 0 5px;">${nA} ${c.A.rs.map(r => r.gf + '-' + r.gc).join(', ')} (${cs(c.A)}) · ${nB} ${c.B.rs.map(r => r.gf + '-' + r.gc).join(', ')} (${cs(c.B)})</div>
+          <div style="position:relative; height:10px; border-radius:5px; background:rgba(255,255,255,.05);"><div style="position:absolute; left:50%; top:-2px; bottom:-2px; width:2px; margin-left:-1px; background:rgba(255,255,255,.3);"></div><div style="position:absolute; top:0; bottom:0; border-radius:5px; ${barra}"></div></div></div>`;
+      }).join('');
+    };
+    const btn = (m, t, on) => `<button type="button" onclick="rcModo(this,'${m}')" data-m="${m}" style="flex:1; min-height:38px; border-radius:9px; border:none; font-family:'Montserrat',sans-serif; font-weight:800; font-size:11.5px; background:${on ? '#f5a623' : 'transparent'}; color:${on ? '#0a0e14' : '#cbd5e1'};">${t}</button>`;
+    let campo = '';
+    if (Math.abs(R.fracCasaA - R.fracCasaB) >= 0.4) {
+      const masA = R.fracCasaA > R.fracCasaB;
+      campo = `<div style="font-size:11.5px; line-height:1.45; color:#e2e8f0; background:rgba(245,166,35,.08); border:1px solid rgba(245,166,35,.35); border-radius:10px; padding:8px 10px; margin-top:8px;">Ojo con el campo: contra estos equipos, el ${nA} jugó ${R.casaA} de ${R.nA} en casa y el ${nB}, ${R.casaB} de ${R.nB}. Parte de la ${masA ? 'ventaja del ' + nA : 'ventaja del ' + nB} puede venir de ahí.</div>`;
+    }
+    const solo = (arr, nom, col) => arr.length ? `<div style="display:flex; justify-content:space-between; gap:10px; font-size:11.5px; padding:4px 0;"><span style="color:${col}; font-weight:700; white-space:nowrap;">Solo el ${nom}</span><span style="color:#cbd5e1; text-align:right;">${arr.map(s => rcEsc(s.nombre) + ' ' + s.rs.map(r => r.gf + '-' + r.gc).join(', ')).join(' · ')}</span></div>` : '';
+    const sinComun = (R.soloA.length || R.soloB.length) ? `<div style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:10.5px; letter-spacing:.5px; color:#94a3b8; margin:10px 0 4px;">SIN RIVAL EN COMÚN TODAVÍA</div>${solo(R.soloA, nA, HC)}${solo(R.soloB, nB, RC)}` : '';
+    const resumenPts = `En total contra ${R.comunes.length === 1 ? 'ese equipo' : 'esos ' + R.comunes.length + ' equipos'}: ${rcNum(R.ptsA, 1)} puntos del ${nA} y ${rcNum(R.ptsB, 1)} del ${nB}.`;
+    const resumenG = `Mejor el ${nA} contra ${R.mejorA}, el ${nB} contra ${R.mejorB}${R.iguales ? ` e igual contra ${R.iguales}` : ''}.`;
+    const detalle = `<div class="rc-det" style="display:none; margin-top:8px;">
+        <div style="display:flex; gap:6px; background:rgba(255,255,255,.04); border-radius:11px; padding:4px; margin-bottom:8px;">${btn('g', 'Por goles', true)}${btn('p', 'Por puntos', false)}</div>
+        <div style="display:flex; justify-content:space-between; font-size:10px; font-weight:800; letter-spacing:.4px; margin-bottom:2px;"><span style="color:${RC};">◂ MEJOR ${nB}</span><span style="color:${HC};">MEJOR ${nA} ▸</span></div>
+        <div class="rc-g"><div style="font-size:11.5px; color:#cbd5e1; margin-bottom:4px;">${resumenG}</div>${barras('g')}</div>
+        <div class="rc-p" style="display:none;"><div style="font-size:11.5px; color:#cbd5e1; margin-bottom:4px;">${resumenPts}</div>${barras('p')}</div>
+        ${campo}${sinComun}
+        <div style="font-size:10.5px; color:#94a3b8; margin-top:8px; line-height:1.4;">Contra cada equipo cuentan como mucho los ${RC_MAX_PARTIDOS} últimos partidos de cada uno, y su media, para que todos los rivales pesen igual.${R.recortado ? ` Con más de ${RC_MAX_RIVALES} rivales en común se usan los ${RC_MAX_RIVALES} con más Elo.` : ''}</div>
+      </div>`;
+    return (`<div class="rc-box">${cab}
+      <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-bottom:8px;">
+        ${caja(nA, HC, 'rgba(255,85,119,.12)', R.ptsA, regTxt(R.regA), R.dgA)}${caja(nB, RC, 'rgba(77,171,247,.12)', R.ptsB, regTxt(R.regB), R.dgB)}
+      </div>
+      <div style="font-size:12px; line-height:1.45; color:#cbd5e1; margin-bottom:6px;">${frase}</div>
+      ${R.comunes.length === 1 ? `<div style="font-size:11px; color:#f5a623; margin-bottom:6px;">Solo 1 rival en común: tómalo como orientativo.</div>` : ''}
+      <div style="display:grid; grid-template-columns:minmax(0,1fr) 84px 84px; gap:6px; font-size:10px; font-weight:800; letter-spacing:.3px; color:#94a3b8; padding-bottom:3px;"><span>CONTRA</span><span style="text-align:center; color:${HC}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${nA}</span><span style="text-align:center; color:${RC}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${nB}</span></div>
+      ${filas}
+      <div style="font-size:10.5px; color:#94a3b8; margin-top:4px;">Resultado visto desde cada equipo: sus goles primero.</div>
+      <button type="button" onclick="rcToggle(this)" style="display:block; margin:6px 0 0 auto; min-height:40px; padding:0 4px; border:none; background:transparent; font-family:'Montserrat',sans-serif; font-weight:800; font-size:12px; color:#f5a623;">Ver detalle ▾</button>
+      ${detalle}</div>`);
+  }
+  window.rcVer = (b, k) => { const raiz = b.closest('.rc-ver') && b.closest('.rc-ver').parentElement; if (!raiz) return; raiz.querySelectorAll(':scope > .rc-ver').forEach(x => { x.style.display = x.dataset.v === k ? 'block' : 'none'; }); };
+  window.rcToggle = (b) => { const box = b.closest('.rc-box'); const d = box && box.querySelector('.rc-det'); if (!d) return; const ver = d.style.display === 'none'; d.style.display = ver ? 'block' : 'none'; b.textContent = ver ? 'Ocultar detalle ▴' : 'Ver detalle ▾'; };
+  window.rcModo = (b, m) => { const box = b.closest('.rc-box'); if (!box) return;
+    box.querySelector('.rc-g').style.display = m === 'g' ? 'block' : 'none'; box.querySelector('.rc-p').style.display = m === 'p' ? 'block' : 'none';
+    box.querySelectorAll('button[data-m]').forEach(x => { const on = x.dataset.m === m; x.style.background = on ? '#f5a623' : 'transparent'; x.style.color = on ? '#0a0e14' : '#cbd5e1'; }); };
 
   function pintarProximoPartido() {
     const card = document.getElementById('proximoPartidoCard');
@@ -8072,6 +8210,7 @@
     if (!box) return;
     if (box.style.display === 'block') { box.style.display = 'none'; return; }
     try { box.innerHTML = ccGolesHTML(ultimaTemporada, ultimaLiga, i, true); } catch (e) { console.error('Cara a cara:', e); box.innerHTML = ''; }
+    try { box.innerHTML += rcHTML(ultimaLiga, ultimaLiga.equipos.findIndex(e => e.esHergar), i, false); } catch (e) { console.error('Rivales en común:', e); } // v187
     box.style.display = 'block';
   };
   function pintarMapaGoles() {
@@ -9733,7 +9872,7 @@
         ${eq.campo && ctxMapsUrl(eq.campo) ? `<a href="${ctxEsc(ctxMapsUrl(eq.campo))}" target="_blank" rel="noopener" style="font-size:11px; font-weight:800; color:#2ed573; text-decoration:none; white-space:nowrap;">Cómo llegar ›</a>` : ''}
         ${eq.esHergar ? '' : '<span style="font-size:13px; color:#64748b;">⚽</span>'}
       </div><div class="cc-box" style="display:none; padding:4px 4px 12px;"></div></div>`).join('')
-      + `<div style="font-size:10.5px; color:#64748b; margin-top:8px;">Toca un equipo para ver los goles entre los dos esta temporada.</div>`;
+      + `<div style="font-size:10.5px; color:#64748b; margin-top:8px;">Toca un equipo para ver los goles entre los dos y los rivales en común.</div>`;
   }
 
   let ligaViewerVuelta = 1, ligaViewerJornada = 1, ligaViewerJornadaFijada = false;

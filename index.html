@@ -1053,6 +1053,7 @@
 </div>
 
 <script type="module">
+  // v185 (visor) · Acta PDF: línea de tiempo, mapa de goles, media de los otros partidos en «Por partes» y efecto del banquillo.
   // v184 (visor) · Acta PDF: el once inicial colocado como en la pizarra (bandas abiertas y a la altura de su línea).
   // v181 (visor) · «Mi hijo» pasa a llamarse «jugador favorito» en todo lo que se ve (elegir, cambiar y quitar).
   // v180 (visor) · La semana del Hergar: fuera el botón de compartir la imagen (de momento).
@@ -2931,7 +2932,7 @@
               id: f.j.id, dorsal: f.j.dorsal, nombre: actaNom(f.j), mins: f.mins, goles: f.h.goles || 0, asist: f.h.asistencias || 0,
               dp: a.dp || 0, df: a.df || 0, pc: a.pc || 0, pa: a.pa || 0, def: (a.def || 0), reg: a.reg || 0, par: a.par || 0, parD: a.parD || 0,
               am: a.am || 0, ro: a.ro || 0, imp: f.imp, p70, peso: (p70 != null && media != null) ? p70 - media : null,
-              mm: (x && !x.pendiente) ? (x.gf - x.gc) : null, titular: tit.includes(String(f.j.id)), puesto: actaPuesto(f.h),
+              mm: (x && !x.pendiente) ? (x.gf - x.gc) : null, mmGf: (x && !x.pendiente) ? x.gf : null, mmGc: (x && !x.pendiente) ? x.gc : null, titular: tit.includes(String(f.j.id)), puesto: actaPuesto(f.h),
               gcCampo: f.h.gcCampo, recibidos: f.h.golesRecibidos || 0, detalle: f.h.acc !== undefined
           };
       }).sort((a, b) => (a.p70 === null) - (b.p70 === null) || (b.p70 ?? b.imp) - (a.p70 ?? a.imp));
@@ -2939,8 +2940,8 @@
       let sec = null;
       try { sec = (typeof momSecuencia === 'function') ? momSecuencia(p) : null; } catch (e) { sec = null; }
       const goles = [];
-      if (sec && sec.length) sec.forEach(x => goles.push({ min: x.min, equipo: x.equipo, nombre: x.g.nombre || '', asist: x.g.asistente || '', penalti: !!x.g.penalti, marcador: `${x.despues.h}-${x.despues.r}` }));
-      else if (Array.isArray(p.goles)) p.goles.filter(g => g && (g.equipo === 'hergar' || g.equipo === 'rival')).forEach(g => goles.push({ min: g.min != null ? g.min : g.minuto, equipo: g.equipo, nombre: g.nombre || '', asist: g.asistente || '', penalti: !!g.penalti, marcador: '' }));
+      if (sec && sec.length) sec.forEach(x => goles.push({ min: x.min, equipo: x.equipo, nombre: x.g.nombre || '', asist: x.g.asistente || '', penalti: !!x.g.penalti, marcador: `${x.despues.h}-${x.despues.r}`, origen: x.g.origen || null, pos: x.g.pos || null }));
+      else if (Array.isArray(p.goles)) p.goles.filter(g => g && (g.equipo === 'hergar' || g.equipo === 'rival')).forEach(g => goles.push({ min: g.min != null ? g.min : g.minuto, equipo: g.equipo, nombre: g.nombre || '', asist: g.asistente || '', penalti: !!g.penalti, marcador: '', origen: g.origen || null, pos: g.pos || null }));
       // cambios: los guardados (v139) o deducidos de los minutos
       let cambios = Array.isArray(A.cambios) ? A.cambios.slice() : null;
       if (!cambios && tit.length && typeof bqPartidoInfo === 'function') {
@@ -2978,7 +2979,50 @@
       const tot = { gl, gr, tnP: Number(p.tirosNuestrosPuerta) || 0, tnF: Number(p.tirosNuestrosFuera) || 0, trP: Number(p.tirosRivalesPuerta) || 0, trF: Number(p.tirosRivalesFuera) || 0,
           cf: Number(p.cornersFavor) || 0, cc: Number(p.cornersContra) || 0, ff: Number(p.faltasFavor) || 0, fc: Number(p.faltasContra) || 0, par: paradas,
           fjN: Number(p.fuerasJuegoNuestros) || 0, fjR: Number(p.fuerasJuegoRival) || 0 };
-      // porteros: los que hicieron paradas o jugaron de portero
+      // v185 · MEDIA DE LOS OTROS PARTIDOS (sin contar este) para comparar en «Por partes»
+        let actaMedia = null;
+        try {
+            const sumPar = (q) => js.reduce((s, j) => { const h = actaHist(j, q); return s + ((h && h.acc && h.acc.par) || 0); }, 0);
+            const otros = ps.filter((q, k) => k !== i && q && q.tirosNuestrosPuerta != null);
+            if (otros.length) {
+                const med = (f, lista) => { const l = (lista || otros).map(f).filter(v => v != null && !isNaN(v)); return l.length ? l.reduce((a, b) => a + b, 0) / l.length : null; };
+                const nn = (v) => v == null ? null : Number(v) || 0;
+                actaMedia = {
+                    n: otros.length,
+                    gl: med(q => nn(q.golesLocal)), gr: med(q => nn(q.golesRival)),
+                    tnP: med(q => nn(q.tirosNuestrosPuerta)), tnF: med(q => nn(q.tirosNuestrosFuera)), trP: med(q => nn(q.tirosRivalesPuerta)), trF: med(q => nn(q.tirosRivalesFuera)),
+                    cf: med(q => nn(q.cornersFavor)), cc: med(q => nn(q.cornersContra)), ff: med(q => nn(q.faltasFavor)), fc: med(q => nn(q.faltasContra)),
+                    pc: med(q => q.pasesClaveTotal != null ? nn(q.pasesClaveTotal) : null), pa: med(q => q.pasesAreaTotal != null ? nn(q.pasesAreaTotal) : null),
+                    def: med(q => q.accionesDefTotal != null ? nn(q.accionesDefTotal) : null), par: med(q => sumPar(q))
+                };
+            }
+        } catch (e) { actaMedia = null; }
+        // v185 · EFECTO DEL BANQUILLO de este partido: antes y después del primer cambio, y cambio a cambio
+        let actaBanq = null;
+        try {
+            const camb = (cambios || []).filter(c => c && c.min != null).slice().sort((a, b) => a.min - b.min);
+            if (camb.length && goles.every(g => g.min != null)) {
+                const primer = camb[0].min, fin = Math.max(dur, primer + 1);
+                const marc = (desde, hasta) => { let f = 0, c = 0; goles.forEach(g => { if (g.min >= desde && g.min < hasta) { if (g.equipo === 'hergar') f++; else c++; } }); return { f, c }; };
+                const A0 = marc(-1, primer), D0 = marc(primer, 999);
+                let tA = null, tD = null;
+                if (p.tirosTrasCambio && p.tirosNuestrosPuerta != null) { const nD = Math.min(tN, Number(p.tirosTrasCambio.n) || 0); tA = tN - nD; tD = nD; }
+                const filasB = camb.map(c => {
+                    const x = jugadores.find(y => String(y.dorsal) === String(c.entraD) && y.nombre === c.entra) || jugadores.find(y => y.nombre === c.entra);
+                    let gf = x && x.mmGf != null ? x.mmGf : null, gc = x && x.mmGf != null ? x.mmGc : null;
+                    if (gf == null) { const m = marc(c.min, 999); gf = m.f; gc = m.c; }
+                    return { min: c.min, entra: c.entra, sale: c.sale || '', gf, gc, g: x ? x.goles : 0, a: x ? x.asist : 0 };
+                });
+                const sup = tit.length ? jugadores.filter(x => !x.titular) : [];
+                actaBanq = {
+                    primer, fin, antes: A0, despues: D0, tA, tD,
+                    p70A: primer > 0 ? (A0.f - A0.c) / primer * 70 : null, p70D: fin - primer > 0 ? (D0.f - D0.c) / (fin - primer) * 70 : null,
+                    gfA70: primer > 0 ? A0.f / primer * 70 : null, gfD70: fin - primer > 0 ? D0.f / (fin - primer) * 70 : null,
+                    filas: filasB, banco: tit.length ? { g: sup.reduce((s, x) => s + (x.goles || 0), 0), a: sup.reduce((s, x) => s + (x.asist || 0), 0) } : null
+                };
+            }
+        } catch (e) { actaBanq = null; }
+        // porteros: los que hicieron paradas o jugaron de portero
       const porteros = jugadores.filter(x => x.par > 0 || x.puesto === 'POR');
       // temporada hasta este partido (incluido)
       const hasta = ps.slice(0, i + 1);
@@ -3004,7 +3048,7 @@
           [500, 1000, 1500, 2000].forEach(n => { if (x.minAntes < n && x.mins >= n) hitos.push(`${x.nombre} supera los ${n} minutos`); });
       });
       return {
-          p, i, A, opts, dur, gl, gr, res: gl > gr ? 'VICTORIA' : gl < gr ? 'DERROTA' : 'EMPATE', jugadores, goles, cambios, tarjetas, cuota, tot, porteros,
+          p, i, A, opts, dur, gl, gr, media: actaMedia, banq: actaBanq, res: gl > gr ? 'VICTORIA' : gl < gr ? 'DERROTA' : 'EMPATE', jugadores, goles, cambios, tarjetas, cuota, tot, porteros,
           partes: A.descanso || null, momentum: Array.isArray(A.momentum) && A.momentum.length > 1 ? A.momentum : null, liga: A.liga || null,
           sinergias: Array.isArray(A.sinergias) ? A.sinergias : [], once: jugadores.filter(x => x.titular),
           temporada: { pj: hasta.length, bal, goleadores, top, hitos: hitos.slice(0, 7), cuota: (bal.tN + bal.tR) > 0 ? bal.tN / (bal.tN + bal.tR) : null }
@@ -3058,7 +3102,56 @@
           caja(M + w2 + 4, y, w2, 17, [{ t: 'LIGA DESPUÉS DEL PARTIDO', b: true, s: 7, c: ACTA_GRIS }, { t: fila('Hergar', dl.h), b: true }, { t: (dl.lideres && dl.lideres.length ? `${dl.lideres.length > 1 ? 'Colíderes' : 'Líder'}: ${dl.lideres.join(' y ')}` : fila(p.rival, dl.r)) }]);
           y += 20;
       }
-      titulo('GOLES');
+      // v185 · LÍNEA DE TIEMPO: goles arriba (con el marcador), cambios y tarjetas abajo
+        {
+            const gT = D.goles.filter(g => g.min != null), cT = (D.cambios || []).filter(c => c && c.min != null), kT = (D.tarjetas || []).filter(c => c && c.min != null);
+            if (gT.length || cT.length || kT.length) {
+                titulo('CÓMO FUE EL PARTIDO, MINUTO A MINUTO');
+                const maxM = Math.max(D.dur || 70, 70, ...gT.map(g => g.min), ...cT.map(c => c.min), ...kT.map(c => c.min));
+                const x0 = M + 3, w = CW - 6, X = (m) => x0 + Math.min(m, maxM) / maxM * w;
+                const fs = 6.6; font('bold', fs);
+                const colocar = (items) => {
+                    const filas = [];
+                    items.slice().sort((a, b) => a.x - b.x).forEach(it => {
+                        const tw = doc.getTextWidth(it.txt);
+                        let cx = Math.max(M + tw / 2, Math.min(W - M - tw / 2, it.x));
+                        let r = filas.findIndex(fin => cx - tw / 2 > fin + 2);
+                        if (r < 0) { filas.push(0); r = filas.length - 1; }
+                        filas[r] = cx + tw / 2; it.r = r; it.cx = cx;
+                    });
+                    return filas.length;
+                };
+                const arriba = gT.map(g => ({ x: X(g.min), txt: actaTxt(`${g.min}' ${g.equipo === 'hergar' ? (g.nombre || 'Hergar') : (p.rival || 'Rival')} ${g.marcador || ''}`.trim()), c: g.equipo === 'hergar' ? ACTA_ROJO : ACTA_AZUL }));
+                const abajo = cT.map(c => ({ x: X(c.min), txt: actaTxt(`${c.min}' ${c.entra}${c.sale ? ' x ' + c.sale : ''}`), c: [22, 101, 52] }))
+                    .concat(kT.map(c => ({ x: X(c.min), txt: actaTxt(`${c.min}' ${c.nombre}`), c: c.tipo === 'A' ? [161, 98, 7] : ACTA_ROJO, tarj: c.tipo === 'A' ? [250, 204, 21] : [220, 38, 38] })));
+                const nA = colocar(arriba), nB = colocar(abajo), LH = 3.3;
+                const alto = nA * LH + 5 + 2.5 + 5 + nB * LH + 2;
+                sitio(alto + 2);
+                const yb = y + nA * LH + 5;   // barra
+                fill([253, 231, 236]); doc.rect(x0, yb, X(35) - x0, 2.6, 'F');
+                fill([251, 208, 218]); doc.rect(X(35), yb, x0 + w - X(35), 2.6, 'F');
+                draw([17, 24, 39]); doc.setLineWidth(0.3); doc.setLineDashPattern([0.8, 0.6], 0); doc.line(X(35), yb - 2.5, X(35), yb + 5); doc.setLineDashPattern([], 0);
+                font('normal', 5.8); color(ACTA_GRIS);
+                for (let m = 0; m <= maxM; m += 10) doc.text(`${m}'`, X(m), yb + 5.2, { align: 'center' });
+                if (D.partes) doc.text(actaTxt(`descanso ${D.partes.gl}-${D.partes.gr}`), X(35) + 1, yb - 1);
+                doc.setLineWidth(0.15);
+                arriba.forEach(it => {
+                    const ty = y + 2.6 + (nA - 1 - it.r) * LH;
+                    draw(it.c); doc.line(it.x, ty + 0.8, it.x, yb - 1.4);
+                    fill(it.c); doc.circle(it.x, yb - 1.4, 1.2, 'F');
+                    font('bold', fs); color(it.c); doc.text(it.txt, it.cx, ty, { align: 'center' });
+                });
+                abajo.forEach(it => {
+                    const ty = yb + 8.6 + it.r * LH;
+                    draw(it.c); doc.line(it.x, yb + 2.6, it.x, ty - 2.3);
+                    if (it.tarj) { fill(it.tarj); doc.rect(it.x - 0.9, yb + 2.9, 1.8, 2.4, 'F'); }
+                    font('bold', fs); color(it.c); doc.text(it.txt, it.cx, ty, { align: 'center' });
+                });
+                doc.setLineWidth(0.2);
+                y += alto;
+            }
+        }
+        titulo('GOLES');
       if (D.goles.length) {
           tabla(['Min', 'Gol', 'Asistencia', 'Marcador'], D.goles.map(g => [g.min != null ? `${g.min}'` : '-', actaTxt(g.equipo === 'hergar' ? `${g.nombre || 'Hergar'}${g.penalti ? ' (penalti)' : ''}` : `${p.rival}${g.penalti ? ' (penalti)' : ''}`), actaTxt(g.asist || '-'), g.marcador || '-']),
               { columnStyles: { 1: { halign: 'left' }, 2: { halign: 'left' } }, didParseCell: (d) => { if (d.section === 'body' && d.column.index === 1) { const g = D.goles[d.row.index]; d.cell.styles.textColor = g.equipo === 'hergar' ? ACTA_ROJO : ACTA_AZUL; d.cell.styles.fontStyle = 'bold'; } } });
@@ -3068,14 +3161,44 @@
       if (P1) {
           titulo('POR PARTES');
           const d2 = (k) => (T[k] || 0) - (P1[k] || 0);
-          tabla(['', '1.ª parte', '2.ª parte', 'Total'], [
-              ['Goles (Hergar - rival)', `${P1.gl}-${P1.gr}`, `${D.gl - P1.gl}-${D.gr - P1.gr}`, `${D.gl}-${D.gr}`],
-              ['Tiros Hergar (a puerta)', tiroTxt(P1.tnP, P1.tnF), tiroTxt(d2('tnP'), d2('tnF')), tiroTxt(T.tnP, T.tnF)],
-              ['Tiros rival (a puerta)', tiroTxt(P1.trP, P1.trF), tiroTxt(d2('trP'), d2('trF')), tiroTxt(T.trP, T.trF)],
-              ['Córners (favor - contra)', `${P1.cf}-${P1.cc}`, `${d2('cf')}-${d2('cc')}`, `${T.cf}-${T.cc}`],
-              ['Faltas (favor - contra)', `${P1.ff}-${P1.fc}`, `${d2('ff')}-${d2('fc')}`, `${T.ff}-${T.fc}`],
-              ['Paradas', `${P1.par || 0}`, `${Math.max(0, T.par - (P1.par || 0))}`, `${T.par}`]
-          ], { columnStyles: { 0: { halign: 'left', fontStyle: 'bold' }, 3: { fontStyle: 'bold' } } });
+          const Md = D.media, d1 = (v) => v == null ? '-' : (Math.round(v * 10) / 10).toString().replace('.', ',');
+            const tirM = (a, b) => (a == null || b == null) ? '-' : `${d1(a + b)} (${d1(a)})`;
+            const parTot = (k) => p[k] != null ? Number(p[k]) || 0 : null;
+            const pcT = parTot('pasesClaveTotal') ?? D.jugadores.reduce((s, x) => s + (x.pc || 0), 0), paT = parTot('pasesAreaTotal') ?? D.jugadores.reduce((s, x) => s + (x.pa || 0), 0);
+            const defT = parTot('accionesDefTotal') ?? D.jugadores.reduce((s, x) => s + (x.def || 0), 0);
+            // [fila, valor de hoy, media, más es mejor (true) / menos es mejor (false) / sin flecha (null)]
+            const filasP = [
+                [['Goles (Hergar - rival)', `${P1.gl}-${P1.gr}`, `${D.gl - P1.gl}-${D.gr - P1.gr}`, `${D.gl}-${D.gr}`], Md ? `${d1(Md.gl)}-${d1(Md.gr)}` : null, D.gl - D.gr, Md ? Md.gl - Md.gr : null, true],
+                [['Tiros Hergar (a puerta)', tiroTxt(P1.tnP, P1.tnF), tiroTxt(d2('tnP'), d2('tnF')), tiroTxt(T.tnP, T.tnF)], Md ? tirM(Md.tnP, Md.tnF) : null, T.tnP + T.tnF, Md ? Md.tnP + Md.tnF : null, true],
+                [['Tiros rival (a puerta)', tiroTxt(P1.trP, P1.trF), tiroTxt(d2('trP'), d2('trF')), tiroTxt(T.trP, T.trF)], Md ? tirM(Md.trP, Md.trF) : null, T.trP + T.trF, Md ? Md.trP + Md.trF : null, false],
+                [['Córners (favor - contra)', `${P1.cf}-${P1.cc}`, `${d2('cf')}-${d2('cc')}`, `${T.cf}-${T.cc}`], Md ? `${d1(Md.cf)}-${d1(Md.cc)}` : null, T.cf - T.cc, Md ? Md.cf - Md.cc : null, true],
+                [['Faltas (favor - contra)', `${P1.ff}-${P1.fc}`, `${d2('ff')}-${d2('fc')}`, `${T.ff}-${T.fc}`], Md ? `${d1(Md.ff)}-${d1(Md.fc)}` : null, null, null, null],
+                [['Pases clave · al área', { content: '-', colSpan: 2 }, `${pcT} · ${paT}`], Md && Md.pc != null ? `${d1(Md.pc)} · ${d1(Md.pa)}` : null, pcT + paT, Md && Md.pc != null ? Md.pc + Md.pa : null, true],
+                [['Acciones defensivas', { content: '-', colSpan: 2 }, `${defT}`], Md && Md.def != null ? d1(Md.def) : null, defT, Md ? Md.def : null, true],
+                [['Paradas', `${P1.par || 0}`, `${Math.max(0, T.par - (P1.par || 0))}`, `${T.par}`], Md ? d1(Md.par) : null, null, null, null]
+            ];
+            const conMedia = !!Md;
+            const flecha = (hoy, med, masMejor) => {
+                if (masMejor == null || hoy == null || med == null) return 0;
+                const dif = hoy - med; if (Math.abs(dif) < Math.max(0.5, Math.abs(med) * 0.15)) return 0;
+                return (dif > 0) === masMejor ? 1 : -1;
+            };
+            const dirs = filasP.map(f => flecha(f[2], f[3], f[4]));
+            tabla(['', '1.ª parte', '2.ª parte', 'Total'].concat(conMedia ? ['Media'] : []), filasP.map(f => f[0].concat(conMedia ? [f[1] == null ? '-' : f[1]] : [])),
+                { columnStyles: { 0: { halign: 'left', fontStyle: 'bold' }, 3: { fontStyle: 'bold' }, 4: { fillColor: [254, 252, 232] } },
+                  didParseCell: (d) => { if (d.section === 'head' && d.column.index === 4) d.cell.styles.fillColor = [133, 77, 14]; },
+                  didDrawCell: (d) => {
+                      if (d.section !== 'body' || d.column.index !== 4) return;
+                      const dir = dirs[d.row.index]; if (!dir) return;
+                      const cx = d.cell.x + d.cell.width - 3.2, cy = d.cell.y + d.cell.height / 2;
+                      fill(dir > 0 ? [21, 128, 61] : ACTA_ROJO);
+                      if (dir > 0) doc.triangle(cx - 1.3, cy + 1, cx + 1.3, cy + 1, cx, cy - 1.2, 'F'); else doc.triangle(cx - 1.3, cy - 1, cx + 1.3, cy - 1, cx, cy + 1.2, 'F');
+                  } });
+            if (conMedia) {
+                font('normal', 6.5); color(ACTA_GRIS);
+                doc.text(actaTxt(`Media = la de los otros ${Md.n} ${Md.n === 1 ? 'partido' : 'partidos'} de la temporada (sin contar este). Verde: mejor de lo habitual · rojo: peor. En tiros del rival, menos es mejor.`), M, y + 1.5, { maxWidth: CW });
+                y += 5;
+            }
       } else if (p.tirosNuestrosPuerta != null) {
           titulo('ESTADÍSTICAS DEL PARTIDO');
           tabla(['', 'Hergar', p.rival || 'Rival'], [
@@ -3099,7 +3222,8 @@
           if (D.cuota.despues != null) barra('Tras los cambios', D.cuota.despues);
       }
       if (D.momentum) {
-          titulo('MOMENTUM (por encima de la línea, mejor el Hergar)');
+          sitio(52); // v185: que el título no se quede solo al final de la página
+            titulo('MOMENTUM (por encima de la línea, mejor el Hergar)');
           sitio(40);
           const x0 = M, w = CW, h = 30, y0 = y;
           fill([248, 250, 252]); draw([229, 231, 235]); doc.setLineWidth(0.2); doc.rect(x0, y0, w, h, 'FD');
@@ -3114,12 +3238,56 @@
           pts.forEach(q => { doc.line(X(prev.m), Y(prev.v), X(q.m), Y(q.v)); prev = q; });
           const vEn = (m) => { let v = 0; pts.forEach(q => { if (q.m <= m) v = q.v; }); return v; };
           D.goles.forEach(g => { if (g.min == null) return; const c = g.equipo === 'hergar' ? ACTA_ROJO : ACTA_AZUL; fill(c); doc.circle(X(g.min), Y(vEn(g.min)), 1.4, 'F');
-              font('bold', 6.5); color(c); doc.text(actaTxt(`${g.min}'${g.equipo === 'hergar' && g.nombre ? ' ' + g.nombre : ''}`), X(g.min) + 1.8, Y(vEn(g.min)) - 1.6); });
+              font('bold', 6.5); color(c); doc.text(`${g.min}'`, X(g.min) + 1.8, Y(vEn(g.min)) - 1.6); }); // v185: los nombres ya salen en la línea de tiempo
           doc.setLineWidth(0.2);
           font('normal', 6.5); color(ACTA_GRIS); doc.text("0'", x0, y0 + h + 3); doc.text("35'", X(35), y0 + h + 3, { align: 'center' }); doc.text(`${maxM}'`, x0 + w, y0 + h + 3, { align: 'right' });
           y = y0 + h + 5;
       }
-      // ═════ PÁGINA 2 · LOS JUGADORES ═════
+      // v185 · MAPA DE GOLES: dónde se marcó (a favor) y dónde nos marcaron (en contra), con el color del origen
+        {
+            const ORI = { jugada: ['Jugada', [93, 173, 226]], robo: ['Robo / contra', [46, 213, 115]], rechace: ['Rechace', [168, 85, 247]], corner: ['Córner', [245, 166, 35]],
+                falta: ['Falta', [255, 159, 67]], penalti: ['Penalti', [255, 210, 63]], error: ['Error del rival', [148, 163, 184]], perdida: ['Pérdida nuestra', [148, 163, 184]] };
+            const conSitio = (g) => g.penalti ? { x: 34, y: 11 } : (g.pos && g.pos.x != null && g.pos.y != null ? { x: Number(g.pos.x), y: Number(g.pos.y) } : null);
+            const lados = [['A FAVOR', D.goles.filter(g => g.equipo === 'hergar')], ['EN CONTRA', D.goles.filter(g => g.equipo === 'rival')]];
+            if (D.goles.some(g => conSitio(g))) {
+                const PROF = 32, gap = 6, wc = (CW - gap) / 2, esc = wc / 68, hc = PROF * esc;
+                titulo('MAPA DE GOLES (desde dónde se remata · el número es el minuto)');
+                sitio(hc + 16);
+                lados.forEach(([nombre, gs], k) => {
+                    const x0 = M + k * (wc + gap), y0 = y + 4;
+                    font('bold', 7.5); color(k ? ACTA_AZUL : ACTA_ROJO); doc.text(actaTxt(`${nombre} · ${gs.length}`), x0, y + 2.5);
+                    fill([21, 128, 61]); doc.roundedRect(x0, y0, wc, hc, 1.5, 1.5, 'F');
+                    doc.setDrawColor(255, 255, 255); doc.setLineWidth(0.3);
+                    const mx = (m) => x0 + m * esc, my = (m) => y0 + m * esc;
+                    doc.line(x0, y0, x0 + wc, y0);
+                    doc.rect(mx(34 - 20.16), my(0), 40.32 * esc, 16.5 * esc); doc.rect(mx(34 - 9.16), my(0), 18.32 * esc, 5.5 * esc);
+                    fill([255, 255, 255]); doc.circle(mx(34), my(11), 0.35, 'F'); doc.rect(mx(34 - 3.66), y0 - 0.8, 7.32 * esc, 0.8, 'F');
+                    const cuenta = {}; let sin = 0;
+                    gs.forEach(g => {
+                        const s = conSitio(g); const o = g.penalti ? 'penalti' : (ORI[g.origen] ? g.origen : null);
+                        if (o) cuenta[o] = (cuenta[o] || 0) + 1;
+                        if (!s) { sin++; return; }
+                        const c = o ? ORI[o][1] : [255, 255, 255];
+                        const cx = mx(Math.max(1.5, Math.min(66.5, s.x))), cy = my(Math.max(1.5, Math.min(PROF - 1.5, s.y)));
+                        fill(c); doc.setDrawColor(255, 255, 255); doc.setLineWidth(0.25); doc.circle(cx, cy, 1.9, 'FD');
+                        font('bold', 5); color(ACTA_TINTA); doc.text(String(g.min != null ? g.min : ''), cx, cy + 0.7, { align: 'center' });
+                    });
+                    if (!gs.length) { font('italic', 7.5); doc.setTextColor(220, 252, 231); doc.text('Sin goles', x0 + wc / 2, y0 + hc * 0.8, { align: 'center' }); }
+                    // leyenda
+                    let lx = x0, ly = y0 + hc + 3.5; font('normal', 6.3);
+                    Object.keys(cuenta).forEach(o => {
+                        const t = actaTxt(`${ORI[o][0]} ${cuenta[o]}`), tw = doc.getTextWidth(t) + 5;
+                        if (lx + tw > x0 + wc) { lx = x0; ly += 3.4; }
+                        fill(ORI[o][1]); doc.circle(lx + 1.2, ly - 0.8, 1.1, 'F'); color(ACTA_TINTA); doc.text(t, lx + 3, ly); lx += tw;
+                    });
+                    if (sin) { if (Object.keys(cuenta).length) ly += 3.4; color(ACTA_GRIS); doc.text(actaTxt(`${sin} sin sitio apuntado`), x0, ly); }
+                    if (k === 0) lados.legY = ly; else lados.legY = Math.max(lados.legY || 0, ly);
+                });
+                doc.setLineWidth(0.2);
+                y = (lados.legY || (y + 4 + hc)) + 3;
+            }
+        }
+        // ═════ PÁGINA 2 · LOS JUGADORES ═════
       nueva();
       const colW = 84, xR = M + colW + 6, wR = W - M - xR;
       let yIzq = y, yDer = y;
@@ -3166,7 +3334,34 @@
               c.min < 35 ? '1.ª' : c.min === 35 ? 'Descanso' : `2.ª (+${c.min - 35}')`]), { columnStyles: { 1: { halign: 'left' }, 2: { halign: 'left' } } });
           if (D.cambios.some(c => c.deducido)) { font('italic', 6.5); color(ACTA_GRIS); doc.text('Minutos deducidos de lo que jugó cada uno.', xR, yDer - 1); yDer += 4; }
       } else { font('italic', 8); color(ACTA_GRIS); doc.text(D.p.titulares ? 'Sin cambios.' : 'Faltan los titulares de este partido.', xR, yDer + 2); yDer += 6; }
-      tituloDer('TARJETAS Y FUERAS DE JUEGO');
+      // v185 · EFECTO DEL BANQUILLO de este partido
+        if (D.banq) {
+            const B = D.banq;
+            tituloDer('EFECTO DEL BANQUILLO');
+            const wb = (wR - 3) / 2, d1 = (v) => v == null ? '-' : (Math.round(v * 10) / 10).toString().replace('.', ',');
+            const cajaB = (x, tit, a, sub) => {
+                fill([248, 250, 252]); draw([229, 231, 235]); doc.setLineWidth(0.2); doc.roundedRect(x, yDer, wb, 15, 1.5, 1.5, 'FD');
+                font('bold', 6); color(ACTA_GRIS); doc.text(actaTxt(tit), x + wb / 2, yDer + 3.6, { align: 'center' });
+                font('bold', 12); color(ACTA_TINTA); doc.text(`${a.f} - ${a.c}`, x + wb / 2, yDer + 9.2, { align: 'center' });
+                font('normal', 6.3); color(ACTA_GRIS); doc.text(actaTxt(sub), x + wb / 2, yDer + 12.8, { align: 'center' });
+            };
+            cajaB(xR, `ONCE INICIAL · 0'-${B.primer}'`, B.antes, `${B.tA != null ? B.tA + ' tiros · ' : ''}${d1(B.gfA70)} goles por 70'`);
+            cajaB(xR + wb + 3, `TRAS LOS CAMBIOS · ${B.primer}'-${B.fin}'`, B.despues, `${B.tD != null ? B.tD + ' tiros · ' : ''}${d1(B.gfD70)} goles por 70'`);
+            yDer += 18;
+            if (B.p70A != null && B.p70D != null) {
+                const dif = B.p70D - B.p70A, bien = dif > 0.5, mal = dif < -0.5;
+                font('bold', 7.2); color(bien ? [21, 128, 61] : mal ? ACTA_ROJO : ACTA_GRIS);
+                doc.text(actaTxt(bien ? 'Tras los cambios el equipo fue a más' : mal ? 'Tras los cambios el equipo fue a menos' : 'Parecido antes y después de los cambios'), xR + wR / 2, yDer + 1, { align: 'center' });
+                yDer += 4;
+            }
+            tablaDer(['Min', 'Entra - sale', 'Con él', 'Aporta'], B.filas.map(f => [`${f.min}'`, actaTxt(`${f.entra}${f.sale ? ' - ' + f.sale : ''}`), `${f.gf}-${f.gc}`, [f.g ? f.g + ' G' : '', f.a ? f.a + ' A' : ''].filter(Boolean).join(' · ') || '-']),
+                { columnStyles: { 1: { halign: 'left' } }, didParseCell: (d) => { if (d.section === 'body' && d.column.index === 2) { const f = B.filas[d.row.index]; d.cell.styles.textColor = f.gf > f.gc ? [21, 128, 61] : f.gf < f.gc ? ACTA_ROJO : ACTA_TINTA; d.cell.styles.fontStyle = 'bold'; } } });
+            font('normal', 6.5); color(ACTA_GRIS);
+            const nb = B.banco ? `Desde el banquillo: ${B.banco.g} de los ${D.gl} goles y ${B.banco.a} ${B.banco.a === 1 ? 'asistencia' : 'asistencias'}. ` : '';
+            const lin = doc.splitTextToSize(actaTxt(`${nb}"Con él" = goles a favor y en contra desde que entró.`), wR);
+            doc.text(lin, xR, yDer - 1); yDer += lin.length * 3 + 2;
+        }
+        tituloDer('TARJETAS Y FUERAS DE JUEGO');
       if (D.tarjetas.length) tablaDer(['Min', 'Jugador', 'Tarjeta'], D.tarjetas.map(c => [c.min != null ? `${c.min}'` : '-', actaTxt(`${c.dorsal != null ? '#' + c.dorsal + ' ' : ''}${c.nombre}`), c.tipo === 'R' ? 'Roja' : c.tipo === 'AA' ? 'Doble amarilla' : 'Amarilla']),
           { columnStyles: { 1: { halign: 'left' } }, didParseCell: (d) => { if (d.section === 'body' && d.column.index === 2) d.cell.styles.textColor = D.tarjetas[d.row.index].tipo === 'A' ? [161, 98, 7] : ACTA_ROJO; } });
       else { font('italic', 8); color(ACTA_GRIS); doc.text('Sin tarjetas.', xR, yDer + 2); yDer += 5; }

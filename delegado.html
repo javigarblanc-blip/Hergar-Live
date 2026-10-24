@@ -127,6 +127,12 @@ h2{font:900 19px Montserrat;margin-bottom:4px}
 .toast.on{opacity:1}
 .banner{background:rgba(245,166,35,.12);border:1px solid rgba(245,166,35,.4);color:#f5c26b;border-radius:10px;padding:8px 10px;font-size:12px;font-weight:700;text-align:center;margin-bottom:8px;display:none}
 .banner.on{display:block}
+/* v189 · cambios de última hora en la convocatoria */
+.addconv{width:100%;min-height:50px;margin-top:10px;border-radius:12px;border:1.5px dashed rgba(93,173,226,.6);background:rgba(93,173,226,.08);color:#5dade2;font:800 13px Montserrat;cursor:pointer}
+.bench span.nuevo{border-color:rgba(93,173,226,.65);background:rgba(93,173,226,.12)}
+.bench span .x{font-style:normal;margin-left:7px;color:#ff6b7a;font-weight:900}
+.pbtn small.est{color:#f5a623}
+.pbtn.dudoso{border-color:rgba(245,166,35,.45)}
 </style>
 </head>
 <body>
@@ -160,6 +166,13 @@ h2{font:900 19px Montserrat;margin-bottom:4px}
     <div id="selA"></div>
     <div class="ttl" style="margin-top:12px">BANQUILLO</div>
     <div class="bench" id="benchA"></div>
+  </div>
+  <div class="card">
+    <div class="ttl" style="display:flex;justify-content:space-between"><span>CONVOCATORIA</span><span class="mute" id="convN"></span></div>
+    <div class="sm mute" style="margin-top:3px;line-height:1.4">¿Falta alguien o viene alguien más? Toca ✕ para quitar a un niño o añade a uno no convocado. Se actualiza en el visor y le llega a Javi.</div>
+    <div class="bench" id="convA"></div>
+    <button class="addconv" id="btnAddConv">➕ Añadir un niño no convocado</button>
+    <div class="sync" id="convSync"></div>
   </div>
   <button class="big" id="btnEmpezar">▶ Empezar partido</button>
   <button class="big ghost" id="btnJavi" style="margin-top:8px">↺ Volver a la alineación de Javi</button>
@@ -232,6 +245,7 @@ h2{font:900 19px Montserrat;margin-bottom:4px}
     <div class="hint">Toca un niño para cambiarle de puesto o sustituirlo · cambiar el sistema recoloca a todos</div>
     <div class="ttl" style="margin-top:12px">BANQUILLO</div>
     <div class="bench" id="benchD"></div>
+    <button class="addconv" id="btnAddConvD">➕ Llega un niño no convocado: al banquillo</button>
   </div>
 
   <div class="undo"><button class="ghost" id="bUndo">↩ Deshacer lo último</button></div>
@@ -398,7 +412,7 @@ async function cargar() {
   J = {}; (D.convocados || []).forEach(p => { J[p.id] = p; });
   const rem = remoto && remoto.delegado && remoto.delegado.st;
   S = (rem && (!local || (rem.rev || 0) > (local.rev || 0))) ? rem : local;
-  if (S) normalizar();
+  if (S) { normalizar(); aplicarConv(); }
   $('pinRival').textContent = 'Hergar vs ' + (D.rival || 'Rival');
   $('pinMeta').textContent = [D.fecha, D.hora, D.campo].filter(Boolean).join(' · ');
   $('rivTxt').textContent = String(D.rival || 'RIVAL').toUpperCase();
@@ -411,6 +425,9 @@ function normalizar() {
   ['secs', 'imp', 'cnt', 'porteros'].forEach(k => { if (!S[k]) S[k] = {}; });
   if (!S.team) S.team = { tp: 0, tf: 0, tpR: 0, tfR: 0, cf: 0, cc: 0 };
   S.slots = S.slots.map(x => x == null ? null : Number(x)); S.banco = S.banco.map(Number); S.fuera = S.fuera.map(Number);
+  // v189: convocatoria cambiada en el campo (Firebase puede devolver las listas como objetos)
+  ['conv', 'convOrig'].forEach(k => { if (S[k] && !Array.isArray(S[k])) S[k] = Object.values(S[k]); });
+  if (S.convCambios) ['mas', 'menos'].forEach(k => { const v = S.convCambios[k]; S.convCambios[k] = (Array.isArray(v) ? v : Object.values(v || {})).map(Number); });
 }
 function nuevoEstado() {
   const once = Array.isArray(D.once) && D.once.length === 11 && D.once.every(id => J[id]) ? D.once.map(Number) : null;
@@ -423,7 +440,7 @@ function nuevoEstado() {
 function entrar() {
   if (soloLectura) { S.fase = 'final'; pantalla('sFin'); pintarFinal(); $('bReabrir').style.display = 'none'; return; }
   if (!S) nuevoEstado();
-  if (S.fase === 'alineacion') { pantalla('sAli'); pintarA(); }
+  if (S.fase === 'alineacion') { pantalla('sAli'); pintarA(); if (S.convVisorPend) publicarConvVisor(); }
   else if (S.fase === 'directo') { pantalla('sDir'); pintarTodo(); publicar(true); }
   else { pantalla('sFin'); pintarFinal(); publicar(true); }
 }
@@ -491,6 +508,7 @@ function pintarA() {
   b.disabled = n !== 11; b.textContent = n === 11 ? '▶ Empezar partido' : `Faltan ${11 - n} por colocar`;
   $('btnJavi').style.display = Array.isArray(D.once) && D.once.length === 11 ? '' : 'none';
   $('aliSub').textContent = Array.isArray(D.once) && D.once.length === 11 ? 'Viene la alineación de Javi. Cámbiala si hace falta.' : 'Elige el sistema y toca cada puesto para poner al niño.';
+  pintarConv();
 }
 function tocarA(i) {
   const id = S.slots[i];
@@ -526,7 +544,7 @@ function elegirA(i) {
 function ordenarBanco() { S.banco.sort((a, b) => ((J[a] || {}).dorsal || 99) - ((J[b] || {}).dorsal || 99)); }
 $('btnJavi').onclick = () => {
   if (!(Array.isArray(D.once) && D.once.length === 11)) return;
-  S.slots = D.once.map(Number); S.form = COORD[D.formacion] ? D.formacion : S.form;
+  S.slots = D.once.map(Number).map(id => J[id] ? id : null); S.form = COORD[D.formacion] ? D.formacion : S.form;
   S.banco = Object.keys(J).map(Number).filter(id => !S.slots.includes(id)); ordenarBanco(); selA = null; guardarLocal(); pintarA(); toast('Alineación de Javi');
 };
 $('btnEmpezar').onclick = () => {
@@ -541,8 +559,136 @@ $('btnEmpezar').onclick = () => {
   guardarLocal();
   S.prueba = PRUEBA;
   if (!PRUEBA) set(ref(db, 'lastMatchCode'), { secret: SECRET, code: CODE, actualizado: Date.now() }).catch(() => {});
+  if (S.convVisorPend) publicarConvVisor(); // v189: si la previa del visor aún no se pudo actualizar
   pantalla('sDir'); pintarTodo(); publicar(true);
 };
+
+// ── v189 · CAMBIOS DE ÚLTIMA HORA EN LA CONVOCATORIA ─────────────────
+// El delegado puede quitar a un convocado que no ha venido y añadir a cualquier niño de la plantilla.
+// La lista queda en S.conv (se guarda en el móvil y viaja con el partido a la app de Javi) y,
+// antes de empezar, se reescribe también la convocatoria de la previa del visor.
+let PL = null; // plantilla completa del club
+const ESTADO_TXT = { lesionado: 'Lesionado', sancionado: 'Sancionado', no_disponible: 'No disponible' };
+function convLista() {
+  return Object.keys(J).map(Number).sort((a, b) => ((J[a].dorsal || 99) - (J[b].dorsal || 99)))
+    .map(id => { const p = J[id], o = { id, name: p.name || '', dorsal: p.dorsal == null ? '' : p.dorsal }; if (p.sube) o.sube = p.sube; return o; });
+}
+function aplicarConv() {
+  if (!S || !Array.isArray(S.conv) || !S.conv.length) return;
+  J = {}; S.conv.forEach(p => { if (p && p.id != null) J[Number(p.id)] = p; });
+  D.convocados = S.conv.slice();
+}
+async function cargarPlantilla() {
+  if (PL) return PL;
+  let l = D.plantilla ? (Array.isArray(D.plantilla) ? D.plantilla : Object.values(D.plantilla)) : null;
+  if (!l || !l.length) {
+    try {
+      const sn = await Promise.race([get(ref(db, 'temporada/plantilla')), new Promise((_, no) => setTimeout(() => no(new Error('tiempo')), 6000))]);
+      const v = sn.val();
+      if (v) { l = Array.isArray(v) ? v : Object.values(v); try { localStorage.setItem(LKEY + '_plant', JSON.stringify(l)); } catch (e) {} }
+    } catch (e) {}
+    if (!l || !l.length) { try { l = JSON.parse(localStorage.getItem(LKEY + '_plant') || 'null'); } catch (e) {} }
+  }
+  if (l && l.length) PL = l.filter(p => p && p.id != null);
+  return PL;
+}
+function convCambiar() {
+  S.conv = convLista(); D.convocados = S.conv.slice();
+  const orig = (S.convOrig || []).map(p => Number(p.id)), act = Object.keys(J).map(Number);
+  S.convCambios = { mas: act.filter(id => !orig.includes(id)), menos: orig.filter(id => !act.includes(id)) };
+  guardarLocal();
+  if (S.fase === 'alineacion') publicarConvVisor(); else publicar(false);
+}
+function guardarOrig() { if (!S.convOrig || !S.convOrig.length) S.convOrig = convLista(); }
+function pintarConv() {
+  const box = $('convA'); if (!box || !S) return;
+  const orig = (S.convOrig || []).map(p => Number(p.id));
+  $('convN').textContent = `${Object.keys(J).length} niños`;
+  const quitados = (S.convOrig || []).filter(p => !J[Number(p.id)]);
+  box.innerHTML = convLista().map(p => `<span class="tap ${orig.length && !orig.includes(p.id) ? 'nuevo' : ''}" data-q="${p.id}"><b>${esc(p.dorsal)}</b>${esc(nom(p.id))}<i class="x">✕</i></span>`).join('')
+    + quitados.map(p => `<span class="out"><b>${esc(p.dorsal)}</b>${esc(String(p.name || '').split(' ')[0])}</span>`).join('');
+  box.querySelectorAll('[data-q]').forEach(s => s.onclick = () => quitarConv(Number(s.dataset.q)));
+}
+function quitarConv(id) {
+  if (!J[id]) return;
+  if (Object.keys(J).length <= 11) { toast('Tiene que haber al menos 11 convocados'); return; }
+  const n = etq(id);
+  if (!confirm(`¿Quitar a ${n} de la convocatoria?\n\n(No ha venido, se ha puesto malo…) Se puede volver a añadir.`)) return;
+  guardarOrig();
+  const i = S.slots.indexOf(id); if (i >= 0) S.slots[i] = null;
+  S.banco = S.banco.filter(x => x !== id);
+  delete J[id]; selA = null;
+  convCambiar(); pintarA();
+  toast(`➖ ${n} fuera de la convocatoria${i >= 0 ? ' · su puesto queda libre' : ''}`);
+}
+async function abrirAnadir() {
+  hoja('➕ Añadir a la convocatoria', 'Cargando la plantilla…', '');
+  const pl = await cargarPlantilla();
+  const pool = new Map();
+  (pl || []).forEach(p => pool.set(Number(p.id), p));
+  (S.convOrig || []).forEach(p => { if (!pool.has(Number(p.id))) pool.set(Number(p.id), p); });
+  const lista = [...pool.values()].filter(p => !J[Number(p.id)]).sort((a, b) => ((a.dorsal || 99) - (b.dorsal || 99)));
+  if (!$('sheet').classList.contains('on')) return; // la cerró mientras cargaba
+  const sub = S.fase === 'directo' ? 'Entra al banquillo y ya puedes meterlo con un cambio' : 'Entra al banquillo; luego colócalo en el campo si juega de titular';
+  if (!lista.length) {
+    hoja('➕ Añadir a la convocatoria', pl ? 'Ya están convocados todos los niños de la plantilla.' : 'No se ha podido cargar la plantilla. Comprueba la cobertura y vuelve a intentarlo.', '');
+    return;
+  }
+  hoja('➕ ¿Quién viene?', sub, `<div class="pgrid">${lista.map(p => { const e = ESTADO_TXT[p.estado]; return `<div class="pbtn ${e ? 'dudoso' : ''}" data-id="${Number(p.id)}"><b>${esc(p.dorsal == null || p.dorsal === '' ? '?' : p.dorsal)}</b><span>${esc(String(p.name || '').split(' ')[0])}</span>${e ? `<small class="est">${e}</small>` : (p.sube ? '<small>⬆ sube</small>' : '')}</div>`; }).join('')}</div>`);
+  $('shBody').querySelectorAll('.pbtn').forEach(b => b.onclick = () => {
+    const p = pool.get(Number(b.dataset.id)); if (!p) return;
+    const nombre = String(p.name || '').split(' ')[0];
+    const e = ESTADO_TXT[p.estado];
+    if (e && !confirm(`Javi tiene a ${nombre} como «${e}». ¿Lo convocas igualmente?`)) return;
+    const dorsal = p.dorsal == null ? '' : p.dorsal;
+    const choca = dorsal !== '' && Object.keys(J).find(x => String(J[x].dorsal) === String(dorsal));
+    guardarOrig();
+    const id = Number(p.id);
+    J[id] = { id, name: p.name || '', dorsal }; if (p.sube) J[id].sube = p.sube;
+    if (S.fase === 'directo') procesarTiempo();
+    S.banco.push(id); ordenarBanco();
+    if (S.fase === 'directo') { hist = []; S.lines.push(`[${minAhora()}'] ➕ Llega #${dorsal} ${nombre} (convocado en el campo)`); } // lo anterior ya no se puede deshacer: el banquillo ha cambiado
+    cerrar(); convCambiar();
+    if (S.fase === 'alineacion') pintarA(); else pintarTodo();
+    toast(`➕ ${nombre} convocado · está en el banquillo${choca ? ` · ojo: el ${dorsal} también lo lleva ${nom(Number(choca))}` : ''}`);
+  });
+}
+$('btnAddConv').onclick = abrirAnadir;
+$('btnAddConvD').onclick = abrirAnadir;
+
+// Previa del visor: se reescribe la convocatoria del próximo partido publicado (solo antes de empezar)
+let convVisTimer = null;
+function pintarConvSync(t, cls) { const e = $('convSync'); if (e) { e.textContent = t || ''; e.className = 'sync ' + (cls || ''); } }
+function publicarConvVisor() {
+  if (!S || PRUEBA || S.prueba) { if (PRUEBA) pintarConvSync('🧪 Modo prueba: el visor no cambia', 'pend'); return; }
+  S.convVisorPend = true; guardarLocal();
+  clearTimeout(convVisTimer);
+  convVisTimer = setTimeout(async () => {
+    if (!navigator.onLine) { pintarConvSync('📵 Sin cobertura · el visor se actualizará al volver', 'pend'); return; }
+    pintarConvSync('⏳ Actualizando el visor…', 'pend');
+    try {
+      const snap = await get(ref(db, 'liga'));
+      const v = snap.val(), liga = v && v.liga, pub = liga && liga.proximoPublicado;
+      const partidos = liga ? (Array.isArray(liga.partidos) ? liga.partidos : Object.values(liga.partidos || {})) : [];
+      const lp = pub && partidos.find(x => x && x.id === pub.id);
+      if (!pub || (lp && lp.golesLocal != null && lp.golesVisitante != null)) {
+        S.convVisorPend = false; guardarLocal();
+        pintarConvSync('El visor no tiene la previa de este partido · a Javi le llega igual', 'pend'); return;
+      }
+      const viejos = Array.isArray(pub.convocados) ? pub.convocados : Object.values(pub.convocados || {});
+      const porId = {}; viejos.forEach(c => { if (c && c.id != null) porId[c.id] = c; });
+      pub.convocados = convLista().map(p => porId[p.id] ? Object.assign({}, porId[p.id], { name: p.name, dorsal: p.dorsal }) : p);
+      pub.convocadosDelegadoTs = Date.now(); // la app de Javi respeta este cambio al volver a publicar la Liga
+      v.secret = SECRET; v.actualizado = Date.now();
+      await set(ref(db, 'liga'), v);
+      S.convVisorPend = false; guardarLocal();
+      pintarConvSync(`✔ Visor actualizado: ${pub.convocados.length} convocados`, '');
+    } catch (e) {
+      pintarConvSync('⚠️ No se pudo actualizar el visor (' + ((e && e.message) || e) + ') · a Javi le llega igual', 'bad');
+    }
+  }, 900);
+}
+window.addEventListener('online', () => { if (S && S.convVisorPend && S.fase !== 'final') publicarConvVisor(); });
 
 // ── Hojas para elegir ────────────────────────────────────────────────
 function hoja(t, s, body, skipTxt, skipCb) {
@@ -763,12 +909,18 @@ function pintarTodo() {
   $('feed').innerHTML = S.lines.length ? S.lines.slice(-10).reverse().map(l => { const m = /^\[(\d+)'\]\s*(.*)$/.exec(l); return `<div class="ev"><span class="m">${m ? m[1] + "'" : ''}</span>${esc(m ? m[2] : l)}</div>`; }).join('') : '<div class="sm mute">Aún nada. Toca un botón.</div>';
   pintarCampo(); pintarSync();
 }
+function cambiosConvRow() { // v189
+  const c = S.convCambios; if (!c || !((c.mas || []).length + (c.menos || []).length)) return '';
+  const orig = {}; (S.convOrig || []).forEach(p => { orig[Number(p.id)] = String(p.name || '').split(' ')[0]; });
+  const txt = [...(c.mas || []).map(id => '+ ' + nom(id)), ...(c.menos || []).map(id => '− ' + (orig[id] || '¿?'))].join(' · ');
+  return `<div class="row"><span>🔁 Convocatoria</span><span>${esc(txt)}</span></div>`;
+}
 function pintarFinal() {
   $('fgl').textContent = S.gl; $('fgr').textContent = S.gr; $('fRiv').textContent = 'Hergar vs ' + (D.rival || 'Rival');
   const n = k => S.ev.filter(e => e.k === k).length;
   const goles = S.ev.filter(e => e.k === 'gol').map(e => `${nom(e.j)} ${Math.floor(e.t / 60)}'${e.a ? ` (${nom(e.a)})` : ''}`).join(' · ') || '—';
   $('resumen').innerHTML = `<div class="ttl" style="margin-bottom:6px">RESUMEN</div>
-    <div class="row"><span>⚽ Goles</span><span>${esc(goles)}</span></div>
+    <div class="row"><span>⚽ Goles</span><span>${esc(goles)}</span></div>${cambiosConvRow()}
     <div class="row"><span>🎯 Tiros Hergar (a puerta)</span><span>${S.team.tp + S.team.tf} (${S.team.tp})</span></div>
     <div class="row"><span>🧤 Paradas</span><span>${n('par') + n('parD')}${n('parD') ? ` (${n('parD')} difíciles)` : ''}</span></div>
     <div class="row"><span>🔑 · 📯 · 🛡️ · 🌀</span><span>${n('pc')} · ${n('pa')} · ${n('def')} · ${n('reg')}</span></div>
@@ -785,7 +937,7 @@ cargar().then(() => {
   onValue(ref(db, 'matches/' + CODE + '/delegado/st'), snap => {
     const r = snap.val();
     if (!r || !S || (r.rev || 0) <= (S.rev || 0)) return;
-    S = r; normalizar(); hist = []; guardarLocal();
+    S = r; normalizar(); aplicarConv(); hist = []; guardarLocal();
     if (S.fase === 'directo') { pantalla('sDir'); pintarTodo(); } else if (S.fase === 'final') { pantalla('sFin'); pintarFinal(); }
   }, () => {});
 });

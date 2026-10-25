@@ -1053,6 +1053,7 @@
 </div>
 
 <script type="module">
+  // v190 (app + visor) · MVP del partido: gana quien más aporta por encima de un compañero medio en sus mismos minutos (recalculados todos los partidos). Portería a cero por puesto: MCD +0,60, MC +0,30, MI/MD/MP 0. El informe IA avisa si se hizo antes de corregir los apuntes del delegado.
   // v188 (app + visor) · Rivales en común: contra cada equipo cuentan como mucho los 2 últimos partidos de cada uno; con más de 5 rivales en común, los 5 con más Elo (selector «Los 5 más fuertes / Todos»).
   // v187 (app + visor) · 🔁 Rivales en común: el Hergar y el próximo rival comparados por sus resultados contra los mismos equipos (tarjeta del próximo partido, tras el Cara a cara, con detalle por goles y por puntos; también al tocar un equipo en Liga → Equipos).
   // v185 (visor) · Acta PDF: línea de tiempo, mapa de goles, media de los otros partidos en «Por partes» y efecto del banquillo.
@@ -2357,16 +2358,16 @@
         return h;
     }
     // ── v161 · MVP DEL PARTIDO: impacto por minuto «acercado a la media» para quien juega poco (misma explicación en app y visor) ──
-    function mvpExplicacionHTML(minMin, relleno) {
-        minMin = minMin || 10; relleno = relleno || 20;
-        const fila = (a, b, c, d, e, neg) => `<div style="display:grid; grid-template-columns:1.4fr .7fr .7fr .8fr .9fr; gap:4px; padding:5px 0; border-top:1px solid rgba(255,255,255,.06); font-size:11.5px; ${neg ? 'font-weight:800; color:#94a3b8; font-size:9.5px; letter-spacing:.4px;' : 'color:#e2e8f0;'}"><span>${a}</span><span style="text-align:center;">${b}</span><span style="text-align:center;">${c}</span><span style="text-align:center;">${d}</span><span style="text-align:center;${neg ? '' : ' font-weight:800; color:#f5a623;'}">${e}</span></div>`;
+    function mvpExplicacionHTML(minMin) {
+        minMin = minMin || 10;
+        const fila = (a, b, c, d, e, neg) => `<div style="display:grid; grid-template-columns:1.4fr .7fr .7fr .9fr .9fr; gap:4px; padding:5px 0; border-top:1px solid rgba(255,255,255,.06); font-size:11.5px; ${neg ? 'font-weight:800; color:#94a3b8; font-size:9.5px; letter-spacing:.4px;' : 'color:#e2e8f0;'}"><span>${a}</span><span style="text-align:center;">${b}</span><span style="text-align:center;">${c}</span><span style="text-align:center;">${d}</span><span style="text-align:center;${neg ? '' : ' font-weight:800; color:#f5a623;'}">${e}</span></div>`;
         return `<div style="font-size:12.5px; line-height:1.55; color:#e2e8f0; padding-top:6px;">
-            <p style="margin:0 0 8px;">Gana quien más impacto aporta por cada minuto que juega. Pero con pocos minutos esa cuenta engaña: si entras 10' y en ese rato el equipo marca dos goles, parece que has hecho un partidazo, aunque sea más la suerte del momento.</p>
-            <p style="margin:0 0 8px;">Por eso, antes de comparar, a cada niño se le suman <strong>${relleno} minutos al nivel medio del equipo en ese partido</strong>. Es como las valoraciones de un restaurante: uno con dos opiniones de 5 estrellas no está por encima de otro con cien opiniones de 4,8.</p>
-            <p style="margin:0 0 4px;">· <strong>Si juega todo el partido</strong>, esos ${relleno}' casi no le cambian nada.<br>· <strong>Si juega poco</strong>, le acercan a la media: solo gana si lo que hizo en ese rato fue de verdad excepcional.</p>
-            <div style="margin:8px 0;">${fila('', 'Minutos', 'Impacto', "Por 70'", 'Para el MVP', true)}${fila('Entra al final', "15'", '+4', '18,7', '11,4')}${fila('Titular', "70'", '+12', '12,0', '10,7')}</div>
-            <p style="margin:0 0 8px; font-size:11.5px; color:#cbd5e1;">El suplente sigue siendo MVP porque hizo mucho en poco tiempo. Con un +2 en esos 15' se quedaría en 7,4 y lo sería el titular.</p>
-            <p style="margin:0;">Mínimo ${minMin} minutos jugados. Solo cambia quién es el MVP: el impacto de cada niño no se toca.</p>
+            <p style="margin:0 0 8px;">Gana quien más suma <strong>por encima de lo que habría hecho un compañero medio en sus mismos minutos</strong>. La media es la del equipo en ese partido.</p>
+            <p style="margin:0 0 8px;">Mirar solo el impacto por minuto engañaba: si entras 15' y en ese rato el equipo marca dos goles, te llevas el +1 de cada gol aunque no toques el balón, y por minuto parece un partidazo.</p>
+            <p style="margin:0 0 4px;">· <strong>Si juega todo el partido a su nivel normal</strong>, su aporte es 0: jugar mucho no da el MVP por sí solo.<br>· <strong>Si juega poco</strong>, solo gana si en ese rato hace algo de verdad grande.</p>
+            <div style="margin:8px 0;">${fila('', 'Minutos', 'Impacto', 'Lo normal', 'Aporte', true)}${fila('Entra al final', "15'", '+4', '+1,3', '+2,7')}${fila('Titular', "70'", '+12', '+6,0', '+6,0')}</div>
+            <p style="margin:0 0 8px; font-size:11.5px; color:#cbd5e1;">Ejemplo con un equipo que hace +6 por 70'. «Lo normal» es lo que habría sumado un compañero medio en esos minutos. Para ganar al titular, el que entra al final tendría que sumar más de +7,3 en sus 15'.</p>
+            <p style="margin:0;">Mínimo ${minMin} minutos jugados. Solo decide quién es el MVP: el impacto de cada niño no se toca.</p>
         </div>`;
     }
     // ── v160 · 📊 MEDIAS POR PARTIDO (misma función en la app y en el visor) ──
@@ -7464,7 +7465,7 @@
   function informeIAPartidoHtml(p) {
     if (!p || !p.analisisIA) return '';
     return `<details style="margin-top:6px; padding-top:6px; border-top:1px solid rgba(255,255,255,0.06);">
-      <summary style="color:#a855f7; font-size:11px; font-weight:700; cursor:pointer;">🤖 Informe IA</summary>
+      <summary style="color:#a855f7; font-size:11px; font-weight:700; cursor:pointer;">🤖 Informe IA${p.analisisIADesactualizado ? ' <span style="color:#f5a623; font-weight:600;">· hecho antes de corregir los apuntes del partido</span>' : ''}</summary>
       ${p.resumenIA ? `<div style="font-style:italic; color:#a855f7; font-size:12px; line-height:1.5; margin-top:6px;">"${escHtml(p.resumenIA)}"</div>` : ''}
       <div style="white-space:pre-wrap; color:#cbd5e1; font-size:12px; line-height:1.6; margin-top:6px;">${escHtml(p.analisisIA)}</div>
     </details>`;
@@ -8998,7 +8999,14 @@
       csFila('Gol en contra', fmtPts(e.golContra), false, 'Resta a todos los que están en el campo.'),
       csFila('Tiros del rival', `${fmtPts(e.tiroRivalFuera)} a ${fmtPts(e.tiroRivalPuerta)}`, false, 'Restan un poco a los que están en el campo. Un tiro a puerta que para el portero también resta, salvo al portero.')
     ].join('');
-    const porteria = [
+    const pcp = R.porteriaCeroPuesto; // v190: por puesto
+    const porteria = pcp ? [
+      csFila('Portero', fmtPts(pcp.POR), true),
+      csFila('Defensas (LI · DFC · LD)', fmtPts(pcp.DFC), true),
+      csFila('Mediocentro defensivo (MCD)', fmtPts(pcp.MCD), true),
+      csFila('Medio centro (MC)', fmtPts(pcp.MC), true),
+      csFila('Medios de banda y mediapunta', fmtPts(pcp.MI), false, 'MI · MD · MP, como los delanteros.')
+    ].join('') : [
       csFila('Portero', fmtPts(pc.portero), true),
       csFila('Defensas', fmtPts(pc.defensa), true),
       csFila('Centrocampistas', fmtPts(pc.centrocampista), true)
@@ -9007,7 +9015,7 @@
       `<div style="font-size:12px; line-height:1.5; color:#94a3b8;">El impacto resume lo que aporta cada jugador: sus acciones y lo que ocurre mientras está en el campo.</div>`
       + csTarjeta('Lo que suma un jugador', suma)
       + csTarjeta('Lo que pasa mientras juega', juego)
-      + csTarjeta('Portería a cero', porteria, 'Se aplica si el equipo no encaja ningún gol mientras el jugador está en el campo. Es proporcional a sus minutos.', true)
+      + csTarjeta('Portería a cero', porteria, 'Se aplica si el equipo no encaja ningún gol mientras el jugador está en el campo. Es proporcional a sus minutos.' + (pcp ? ' Va por el puesto en el que jugó (si jugó en varios, la parte de cada uno), desde los partidos de finales de octubre.' : ''), true)
       + csTarjeta('Sinergias', `<div style="font-size:12.5px; line-height:1.55; color:#e2e8f0; padding-top:6px;">Impacto que suman los dos jugadores de una pareja mientras coinciden en el campo, por cada 70 minutos juntos. Hacen falta ${R.minMinutosSinergia || 20} minutos juntos medidos para entrar en la lista. Las que no llegan salen en observación con una nota orientativa ≈ (lo que falta se estima con el impacto de cada uno), que no entra en la lista.</div>`)
       + csTarjeta('Peso en el equipo', pesoExplicacionHTML(R.minMinutosRanking || 35)) // v132
       + csTarjeta('Puntos de los goles y más/menos', puntosMasMenosExplicacionHTML(R.minMinutosRanking || 35)) // v133
@@ -9016,7 +9024,7 @@
       + csTarjeta('Suerte y nivel', snExplicacionHTML()) // v155
       + csTarjeta('Efecto del banquillo', banquilloExplicacionHTML()) // v137
       + csTarjeta('Hacen mejores a los demás', companerosExplicacionHTML()) // v140
-      + csTarjeta('⭐ MVP del partido', mvpExplicacionHTML(R.minMinutosMVP || 10, R.mvpRelleno || 20)) // v161
+      + csTarjeta('⭐ MVP del partido', mvpExplicacionHTML(R.minMinutosMVP || 10)) // v190
       + csTarjeta('Cómo se ordena la clasificación',
         `<div style="font-size:12.5px; line-height:1.55; color:#e2e8f0; padding-top:6px;">
           <p style="margin:0 0 8px;">Se usa el impacto por 70 minutos, para poder comparar a quien juega más con quien juega menos.</p>

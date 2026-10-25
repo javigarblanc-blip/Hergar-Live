@@ -3707,6 +3707,14 @@
       cer: [['Gavi', 'Presiona, roba y la pasa.'], ['Mac Allister', 'Corta, ordena y dispara.', 'pis'], ['Marcos Llorente', 'Corre todo y se va de su par.', 'mag']],
       mag: [['Fermín López', 'Llega, desborda y no deja de presionar.'], ['Pablo Barrios', 'Regatea, pasa y recupera.', 'cer']]
     },
+    // v191 · «Muro» que juega de centrocampista: mediocentros defensivos en vez de centrales y laterales
+    murMedio: {
+      puro: [['Palhinha', 'Gana todos los balones divididos.'], ['Marc Casadó', 'Corta y la da fácil.', 'cer'], ['Tchouaméni', 'Lo corta todo y dispara de lejos.', 'pis'], ['Camavinga', 'Roba y sale conduciendo.', 'mag']],
+      mag: [['Frenkie de Jong', 'Recupera y sale conduciendo, rompiendo líneas.'], ['Camavinga', 'Roba y se va de su par.', 'pis'], ['Gavi', 'Muerde, recupera y regatea.', 'cer']],
+      cer: [['Marc Casadó', 'Recupera y la da fácil.'], ['Zubimendi', 'Siempre bien colocado: corta y la da.', 'mag'], ['Tchouaméni', 'Corta y lanza el juego.', 'pis']],
+      pis: [['Tchouaméni', 'Recupera y dispara de lejos.'], ['Declan Rice', 'Recupera, empuja y dispara.', 'mag']],
+      fra: [['Casemiro', 'Corta en el medio y aparece en el área para marcar.'], ['Tchouaméni', 'Corta y la mete a balón parado.', 'pis']]
+    },
     gua: [['Courtois', 'Seguridad total bajo palos.', 'pct'], ['Joan García', 'Para y para: siempre tiene trabajo.', 'vol'], ['Unai Simón', 'Aparece en las paradas difíciles.', 'dif']]
   };
   // Elige el futbolista de cada niño (se llama al final de estilosTemporada)
@@ -3721,12 +3729,13 @@
         pref = tot && ps / tot >= 0.75 ? 'pct' : (ps && (j.paradasDificiles || 0) / ps >= 0.3 ? 'dif' : (ps / pj >= 3 ? 'vol' : 'pct'));
         x.jcGrupo = 'gua';
       } else {
-        const T = JUEGA_COMO[x.estilo]; if (!T) return;
+        const medio = x.estilo === 'mur' && posicionTemporada(x.j) === 'centrocampista'; // v191
+        const T = medio ? JUEGA_COMO.murMedio : JUEGA_COMO[x.estilo]; if (!T) return;
         celda = T[x.seg || 'puro'] || T.puro || Object.values(T)[0];
         const fuera = new Set([x.estilo, x.seg, x.estilo === 'tod' ? 'mur' : null]);
         const otros = (x.fam || []).filter(f => !fuera.has(f.f));
         pref = otros.length && otros[0].s >= JC_TERCERO ? otros[0].f : null; // su tercer rasgo (en los puros, el segundo), solo si destaca
-        x.jcGrupo = x.estilo + '|' + (x.seg || 'puro');
+        x.jcGrupo = (medio ? 'murMedio' : x.estilo) + '|' + (x.seg || 'puro');
       }
       x.jcCelda = celda; x.jcPref = pref;
       (grupos[x.jcGrupo] = grupos[x.jcGrupo] || []).push(x);

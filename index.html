@@ -1138,6 +1138,7 @@
   // v140 (app) · «Hace mejores a los demás»: impacto de los compañeros con él y sin él (Sinergias, Ranking, ficha) y 🧲 al mejor compañero en la Plantilla. En el visor, solo los positivos.
   // v139 (app) · Acta del partido en PDF (3 páginas). En el visor, botón en cada partido si la app lo permite, sin el más/menos de cada niño.
   // v137 (app) · Más análisis → 🔄 Banquillo: el equipo antes y después de los cambios, lo que aporta el banquillo, cambio a cambio y cada niño de titular y de suplente.
+  // Visor · 🎬 Resumen: la entrada dura 5 s más al ponerse en pantalla completa (el aviso del móvil ya no tapa el once).
   // Visor (v203 app) · 🎬 Resumen: rótulos de datos (once inicial con fotos, el partido en números, dominio con menos de 3 goles y cómo queda la Liga), también en la descarga; la app los puede apagar.
   // Visor · 🎬 Resumen del partido tipo tele: cortinilla, minuto y vídeo de cada gol con rótulo (marcador y goleador) desde que arranca el vídeo, tarjetas para goles sin vídeo y del rival, y final con goleadores. Botón en Último partido, en Temporada → Partidos y en la pantalla Final del Modo TV.
   // Visor · Temporada: menú nuevo con 4 apartados grandes (Partidos, Plantilla, Ranking, Récords) y el resto en "Más análisis", que recuerda si se dejó abierto. Abre en Partidos.
@@ -5638,6 +5639,8 @@
     rsEscala();
     { const ast = rs.ast, eqR = equipoLigaPorNombre(p.rival); ast.escH = { img: null, ini: 'HE' }; ast.escR = { img: null, ini: inicialesEquipoViewer(eqR ? eqR.nombre : p.rival) };
       exImg(ESCUDO_HERGAR_SRC).then(im => { ast.escH.img = im; }); exImg(escudoSrcVisor(eqR)).then(im => { ast.escR.img = im; }); }
+    // la entrada dura 5 s más cuando se pone en pantalla completa, para que el aviso del móvil no tape el once
+    if (pedirFs && rs.pasos[0] && rs.pasos[0].tipo === 'intro') rs.pasos[0].dur += 5000;
     const inicio = gi == null ? 0 : (rs.goles.find(x => x.gi === gi) || { p0: 0 }).p0;
     rsIr(inicio);
     // Se "desbloquea" el reproductor con el toque del usuario para que luego los vídeos puedan sonar (iPhone)

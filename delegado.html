@@ -354,6 +354,235 @@ function publicar(inmediato) {
 }
 function cambio() { procesarTiempo(); guardarLocal(); publicar(false); pintarTodo(); }
 
+// ── v193 · 🎙️ Minuto a minuto (mismo motor que la app): se publica con el partido ──
+    const NARR = {
+        abre: ['¡{J} abre el marcador!', '¡{J} rompe el cero!', '¡Primer gol del Hergar, obra de {J}!', '¡{J} estrena el marcador!', '¡Gol de {J} y el Hergar se pone por delante!', '¡{J} inaugura el marcador!', '¡Se adelanta el Hergar! Marca {J}'],
+        adelanta: ['¡{J} rompe el empate!', '¡{J} desequilibra el partido!', '¡{J} vuelve a poner por delante al Hergar!', '¡Gol de {J} para deshacer la igualada!', '¡{J} desatasca el partido!', '¡{J} pone al Hergar otra vez por delante!'],
+        remonta: ['¡{J} completa la remontada!', '¡{J} le da la vuelta al marcador!', '¡Remontada! {J} pone al Hergar por delante', '¡{J} culmina la remontada!', '¡De perder a ganar! Lo firma {J}'],
+        empata: ['¡{J} empata el partido!', '¡{J} iguala el marcador!', '¡Gol de {J} y todo vuelve a empezar!', '¡Empate! Lo firma {J}', '¡{J} pone las tablas!', '¡{J} devuelve la igualdad!', '¡El Hergar empata con gol de {J}!'],
+        amplia: ['¡{J} amplía la ventaja!', '¡{J} pone tierra de por medio!', '¡Otro más! {J} estira la ventaja', '¡{J} hace el {H}-{R}!', '¡{J} da aire al Hergar!', '¡{J} agranda la diferencia!'],
+        goleada: ['¡{J} se suma a la fiesta!', '¡Y van {H}! Marca {J}', '¡{J} no perdona y el Hergar sigue sumando!', '¡Otro gol del Hergar, esta vez de {J}!', '¡{J} se apunta a la goleada!', '¡El Hergar no para! Gol de {J}', '¡{J} hace el {H}-{R}!', '¡Más madera! Marca {J}'],
+        recorta: ['¡{J} recorta distancias!', '¡{J} mete al Hergar en el partido!', '¡Gol de {J} y hay partido!', '¡{J} acorta la diferencia!', '¡{J} da esperanza al Hergar!', '¡{J} reduce la desventaja!'],
+        origen: {
+            jugada: ['Remata una buena jugada colectiva', 'Culmina una jugada bien trenzada', 'Define al final de una gran jugada', 'Firma una jugada de todo el equipo', 'Pone el broche a una buena combinación'],
+            robo: ['Roba el balón y no perdona', 'Llega tras una recuperación y define', 'Aprovecha un robo para plantarse y marcar', 'Contragolpe rápido y gol', 'Recuperación, carrera y gol'],
+            rechace: ['Caza un rechace', 'Está atento al rechace', 'Aprovecha el balón suelto', 'Llega el primero al rechace', 'No desperdicia el rechace'],
+            corner: ['Remata un córner', 'Aparece en el córner', 'Saca partido de un saque de esquina', 'Gol a balón parado tras un córner', 'Se anticipa en el córner'],
+            falta: ['Marca de falta directa', 'Lanza la falta y adentro', 'Golazo de falta', 'Ejecuta la falta a la perfección', 'Clava la falta'],
+            error: ['Aprovecha un error de la defensa rival', 'No perdona un fallo en la salida rival', 'Se aprovecha de una pérdida del rival', 'Castiga un despiste del rival'],
+            penalti: ['Transforma el penalti', 'No falla desde los once metros', 'Penalti y gol', 'Engaña al portero desde el punto de penalti', 'Lanza el penalti con seguridad'],
+            nada: ['Define con acierto', 'Bate al portero', 'La manda a la red', 'Marca', 'No perdona']
+        },
+        zona: { peq: ['en el área pequeña', 'a bocajarro', 'casi bajo los palos'], area: ['dentro del área', 'desde dentro del área', 'en el área'], fuera: ['desde fuera del área', 'con un disparo lejano', 'desde lejos'] },
+        asist: [', con pase de {A}', ' a pase de {A}', ' tras un gran pase de {A}', '. La asistencia es de {A}', '. Pase de {A}', '. Lo sirve {A}'],
+        marcador: ['{H}-{R}.', 'Marcador: {H}-{R}.', '{H}-{R} en el marcador.', 'Ya es {H}-{R}.'],
+        doblete: ['Doblete de {J}.', '{J} ya lleva dos.', 'Segundo gol de {J} hoy.', '{J} repite.'],
+        triplete: ['¡Hat-trick de {J}!', '¡Tres goles de {J}!', '¡{J} firma el triplete!'],
+        poker: ['¡{J} ya lleva {N}!', '¡{N} goles de {J}!'],
+        pronto: ['Nada más empezar.', '¡No se llevaban ni tres minutos!', 'Tempranero.'],
+        vuelta: ['Nada más volver del descanso.', 'Recién empezada la segunda parte.'],
+        tarde: ['En el tramo final.', 'A falta de {Q} minutos.', 'Cuando más falta hacía.', 'En el momento clave.'],
+        provoco: ['El penalti lo provocó {P}.', 'Penalti provocado por {P}.', '{P} fue quien forzó el penalti.'],
+        rival: {
+            adelanta: ['El rival se adelanta', 'Gol del {RIV}, que se pone por delante', 'Golpe del rival, que manda en el marcador', 'Se adelanta el {RIV}'],
+            empata: ['El rival empata', 'El {RIV} iguala el partido', 'Empate del rival', 'El {RIV} consigue igualar'],
+            amplia: ['El rival amplía su ventaja', 'Nuevo gol del {RIV}', 'El {RIV} marca otra vez', 'Otro gol del rival'],
+            recorta: ['El rival recorta', 'Gol del {RIV}, que acorta distancias', 'El {RIV} marca', 'El rival hace su gol'],
+            origen: { corner: ['a la salida de un córner', 'en un córner'], falta: ['de falta', 'a balón parado'], penalti: ['de penalti', 'desde el punto de penalti'], rechace: ['en un rechace', 'tras un balón suelto'], robo: ['a la contra', 'tras recuperar el balón'], perdida: ['a la contra', 'tras recuperar el balón'], jugada: ['tras una jugada', 'después de una buena jugada'], error: ['', ''], nada: ['', ''] },
+            animo: ['Toca reaccionar.', 'Queda partido.', '¡Arriba, Hergar!', 'Hay tiempo para darle la vuelta.', 'A levantarse.'],
+            sigue: ['El Hergar sigue por delante.', 'Sigue mandando el Hergar.', 'La ventaja se mantiene.']
+        },
+        parada: ['¡Paradón de {J}!', '¡Qué parada de {J}!', '{J} saca una mano salvadora', '{J} vuela para evitar el gol', 'Intervención de mérito de {J}', '¡{J} dice que no!', '¡Seguridad de {J} bajo palos!'],
+        paradaCtx: { cero: ['y el marcador sigue a cero.', 'y todo sigue igual.'], ventaja: ['y mantiene la ventaja.', 'para que el Hergar siga por delante.', 'y protege el resultado.'], empate: ['y sostiene el empate.', 'y mantiene la igualdad.'], detras: ['y mantiene vivo al equipo.', 'para que siga habiendo partido.'] },
+        penParado: ['¡{J} para un penalti!', '¡Penalti detenido por {J}!', '¡{J} adivina la intención y para el penalti!', '¡{J} se hace gigante y para el penalti!'],
+        penFuera: ['¡Se salva el Hergar! El penalti del rival se va fuera.', 'El rival falla el penalti.', 'El penalti del rival no entra.'],
+        cambio: ['Entra {E} por {S}.', 'Cambio en el Hergar: {E} sustituye a {S}.', '{S} deja su sitio a {E}.', 'Turno para {E}, que entra por {S}.', 'Movimiento en el banquillo: sale {S} y entra {E}.', '{E} salta al campo en lugar de {S}.'],
+        cambioDoble: ['Cambios en el Hergar: entran {E} por {S}.', 'Varios cambios: entran {E}; se retiran {S}.', 'Movimiento en el banquillo: {E} por {S}.'],
+        amarilla: ['Amarilla para {J}.', '{J} ve la amarilla.', 'Tarjeta amarilla a {J}.', 'El árbitro amonesta a {J}.'],
+        dobleAmarilla: ['Segunda amarilla para {J}: expulsado.', '{J} ve la segunda amarilla y se va a la calle.'],
+        roja: ['Roja directa a {J}.', '{J} es expulsado con roja directa.'],
+        descanso: {
+            cero: ['Descanso sin goles.', '0-0 al descanso. Todo por decidir.', 'Al vestuario con el marcador a cero.'],
+            ventaja: ['Descanso con ventaja: {H}-{R}.', 'Al vestuario por delante, {H}-{R}.', 'Buen primer tiempo: {H}-{R} al descanso.', '{H}-{R} al descanso. Media parte, media faena.'],
+            empate: ['Descanso con empate a {H}.', '{H}-{R} al descanso; todo por decidir.', 'Igualdad al descanso: {H}-{R}.'],
+            detras: ['Descanso, {H}-{R}. Toca remontar.', 'Al vestuario por detrás, {H}-{R}. Queda una parte entera.', '{H}-{R} al descanso. Hay tiempo para darle la vuelta.']
+        },
+        final: {
+            victoria: ['¡Final! Victoria del Hergar, {H}-{R}.', '¡Se acabó! El Hergar gana {H}-{R}.', '¡Tres puntos! {H}-{R} final.', '¡Pitido final y victoria, {H}-{R}!'],
+            goleada: ['¡Final! Goleada del Hergar, {H}-{R}.', '¡Exhibición! {H}-{R} final.', '¡Se acabó! Goleada, {H}-{R}.'],
+            empate: ['Final: empate a {H}.', 'Reparto de puntos: {H}-{R}.', 'Se acaba con tablas, {H}-{R}.', 'Final del partido: {H}-{R}.'],
+            derrota: ['Final: {H}-{R}. Esta vez no pudo ser.', 'Final del partido, {H}-{R}. A por el siguiente.', 'Se acaba con derrota, {H}-{R}. Toca levantarse.', 'Final: {H}-{R}. El próximo, a por todas.'],
+            remontada: ['¡Y con remontada!', 'Remontada completada.', 'Le dio la vuelta al partido.'],
+            ceroFinal: ['Y portería a cero.', 'Sin encajar ni un gol.', 'El rival no marcó.']
+        }
+    };
+    function narrHash(s) { let h = 2166136261; s = String(s); for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+    // Elige una forma de la lista sin repetir hasta agotarlas (por tipo), de forma estable
+    function narrElige(ctx, cat, lista, clave) {
+        if (!lista || !lista.length) return '';
+        const usadas = ctx.usadas[cat] = ctx.usadas[cat] || [];
+        if (usadas.length >= lista.length) usadas.length = 0;
+        let i = narrHash(cat + '|' + clave) % lista.length;
+        for (let k = 0; k < lista.length && usadas.includes(i); k++) i = (i + 1) % lista.length;
+        usadas.push(i);
+        return lista[i];
+    }
+    function narrRellena(txt, v) { return String(txt).replace(/\{(\w+)\}/g, (m, k) => v[k] != null ? v[k] : ''); }
+    function narrRivalBonito(r) {
+        const s = String(r || '').trim();
+        if (!s || /^rival$/i.test(s)) return 'rival';
+        return s.toLowerCase().replace(/(^|[\s.\-])([a-záéíóúñü])/g, (m, a, b) => a + b.toUpperCase());
+    }
+    function narrZona(g) {
+        if (!g || g.penalti || !g.pos || g.pos.y == null) return null;
+        const b = Math.abs(g.pos.x - 34);
+        return g.pos.y <= 5.5 && b <= 9.16 ? 'peq' : (g.pos.y <= 16.5 && b <= 20.16 ? 'area' : 'fuera');
+    }
+    // Lee la cronología (líneas «[min'] …») y devuelve los hechos que se narran, en orden
+    function narrHechos(lineas, goles) {
+        const out = [];
+        let gi = 0;
+        const golesH = (goles || []).slice();
+        lineas.forEach((linea, idx) => {
+            const m = /^\[(\d+)'\]\s*(.*)$/.exec(String(linea));
+            if (!m) return;
+            const min = parseInt(m[1], 10), t = m[2];
+            let g;
+            if (/^⚽ Gol/.test(t) || /^🥅 Gol rival/.test(t)) {
+                const gol = golesH[gi++] || null;
+                const prov = /provocado por #\S+ (\S+?)\)/.exec(t);
+                out.push({ tipo: 'gol', min, idx, gol, eq: /^🥅/.test(t) ? 'rival' : 'hergar', prov: prov ? prov[1] : null });
+            }
+            else if ((g = /^🧤 Parada difícil #\S+ (\S+)/.exec(t))) out.push({ tipo: 'parada', min, idx, j: g[1] });
+            else if ((g = /^🧤 Penalti parado #\S+ (\S+)/.exec(t))) out.push({ tipo: 'penParado', min, idx, j: g[1] });
+            else if (/^🧤 Penalti rival parado/.test(t)) out.push({ tipo: 'penParado', min, idx, j: 'el portero' });
+            else if (/^💨 Penalti rival fallado/.test(t)) out.push({ tipo: 'penFuera', min, idx });
+            else if ((g = /^🔄 Sale #\S+ (\S+) ➡️ Entra #\S+ (\S+)/.exec(t))) out.push({ tipo: 'cambio', min, idx, sale: g[1], entra: g[2] });
+            else if ((g = /^🟨 Amarilla #\S+ (\S+)(.*)$/.exec(t))) out.push({ tipo: /DOBLE AMARILLA/.test(g[2]) ? 'dobleAmarilla' : 'amarilla', min, idx, j: g[1] });
+            else if ((g = /^🟥 Roja directa #\S+ (\S+)/.exec(t))) out.push({ tipo: 'roja', min, idx, j: g[1] });
+        });
+        return out;
+    }
+    // hechos + estado del partido → frases { m: minuto, ic, k: tipo, h: titular en negrita, x: resto }
+    function narrConstruir(hechos, opc) {
+        const ctx = { usadas: {} };
+        const RIV = narrRivalBonito(opc.rival);
+        const DUR = opc.duracion || 70, MITAD = DUR / 2;
+        const res = [];
+        let H = 0, R = 0, fueDetras = false, descansoPuesto = false;
+        const golesDe = {};
+        const ponDescanso = () => {
+            if (descansoPuesto) return;
+            descansoPuesto = true;
+            const s = H === 0 && R === 0 ? 'cero' : H > R ? 'ventaja' : H === R ? 'empate' : 'detras';
+            res.push({ m: MITAD, ic: '⏸️', k: 'desc', h: narrRellena(narrElige(ctx, 'desc', NARR.descanso[s], 'd'), { H, R }), x: '' });
+        };
+        // Cambios del mismo minuto, juntos en una frase
+        const agrupados = [];
+        hechos.forEach(h => {
+            const ult = agrupados[agrupados.length - 1];
+            if (h.tipo === 'cambio' && ult && ult.tipo === 'cambio' && ult.min === h.min) { ult.lista.push(h); return; }
+            agrupados.push(h.tipo === 'cambio' ? Object.assign({}, h, { lista: [h] }) : h);
+        });
+        agrupados.forEach((h, n) => {
+            if (opc.descanso && h.min >= MITAD && !descansoPuesto) ponDescanso();
+            const clave = `${h.min}|${n}`;
+            if (h.tipo === 'gol') {
+                const antes = { H, R };
+                if (h.eq === 'hergar') H++; else R++;
+                const g = h.gol || {};
+                if (h.eq === 'hergar') {
+                    const J = g.nombre || 'el Hergar';
+                    golesDe[J] = (golesDe[J] || 0) + 1;
+                    let sit;
+                    if (antes.H === 0 && antes.R === 0) sit = 'abre';
+                    else if (H === R) sit = 'empata';
+                    else if (antes.H === antes.R) sit = fueDetras ? 'remonta' : 'adelanta';
+                    else if (H > R) sit = H - R >= 3 ? 'goleada' : 'amplia';
+                    else sit = 'recorta';
+                    const v = { J, H, R, A: g.asistente || '', P: h.prov || '', N: golesDe[J], Q: Math.max(1, DUR - h.min) };
+                    const tit = narrRellena(narrElige(ctx, 'tit_' + sit, NARR[sit], clave), v);
+                    const og = g.penalti ? 'penalti' : (g.origen && NARR.origen[g.origen] ? g.origen : 'nada');
+                    let cuerpo = narrElige(ctx, 'or_' + og, NARR.origen[og], clave);
+                    const z = og === 'penalti' ? null : narrZona(g);
+                    if (z) cuerpo += ' ' + narrElige(ctx, 'zona_' + z, NARR.zona[z], clave);
+                    if (g.asistente && !g.penalti) cuerpo += narrRellena(narrElige(ctx, 'asist', NARR.asist, clave), v);
+                    cuerpo += '. ';
+                    if (h.prov && g.penalti) cuerpo += narrRellena(narrElige(ctx, 'prov', NARR.provoco, clave), v) + ' ';
+                    const extra = [];
+                    if (golesDe[J] === 2) extra.push(narrElige(ctx, 'doblete', NARR.doblete, clave));
+                    else if (golesDe[J] === 3) extra.push(narrElige(ctx, 'triplete', NARR.triplete, clave));
+                    else if (golesDe[J] >= 4) extra.push(narrElige(ctx, 'poker', NARR.poker, clave));
+                    if (h.min <= 3) extra.push(narrElige(ctx, 'pronto', NARR.pronto, clave));
+                    else if (h.min >= MITAD && h.min <= MITAD + 2 && opc.descanso) extra.push(narrElige(ctx, 'vuelta', NARR.vuelta, clave));
+                    else if (h.min >= DUR - 10 && Math.abs(H - R) <= 1 && sit !== 'recorta') extra.push(narrElige(ctx, 'tarde', NARR.tarde, clave));
+                    cuerpo += extra.map(e => narrRellena(e, v)).join(' ') + (extra.length ? ' ' : '');
+                    cuerpo += narrRellena(narrElige(ctx, 'marc', NARR.marcador, clave), v);
+                    res.push({ m: h.min, ic: '⚽', k: 'gol', h: /[!.?]$/.test(tit) ? tit : tit + '.', x: cuerpo.replace(/\s+/g, ' ').trim() });
+                } else {
+                    if (H < R) fueDetras = true;
+                    let sit;
+                    if (antes.H === antes.R) sit = 'adelanta';
+                    else if (H === R) sit = 'empata';
+                    else if (R > H) sit = 'amplia';
+                    else sit = 'recorta';
+                    const og = g.penalti ? 'penalti' : (g.origen && NARR.rival.origen[g.origen] ? g.origen : 'nada');
+                    const coletilla = narrElige(ctx, 'ror_' + og, NARR.rival.origen[og], clave);
+                    let txt = narrRellena(narrElige(ctx, 'riv_' + sit, NARR.rival[sit], clave), { RIV }) + (coletilla ? ' ' + coletilla : '') + `. ${H}-${R}.`;
+                    if (H > R) txt += ' ' + narrElige(ctx, 'sigue', NARR.rival.sigue, clave);
+                    else if (h.min < DUR - 5) txt += ' ' + narrElige(ctx, 'animo', NARR.rival.animo, clave);
+                    res.push({ m: h.min, ic: '🥅', k: 'golr', h: '', x: txt });
+                }
+            } else if (h.tipo === 'parada') {
+                const s = H === 0 && R === 0 ? 'cero' : H > R ? 'ventaja' : H === R ? 'empate' : 'detras';
+                const base = narrRellena(narrElige(ctx, 'parada', NARR.parada, clave), { J: h.j });
+                const resto = narrElige(ctx, 'pctx_' + s, NARR.paradaCtx[s], clave);
+                res.push({ m: h.min, ic: '🧤', k: 'parada', h: base.replace(/[!¡]/g, '').trim(), x: resto });
+            } else if (h.tipo === 'penParado') {
+                res.push({ m: h.min, ic: '🧤', k: 'parada', h: narrRellena(narrElige(ctx, 'penParado', NARR.penParado, clave), { J: h.j }), x: '' });
+            } else if (h.tipo === 'penFuera') {
+                res.push({ m: h.min, ic: '😮‍💨', k: 'otro', h: '', x: narrElige(ctx, 'penFuera', NARR.penFuera, clave) });
+            } else if (h.tipo === 'cambio') {
+                const L = h.lista || [h];
+                const y = (arr) => arr.length > 1 ? arr.slice(0, -1).join(', ') + ' y ' + arr[arr.length - 1] : arr[0];
+                const v = { E: y(L.map(c => c.entra)), S: y(L.map(c => c.sale)) };
+                res.push({ m: h.min, ic: '🔄', k: 'cambio', h: '', x: narrRellena(narrElige(ctx, L.length > 1 ? 'cambioD' : 'cambio', L.length > 1 ? NARR.cambioDoble : NARR.cambio, clave), v) });
+            } else if (h.tipo === 'amarilla' || h.tipo === 'dobleAmarilla' || h.tipo === 'roja') {
+                res.push({ m: h.min, ic: h.tipo === 'amarilla' ? '🟨' : '🟥', k: 'tarjeta', h: '', x: narrRellena(narrElige(ctx, h.tipo, NARR[h.tipo], clave), { J: h.j }) });
+            }
+        });
+        if (opc.descanso && !descansoPuesto) ponDescanso();
+        if (opc.final) {
+            const s = H > R ? (H - R >= 4 ? 'goleada' : 'victoria') : H === R ? 'empate' : 'derrota';
+            const extra = [];
+            if (H > R && fueDetras) extra.push(narrElige(ctx, 'remF', NARR.final.remontada, 'f'));
+            const top = Object.entries(golesDe).sort((a, b) => b[1] - a[1])[0];
+            if (top && top[1] >= 3) extra.push(narrRellena(narrElige(ctx, 'trip', NARR.triplete, 'f'), { J: top[0] }));
+            else if (top && top[1] === 2 && H > R) extra.push(narrRellena(narrElige(ctx, 'dob', NARR.doblete, 'f'), { J: top[0] }));
+            if (R === 0 && H > 0) extra.push(narrElige(ctx, 'cero', NARR.final.ceroFinal, 'f'));
+            res.push({ m: DUR, ic: '🏁', k: 'final', h: narrRellena(narrElige(ctx, 'fin_' + s, NARR.final[s], 'f'), { H, R }), x: extra.join(' ') });
+        }
+        return res;
+    }
+function narrGolesDeLineas(lines) {
+  const out = [];
+  lines.forEach((l, i) => {
+    const m = /^\[(\d+)'\]\s*(.*)$/.exec(String(l)); if (!m) return;
+    const t = m[2]; let g;
+    if ((g = /^⚽ Gol #\S+ (\S+)/.exec(t))) {
+      const sig = /^\[(\d+)'\]\s*👟 Asistencia #\S+ (\S+)/.exec(String(lines[i + 1] || ''));
+      out.push({ equipo: 'hergar', nombre: g[1], asistente: sig && sig[1] === m[1] ? sig[2] : '' });
+    } else if (/^🥅 Gol rival/.test(t)) out.push({ equipo: 'rival', penalti: /penalti/.test(t) });
+  });
+  return out;
+}
+function narracionDelegado() {
+  try {
+    const lines = S.lines || [];
+    return narrConstruir(narrHechos(lines, narrGolesDeLineas(lines)), { rival: D.rival || 'RIVAL', duracion: 70, descanso: (S.parte || 1) >= 2 || S.fase === 'final', final: S.fase === 'final' });
+  } catch (e) { return []; }
+}
+
 // ── Lo que lee el visor (mismo formato que la app) ───────────────────
 function payloadVisor() {
   const c = reloj(), jug = {};
@@ -378,7 +607,7 @@ function payloadVisor() {
     golesMin: S.ev.filter(e => e.k === 'gol' || e.k === 'golR').map(e => ({ min: Math.floor(e.t / 60), equipo: e.k === 'gol' ? 'hergar' : 'rival', nombre: e.k === 'gol' ? nom(e.j) : '' })),
     tirosNuestrosPuerta: T.tp, tirosNuestrosFuera: T.tf, tirosRivalesPuerta: T.tpR, tirosRivalesFuera: T.tfR,
     faltasFavor: 0, faltasContra: 0, cornersFavor: T.cf, cornersContra: T.cc, fuerasJuegoNuestros: 0, fuerasJuegoRival: 0,
-    analisisIA: '', resumenIA: '', notasIA: {},
+    analisisIA: '', resumenIA: '', notasIA: {}, narracion: narracionDelegado(), // v193
     delegado: Object.assign({}, D, { st: S })
   };
 }
@@ -744,7 +973,7 @@ function accionJugador(k) {
     cerrar(); snapshot();
     if (k === 'am') { tarjeta(id, false); return; }
     if (k === 'ro') { tarjeta(id, true); return; }
-    cnt(id, k); imp(id, IMP[k] || 0);
+    cnt(id, k); imp(id, k === 'tf' && (S.cnt[id] || {}).tf > 3 ? -0.05 : (IMP[k] || 0)); // v194: desde el 4.º tiro fuera, −0,05
     if (k === 'tp') S.team.tp++; if (k === 'tf') S.team.tf++;
     if (k === 'tp') mom(1); if (k === 'tf' || k === 'pc') mom(.5);
     suceso({ k, j: id }, `${LBL[k]} #${J[id].dorsal} ${nom(id)}`);

@@ -1138,6 +1138,7 @@
   // v140 (app) · «Hace mejores a los demás»: impacto de los compañeros con él y sin él (Sinergias, Ranking, ficha) y 🧲 al mejor compañero en la Plantilla. En el visor, solo los positivos.
   // v139 (app) · Acta del partido en PDF (3 páginas). En el visor, botón en cada partido si la app lo permite, sin el más/menos de cada niño.
   // v137 (app) · Más análisis → 🔄 Banquillo: el equipo antes y después de los cambios, lo que aporta el banquillo, cambio a cambio y cada niño de titular y de suplente.
+  // Visor (v203 app) · 🎬 Resumen: rótulos de datos (once inicial con fotos, el partido en números, dominio con menos de 3 goles y cómo queda la Liga), también en la descarga; la app los puede apagar.
   // Visor · 🎬 Resumen del partido tipo tele: cortinilla, minuto y vídeo de cada gol con rótulo (marcador y goleador) desde que arranca el vídeo, tarjetas para goles sin vídeo y del rival, y final con goleadores. Botón en Último partido, en Temporada → Partidos y en la pantalla Final del Modo TV.
   // Visor · Temporada: menú nuevo con 4 apartados grandes (Partidos, Plantilla, Ranking, Récords) y el resto en "Más análisis", que recuerda si se dejó abierto. Abre en Partidos.
   // v116 (app) · El % de paradas cuenta también las paradas de partidos sin detalle; "De ellas, difíciles".
@@ -5185,8 +5186,259 @@
     return `<div style="display:flex; justify-content:flex-end; margin-top:5px;"><button type="button" class="btn-resumen-mini" onclick="abrirResumenPartido(${pi})">🎬 Resumen del partido</button><button type="button" class="btn-resumen-mini" style="margin-left:6px;" onclick="abrirExportarResumen(${pi})">⬇️ Vídeo</button></div>`;
   }
 
-  function rsConstruir(p) {
+  // ── Visor · RÓTULOS DE DATOS EN EL RESUMEN (once inicial, números, dominio y Liga) ──
+  // Se dibujan en un lienzo de 1280×720 con las mismas funciones en el resumen y en la descarga, así salen iguales.
+  // Datos: los del acta del partido (actaDatos). Cada rótulo se salta solo si al partido le falta su dato.
+  // La app puede apagarlos todos (temporada.resumenDatos === false): entonces el resumen vuelve a ser solo goles.
+  const RSD_TIPOS = ['once', 'nums', 'dom', 'liga'];
+  const RSD_DUR = { once: 6500, nums: 6000, dom: 6000, liga: 6500 };
+  const RSD_NOMBRE = { once: 'Once inicial', nums: 'Números', dom: 'Dominio', liga: 'Liga' };
+  const RSD_DOM_MAX_GOLES = 3; // el dominio sale solo con menos de 3 goles entre los dos equipos
+  function rsdOn() { return !(ultimaTemporada && ultimaTemporada.resumenDatos === false); }
+  function rsdEsTipo(t) { return RSD_TIPOS.includes(t); }
+  function rsdDatos(p, pi) {
+    const out = { once: null, nums: null, dom: null, liga: null };
+    if (!rsdOn() || !p) return out;
+    let D = null;
+    try { D = actaDatos(ultimaTemporada, pi, { familias: true }); } catch (e) { D = null; }
+    if (!D) return out;
+    // Once inicial, colocado como en la pizarra (o por filas, como el acta, si no se puede)
+    try {
+      if (Array.isArray(D.once) && D.once.length >= 7 && D.once.length <= 11) {
+        const form = p.formacionInicial || p.formacion;
+        const pts = actaPuntosPizarra(D.once, form);
+        let lista = [];
+        if (pts) lista = pts.map(({ o, s }) => ({ x: o.x, fx: s.x, fy: s.y }));
+        else {
+          const filasY = {};
+          D.once.forEach(x => { const pu = x.puesto || 'MC'; const yy = ACTA_PUESTO_Y[pu] != null ? ACTA_PUESTO_Y[pu] : 0.5; (filasY[yy] = filasY[yy] || []).push({ x, pu }); });
+          Object.keys(filasY).forEach(k => {
+            const fila = filasY[k].sort((a, b) => (ACTA_PUESTO_X[a.pu] ?? 1) - (ACTA_PUESTO_X[b.pu] ?? 1));
+            fila.forEach((o, n) => lista.push({ x: o.x, fx: 100 * (n + 1) / (fila.length + 1), fy: Number(k) * 100 }));
+          });
+        }
+        out.once = { form: pts && form ? '1-' + form : null, js: lista.map(o => ({ id: o.x.id, dorsal: o.x.dorsal, nombre: o.x.nombre, fx: o.fx, fy: o.fy })) };
+      }
+    } catch (e) { out.once = null; }
+    // El partido en números (solo partidos con tiros apuntados)
+    try {
+      if (p.tirosNuestrosPuerta != null) {
+        const T = D.tot, tn = T.tnP + T.tnF, tr = T.trP + T.trF;
+        if (tn + tr > 0) out.nums = {
+          filas: [['TIROS', tn, tr], ['A PUERTA', T.tnP, T.trP], ['CÓRNERS', T.cf, T.cc]],
+          porteros: (D.porteros || []).filter(x => x.par > 0).map(x => ({ nombre: x.nombre, par: x.par })),
+          cero: D.gr === 0
+        };
+      }
+    } catch (e) { out.nums = null; }
+    // Dominio (momentum): solo con menos de 3 goles entre los dos
+    try {
+      if (D.momentum && (D.gl + D.gr) < RSD_DOM_MAX_GOLES) {
+        const pts = D.momentum.map(q => ({ m: Number(q[0]) || 0, v: Number(q[1]) || 0 }));
+        out.dom = { pts, dur: Math.max(70, D.dur || 0, ...pts.map(q => q.m)), goles: (D.goles || []).filter(g => g.min != null) };
+      }
+    } catch (e) { out.dom = null; }
+    // Así queda la Liga tras esa jornada
+    try { out.liga = rsdLiga(p); } catch (e) { out.liga = null; }
+    return out;
+  }
+  // Jornada (contada desde el principio de la Liga) del partido: la que guarda el acta o, en partidos anteriores, la del cruce en la Liga
+  function rsdJornada(liga, p, H) {
+    const A = p.acta && p.acta.liga;
+    if (A && A.j != null && A.v != null) return numJornadaGlobalViewer(liga, { vuelta: A.v, jornada: A.j });
+    const c = p.contexto || {};
+    let lp = c.ligaId != null ? liga.partidos.find(x => x.id === c.ligaId) : null;
+    if (!lp && typeof proRivalLiga === 'function') {
+      const rv = proRivalLiga(liga, p);
+      if (rv && rv.i >= 0) {
+        const rid = liga.equipos[rv.i].id, gl = Number(p.golesLocal) || 0, gr = Number(p.golesRival) || 0;
+        const cruces = liga.partidos.filter(x => ((x.local === H.id && x.visitante === rid) || (x.visitante === H.id && x.local === rid)) && x.golesLocal != null && x.golesVisitante != null);
+        lp = cruces.find(x => (x.local === H.id ? x.golesLocal === gl && x.golesVisitante === gr : x.golesVisitante === gl && x.golesLocal === gr)) || null;
+      }
+    }
+    return lp && lp.jornada != null ? numJornadaGlobalViewer(liga, lp) : null;
+  }
+  function rsdLiga(p) {
+    const liga = ultimaLiga;
+    if (!liga || !Array.isArray(liga.equipos) || !Array.isArray(liga.partidos) || liga.equipos.length < 3) return null;
+    const H = liga.equipos.find(e => e.esHergar);
+    if (!H) return null;
+    const J = rsdJornada(liga, p, H);
+    if (!J) return null;
+    const hasta = (k) => Object.assign({}, liga, { partidos: liga.partidos.filter(x => x.jornada != null && numJornadaGlobalViewer(liga, x) <= k) });
+    const ahora = ligaClasifViewer(hasta(J));
+    if (!ahora.some(f => f.pj > 0)) return null;
+    const antes = J > 1 ? ligaClasifViewer(hasta(J - 1)) : null, hayAntes = !!(antes && antes.some(f => f.pj > 0));
+    const posAntes = {}; if (hayAntes) antes.forEach(f => { posAntes[f.id] = f.pos; });
+    return { J, filas: ahora.map(f => {
+      const eq = liga.equipos.find(e => e.id === f.id);
+      return { id: f.id, pos: f.pos, pts: f.pts, pj: f.pj, nombre: eq ? eq.nombre : '?', eq, hergar: !!(eq && eq.esHergar), mov: hayAntes && posAntes[f.id] ? posAntes[f.id] - f.pos : 0 };
+    }) };
+  }
+  // Fotos de los niños y escudos de la Liga para el lienzo (se van cargando; mientras, sale el dorsal o las iniciales)
+  function rsdAssets(X) {
+    const A = { fotos: {}, escs: {}, escH: null, escR: null };
+    const tareas = [];
+    if (X.once) X.once.js.forEach(j => { const f = fotosJugadores[j.id]; if (f && f.foto) tareas.push(exImg(f.foto).then(im => { if (im) A.fotos[j.id] = im; })); });
+    if (X.liga) X.liga.filas.forEach(r => {
+      A.escs[r.id] = { img: null, ini: r.hergar ? 'HE' : inicialesEquipoViewer(r.nombre) };
+      const src = r.eq ? escudoSrcVisor(r.eq) : null;
+      if (src) tareas.push(exImg(src).then(im => { if (im) A.escs[r.id].img = im; }));
+    });
+    A.listo = Promise.all(tareas).catch(() => {});
+    return A;
+  }
+  // ── Dibujo ──
+  function rsdFondo(c) { exRadial(c, 640, 330, 780, [[0, '#2a0a12'], [.65, '#0a0204'], [1, '#000']]); }
+  function rsdTitulo(c, e, txt) {
+    const pa = exEase(exP(e, 0, 450));
+    c.save(); c.globalAlpha = pa;
+    exFont(c, 900, 22); exLS(c, 6); const w = c.measureText(txt).width + 44;
+    c.fillStyle = 'rgb(180,20,56)'; exRR(c, 640 - w / 2, 58 - 18 * (1 - pa), w, 44, 8); c.fill();
+    c.fillStyle = '#fff'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(txt, 640 + 3, 81 - 18 * (1 - pa));
+    exLS(c, 0); c.restore();
+  }
+  function rsdFoto(c, img, cx, cy, d, dorsal) {
+    c.save(); c.beginPath(); c.arc(cx, cy, d / 2, 0, Math.PI * 2); c.closePath();
+    if (img) {
+      c.fillStyle = '#fff'; c.fill(); c.save(); c.clip();
+      const iw = img.naturalWidth, ih = img.naturalHeight, s = Math.max(d / iw, d / ih);
+      c.drawImage(img, cx - iw * s / 2, cy - ih * s / 2, iw * s, ih * s); c.restore();
+    } else {
+      c.fillStyle = 'rgb(180,20,56)'; c.fill();
+      c.fillStyle = '#fff'; exFont(c, 900, Math.round(d * 0.42)); exLS(c, 0); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(dorsal ?? ''), cx, cy + 2);
+    }
+    c.beginPath(); c.arc(cx, cy, d / 2, 0, Math.PI * 2); c.lineWidth = 4; c.strokeStyle = '#fff'; c.stroke();
+    if (img && dorsal != null && dorsal !== '') {
+      exFont(c, 900, 17); const t = String(dorsal), w = Math.max(28, c.measureText(t).width + 12), bx = cx + d * 0.22, by = cy + d * 0.2;
+      c.fillStyle = 'rgb(180,20,56)'; exRR(c, bx, by, w, 24, 6); c.fill(); c.lineWidth = 2; c.strokeStyle = '#fff'; c.stroke();
+      c.fillStyle = '#fff'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(t, bx + w / 2, by + 13);
+    }
+    c.restore();
+  }
+  function rsdOnce(c, e, O, A) {
+    const g = c.createLinearGradient(0, 0, 0, EX_H); g.addColorStop(0, '#16603a'); g.addColorStop(1, '#0b3a1e');
+    c.fillStyle = g; c.fillRect(0, 0, EX_W, EX_H);
+    // franjas del césped
+    c.fillStyle = 'rgba(255,255,255,.025)'; for (let k = 0; k < 12; k += 2) c.fillRect(60 + k * 1160 / 12, 118, 1160 / 12, 572);
+    const X0 = 60, Y0 = 118, W = 1160, H = 572;
+    c.strokeStyle = 'rgba(255,255,255,.28)'; c.lineWidth = 3;
+    c.strokeRect(X0, Y0, W, H);
+    c.beginPath(); c.moveTo(640, Y0); c.lineTo(640, Y0 + H); c.stroke();
+    c.beginPath(); c.arc(640, Y0 + H / 2, 78, 0, Math.PI * 2); c.stroke();
+    c.strokeRect(X0, Y0 + H / 2 - 150, 150, 300); c.strokeRect(X0 + W - 150, Y0 + H / 2 - 150, 150, 300);
+    rsdTitulo(c, e, 'ONCE INICIAL');
+    const js = O.js.slice().sort((a, b) => b.fy - a.fy);
+    js.forEach((j, k) => {
+      const pa = exEase(exP(e, 350 + k * 90, 450)), s = 0.6 + 0.4 * pa;
+      const cx = X0 + 70 + (100 - Math.max(0, Math.min(100, j.fy))) / 100 * (W - 120), cy = Y0 + 30 + (Math.max(8, Math.min(92, j.fx)) - 8) / 84 * (H - 100);
+      c.save(); c.globalAlpha = pa; c.translate(cx, cy); c.scale(s, s);
+      rsdFoto(c, A.fotos[j.id] || null, 0, 0, 78, j.dorsal);
+      exFont(c, 800, 21); exLS(c, 0); c.textAlign = 'center'; c.textBaseline = 'alphabetic';
+      c.lineWidth = 5; c.lineJoin = 'round'; c.strokeStyle = 'rgba(0,0,0,.6)'; c.strokeText(j.nombre, 0, 66, 170);
+      c.fillStyle = '#fff'; c.fillText(j.nombre, 0, 66, 170);
+      c.restore();
+    });
+    if (O.form) {
+      const pa = exP(e, 1400, 400);
+      c.save(); c.globalAlpha = pa; exFont(c, 800, 20); exLS(c, 2); const t = O.form, w = c.measureText(t).width + 28;
+      c.fillStyle = 'rgba(0,0,0,.5)'; exRR(c, EX_W - 60 - w, EX_H - 66, w, 40, 8); c.fill();
+      c.fillStyle = '#fff'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(t, EX_W - 60 - w / 2 + 1, EX_H - 45); c.restore();
+    }
+  }
+  function rsdNums(c, e, N, A, p) {
+    rsdFondo(c); rsdTitulo(c, e, 'EL PARTIDO EN NÚMEROS');
+    const xL = 300, xR = 980, bx = 390, bw = 500, bh = 54;
+    const ph = exEase(exP(e, 250, 450));
+    c.save(); c.globalAlpha = ph;
+    exEscudo(c, A.escH, xL, 168, 64); exEscudo(c, A.escR, xR, 168, 64);
+    c.restore();
+    N.filas.forEach((f, k) => {
+      const y = 232 + k * 92, pa = exEase(exP(e, 450 + k * 200, 450)), pb = exEase(exP(e, 750 + k * 200, 900));
+      const tot = f[1] + f[2], fr = tot > 0 ? f[1] / tot : 0.5;
+      c.save(); c.globalAlpha = pa;
+      exFont(c, 900, 46); exLS(c, 0); c.textBaseline = 'middle'; c.textAlign = 'center';
+      c.fillStyle = '#fff'; c.fillText(String(f[1]), xL, y + bh / 2 + 2); c.fillStyle = '#cbd5e1'; c.fillText(String(f[2]), xR, y + bh / 2 + 2);
+      c.save(); exRR(c, bx, y, bw, bh, 10); c.clip();
+      c.fillStyle = 'rgba(255,255,255,.07)'; c.fillRect(bx, y, bw, bh);
+      if (tot > 0) {
+        c.fillStyle = 'rgb(180,20,56)'; c.fillRect(bx, y, bw * fr * pb, bh);
+        c.fillStyle = '#475569'; c.fillRect(bx + bw - bw * (1 - fr) * pb, y, bw * (1 - fr) * pb, bh);
+      }
+      c.restore();
+      exFont(c, 900, 20); exLS(c, 4); c.fillStyle = '#fff'; c.textAlign = 'center';
+      c.shadowColor = 'rgba(0,0,0,.6)'; c.shadowBlur = 4; c.fillText(f[0], bx + bw / 2 + 2, y + bh / 2 + 1); c.shadowBlur = 0; exLS(c, 0);
+      c.restore();
+    });
+    const lin = N.porteros.length ? N.porteros.map(q => `${q.nombre}: ${q.par} ${q.par === 1 ? 'parada' : 'paradas'}`).join(' · ') + (N.cero ? ' · portería a cero' : '') : (N.cero ? 'Portería a cero' : '');
+    if (lin) {
+      const pa = exEase(exP(e, 1500, 500));
+      c.save(); c.globalAlpha = pa; exFont(c, 800, 26); exLS(c, 0); c.fillStyle = '#fff'; c.textAlign = 'center'; c.textBaseline = 'alphabetic';
+      c.fillText('🧤 ' + lin, 640, 548 + 12 * (1 - pa), 1100); c.restore();
+    }
+  }
+  function rsdDom(c, e, Dm, p) {
+    rsdFondo(c); rsdTitulo(c, e, 'DOMINIO DEL PARTIDO');
+    const x0 = 130, x1 = 1150, y0 = 170, y1 = 590, mid = (y0 + y1) / 2, maxM = Dm.dur;
+    const amp = Math.max(1, ...Dm.pts.map(q => Math.abs(q.v)));
+    const X = (m) => x0 + Math.min(1, m / maxM) * (x1 - x0), Y = (v) => mid - v / amp * (mid - y0 - 12);
+    const rev = exEase(exP(e, 400, 3600)), xr = x0 + (x1 - x0) * rev;
+    // forma: de 0 al último minuto, en escalones suaves entre los puntos
+    const pts = [{ m: 0, v: 0 }].concat(Dm.pts.filter(q => q.m >= 0));
+    const traza = () => { c.beginPath(); c.moveTo(X(0), mid); pts.forEach(q => c.lineTo(X(q.m), Y(q.v))); c.lineTo(X(pts[pts.length - 1].m), mid); c.closePath(); };
+    c.save(); c.beginPath(); c.rect(x0, y0 - 10, xr - x0, y1 - y0 + 20); c.clip();
+    c.save(); c.beginPath(); c.rect(x0, y0 - 10, x1 - x0, mid - y0 + 10); c.clip(); traza(); c.fillStyle = 'rgb(180,20,56)'; c.fill(); c.restore();
+    c.save(); c.beginPath(); c.rect(x0, mid, x1 - x0, y1 - mid + 10); c.clip(); traza(); c.fillStyle = '#475569'; c.fill(); c.restore();
+    c.restore();
+    c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = 2; c.beginPath(); c.moveTo(x0, mid); c.lineTo(x1, mid); c.stroke();
+    c.setLineDash([6, 6]); c.strokeStyle = 'rgba(255,255,255,.2)'; c.beginPath(); c.moveTo(X(35), y0); c.lineTo(X(35), y1); c.stroke(); c.setLineDash([]);
+    exFont(c, 800, 18); exLS(c, 2); c.textBaseline = 'alphabetic'; c.textAlign = 'left';
+    c.fillStyle = 'rgba(255,255,255,.75)'; c.fillText('HERGAR', x0 + 6, y0 + 4);
+    c.fillStyle = 'rgba(203,213,225,.75)'; c.fillText(String(p.rival || 'RIVAL').toUpperCase(), x0 + 6, y1 + 2, 600);
+    exLS(c, 0); exFont(c, 700, 18, 'i'); c.fillStyle = '#94a3b8'; c.textAlign = 'center';
+    c.fillText("0'", x0, y1 + 40); c.fillText("35'", X(35), y1 + 40); c.fillText(`${maxM}'`, x1, y1 + 40);
+    Dm.goles.forEach(g => {
+      if (X(g.min) > xr) return;
+      const nuestro = g.equipo === 'hergar', xg = X(g.min);
+      c.strokeStyle = nuestro ? '#fff' : '#94a3b8'; c.lineWidth = 3; c.beginPath(); c.moveTo(xg, y0 + 16); c.lineTo(xg, y1 - 6); c.stroke();
+      exFont(c, 900, 20); exLS(c, 0); c.textAlign = 'center'; c.textBaseline = 'alphabetic'; c.fillStyle = nuestro ? '#fff' : '#cbd5e1';
+      c.fillText(`${nuestro ? '⚽' : '🥅'} ${g.min}'`, xg, y0 + 8);
+    });
+  }
+  function rsdLigaDib(c, e, L, A) {
+    rsdFondo(c); rsdTitulo(c, e, `ASÍ QUEDA LA LIGA · J${L.J}`);
+    const n = L.filas.length, top = 132, alto = Math.min(52, 540 / n), x0 = 250, w = 780;
+    L.filas.forEach((f, k) => {
+      const pa = exEase(exP(e, 350 + k * 70, 400)), y = top + k * alto, hR = alto - 8, dx = 40 * (1 - pa);
+      c.save(); c.globalAlpha = pa;
+      c.fillStyle = f.hergar ? 'rgb(180,20,56)' : 'rgba(255,255,255,.06)'; exRR(c, x0 + dx, y, w, hR, 8); c.fill();
+      const cy = y + hR / 2, fs = Math.round(Math.min(24, hR * 0.5));
+      exFont(c, 900, fs); exLS(c, 0); c.textBaseline = 'middle'; c.textAlign = 'center'; c.fillStyle = f.hergar ? '#fff' : '#94a3b8';
+      c.fillText(String(f.pos), x0 + dx + 34, cy + 1);
+      exEscudo(c, A.escs[f.id] || { img: null, ini: '?' }, x0 + dx + 84, cy, Math.round(hR * 0.78));
+      c.textAlign = 'left'; exFont(c, f.hergar ? 900 : 700, fs); c.fillStyle = '#fff'; c.fillText(f.nombre, x0 + dx + 116, cy + 1, 470);
+      if (f.mov) { exFont(c, 900, Math.round(fs * 0.8)); c.textAlign = 'center'; c.fillStyle = f.hergar ? '#fff' : (f.mov > 0 ? '#2ed573' : '#ff6b7a'); c.fillText(f.mov > 0 ? '▲' : '▼', x0 + dx + w - 120, cy + 1); }
+      exFont(c, 900, fs); c.textAlign = 'right'; c.fillStyle = '#fff'; c.fillText(String(f.pts), x0 + dx + w - 26, cy + 1);
+      c.restore();
+    });
+    const pa = exP(e, 350 + n * 70, 400);
+    c.save(); c.globalAlpha = pa; exFont(c, 500, 17, 'i'); exLS(c, 0); c.fillStyle = '#94a3b8'; c.textAlign = 'right'; c.textBaseline = 'alphabetic';
+    c.fillText('PUNTOS', x0 + w - 18, top - 10); c.restore();
+  }
+  function rsdDibujar(c, tipo, e, X, A, p) {
+    c.save(); c.globalAlpha = 1; exLS(c, 0);
+    if (tipo === 'once' && X.once) rsdOnce(c, e, X.once, A);
+    else if (tipo === 'nums' && X.nums) rsdNums(c, e, X.nums, A, p);
+    else if (tipo === 'dom' && X.dom) rsdDom(c, e, X.dom, p);
+    else if (tipo === 'liga' && X.liga) rsdLigaDib(c, e, X.liga, A);
+    else { c.fillStyle = '#000'; c.fillRect(0, 0, EX_W, EX_H); }
+    c.restore();
+  }
+
+  function rsConstruir(p, pi) {
+    const extra = rsdDatos(p, pi);
     const pasos = [{ tipo: 'intro', dur: 3500, gol: -1 }], goles = [], cuenta = {};
+    if (extra.once) pasos.push({ tipo: 'once', dur: RSD_DUR.once, gol: -1 });
     let h = 0, r = 0;
     rsGolesPartido(p).forEach(({ g, gi }) => {
       const riv = g.equipo === 'rival';
@@ -5199,8 +5451,9 @@
       else pasos.push({ tipo: 'tarjeta', dur: 3200, gol: k });
       x.p1 = pasos.length - 1;
     });
+    ['nums', 'dom', 'liga'].forEach(k => { if (extra[k]) pasos.push({ tipo: k, dur: RSD_DUR[k], gol: -3 }); });
     pasos.push({ tipo: 'final', dur: 0, gol: -2 });
-    return { pasos, goles };
+    return { pasos, goles, extra };
   }
   function rsEscala() {
     const st = document.getElementById('rsStage');
@@ -5305,7 +5558,9 @@
         <div class="gl">${grupos.map((q, i) => `<div class="${q.riv ? 'rv' : ''}" style="animation-delay:${(0.7 + i * 0.12).toFixed(2)}s">${q.riv ? '🥅' : '⚽'} ${escHtml(q.who)}${q.mins.length > 1 ? ' ×' + q.mins.length : ''}<i>${q.mins.filter(v => v != null).map(v => v + "'").join(' ')}</i></div>`).join('')}</div>
         <div class="bts"><button type="button" onclick="rsDeNuevo()">↺ Volver a verlo</button><button type="button" onclick="exportarDesdeResumen()">⬇ Descargar</button><button type="button" onclick="cerrarResumen()">Cerrar</button></div></div>`;
     }
+    if (rsdEsTipo(paso.tipo)) html = '<canvas id="rsCv" width="1280" height="720" style="position:absolute; inset:0; width:100%; height:100%;"></canvas>';
     capa.innerHTML = html;
+    if (rsdEsTipo(paso.tipo)) rsdPintarLive();
     if (paso.tipo === 'video') rsCargarVideo(x);
     rsBarras();
   }
@@ -5324,9 +5579,16 @@
       c.children[k].firstChild.style.width = (f * 100).toFixed(1) + '%';
     });
   }
+  function rsdPintarLive() {
+    const cv = document.getElementById('rsCv');
+    if (!cv || !rs) return;
+    const paso = rs.pasos[rs.i];
+    if (rsdEsTipo(paso.tipo)) rsdDibujar(cv.getContext('2d'), paso.tipo, rsTrans(), rs.extra, rs.ast, rs.p);
+  }
   function rsBucle() {
     if (!rs) return;
     const paso = rs.pasos[rs.i];
+    if (rsdEsTipo(paso.tipo)) rsdPintarLive();
     if (!rs.pausa && paso.dur > 0 && rsTrans() >= paso.dur) rsIr(rs.i + 1);
     rsBarras();
     rs.raf = requestAnimationFrame(rsBucle);
@@ -5343,19 +5605,20 @@
     if (!rs) return;
     const paso = rs.pasos[rs.i];
     if (paso.tipo === 'final') return;
-    const sig = paso.gol < 0 ? 0 : paso.gol + 1;
-    rsIr(sig < rs.goles.length ? rs.goles[sig].p0 : rs.pasos.length - 1);
+    if (paso.gol < 0) { rsIr(rs.i + 1); rsSetPausa(false); return; }
+    const sig = paso.gol + 1;
+    rsIr(sig < rs.goles.length ? rs.goles[sig].p0 : rs.goles[paso.gol].p1 + 1);
     rsSetPausa(false);
   };
   window.rsAnterior = () => {
     if (!rs) return;
     const paso = rs.pasos[rs.i], vv = rsVideoEl();
-    if (paso.gol === -1) { rsIr(0); rsSetPausa(false); return; }
+    if (paso.gol === -1 || paso.gol === -3 || paso.gol === -2) { rsIr(rsTrans() > 1500 || rs.i === 0 ? rs.i : rs.i - 1); rsSetPausa(false); return; }
     const k = paso.gol === -2 ? rs.goles.length : paso.gol;
     const ini = k < rs.goles.length ? rs.goles[k].p0 : rs.pasos.length - 1;
     const avanzado = rs.i > ini || rsTrans() > 1500 || (paso.tipo === 'video' && vv.currentTime > 1.5);
     if (avanzado && k < rs.goles.length) rsIr(ini);
-    else rsIr(k - 1 >= 0 ? rs.goles[k - 1].p0 : 0);
+    else rsIr(k - 1 >= 0 ? rs.goles[k - 1].p0 : Math.max(0, ini - 1));
     rsSetPausa(false);
   };
   window.rsSonido = () => { if (!rs) return; rs.mudo = !rs.mudo; rsVideoEl().muted = rs.mudo; rsIconoSonido(); };
@@ -5364,15 +5627,17 @@
     const t = ultimaTemporada, p = t && Array.isArray(t.partidos) ? t.partidos[pi] : null;
     if (!rsTieneVideos(p)) return;
     if (rs) window.cerrarResumen();
-    const b = rsConstruir(p);
+    const b = rsConstruir(p, pi);
     const de = document.documentElement;
     const pedirFs = !tvActivo && !document.fullscreenElement && !document.webkitFullscreenElement && !!(de.requestFullscreen || de.webkitRequestFullscreen);
-    rs = { p, pi, pasos: b.pasos, goles: b.goles, i: 0, acum: 0, t0: performance.now(), pausa: false, mudo: false, tok: 0, raf: null, timerCarga: null, fs: false, fsT: pedirFs ? performance.now() : 0 };
+    rs = { p, pi, pasos: b.pasos, goles: b.goles, extra: b.extra, ast: rsdAssets(b.extra), i: 0, acum: 0, t0: performance.now(), pausa: false, mudo: false, tok: 0, raf: null, timerCarga: null, fs: false, fsT: pedirFs ? performance.now() : 0 };
     document.getElementById('rsBars').innerHTML = '';
     document.getElementById('rsStage').classList.remove('rs-pausada');
     document.getElementById('resumenTV').classList.add('on');
     document.body.style.overflow = 'hidden';
     rsEscala();
+    { const ast = rs.ast, eqR = equipoLigaPorNombre(p.rival); ast.escH = { img: null, ini: 'HE' }; ast.escR = { img: null, ini: inicialesEquipoViewer(eqR ? eqR.nombre : p.rival) };
+      exImg(ESCUDO_HERGAR_SRC).then(im => { ast.escH.img = im; }); exImg(escudoSrcVisor(eqR)).then(im => { ast.escR.img = im; }); }
     const inicio = gi == null ? 0 : (rs.goles.find(x => x.gi === gi) || { p0: 0 }).p0;
     rsIr(inicio);
     // Se "desbloquea" el reproductor con el toque del usuario para que luego los vídeos puedan sonar (iPhone)
@@ -5666,7 +5931,7 @@
     else hecho += Math.min(e, paso.dur);
     const b = document.getElementById('exBarra'), ps = document.getElementById('exPaso'), q = document.getElementById('exQueda');
     if (b) b.style.width = (Math.min(1, hecho / ex.total) * 100).toFixed(1) + '%';
-    if (ps) ps.textContent = paso.gol >= 0 ? `Gol ${paso.gol + 1} de ${ex.goles.length}` : (paso.tipo === 'intro' ? 'Entrada' : 'Final');
+    if (ps) ps.textContent = paso.gol >= 0 ? `Gol ${paso.gol + 1} de ${ex.goles.length}` : (paso.tipo === 'intro' ? 'Entrada' : RSD_NOMBRE[paso.tipo] || 'Final');
     if (q) q.textContent = `Quedan ${exMSS(ex.total - hecho)}`;
   }
 
@@ -5678,6 +5943,8 @@
     const eqR = equipoLigaPorNombre(p.rival);
     ex.escH = { img: await exImg(ESCUDO_HERGAR_SRC), ini: 'HE' };
     ex.escR = { img: await exImg(escudoSrcVisor(eqR)), ini: inicialesEquipoViewer(eqR ? eqR.nombre : p.rival) };
+    ex.ast = rsdAssets(ex.extra); ex.ast.escH = ex.escH; ex.ast.escR = ex.escR;
+    if (ex.pasos.some(s => rsdEsTipo(s.tipo))) { exEstado('Preparando los rótulos…'); await ex.ast.listo; }
     const conVideo = [];
     ex.pasos.forEach(s => { if (s.tipo === 'video') conVideo.push(s.gol); });
     let n = 0;
@@ -5804,6 +6071,7 @@
     else if (paso.tipo === 'minuto') exMinuto(c, e, x);
     else if (paso.tipo === 'video') exVideo(c, x);
     else if (paso.tipo === 'tarjeta') exTarjeta(c, e, x);
+    else if (rsdEsTipo(paso.tipo)) rsdDibujar(c, paso.tipo, e, ex.extra, ex.ast, ex.p);
     else exFinal(c, e);
     c.restore();
     exProgreso(e);
@@ -5899,11 +6167,11 @@
     // El sonido se prepara aquí, con el toque, para que el navegador lo deje sonar luego
     let ac = null;
     try { const AC = window.AudioContext || window.webkitAudioContext; if (AC) { ac = new AC(); ac.resume().catch(() => {}); } } catch (e) { ac = null; }
-    const b = rsConstruir(p);
+    const b = rsConstruir(p, pi);
     const canvas = document.createElement('canvas'); canvas.width = EX_W; canvas.height = EX_H;
     const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'auto';
     v.style.cssText = 'position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; left:0; top:0;';
-    ex = { pi, p, pasos: b.pasos, goles: b.goles, medios: {}, ac, canvas, ctx: canvas.getContext('2d'), v, mime: exMime(),
+    ex = { pi, p, pasos: b.pasos, goles: b.goles, extra: b.extra, medios: {}, ac, canvas, ctx: canvas.getContext('2d'), v, mime: exMime(),
       fase: 'preparando', tok: 0, i: 0, t0: 0, total: 0, sinSonido: 0, trozos: [] };
     const l = document.getElementById('exLienzo'); l.innerHTML = ''; l.appendChild(v);
     const ok = await exPreparar();

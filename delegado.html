@@ -210,19 +210,22 @@ h2{font:900 19px Montserrat;margin-bottom:4px}
     <div class="sec">HERGAR · TOCA Y ELIGE EL NIÑO</div>
     <div class="grid">
       <div class="act team" data-a="tp"><i>🎯</i>Tiro a puerta</div>
+      <div class="act team" data-a="palo"><i>🪵</i>Al palo</div>
       <div class="act team" data-a="tf"><i>💨</i>Tiro sin peligro</div>
       <div class="act team" data-a="pc"><i>🔑</i>Pase clave</div>
       <div class="act team" data-a="def"><i>🛡️</i>Acción defensiva</div>
       <div class="act team" data-a="pa"><i>📯</i>Pase al área</div>
       <div class="act team" data-a="reg"><i>🌀</i>Regate</div>
       <div class="act team" data-a="defC"><i>🛡️⭐</i>Def. clave</div>
+      <div class="act team" data-a="fr"><i>🟡</i>Falta recibida</div>
       <div class="act neu" data-a="fa"><i>❌</i>Fallo</div>
       <div class="act neu" data-a="faI"><i>💥</i>Fallo importante</div>
     </div>
     <div class="sec">RIVAL · UN TOQUE</div>
-    <div class="grid">
+    <div class="grid two">
       <div class="act riv" data-r="par"><i>🧤</i>Parada</div>
       <div class="act riv" data-r="parD"><i>🧤⭐</i>Parada difícil</div>
+      <div class="act riv" data-r="palR"><i>🪵</i>Al palo</div>
       <div class="act riv" data-r="tfR"><i>💨</i>Tiro sin peligro</div>
     </div>
     <div class="sec">PARTIDO</div>
@@ -306,10 +309,10 @@ const COORD = {"4-3-3":[[50,93],[15,75],[38,77],[62,77],[85,75],[50,57],[28,47],
 "3-4-3":[[50,93],[25,75],[50,77],[75,75],[10,50],[36,52],[64,52],[90,50],[17,19],[50,14],[83,19]]};
 const PUESTOS = {"4-3-3":['POR','LI','DFC','DFC','LD','MCD','MC','MC','EI','DC','ED'],"4-4-2":['POR','LI','DFC','DFC','LD','MI','MC','MC','MD','DC','DC'],"4-2-3-1":['POR','LI','DFC','DFC','LD','MCD','MCD','MI','MP','MD','DC'],"3-5-2":['POR','DFC','DFC','DFC','MI','MC','MP','MC','MD','DC','DC'],"3-4-3":['POR','DFC','DFC','DFC','MI','MC','MC','MD','EI','DC','ED']};
 const LINEA = { POR:'portero', LI:'defensa', DFC:'defensa', LD:'defensa', MCD:'centro', MC:'centro', MI:'centro', MD:'centro', MP:'centro', EI:'delantero', ED:'delantero', DC:'delantero' };
-const NOM = { defC:'🛡️⭐ Acción defensiva clave', fa:'❌ Fallo', faI:'💥 Fallo importante', gol:'⚽ Gol', tp:'🎯 Tiro a puerta', tf:'💨 Tiro sin peligro', pc:'🔑 Pase clave', pa:'📯 Pase al área', def:'🛡️ Acción defensiva', reg:'🌀 Regate', am:'🟨 Amarilla', ro:'🟥 Roja' };
+const NOM = { palo:'🪵 Al palo', fr:'🟡 Falta recibida', defC:'🛡️⭐ Acción defensiva clave', fa:'❌ Fallo', faI:'💥 Fallo importante', gol:'⚽ Gol', tp:'🎯 Tiro a puerta', tf:'💨 Tiro sin peligro', pc:'🔑 Pase clave', pa:'📯 Pase al área', def:'🛡️ Acción defensiva', reg:'🌀 Regate', am:'🟨 Amarilla', ro:'🟥 Roja' };
 // Mismo texto que la cronología de la app (lo lee el visor y el Modo TV)
 const LBL = { defC:'🛡️⭐ Acción defensiva clave', fa:'❌ Fallo', faI:'💥 Fallo importante', tp:'🎯 Disparo a puerta', tf:'💨 Disparo fuera / sin peligro', pc:'🔑 Pase clave', pa:'📯 Pase al área', def:'🛡️ Acción defensiva', reg:'🌀 Regate / jugada individual' };
-const IMP = { tp:.30, tf:.10, pc:.25, pa:.15, def:.30, reg:.10, defC:1, fa:-.20, faI:-.50 }; // impacto aproximado solo para el directo (Javi lo recalcula al cargarlo)
+const IMP = { tp:.30, palo:.30, fr:0, tf:.10, pc:.25, pa:.15, def:.30, reg:.10, defC:1, fa:-.20, faI:-.50 }; // impacto aproximado solo para el directo (Javi lo recalcula al cargarlo)
 
 let D = null;      // lo que publicó Javi: convocados, once, sistema, pin…
 let S = null;      // estado del partido
@@ -388,10 +391,14 @@ function cambio() { procesarTiempo(); guardarLocal(); publicar(false); pintarTod
             empata: ['El rival empata', 'El {RIV} iguala el partido', 'Empate del rival', 'El {RIV} consigue igualar'],
             amplia: ['El rival amplía su ventaja', 'Nuevo gol del {RIV}', 'El {RIV} marca otra vez', 'Otro gol del rival'],
             recorta: ['El rival recorta', 'Gol del {RIV}, que acorta distancias', 'El {RIV} marca', 'El rival hace su gol'],
-            origen: { corner: ['a la salida de un córner', 'en un córner'], falta: ['de falta', 'a balón parado'], penalti: ['de penalti', 'desde el punto de penalti'], rechace: ['en un rechace', 'tras un balón suelto'], robo: ['a la contra', 'tras recuperar el balón'], perdida: ['a la contra', 'tras recuperar el balón'], jugada: ['tras una jugada', 'después de una buena jugada'], error: ['', ''], nada: ['', ''] },
+            origen: { corner: ['a la salida de un córner', 'en un córner'], falta: ['de falta', 'a balón parado'], penalti: ['de penalti', 'desde el punto de penalti'], rechace: ['en un rechace', 'tras un balón suelto'], robo: ['a la contra', 'tras recuperar el balón'], perdida: ['a la contra', 'tras recuperar el balón'], propia: ['', ''], jugada: ['tras una jugada', 'después de una buena jugada'], error: ['', ''], nada: ['', ''] },
             animo: ['Toca reaccionar.', 'Queda partido.', '¡Arriba, Hergar!', 'Hay tiempo para darle la vuelta.', 'A levantarse.'],
+            propiaNuestra: ['¡Mala suerte! Gol en propia puerta', 'Desgracia en la defensa del Hergar: gol en propia', 'El balón acaba en nuestra portería tras tocar en un defensa'],
             sigue: ['El Hergar sigue por delante.', 'Sigue mandando el Hergar.', 'La ventaja se mantiene.']
         },
+        // v205 · gol en propia puerta del rival (a favor del Hergar)
+        propia: ['¡Gol en propia puerta del {RIV}!', '¡El {RIV} marca en su propia portería!', '¡Autogol del {RIV}!', '¡Regalo del {RIV}: gol en propia!', '¡El balón acaba en la portería del {RIV}!'],
+        propiaCtx: { abre: ['El Hergar se pone por delante.', 'Y el Hergar abre el marcador.'], empata: ['Y es el empate.', 'Sirve para empatar.'], adelanta: ['El Hergar se pone por delante.', 'Y el Hergar manda en el marcador.'], remonta: ['¡Y el Hergar le da la vuelta!', 'Remontada del Hergar.'], amplia: ['El Hergar amplía la ventaja.', 'Más ventaja para el Hergar.'], goleada: ['Otro más para la cuenta.', 'Sigue la fiesta.'], recorta: ['El Hergar recorta.', 'Y el Hergar se mete en el partido.'] },
         parada: ['¡Paradón de {J}!', '¡Qué parada de {J}!', '{J} saca una mano salvadora', '{J} vuela para evitar el gol', 'Intervención de mérito de {J}', '¡{J} dice que no!', '¡Seguridad de {J} bajo palos!'],
         paradaCtx: { cero: ['y el marcador sigue a cero.', 'y todo sigue igual.'], ventaja: ['y mantiene la ventaja.', 'para que el Hergar siga por delante.', 'y protege el resultado.'], empate: ['y sostiene el empate.', 'y mantiene la igualdad.'], detras: ['y mantiene vivo al equipo.', 'para que siga habiendo partido.'] },
         penParado: ['¡{J} para un penalti!', '¡Penalti detenido por {J}!', '¡{J} adivina la intención y para el penalti!', '¡{J} se hace gigante y para el penalti!'],
@@ -491,7 +498,17 @@ function cambio() { procesarTiempo(); guardarLocal(); publicar(false); pintarTod
                 const antes = { H, R };
                 if (h.eq === 'hergar') H++; else R++;
                 const g = h.gol || {};
-                if (h.eq === 'hergar') {
+                if (h.eq === 'hergar' && g.propia) { // v205 · gol en propia puerta del rival
+                    let sit;
+                    if (antes.H === 0 && antes.R === 0) sit = 'abre';
+                    else if (H === R) sit = 'empata';
+                    else if (antes.H === antes.R) sit = fueDetras ? 'remonta' : 'adelanta';
+                    else if (H > R) sit = H - R >= 3 ? 'goleada' : 'amplia';
+                    else sit = 'recorta';
+                    const tit = narrRellena(narrElige(ctx, 'propia', NARR.propia, clave), { RIV });
+                    const cuerpo = narrElige(ctx, 'pctx_' + sit, NARR.propiaCtx[sit], clave) + ' ' + narrRellena(narrElige(ctx, 'marc', NARR.marcador, clave), { H, R });
+                    res.push({ m: h.min, ic: '⚽', k: 'gol', h: tit, x: cuerpo.replace(/\s+/g, ' ').trim() });
+                } else if (h.eq === 'hergar') {
                     const J = g.nombre || 'el Hergar';
                     golesDe[J] = (golesDe[J] || 0) + 1;
                     let sit;
@@ -528,7 +545,9 @@ function cambio() { procesarTiempo(); guardarLocal(); publicar(false); pintarTod
                     else sit = 'recorta';
                     const og = g.penalti ? 'penalti' : (g.origen && NARR.rival.origen[g.origen] ? g.origen : 'nada');
                     const coletilla = narrElige(ctx, 'ror_' + og, NARR.rival.origen[og], clave);
-                    let txt = narrRellena(narrElige(ctx, 'riv_' + sit, NARR.rival[sit], clave), { RIV }) + (coletilla ? ' ' + coletilla : '') + `. ${H}-${R}.`;
+                    let txt = og === 'propia' // v205 · gol en propia nuestro: sin señalar a nadie
+                        ? narrElige(ctx, 'propiaN', NARR.rival.propiaNuestra, clave) + `. ${H}-${R}.`
+                        : narrRellena(narrElige(ctx, 'riv_' + sit, NARR.rival[sit], clave), { RIV }) + (coletilla ? ' ' + coletilla : '') + `. ${H}-${R}.`;
                     if (H > R) txt += ' ' + narrElige(ctx, 'sigue', NARR.rival.sigue, clave);
                     else if (h.min < DUR - 5) txt += ' ' + narrElige(ctx, 'animo', NARR.rival.animo, clave);
                     res.push({ m: h.min, ic: '🥅', k: 'golr', h: '', x: txt });
@@ -569,7 +588,8 @@ function narrGolesDeLineas(lines) {
   lines.forEach((l, i) => {
     const m = /^\[(\d+)'\]\s*(.*)$/.exec(String(l)); if (!m) return;
     const t = m[2]; let g;
-    if ((g = /^⚽ Gol #\S+ (\S+)/.exec(t))) {
+    if (/^⚽ Gol en propia/.test(t)) out.push({ equipo: 'hergar', propia: true, nombre: '' }); // v205
+    else if ((g = /^⚽ Gol #\S+ (\S+)/.exec(t))) {
       const sig = /^\[(\d+)'\]\s*👟 Asistencia #\S+ (\S+)/.exec(String(lines[i + 1] || ''));
       out.push({ equipo: 'hergar', nombre: g[1], asistente: sig && sig[1] === m[1] ? sig[2] : '' });
     } else if (/^🥅 Gol rival/.test(t)) out.push({ equipo: 'rival', penalti: /penalti/.test(t) });
@@ -593,7 +613,7 @@ function payloadVisor() {
     const imp = S.imp[id] || 0;
     jug[id] = { name: J[id].name, dorsal: J[id].dorsal, enCampo: enC, enBanquillo: enB, esPortero: !!S.porteros[id],
       minutos: mins, goles: k.g || 0, asistencias: k.a || 0, accionesDef: k.def || 0, accionesDefClave: k.defC || 0, regates: k.reg || 0,
-      pasesArea: k.pa || 0, pasesClave: k.pc || 0, disparosPuerta: (k.tp || 0) + (k.g || 0), disparosFuera: k.tf || 0, fuerasJuego: 0,
+      pasesArea: k.pa || 0, pasesClave: k.pc || 0, disparosPuerta: (k.tp || 0) + (k.g || 0), disparosFuera: k.tf || 0, fuerasJuego: 0, palos: k.palo || 0, faltasRecibidas: k.fr || 0,
       paradas: (k.par || 0) + (k.parD || 0), paradasDificiles: k.parD || 0, golesRecibidos: k.gr || 0, tirosPuertaEnPorteria: k.tpp || 0,
       impacto: +imp.toFixed(2), impactoPond: mins > 0 ? +(imp / mins * 70).toFixed(2) : 0, amarillas: k.am || 0, roja: !!k.ro };
   });
@@ -604,9 +624,9 @@ function payloadVisor() {
     matchRunning: !!S.desde, matchFinished: S.fase === 'final', finalizadoEn: S.finEn || null, previa: false,
     formacion: S.form, onFieldIds: S.slots.slice(), benchIds: S.banco.slice(), benchSittingTime: {}, zonasEquipo: {},
     jugadores: jug, eventos: S.lines.filter(l => l.indexOf('❌ Fallo') < 0 && l.indexOf('💥 Fallo') < 0).slice(-30), momentumData: S.mom,
-    golesMin: S.ev.filter(e => e.k === 'gol' || e.k === 'golR').map(e => ({ min: Math.floor(e.t / 60), equipo: e.k === 'gol' ? 'hergar' : 'rival', nombre: e.k === 'gol' ? nom(e.j) : '' })),
+    golesMin: S.ev.filter(e => e.k === 'gol' || e.k === 'golR' || e.k === 'golP').map(e => e.k === 'golP' ? { min: Math.floor(e.t / 60), equipo: 'hergar', nombre: 'Gol en propia', propia: true } : ({ min: Math.floor(e.t / 60), equipo: e.k === 'gol' ? 'hergar' : 'rival', nombre: e.k === 'gol' ? nom(e.j) : '' })),
     tirosNuestrosPuerta: T.tp, tirosNuestrosFuera: T.tf, tirosRivalesPuerta: T.tpR, tirosRivalesFuera: T.tfR,
-    faltasFavor: 0, faltasContra: 0, cornersFavor: T.cf, cornersContra: T.cc, fuerasJuegoNuestros: 0, fuerasJuegoRival: 0,
+    faltasFavor: T.ff || 0, faltasContra: 0, cornersFavor: T.cf, cornersContra: T.cc, fuerasJuegoNuestros: 0, fuerasJuegoRival: 0, palosNuestros: T.palo || 0, palosRival: T.palR || 0,
     analisisIA: '', resumenIA: '', notasIA: {}, narracion: narracionDelegado(), // v193
     delegado: Object.assign({}, D, { st: S })
   };
@@ -937,7 +957,9 @@ function hojaCampo(t, s, cb, o) {
   o = o || {};
   const extra = (o.banco || []).length
     ? `<div class="mbench"><div class="ttl">BANQUILLO</div><div class="pgrid">${o.banco.map(id => `<div class="pbtn" data-id="${id}"><b>${esc(J[id] ? J[id].dorsal : '?')}</b><span>${esc(nom(id))}</span></div>`).join('')}</div></div>` : '';
-  hoja(t, s, `<div class="pitch mpitch">${pitchHTML(null, o.excl || [])}</div>${extra}`, o.skipTxt, o.skipCb);
+  const propia = o.propia ? '<button class="addconv" id="shPropia" style="border-color:rgba(46,213,115,.55);background:rgba(46,213,115,.08);color:var(--g)">⚽ Gol en propia del rival (sin goleador)</button>' : ''; // v205
+  hoja(t, s, `<div class="pitch mpitch">${pitchHTML(null, o.excl || [])}</div>${extra}${propia}`, o.skipTxt, o.skipCb);
+  if (o.propia) $('shPropia').onclick = () => cb('propia');
   $('shBody').querySelectorAll('.slot').forEach(el => el.onclick = () => { const id = S.slots[+el.dataset.i]; if (id) cb(id); });
   $('shBody').querySelectorAll('.pbtn').forEach(b => b.onclick = () => cb(Number(b.dataset.id)));
 }
@@ -966,6 +988,7 @@ function accionJugador(k) {
   const tarj = k === 'am' || k === 'ro';
   hojaCampo(NOM[k] + ' · ¿quién?', tarj ? 'Toca al niño en el campo o en el banquillo' : 'Toca al niño en el campo', id => {
     if (k === 'gol') {
+      if (id === 'propia') { cerrar(); golPropia(); return; } // v205
       hojaCampo(`👟 Gol de ${nom(id)} · ¿quién dio la asistencia?`, 'Si nadie, toca «Sin asistencia»',
         a => { cerrar(); gol(id, a); }, { excl: [id], skipTxt: 'Sin asistencia', skipCb: () => { cerrar(); gol(id, null); } });
       return;
@@ -973,12 +996,31 @@ function accionJugador(k) {
     cerrar(); snapshot();
     if (k === 'am') { tarjeta(id, false); return; }
     if (k === 'ro') { tarjeta(id, true); return; }
+    if (k === 'palo') { // v205 · al palo: cuenta como tiro a puerta y se apunta aparte
+      cnt(id, 'tp'); cnt(id, 'palo'); imp(id, IMP.palo); S.team.tp++; S.team.palo = (S.team.palo || 0) + 1; mom(1);
+      suceso({ k, j: id }, `🎯 Disparo a puerta #${J[id].dorsal} ${nom(id)} (al palo)`);
+      toast(`✔ ${NOM[k]} · ${nom(id)}`);
+      return;
+    }
+    if (k === 'fr') { // v205 · falta que le hacen a un niño: falta a favor del equipo, sin puntos
+      cnt(id, 'fr'); S.team.ff = (S.team.ff || 0) + 1;
+      suceso({ k: 'ff', j: id }, `🟡 Falta a favor · recibe #${J[id].dorsal} ${nom(id)}`);
+      toast(`✔ ${NOM[k]} · ${nom(id)}`);
+      return;
+    }
     cnt(id, k); imp(id, k === 'tf' && (S.cnt[id] || {}).tf > 3 ? -0.05 : (IMP[k] || 0)); // v194: desde el 4.º tiro fuera, −0,05
     if (k === 'tp') S.team.tp++; if (k === 'tf') S.team.tf++;
     if (k === 'tp') mom(1); if (k === 'tf' || k === 'pc') mom(.5);
     suceso({ k, j: id }, `${LBL[k]} #${J[id].dorsal} ${nom(id)}`);
     toast(`✔ ${NOM[k]} · ${nom(id)}`);
-  }, { banco: tarj ? S.banco.slice() : [] });
+  }, { banco: tarj ? S.banco.slice() : [], propia: k === 'gol' });
+}
+// v205 · gol en propia puerta del rival: sube nuestro marcador y suma a los del campo, sin goleador
+function golPropia() {
+  snapshot();
+  S.gl++; enCampo().forEach(x => imp(x, 1)); mom(3);
+  suceso({ k: 'golP' }, '⚽ Gol en propia puerta del rival');
+  toast('⚽ ¡Gol en propia del rival!');
 }
 function gol(id, a) {
   snapshot();
@@ -1018,6 +1060,9 @@ function accionRival(k) {
     enCampo().forEach(x => { if (x !== por) imp(x, -.15); });
     suceso({ k }, por ? `🧤 ${k === 'parD' ? 'Parada difícil' : 'Parada'} #${J[por].dorsal} ${nom(por)} +${k === 'parD' ? '1' : '0.3'}` : '🧤 Parada');
     toast(k === 'parD' ? '🧤⭐ Paradón' : '🧤 Parada');
+  } else if (k === 'palR') { // v205 · al palo del rival: como un tiro a puerta, pero sin parada del portero
+    S.team.tpR++; S.team.palR = (S.team.palR || 0) + 1; enCampo().forEach(x => imp(x, -.10)); mom(-1);
+    suceso({ k }, '🥅 Tiro rival a puerta (al palo)'); toast('🪵 Al palo del rival');
   } else if (k === 'tfR') {
     S.team.tfR++; enCampo().forEach(x => imp(x, -.05)); mom(-.5); suceso({ k }, '💨 Tiro rival sin peligro'); toast('💨 Tiro sin peligro del rival');
   } else if (k === 'cf') {
@@ -1147,10 +1192,12 @@ function cambiosConvRow() { // v189
 function pintarFinal() {
   $('fgl').textContent = S.gl; $('fgr').textContent = S.gr; $('fRiv').textContent = 'Hergar vs ' + (D.rival || 'Rival');
   const n = k => S.ev.filter(e => e.k === k).length;
-  const goles = S.ev.filter(e => e.k === 'gol').map(e => `${nom(e.j)} ${Math.floor(e.t / 60)}'${e.a ? ` (${nom(e.a)})` : ''}`).join(' · ') || '—';
+  const goles = S.ev.filter(e => e.k === 'gol' || e.k === 'golP').map(e => e.k === 'golP' ? `en propia del rival ${Math.floor(e.t / 60)}'` : `${nom(e.j)} ${Math.floor(e.t / 60)}'${e.a ? ` (${nom(e.a)})` : ''}`).join(' · ') || '—';
   $('resumen').innerHTML = `<div class="ttl" style="margin-bottom:6px">RESUMEN</div>
     <div class="row"><span>⚽ Goles</span><span>${esc(goles)}</span></div>${cambiosConvRow()}
     <div class="row"><span>🎯 Tiros Hergar (a puerta)</span><span>${S.team.tp + S.team.tf} (${S.team.tp})</span></div>
+    ${(S.team.palo || S.team.palR) ? `<div class="row"><span>🪵 Al palo (Hergar – rival)</span><span>${S.team.palo || 0} – ${S.team.palR || 0}</span></div>` : ''}
+    ${S.team.ff ? `<div class="row"><span>🟡 Faltas recibidas</span><span>${S.team.ff}</span></div>` : ''}
     <div class="row"><span>🧤 Paradas</span><span>${n('par') + n('parD')}${n('parD') ? ` (${n('parD')} difíciles)` : ''}</span></div>
     <div class="row"><span>🔑 · 📯 · 🛡️ · 🌀</span><span>${n('pc')} · ${n('pa')} · ${n('def')} · ${n('reg')}</span></div>
     <div class="row"><span>🛡️⭐ Def. clave · ❌ Fallos</span><span>${n('defC')} · ${n('fa') + n('faI')}${n('faI') ? ` (${n('faI')} importantes)` : ''}</span></div>

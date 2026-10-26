@@ -1138,6 +1138,7 @@
   // v140 (app) · «Hace mejores a los demás»: impacto de los compañeros con él y sin él (Sinergias, Ranking, ficha) y 🧲 al mejor compañero en la Plantilla. En el visor, solo los positivos.
   // v139 (app) · Acta del partido en PDF (3 páginas). En el visor, botón en cada partido si la app lo permite, sin el más/menos de cada niño.
   // v137 (app) · Más análisis → 🔄 Banquillo: el equipo antes y después de los cambios, lo que aporta el banquillo, cambio a cambio y cada niño de titular y de suplente.
+  // v205 (app + visor + delegado) · Nuevas acciones: gol en propia puerta del rival (sin goleador; origen «En propia» en el mapa de goles, también para los goles en contra), tiros al palo (cuentan como tiro a puerta; Hergar por niño y rival) y faltas recibidas por niño (sin puntos). Modo TV, minuto a minuto, estadísticas del partido, ficha del niño y actuación del partido.
   // v204 (app + visor) · Dominio por tramos en todos los gráficos de momentum (En vivo, descanso, final, visor y acta) y las acciones defensivas cuentan: de portero o defensa para el rival, de delantero para el Hergar.
   // Visor · 🎬 Resumen: el dominio enseña quién apretaba en cada momento (últimos 6 minutos), no el acumulado, y llega hasta el final.
   // Visor · 🎬 Resumen: la entrada dura 5 s más al ponerse en pantalla completa (el aviso del móvil ya no tapa el once).
@@ -1276,10 +1277,11 @@
     const filas = [
       ['Disparos',         n(matchData.tirosNuestrosPuerta) + n(matchData.tirosNuestrosFuera), n(matchData.tirosRivalesPuerta) + n(matchData.tirosRivalesFuera)],
       ['A puerta',         n(matchData.tirosNuestrosPuerta), n(matchData.tirosRivalesPuerta)],
+      ['Al palo',          n(matchData.palosNuestros), n(matchData.palosRival)], // v205
       ['Córners',          n(matchData.cornersFavor), n(matchData.cornersContra)],
       ['Faltas cometidas', n(matchData.faltasContra), n(matchData.faltasFavor)],
       ['Fueras de juego',  n(matchData.fuerasJuegoNuestros), n(matchData.fuerasJuegoRival)] // v117
-    ].filter(([l, h, r]) => l !== 'Fueras de juego' || h + r > 0);
+    ].filter(([l, h, r]) => (l !== 'Fueras de juego' && l !== 'Al palo') || h + r > 0);
     const amarillas = Object.values(matchData.jugadores || {}).reduce((sum, p) => sum + (p.amarillas || 0), 0);
     cont.innerHTML = `
       <div class="vs-head"><span class="h">HERGAR</span><span class="r">${escHtml((matchData.rival || 'RIVAL').toUpperCase())}</span></div>
@@ -1422,7 +1424,9 @@
         + fdStatRow('🛡️', 'Acciones defensivas', t.accionesDef, minutosTotal)
         + fdStatRow('🛡️⭐', 'Acciones def. clave', t.accionesDefClave, minutosTotal)
         + fdStatRow('🌀', 'Regates / jugadas individuales', t.regates, minutosTotal)
-        + (t.fuerasJuego ? fdStatRow('🚩', 'Fueras de juego', t.fuerasJuego, minutosTotal) : ''); // v117
+        + (t.fuerasJuego ? fdStatRow('🚩', 'Fueras de juego', t.fuerasJuego, minutosTotal) : '') // v117
+        + (t.palos ? fdStatRow('🪵', 'Tiros al palo', t.palos, minutosTotal) : '') // v205
+        + (t.faltasRecibidas ? fdStatRow('🟡', 'Faltas recibidas', t.faltasRecibidas, minutosTotal) : ''); // v205
     return `
       <div class="fd-header${stats.esPortero ? ' fd-portero' : ''}">
         <div class="fd-avatar">${stats.dorsal}</div>
@@ -2606,6 +2610,7 @@
             const filas = [
                 ['Disparos', tn, tr],
                 ['A puerta', tnP, trP],
+                ['Al palo', n(p.palosNuestros), n(p.palosRival)], // v205
                 ['Paradas del portero', Math.max(0, trP - gr), Math.max(0, tnP - gl)],
                 ['Córners', n(p.cornersFavor), n(p.cornersContra)],
                 ['Faltas cometidas', n(p.faltasContra), n(p.faltasFavor)],
@@ -3303,7 +3308,7 @@
       // v185 · MAPA DE GOLES: dónde se marcó (a favor) y dónde nos marcaron (en contra), con el color del origen
         {
             const ORI = { jugada: ['Jugada', [93, 173, 226]], robo: ['Robo / contra', [46, 213, 115]], rechace: ['Rechace', [168, 85, 247]], corner: ['Córner', [245, 166, 35]],
-                falta: ['Falta', [255, 159, 67]], penalti: ['Penalti', [255, 210, 63]], error: ['Error del rival', [148, 163, 184]], perdida: ['Pérdida nuestra', [148, 163, 184]] };
+                falta: ['Falta', [255, 159, 67]], penalti: ['Penalti', [255, 210, 63]], error: ['Error del rival', [148, 163, 184]], perdida: ['Pérdida nuestra', [148, 163, 184]], propia: ['En propia puerta', [100, 116, 139]] };
             const conSitio = (g) => g.penalti ? { x: 34, y: 11 } : (g.pos && g.pos.x != null && g.pos.y != null ? { x: Number(g.pos.x), y: Number(g.pos.y) } : null);
             const lados = [['A FAVOR', D.goles.filter(g => g.equipo === 'hergar')], ['EN CONTRA', D.goles.filter(g => g.equipo === 'rival')]];
             if (D.goles.some(g => conSitio(g))) {
@@ -4079,6 +4084,7 @@
       { k: 'def', ic: '🛡️', t: 'Más acciones defensivas', v: j => j.accionesDef || 0 },
       { k: 'defC', ic: '🛡️⭐', t: 'Más acciones defensivas clave', v: j => j.accionesDefClave || 0 },
       { k: 'reg', ic: '🌀', t: 'Más regates / jugadas individuales', v: j => j.regates || 0 },
+      { k: 'fr', ic: '🟡', t: 'El que más faltas recibe', v: j => j.faltasRecibidas || 0 }, // v205
       { k: 'efi', ic: '🎯', t: 'Mejor eficacia de tiro (mín. 5 tiros)', v: j => { const e = (typeof eficaciaTiroJugador === 'function') ? eficaciaTiroJugador(j) : null; return (e && e.tiros >= 5) ? e.goles / e.tiros : 0; } },
       { k: 'imp', ic: '📈', t: "Mejor impacto por 70'", v: (j, minM) => ((j.minutos || 0) >= minM && (j.minutos || 0) > 0) ? (j.impactoAcum || 0) / j.minutos * 70 : -Infinity, sinMin: true }
   ];
@@ -4255,7 +4261,7 @@
       impactoPond: p.impactoPond || 0,
       totales: {
         goles: p.goles||0, asistencias: p.asistencias||0, pasesArea: p.pasesArea||0, pasesClave: p.pasesClave||0,
-        accionesDef: p.accionesDef||0, accionesDefClave: p.accionesDefClave||0, regates: p.regates||0, fuerasJuego: p.fuerasJuego||0, paradas: p.paradas||0, paradasDificiles: p.paradasDificiles||0,
+        accionesDef: p.accionesDef||0, accionesDefClave: p.accionesDefClave||0, regates: p.regates||0, fuerasJuego: p.fuerasJuego||0, palos: p.palos||0, faltasRecibidas: p.faltasRecibidas||0, paradas: p.paradas||0, paradasDificiles: p.paradasDificiles||0,
         golesRecibidos: p.golesRecibidos||0, amarillas: p.amarillas||0, rojas: p.roja?1:0,
         disparosPuerta: p.disparosPuerta||0, disparosFuera: p.disparosFuera||0, golesConTiros: p.goles||0
       }
@@ -4609,7 +4615,7 @@
       impactoPond: statsAttrs.impactoPond,
       totales: {
         goles: j.goles||0, asistencias: j.asistencias||0, pasesArea: j.pasesArea||0, pasesClave: j.pasesClave||0,
-        accionesDef: j.accionesDef||0, accionesDefClave: j.accionesDefClave||0, regates: j.regates||0, fuerasJuego: j.fuerasJuego||0, paradas: j.paradas||0, paradasDificiles: j.paradasDificiles||0,
+        accionesDef: j.accionesDef||0, accionesDefClave: j.accionesDefClave||0, regates: j.regates||0, fuerasJuego: j.fuerasJuego||0, palos: j.palos||0, faltasRecibidas: j.faltasRecibidas||0, paradas: j.paradas||0, paradasDificiles: j.paradasDificiles||0,
         golesRecibidos: j.golesRecibidos||0, amarillas: j.amarillas||0, rojas: j.rojas||0,
         disparosPuerta: j.disparosPuerta||0, disparosFuera: j.disparosFuera||0, golesConTiros: j.golesConTiros
       }
@@ -4641,6 +4647,12 @@
     Object.entries(matchData.jugadores || {}).forEach(([id, p]) => { o[id] = { g: p.goles || 0, a: p.asistencias || 0, n: (p.name || '').split(' ')[0] }; });
     return o;
   }
+  // v205 · ¿el último gol del Hergar fue en propia puerta del rival?
+  function golPropiaReciente(m) {
+    const ev = (m && m.eventos) ? Object.values(m.eventos).map(String) : [];
+    for (let k = ev.length - 1; k >= 0; k--) { if (/⚽ Gol en propia/.test(ev[k])) return true; if (/⚽ Gol/.test(ev[k])) return false; }
+    return false;
+  }
   function avisarGolSiProcede(matchData) {
     const goles = Number(matchData.golesLocal) || 0;
     const foto = fotoJugadoresGol(matchData);
@@ -4664,14 +4676,14 @@
     try {
       const idG = marcanIds[0];
       const jg = idG != null ? (matchData.jugadores || {})[idG] : null;
-      tvEncolar({ tipo: 'gol', id: idG, nombre: marcan.length ? marcan.join(' y ') : 'HERGAR', dorsal: jg ? jg.dorsal : null,
+      tvEncolar({ tipo: 'gol', id: idG, nombre: marcan.length ? marcan.join(' y ') : (golPropiaReciente(matchData) ? 'En propia del rival' : 'HERGAR'), dorsal: jg ? jg.dorsal : null,
         asisten: asisten.join(' y '), minuto: `${Number(matchData.minuto) || 0}'`,
         marcador: `HERGAR ${goles} – ${Number(matchData.golesRival) || 0} ${(matchData.rival || 'RIVAL').toUpperCase()}` });
     } catch (e) { console.error('Modo TV gol:', e); }
     try { avisarRecordsSiProcede(matchData, goles, foto, marcanIds); } catch (e) { console.error('Récords:', e); }
     let wpTxt = '';
     try { const a = wpGanarAhora(matchData, goles - 1), b = wpGanarAhora(matchData, goles); wpTxt = `📈 Opciones de ganar: ${pronPct(a)}% → ${pronPct(b)}%`; } catch (e) {}
-    const detalle = [marcan.length ? `⚽ ${marcan.join(', ')}` : '', asisten.length ? `👟 ${asisten.join(', ')}` : '', wpTxt].filter(Boolean).join('  ·  ');
+    const detalle = [marcan.length ? `⚽ ${marcan.join(', ')}` : (golPropiaReciente(matchData) ? '⚽ En propia puerta del rival' : ''), asisten.length ? `👟 ${asisten.join(', ')}` : '', wpTxt].filter(Boolean).join('  ·  ');
     document.getElementById('golMarcador').textContent = `HERGAR ${goles} – ${Number(matchData.golesRival) || 0} ${(matchData.rival || 'RIVAL').toUpperCase()}`;
     const det = document.getElementById('golDetalle');
     det.textContent = detalle; det.style.display = detalle ? 'block' : 'none';
@@ -6333,6 +6345,7 @@
     const t = m[2].replace(/\s*\(Z\d+\)/g, '').replace(/\s+[+-]\d+(?:[.,]\d+)?$/, '').trim();
     const c = /🔄 Sale #(\S+) (\S+) ➡️ Entra #(\S+) (\S+)/.exec(t);
     if (c) return { min, tipo: 'cambio', texto: `Cambio: entra ${c[4]}, sale ${c[2]}`, sale: { d: c[1], n: c[2] }, entra: { d: c[3], n: c[4] } };
+    if (t.startsWith('⚽ Gol en propia')) return { min, tipo: 'gol', nombre: 'En propia', propia: true, texto: 'GOL en propia puerta del rival' }; // v205
     if (t.startsWith('⚽ Gol de penalti')) return { min, tipo: 'gol', nombre: tvNombreDe(t), texto: `GOL de ${tvNombreDe(t)} (penalti)` };
     if (t.startsWith('⚽ Gol')) return { min, tipo: 'gol', nombre: tvNombreDe(t), texto: `GOL de ${tvNombreDe(t)}` };
     if (t.startsWith('🥅 Gol rival')) return { min, tipo: 'golRival', texto: /penalti/.test(t) ? 'Gol del rival (penalti)' : 'Gol del rival' };
@@ -6344,6 +6357,8 @@
     if (t.startsWith('🧤 Penalti rival parado')) return { min, tipo: 'otro', texto: 'Penalti del rival parado' };
     if (t.startsWith('🧤 Parada difícil')) return { min, tipo: 'otro', texto: `Paradón de ${tvNombreDe(t)}` };
     if (t.startsWith('🧤 Parada')) return { min, tipo: 'otro', texto: `Parada de ${tvNombreDe(t)}` };
+    if (t.startsWith('🎯 Disparo a puerta') && /\(al palo\)/.test(t)) return { min, tipo: 'otro', texto: `¡Al palo! Disparo de ${tvNombreDe(t)}` }; // v205
+    if (/^🥅 Tiro rival a puerta \(al palo\)/.test(t)) return { min, tipo: 'otro', texto: '¡Al palo del rival!' }; // v205
     if (t.startsWith('🎯 Disparo a puerta')) return { min, tipo: 'otro', texto: `Disparo a puerta de ${tvNombreDe(t)}` };
     return null; // pases, faltas, córners, etc. no salen en la tele
   }
@@ -6397,11 +6412,12 @@
     const n = (v) => Number(v) || 0;
     return [
       ['Disparos a puerta', n(m.tirosNuestrosPuerta), n(m.tirosRivalesPuerta)],
+      ['Al palo', n(m.palosNuestros), n(m.palosRival)], // v205
       ['Disparos fuera', n(m.tirosNuestrosFuera), n(m.tirosRivalesFuera)],
       ['Córners', n(m.cornersFavor), n(m.cornersContra)],
       ['Faltas cometidas', n(m.faltasContra), n(m.faltasFavor)],
       ['Fueras de juego', n(m.fuerasJuegoNuestros), n(m.fuerasJuegoRival)] // v117
-    ].filter(([l, h, r]) => l !== 'Fueras de juego' || h + r > 0);
+    ].filter(([l, h, r]) => (l !== 'Fueras de juego' && l !== 'Al palo') || h + r > 0);
   }
   function tvListaGoles(m) {
     // v92: si la app publica los goles con minuto, salen todos, también los antiguos
@@ -7219,6 +7235,7 @@
     const filas = [
       ['Disparos', n(m.tirosNuestrosPuerta) + n(m.tirosNuestrosFuera), n(m.tirosRivalesPuerta) + n(m.tirosRivalesFuera)],
       ['A puerta', n(m.tirosNuestrosPuerta), n(m.tirosRivalesPuerta)],
+      ['Al palo', n(m.palosNuestros), n(m.palosRival)], // v205
       ['Córners', n(m.cornersFavor), n(m.cornersContra)],
       ['Faltas cometidas', n(m.faltasContra), n(m.faltasFavor)],
       ['Fueras de juego', n(m.fuerasJuegoNuestros), n(m.fuerasJuegoRival)] // v117
@@ -7739,10 +7756,14 @@
             empata: ['El rival empata', 'El {RIV} iguala el partido', 'Empate del rival', 'El {RIV} consigue igualar'],
             amplia: ['El rival amplía su ventaja', 'Nuevo gol del {RIV}', 'El {RIV} marca otra vez', 'Otro gol del rival'],
             recorta: ['El rival recorta', 'Gol del {RIV}, que acorta distancias', 'El {RIV} marca', 'El rival hace su gol'],
-            origen: { corner: ['a la salida de un córner', 'en un córner'], falta: ['de falta', 'a balón parado'], penalti: ['de penalti', 'desde el punto de penalti'], rechace: ['en un rechace', 'tras un balón suelto'], robo: ['a la contra', 'tras recuperar el balón'], perdida: ['a la contra', 'tras recuperar el balón'], jugada: ['tras una jugada', 'después de una buena jugada'], error: ['', ''], nada: ['', ''] },
+            origen: { corner: ['a la salida de un córner', 'en un córner'], falta: ['de falta', 'a balón parado'], penalti: ['de penalti', 'desde el punto de penalti'], rechace: ['en un rechace', 'tras un balón suelto'], robo: ['a la contra', 'tras recuperar el balón'], perdida: ['a la contra', 'tras recuperar el balón'], propia: ['', ''], jugada: ['tras una jugada', 'después de una buena jugada'], error: ['', ''], nada: ['', ''] },
             animo: ['Toca reaccionar.', 'Queda partido.', '¡Arriba, Hergar!', 'Hay tiempo para darle la vuelta.', 'A levantarse.'],
+            propiaNuestra: ['¡Mala suerte! Gol en propia puerta', 'Desgracia en la defensa del Hergar: gol en propia', 'El balón acaba en nuestra portería tras tocar en un defensa'],
             sigue: ['El Hergar sigue por delante.', 'Sigue mandando el Hergar.', 'La ventaja se mantiene.']
         },
+        // v205 · gol en propia puerta del rival (a favor del Hergar)
+        propia: ['¡Gol en propia puerta del {RIV}!', '¡El {RIV} marca en su propia portería!', '¡Autogol del {RIV}!', '¡Regalo del {RIV}: gol en propia!', '¡El balón acaba en la portería del {RIV}!'],
+        propiaCtx: { abre: ['El Hergar se pone por delante.', 'Y el Hergar abre el marcador.'], empata: ['Y es el empate.', 'Sirve para empatar.'], adelanta: ['El Hergar se pone por delante.', 'Y el Hergar manda en el marcador.'], remonta: ['¡Y el Hergar le da la vuelta!', 'Remontada del Hergar.'], amplia: ['El Hergar amplía la ventaja.', 'Más ventaja para el Hergar.'], goleada: ['Otro más para la cuenta.', 'Sigue la fiesta.'], recorta: ['El Hergar recorta.', 'Y el Hergar se mete en el partido.'] },
         parada: ['¡Paradón de {J}!', '¡Qué parada de {J}!', '{J} saca una mano salvadora', '{J} vuela para evitar el gol', 'Intervención de mérito de {J}', '¡{J} dice que no!', '¡Seguridad de {J} bajo palos!'],
         paradaCtx: { cero: ['y el marcador sigue a cero.', 'y todo sigue igual.'], ventaja: ['y mantiene la ventaja.', 'para que el Hergar siga por delante.', 'y protege el resultado.'], empate: ['y sostiene el empate.', 'y mantiene la igualdad.'], detras: ['y mantiene vivo al equipo.', 'para que siga habiendo partido.'] },
         penParado: ['¡{J} para un penalti!', '¡Penalti detenido por {J}!', '¡{J} adivina la intención y para el penalti!', '¡{J} se hace gigante y para el penalti!'],
@@ -7842,7 +7863,17 @@
                 const antes = { H, R };
                 if (h.eq === 'hergar') H++; else R++;
                 const g = h.gol || {};
-                if (h.eq === 'hergar') {
+                if (h.eq === 'hergar' && g.propia) { // v205 · gol en propia puerta del rival
+                    let sit;
+                    if (antes.H === 0 && antes.R === 0) sit = 'abre';
+                    else if (H === R) sit = 'empata';
+                    else if (antes.H === antes.R) sit = fueDetras ? 'remonta' : 'adelanta';
+                    else if (H > R) sit = H - R >= 3 ? 'goleada' : 'amplia';
+                    else sit = 'recorta';
+                    const tit = narrRellena(narrElige(ctx, 'propia', NARR.propia, clave), { RIV });
+                    const cuerpo = narrElige(ctx, 'pctx_' + sit, NARR.propiaCtx[sit], clave) + ' ' + narrRellena(narrElige(ctx, 'marc', NARR.marcador, clave), { H, R });
+                    res.push({ m: h.min, ic: '⚽', k: 'gol', h: tit, x: cuerpo.replace(/\s+/g, ' ').trim() });
+                } else if (h.eq === 'hergar') {
                     const J = g.nombre || 'el Hergar';
                     golesDe[J] = (golesDe[J] || 0) + 1;
                     let sit;
@@ -7879,7 +7910,9 @@
                     else sit = 'recorta';
                     const og = g.penalti ? 'penalti' : (g.origen && NARR.rival.origen[g.origen] ? g.origen : 'nada');
                     const coletilla = narrElige(ctx, 'ror_' + og, NARR.rival.origen[og], clave);
-                    let txt = narrRellena(narrElige(ctx, 'riv_' + sit, NARR.rival[sit], clave), { RIV }) + (coletilla ? ' ' + coletilla : '') + `. ${H}-${R}.`;
+                    let txt = og === 'propia' // v205 · gol en propia nuestro: sin señalar a nadie
+                        ? narrElige(ctx, 'propiaN', NARR.rival.propiaNuestra, clave) + `. ${H}-${R}.`
+                        : narrRellena(narrElige(ctx, 'riv_' + sit, NARR.rival[sit], clave), { RIV }) + (coletilla ? ' ' + coletilla : '') + `. ${H}-${R}.`;
                     if (H > R) txt += ' ' + narrElige(ctx, 'sigue', NARR.rival.sigue, clave);
                     else if (h.min < DUR - 5) txt += ' ' + narrElige(ctx, 'animo', NARR.rival.animo, clave);
                     res.push({ m: h.min, ic: '🥅', k: 'golr', h: '', x: txt });
@@ -8609,9 +8642,9 @@
   const MG_ORIG = {
     jugada: ['Jugada', '#5dade2'], robo: ['Robo / contraataque', '#2ed573'], rechace: ['Rechace', '#a855f7'],
     corner: ['Córner', '#f5a623'], falta: ['Falta', '#ff9f43'], penalti: ['Penalti', '#ffd23f'],
-    error: ['Error del rival', '#cbd5e1'], perdida: ['Pérdida nuestra', '#cbd5e1']
+    error: ['Error del rival', '#cbd5e1'], perdida: ['Pérdida nuestra', '#cbd5e1'], propia: ['En propia puerta', '#94a3b8'] // v205
   };
-  const MG_LISTA = { F: ['jugada', 'robo', 'rechace', 'corner', 'falta', 'penalti', 'error'], C: ['jugada', 'robo', 'rechace', 'corner', 'falta', 'penalti', 'perdida'] };
+  const MG_LISTA = { F: ['jugada', 'robo', 'rechace', 'corner', 'falta', 'penalti', 'error', 'propia'], C: ['jugada', 'robo', 'rechace', 'corner', 'falta', 'penalti', 'perdida', 'propia'] };
   const MG_PARADO = ['corner', 'falta', 'penalti'];
   let mgEq = 'F', mgJug = '', mgOri = '';
   function mgEsc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
@@ -8732,7 +8765,7 @@
   }
 
   // ── v171 · ESTADÍSTICAS DE LOS GOLES ────────────────────────────────────
-  const MG_INI = { jugada: 'J', robo: 'R', rechace: 'Rc', corner: 'C', falta: 'F', penalti: 'P', error: 'E', perdida: 'Pn' };
+  const MG_INI = { jugada: 'J', robo: 'R', rechace: 'Rc', corner: 'C', falta: 'F', penalti: 'P', error: 'E', perdida: 'Pn', propia: 'Pp' };
   // Lado desde el que se marca (tercios del ancho). Los goles en contra se ven desde nuestra portería.
   function mgLado(x) {
     if (!x.pos) return null;
@@ -8871,7 +8904,7 @@
   }
 
   // 💥 Índice golazo: lo difícil que era marcar desde el sitio del gol. Sin penaltis ni goles de falta.
-  function gzGolesValidos(t) { return mgGoles(t).F.filter(x => x.pos && x.origen !== 'penalti' && x.origen !== 'falta' && !(x.g && x.g.penalti)); }
+  function gzGolesValidos(t) { return mgGoles(t).F.filter(x => x.pos && x.origen !== 'penalti' && x.origen !== 'falta' && x.origen !== 'propia' && !(x.g && (x.g.penalti || x.g.propia))); }
   function golazosTemporada(t) {
     const L = gzGolesValidos(t), por = {};
     L.forEach(x => { if (x.jid) (por[x.jid] = por[x.jid] || []).push(x); });
@@ -9002,7 +9035,7 @@
   function golLejanoDe(t, jid) {
     let best = null;
     mgGoles(t).F.forEach(x => {
-      if (!x.pos || x.origen === 'penalti' || (x.g && x.g.penalti)) return;
+      if (!x.pos || x.origen === 'penalti' || (x.g && (x.g.penalti || x.g.propia))) return; // v205: el gol en propia del rival no es de nadie
       if (jid != null && x.jid !== String(jid)) return;
       const d = gzDist(x.pos);
       if (!best || d > best.d) best = { x, d };
@@ -9220,7 +9253,7 @@
 
   function mhChips(h) {
     const a = (h && h.acc) || {}, out = [];
-    [['dp', '🎯', 'a puerta', 'a puerta'], ['df', '💨', 'sin peligro', 'sin peligro'], ['pc', '🔑', 'pase clave', 'pases clave'], ['pa', '📯', 'pase al área', 'pases al área'], ['reg', '🌀', 'regate', 'regates'], ['def', '🛡️', 'acción defensiva', 'acciones defensivas'], ['defC', '🛡️⭐', 'acción def. clave', 'acciones def. clave'], ['par', '🧤', 'parada', 'paradas'], ['parD', '🧤⭐', 'parada difícil', 'paradas difíciles'], ['fj', '🚩', 'fuera de juego', 'fueras de juego']]
+    [['dp', '🎯', 'a puerta', 'a puerta'], ['df', '💨', 'sin peligro', 'sin peligro'], ['pc', '🔑', 'pase clave', 'pases clave'], ['pa', '📯', 'pase al área', 'pases al área'], ['reg', '🌀', 'regate', 'regates'], ['def', '🛡️', 'acción defensiva', 'acciones defensivas'], ['defC', '🛡️⭐', 'acción def. clave', 'acciones def. clave'], ['par', '🧤', 'parada', 'paradas'], ['parD', '🧤⭐', 'parada difícil', 'paradas difíciles'], ['fj', '🚩', 'fuera de juego', 'fueras de juego'], ['pal', '🪵', 'al palo', 'al palo'], ['fr', '🟡', 'falta recibida', 'faltas recibidas']]
       .forEach(([k, ic, uno, varios]) => { if (a[k]) out.push(`${ic} ${a[k]} ${a[k] === 1 ? uno : varios}`); });
     if (a.am) out.push('🟨 amarilla'); if (a.ro) out.push('🟥 roja');
     return out;
@@ -9827,6 +9860,8 @@
       csFila('Pase clave', fmtPts(a.paseClave), true),
       csFila('Pase al área', fmtPts(a.paseArea), true),
       csFila('Disparo a puerta', fmtPts(a.disparoPuerta), true),
+      csFila('Al palo / larguero', fmtPts(a.disparoPuerta), true, 'Cuenta como un disparo a puerta. El palo del rival resta como un tiro a puerta, pero no cuenta en las paradas del portero.'), // v205
+      csFila('Falta recibida', '0', true, 'No suma ni resta: solo se cuenta quién recibe más faltas.'), // v205
       csFila('Disparo fuera / sin peligro', fmtPts(a.disparoFuera), true, a.disparoFueraExceso ? `Los ${a.disparoFueraUmbral || 3} primeros de cada partido. Desde el ${(a.disparoFueraUmbral || 3) + 1}.º, ${fmtPts(a.disparoFueraExceso)} cada uno.` : ''), // v194
       csFila('Regate / jugada individual', fmtPts(a.regate), true, 'Supera a un rival sin acabar en tiro ni pase.'),
       csFila('Acción defensiva', fmtPts(a.defensa), true),

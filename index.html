@@ -1159,6 +1159,7 @@
   // v140 (app) · «Hace mejores a los demás»: impacto de los compañeros con él y sin él (Sinergias, Ranking, ficha) y 🧲 al mejor compañero en la Plantilla. En el visor, solo los positivos.
   // v139 (app) · Acta del partido en PDF (3 páginas). En el visor, botón en cada partido si la app lo permite, sin el más/menos de cada niño.
   // v137 (app) · Más análisis → 🔄 Banquillo: el equipo antes y después de los cambios, lo que aporta el banquillo, cambio a cambio y cada niño de titular y de suplente.
+  // v208 (visor) · Mapa de calor: la regularidad sale de los colores (🎢 solo si alterna verdes y rojos; 🎯 si 2 de cada 3 partidos son del mismo color), nombre, peso e icono fijos a la izquierda y se abre en las últimas jornadas. Cómo se calcula: la defensa según el puesto (app v207).
   // v207 (solo visor) · Su prime: nota para los que juegan las partes enteras («+30'» = finales de parte; en la tabla, «Partes enteras») y los tramos en negativo salen como 0 %.
   // v206 (app + visor) · ⚡ Su prime (ficha → Estilo, línea en Mi hijo y tabla en Más análisis → Jugadores), ⛓️ Cadenas de gol (Más análisis → Goles y ficha → Datos) y 🗓️ Mapa de calor con regularidad (Más análisis → Jugadores). La app guarda con cada gol las acciones previas (g.previas).
   // v205 (app + visor + delegado) · Nuevas acciones: gol en propia puerta del rival (sin goleador; origen «En propia» en el mapa de goles, también para los goles en contra), tiros al palo (cuentan como tiro a puerta; Hergar por niño y rival) y faltas recibidas por niño (sin puntos). Modo TV, minuto a minuto, estadísticas del partido, ficha del niño y actuación del partido.
@@ -1220,6 +1221,7 @@
     version: 3, minMinutosRanking: 35, minMinutosSinergia: 20, minMinutosMVP: 10, suelo: -5,
     acciones: { gol: 0.75, golExtraDefensa: 1.25, golExtraMedio: 0.15, asistencia: 0.40, paseClave: 0.25, paseArea: 0.15,
       disparoPuerta: 0.30, disparoFuera: 0.10, regate: 0.10, defensa: 0.30, defensaClave: 1.00,
+      defensaPuesto: { LI: 0.45, DFC: 0.45, LD: 0.45, MCD: 0.35 }, defensaClavePuesto: { LI: 1.30, DFC: 1.30, LD: 1.30, MCD: 1.10 }, // v207 de la app
       parada: 0.30, paradaDificil: 1.00, fallo: -0.20, falloImportante: -0.50, fueraJuego: -0.05 },
     equipo: { golFavor: 1.00, golContra: -1.00, tiroRivalPuerta: -0.10, tiroRivalFuera: 0, topeTirosRival70: 0.75, golesSinReparto: 4 }, // v192
     porteriaCero: { portero: 1.50, defensa: 1.25, centrocampista: 0.60, delantero: 0 },
@@ -4145,24 +4147,28 @@
 
   // 🗓️ MAPA DE CALOR: el peso en el equipo de cada niño en cada partido (frente a sus compañeros de ese día).
   let v206MapaOrden = 'dorsal';
-  window.v206MapaOrdenar = function (o) { v206MapaOrden = o; const el = document.getElementById('mapaCalorLista'); if (el && ultimaTemporada) el.innerHTML = mapaCalorHTML(ultimaTemporada); };
+  function mapaCalorAlFinal() { requestAnimationFrame(() => { const s = document.getElementById('mapaCalorScroll'); if (s) s.scrollLeft = s.scrollWidth; }); } // v208: se abre en las últimas jornadas
+  window.v206MapaOrdenar = function (o) { v206MapaOrden = o; const el = document.getElementById('mapaCalorLista'); if (el && ultimaTemporada) { el.innerHTML = mapaCalorHTML(ultimaTemporada); mapaCalorAlFinal(); } };
   function mapaCalorColor(d) { return d >= 1.5 ? '#16a34a' : d >= 0.5 ? '#4ade80' : d > -0.5 ? '#64748b' : d > -1.5 ? '#f87171' : '#b91c1c'; }
   function mapaCalorHTML(t) {
     const ps = (t && t.partidos) || [];
     if (!ps.length) return `<div style="font-size:12px; color:#94a3b8;">Aún no hay partidos.</div>`;
     const W = pesoEquipoTemporada(t);
+    // v208 · regularidad por los colores de sus casillas (verde / gris / rojo), sin cupos:
+    // 🎢 si al menos 1 de cada 4 partidos es verde y 1 de cada 4 rojo · 🎯 si 2 de cada 3 son del mismo color · 〰️ el resto
     const filas = Object.values(W).filter(r => r.partidos.length && r.peso !== null).map(r => {
       const dif = r.partidos.filter(x => x.valorado).map(x => x.dif);
-      const m = dif.length ? dif.reduce((a, b) => a + b, 0) / dif.length : 0;
-      const sd = dif.length >= 3 ? Math.sqrt(dif.reduce((a, b) => a + (b - m) ** 2, 0) / dif.length) : null;
-      return { r, sd };
+      const n = dif.length;
+      if (n < 3) return { r, reg: null, dom: 0 };
+      const v = dif.filter(d => d >= 0.5).length, ro = dif.filter(d => d <= -0.5).length, g = n - v - ro;
+      const dom = Math.max(v, g, ro) / n;
+      const reg = (v / n >= 0.25 && ro / n >= 0.25) ? 2 : dom >= 2 / 3 - 1e-9 ? 0 : 1;
+      return { r, reg, dom };
     });
-    const conSd = filas.filter(f => f.sd != null).map(f => f.sd).sort((a, b) => a - b);
-    const t1 = conSd[Math.floor(conSd.length / 3)], t2 = conSd[Math.floor(conSd.length * 2 / 3)];
-    filas.forEach(f => { f.reg = f.sd == null ? null : (conSd.length < 3 ? 1 : f.sd < t1 ? 0 : f.sd < t2 ? 1 : 2); });
     const REG = [['🎯', 'Muy regular', '#4ade80'], ['〰️', 'Normal', '#cbd5e1'], ['🎢', 'Irregular', '#f5a623']];
-    filas.sort((a, b) => v206MapaOrden === 'peso' ? b.r.peso - a.r.peso : v206MapaOrden === 'reg' ? ((a.sd ?? 99) - (b.sd ?? 99)) : ((a.r.j.dorsal ?? 99) - (b.r.j.dorsal ?? 99)));
-    const th = `<th></th>${ps.map((p, i) => `<th style="font:800 9.5px Montserrat,sans-serif; color:#94a3b8; padding:3px 1px; text-align:center;" title="${escHtml(p.rival)}">J${i + 1}</th>`).join('')}<th style="font:800 9.5px Montserrat,sans-serif; color:#94a3b8; padding:3px 4px;">PESO</th><th style="font:800 9.5px Montserrat,sans-serif; color:#94a3b8; padding:3px 2px;">REG.</th>`;
+    filas.sort((a, b) => v206MapaOrden === 'peso' ? b.r.peso - a.r.peso : v206MapaOrden === 'reg' ? (((a.reg ?? 9) - (b.reg ?? 9)) || (b.dom - a.dom) || (b.r.peso - a.r.peso)) : ((a.r.j.dorsal ?? 99) - (b.r.j.dorsal ?? 99)));
+    const FIJO = 'position:sticky; z-index:1; background:#121821; box-sizing:border-box;'; // v208: nombre, peso e icono quietos al deslizar las jornadas
+    const th = `<th style="${FIJO} left:0;"></th><th style="${FIJO} left:var(--mcN); font:800 9.5px Montserrat,sans-serif; color:#94a3b8; padding:3px 4px;">PESO</th><th style="${FIJO} left:var(--mcP); font:800 9.5px Montserrat,sans-serif; color:#94a3b8; padding:3px 6px 3px 2px; box-shadow:6px 0 6px -6px rgba(0,0,0,.8);">REG.</th>${ps.map((p, i) => `<th style="font:800 9.5px Montserrat,sans-serif; color:#94a3b8; padding:3px 1px; text-align:center;" title="${escHtml(p.rival)}">J${i + 1}</th>`).join('')}`;
     const tb = filas.map(({ r, reg }) => {
       const celdas = ps.map((p, i) => {
         const x = r.partidos.find(q => q.i === i);
@@ -4171,16 +4177,17 @@
         return `<td style="padding:2px 1px;"><div role="button" tabindex="0" onclick="abrirFichaPartido(${i}, '${escHtml(r.j.id)}')" title="J${i + 1} vs ${escHtml(p.rival)} · ${x.mins}' · ${(x.dif >= 0 ? '+' : '−') + v206Fmt(Math.abs(x.dif))}" style="cursor:pointer; width:24px; height:24px; margin:auto; border-radius:5px; ${est}"></div></td>`;
       }).join('');
       const R = reg == null ? '<span style="color:#475569;">—</span>' : `<span title="${REG[reg][1]}">${REG[reg][0]}</span>`;
-      return `<tr><td style="text-align:left; white-space:nowrap; padding:2px 6px 2px 0; font-size:11.5px; font-weight:600; cursor:pointer;" onclick="abrirPerfilJugadorTemporada('${escHtml(r.j.id)}')">${escHtml(r.j.dorsal ?? '')} ${escHtml((r.j.name || '').split(' ')[0])}</td>${celdas}
-        <td style="font:800 11px Montserrat,sans-serif; color:${r.peso >= 0 ? '#4ade80' : '#f87171'}; padding:2px 4px; text-align:right;">${(r.peso >= 0 ? '+' : '−') + v206Fmt(Math.abs(r.peso))}</td><td style="text-align:center;">${R}</td></tr>`;
+      return `<tr><td style="${FIJO} left:0; text-align:left; white-space:nowrap; width:var(--mcN); min-width:var(--mcN); max-width:var(--mcN); overflow:hidden; text-overflow:ellipsis; padding:2px 4px 2px 0; font-size:11.5px; font-weight:600; cursor:pointer;" onclick="abrirPerfilJugadorTemporada('${escHtml(r.j.id)}')">${escHtml(r.j.dorsal ?? '')} ${escHtml((r.j.name || '').split(' ')[0])}</td>
+        <td style="${FIJO} left:var(--mcN); width:40px; min-width:40px; font:800 11px Montserrat,sans-serif; color:${r.peso >= 0 ? '#4ade80' : '#f87171'}; padding:2px 4px; text-align:right;">${(r.peso >= 0 ? '+' : '−') + v206Fmt(Math.abs(r.peso))}</td><td style="${FIJO} left:var(--mcP); width:28px; min-width:28px; text-align:center; padding-right:4px; box-shadow:6px 0 6px -6px rgba(0,0,0,.8);">${R}</td>${celdas}</tr>`;
     }).join('');
     const bo = (o, l) => `<button type="button" onclick="v206MapaOrdenar('${o}')" style="flex:1; min-height:36px; border-radius:9px; border:1px solid ${v206MapaOrden === o ? '#2ed573' : 'rgba(255,255,255,.08)'}; background:#0f141b; color:${v206MapaOrden === o ? '#2ed573' : '#94a3b8'}; font:800 10.5px Montserrat,sans-serif;">${l}</button>`;
     const ley = (c, l, dash) => `<span><i style="display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:4px; vertical-align:-1px; ${dash ? 'border:1px dashed #475569;' : 'background:' + c + ';'}"></i>${l}</span>`;
     return `<div style="font-size:11.5px; color:#94a3b8; line-height:1.45; margin-bottom:8px;">Cada casilla es su peso en el equipo ese día: frente a sus compañeros del mismo partido. Una goleada no lo pinta todo de verde. Toca una casilla para ver su ficha de ese partido.</div>
       <div style="display:flex; gap:6px; margin-bottom:8px;">${bo('dorsal', 'Dorsal')}${bo('peso', 'Peso')}${bo('reg', 'Regularidad')}</div>
-      <div style="overflow-x:auto; -webkit-overflow-scrolling:touch;"><table style="border-collapse:collapse; font-size:11px;"><thead><tr>${th}</tr></thead><tbody>${tb}</tbody></table></div>
+      <div id="mapaCalorScroll" style="overflow-x:auto; -webkit-overflow-scrolling:touch; --mcN:92px; --mcP:132px;"><table style="border-collapse:separate; border-spacing:0; font-size:11px;"><thead><tr>${th}</tr></thead><tbody>${tb}</tbody></table></div>
+      ${ps.length > 7 ? `<div style="font-size:10.5px; color:#64748b; margin-top:4px;">← Desliza para ver las primeras jornadas</div>` : ''}
       <div style="display:flex; gap:10px; flex-wrap:wrap; font-size:10.5px; color:#94a3b8; margin-top:8px;">${ley('#16a34a', 'Muy por encima')}${ley('#4ade80', 'Por encima')}${ley('#64748b', 'En la media')}${ley('#f87171', 'Por debajo')}${ley('#b91c1c', 'Muy por debajo')}${ley('', 'Menos de 10\'', true)}<span>· no jugó</span></div>
-      <div style="font-size:10.5px; color:#94a3b8; margin-top:8px; line-height:1.45;"><b>Peso:</b> su media de la temporada (sobre la media de sus compañeros, por 70'). <b>Regularidad</b> (desde 3 partidos), comparando a unos niños con otros: 🎯 los que rinden más parecido todos los partidos · 〰️ normal · 🎢 los que más alternan partidazos con partidos flojos.</div>`;
+      <div style="font-size:10.5px; color:#94a3b8; margin-top:8px; line-height:1.45;"><b>Peso:</b> su media de la temporada (sobre la media de sus compañeros, por 70'). <b>Regularidad</b> (desde 3 partidos), por el color de sus casillas: 🎯 regular, al menos 2 de cada 3 partidos del mismo color · 🎢 irregular, alterna casillas verdes y rojas (al menos 1 de cada 4 de cada) · 〰️ normal, el resto.</div>`;
   }
 
   // 🧬 El ADN del equipo (Temporada → Más análisis)
@@ -9437,7 +9444,7 @@
     subBanquillo: (t) => { try { document.getElementById('banquilloLista').innerHTML = banquilloHTML(t, '#f5a623', 'bqv'); } catch (e) { console.error('Banquillo:', e); } }, // v137
     subCadenas: (t) => { try { document.getElementById('cadenasLista').innerHTML = cadenasEquipoHTML(t); } catch (e) { console.error('Cadenas:', e); } }, // v206
     subPrime: (t) => { try { document.getElementById('primeLista').innerHTML = primeEquipoHTML(t); } catch (e) { console.error('Prime:', e); } }, // v206
-    subMapaCalor: (t) => { try { document.getElementById('mapaCalorLista').innerHTML = mapaCalorHTML(t); } catch (e) { console.error('Mapa de calor:', e); } }, // v206
+    subMapaCalor: (t) => { try { document.getElementById('mapaCalorLista').innerHTML = mapaCalorHTML(t); mapaCalorAlFinal(); } catch (e) { console.error('Mapa de calor:', e); } }, // v206 · v208: al final
     subContexto: (t) => { try { document.getElementById('contextoLista').innerHTML = ctxContextoHTML(t); } catch (e) { console.error('Contexto:', e); } }, // v97
     subComparativa: (t) => { pintarComparativa(t); try { pintarCompVs(t); } catch (e) { console.error('Comparativa:', e); } }, // v167
     subOnceIdeal: (t) => pintarOnceIdeal(t),
@@ -10155,8 +10162,8 @@
       csFila('Falta recibida', '0', true, 'No suma ni resta: solo se cuenta quién recibe más faltas.'), // v205
       csFila('Disparo fuera / sin peligro', fmtPts(a.disparoFuera), true, a.disparoFueraExceso ? `Los ${a.disparoFueraUmbral || 3} primeros de cada partido. Desde el ${(a.disparoFueraUmbral || 3) + 1}.º, ${fmtPts(a.disparoFueraExceso)} cada uno.` : ''), // v194
       csFila('Regate / jugada individual', fmtPts(a.regate), true, 'Supera a un rival sin acabar en tiro ni pase.'),
-      csFila('Acción defensiva', fmtPts(a.defensa), true),
-      csFila('Acción defensiva clave', fmtPts(a.defensaClave), true, 'Un despeje o una entrada que evita una ocasión clara.'),
+      csFila('Acción defensiva', fmtPts(a.defensa), true, a.defensaPuesto ? `Si la hace un defensa (LI · DFC · LD), ${fmtPts(a.defensaPuesto.DFC)}; el pivote (MCD), ${fmtPts(a.defensaPuesto.MCD)}. Defender es su trabajo principal y es casi lo único que se les puede apuntar.` : ''),
+      csFila('Acción defensiva clave', fmtPts(a.defensaClave), true, a.defensaClavePuesto ? `Un despeje o una entrada que evita una ocasión clara. Defensa ${fmtPts(a.defensaClavePuesto.DFC)} · pivote ${fmtPts(a.defensaClavePuesto.MCD)}.` : 'Un despeje o una entrada que evita una ocasión clara.'),
       csFila('Paradas del portero', `${fmtPts(a.parada)} / ${fmtPts(a.paradaDificil)}`, true, 'Parada normal / parada difícil. Cuentan como tiro a puerta del rival, pero al portero no le restan.'),
       csFila('Fuera de juego', fmtPts(a.fueraJuego != null ? a.fueraJuego : -0.05), false, 'Resta muy poco: un desmarque que sale por poco no se castiga como un fallo. El fuera de juego del rival no suma a nadie.')
     ].join('');

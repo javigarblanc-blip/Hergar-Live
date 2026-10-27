@@ -761,18 +761,21 @@
         <button type="button" class="subtab-btn" onclick="showSub(event,'subRecords')">🏆 Récords</button>
       </div>
       <button type="button" class="tmp-mas" id="tmpMasBtn" onclick="toggleMasTemp()" aria-expanded="false" aria-controls="tmpMasPanel">
-        <span>📊 Más análisis</span><span class="txt" id="tmpMasTxt">12 apartados en 3 bloques ▾</span>
+        <span>📊 Más análisis</span><span class="txt" id="tmpMasTxt">15 apartados en 3 bloques ▾</span>
       </button>
       <div class="tmp-sec" id="tmpMasPanel">
         <div class="tmp-blq"><b>⚽ Goles</b><span>Dónde, cómo y cuándo marcamos</span></div>
         <button type="button" class="subtab-btn" onclick="showSub(event,'subMapaGoles')">🎯 Mapa de goles</button>
         <button type="button" class="subtab-btn" onclick="showSub(event,'subVideos')">🎥 Goles en vídeo</button>
         <button type="button" class="subtab-btn" onclick="showSub(event,'subMinutos')">⏱ Minutos</button>
+        <button type="button" class="subtab-btn" onclick="showSub(event,'subCadenas')">⛓️ Cadenas de gol</button>
         <div class="tmp-blq"><b>👥 Jugadores</b><span>Quién juega, con quién y cómo rinde</span></div>
         <button type="button" class="subtab-btn" onclick="showSub(event,'subOnceIdeal')">🏅 Once ideal</button>
         <button type="button" class="subtab-btn" onclick="showSub(event,'subComparativa')">📊 Comparativa</button>
         <button type="button" class="subtab-btn" onclick="showSub(event,'subSinergias')">🔗 Sinergias</button>
         <button type="button" class="subtab-btn" onclick="showSub(event,'subBanquillo')">🔄 Banquillo</button>
+        <button type="button" class="subtab-btn" onclick="showSub(event,'subPrime')">⚡ Prime</button>
+        <button type="button" class="subtab-btn" onclick="showSub(event,'subMapaCalor')">🗓️ Mapa de calor</button>
         <div class="tmp-blq"><b>🏟️ Equipo</b><span>Cómo es el equipo y cómo va</span></div>
         <button type="button" class="subtab-btn" onclick="showSub(event,'subMedias')">📊 Medias</button>
         <button type="button" class="subtab-btn" onclick="showSub(event,'subRachas')">🔥 Rachas</button>
@@ -878,6 +881,24 @@
         <div class="card">
           <div class="card-title">🧬 El ADN del equipo</div>
           <div id="adnLista"><div class="loader">Cargando...</div></div>
+        </div>
+      </div>
+      <div id="subCadenas" class="sub-panel">
+        <div class="card">
+          <div class="card-title">⛓️ Cómo se fabrican los goles</div>
+          <div id="cadenasLista"><div class="loader">Cargando...</div></div>
+        </div>
+      </div>
+      <div id="subPrime" class="sub-panel">
+        <div class="card">
+          <div class="card-title">⚡ El prime de cada uno</div>
+          <div id="primeLista"><div class="loader">Cargando...</div></div>
+        </div>
+      </div>
+      <div id="subMapaCalor" class="sub-panel">
+        <div class="card">
+          <div class="card-title">🗓️ Mapa de calor de la temporada</div>
+          <div id="mapaCalorLista"><div class="loader">Cargando...</div></div>
         </div>
       </div>
       <div id="subBanquillo" class="sub-panel">
@@ -1138,6 +1159,7 @@
   // v140 (app) · «Hace mejores a los demás»: impacto de los compañeros con él y sin él (Sinergias, Ranking, ficha) y 🧲 al mejor compañero en la Plantilla. En el visor, solo los positivos.
   // v139 (app) · Acta del partido en PDF (3 páginas). En el visor, botón en cada partido si la app lo permite, sin el más/menos de cada niño.
   // v137 (app) · Más análisis → 🔄 Banquillo: el equipo antes y después de los cambios, lo que aporta el banquillo, cambio a cambio y cada niño de titular y de suplente.
+  // v206 (app + visor) · ⚡ Su prime (ficha → Estilo, línea en Mi hijo y tabla en Más análisis → Jugadores), ⛓️ Cadenas de gol (Más análisis → Goles y ficha → Datos) y 🗓️ Mapa de calor con regularidad (Más análisis → Jugadores). La app guarda con cada gol las acciones previas (g.previas).
   // v205 (app + visor + delegado) · Nuevas acciones: gol en propia puerta del rival (sin goleador; origen «En propia» en el mapa de goles, también para los goles en contra), tiros al palo (cuentan como tiro a puerta; Hergar por niño y rival) y faltas recibidas por niño (sin puntos). Modo TV, minuto a minuto, estadísticas del partido, ficha del niño y actuación del partido.
   // v204 (app + visor) · Dominio por tramos en todos los gráficos de momentum (En vivo, descanso, final, visor y acta) y las acciones defensivas cuentan: de portero o defensa para el rival, de delantero para el Hergar.
   // Visor · 🎬 Resumen: el dominio enseña quién apretaba en cada momento (últimos 6 minutos), no el acumulado, y llega hasta el final.
@@ -3896,6 +3918,260 @@
       <div style="padding:10px 12px 14px;">
         <div style="font-size:10.5px; font-weight:800; letter-spacing:1.2px; color:${col};">SUPERPODERES</div>${sp}${oportunistaChipHTML(t, j)}${gem}</div></div>`;
   }
+  // ── v206 · ⚡ SU PRIME · ⛓️ CADENAS DE GOL · 🗓️ MAPA DE CALOR ─────────────────────────────
+  // Salen de lo que la app ya guarda: el registro minuto a minuto de cada partido (partido.minutos, desde el 17 oct:
+  // segundos en el campo y puntos de sus ACCIONES en cada minuto, sin la parte de equipo), los goles con minuto y
+  // el peso en el equipo (comparado con los compañeros del mismo partido, así las goleadas no influyen).
+  const PRIME_MIN_TOTAL = 150, PRIME_MIN_TRAMO = 20, PRIME_UMBRAL = 110;
+  const PRIME_E = [[0, 10, "0-10'", "en sus primeros 10' en el campo"], [10, 20, "10-20'", "del 10' al 20' desde que entra"], [20, 30, "20-30'", "del 20' al 30' desde que entra"], [30, 999, "+30'", "a partir de los 30' seguidos"]];
+  const PRIME_Q = [[0, 12, 1, 'Inicio', 'al empezar la 1.ª parte'], [12, 24, 1, 'Medio', 'a mitad de la 1.ª parte'], [24, 35, 1, 'Final', 'al final de la 1.ª parte'],
+    [35, 47, 2, 'Inicio', 'al empezar la 2.ª parte'], [47, 59, 2, 'Medio', 'a mitad de la 2.ª parte'], [59, 999, 2, 'Final', 'en el final del partido']];
+  let v206PrimeModo = 'pct';
+  function v206Lee(s) { return String(s || '').split(',').map(x => x === '' ? 0 : (Number(x) || 0)); }
+  function v206Fmt(v, d) { d = d == null ? 1 : d; return v.toFixed(d).replace('.', ','); }
+  function primeTemporada(t) {
+    const res = {};
+    ((t && t.partidos) || []).forEach(p => {
+      const M = p && p.minutos;
+      if (!M || Number(M.v) !== 1 || !M.j) return;
+      const ini = Math.max(0, Number(M.ini) || 0);
+      Object.keys(M.j).forEach(id => {
+        const c = v206Lee(M.j[id].c), a = v206Lee(M.j[id].a);
+        const R = res[id] || (res[id] = { segs: 0, pts: 0, partidos: 0, e: PRIME_E.map(() => ({ s: 0, p: 0 })), q: PRIME_Q.map(() => ({ s: 0, p: 0 })) });
+        let seguido = 0, jugo = false;
+        const n = Math.max(c.length, a.length);
+        for (let k = 0; k < n; k++) {
+          const s = c[k] || 0;
+          if (k === 35) seguido = 0;           // la 2.ª parte empieza de cero (el descanso cuenta como recuperación)
+          if (s <= 0) { seguido = 0; continue; }
+          if (k < ini) { seguido += s; continue; } // llegó tarde: ese tramo no tiene las acciones
+          jugo = true;
+          const pts = a[k] || 0, enMin = seguido / 60;
+          const ie = PRIME_E.findIndex(([d, h]) => enMin >= d && enMin < h), iq = PRIME_Q.findIndex(([d, h]) => k >= d && k < h);
+          R.segs += s; R.pts += pts;
+          if (ie >= 0) { R.e[ie].s += s; R.e[ie].p += pts; }
+          if (iq >= 0) { R.q[iq].s += s; R.q[iq].p += pts; }
+          seguido += s;
+        }
+        if (jugo) R.partidos++;
+      });
+    });
+    Object.values(res).forEach(R => {
+      const media = R.segs > 0 ? R.pts / R.segs : 0;
+      R.mins = Math.round(R.segs / 60);
+      R.media10 = media * 600;
+      const pct = (x) => (x.s >= PRIME_MIN_TRAMO * 60 && media > 0) ? Math.round((x.p / x.s) / media * 100) : null;
+      R.e.forEach(x => { x.pct = pct(x); x.v10 = x.s > 0 ? x.p / x.s * 600 : null; });
+      R.q.forEach(x => { x.pct = pct(x); x.v10 = x.s > 0 ? x.p / x.s * 600 : null; });
+      const mejor = (arr) => { let b = -1; arr.forEach((x, i) => { if (x.pct != null && (b < 0 || x.pct > arr[b].pct)) b = i; }); return b >= 0 && arr[b].pct >= PRIME_UMBRAL ? b : -1; };
+      R.primeE = mejor(R.e); R.primeQ = mejor(R.q);
+      R.sinDatos = media <= 0;
+      R.provisional = R.mins < PRIME_MIN_TOTAL;
+    });
+    return res;
+  }
+  function primeFrase(R) {
+    if (!R || R.sinDatos) return '';
+    const a = R.primeE >= 0 ? `Rinde más <b>${PRIME_E[R.primeE][3]}</b>` : 'Rinde parecido en todos los tramos desde que entra';
+    const b = R.primeQ >= 0 ? `y aparece más <b>${PRIME_Q[R.primeQ][4]}</b>` : 'y no tiene un momento del partido que destaque';
+    return `${a}, ${b}.`;
+  }
+  function primeResumen(R) { // una línea corta (pestaña Mi hijo)
+    if (!R || R.sinDatos) return '';
+    const p = [];
+    if (R.primeE >= 0) p.push(PRIME_E[R.primeE][3]);
+    if (R.primeQ >= 0) p.push('aparece más ' + PRIME_Q[R.primeQ][4]);
+    return p.length ? p.join(' · ') : 'rinde parecido en todos los tramos';
+  }
+  window.v206PrimeModo = function (m, id) {
+    v206PrimeModo = m;
+    const el = document.getElementById('v206Prime_' + id);
+    const j = ultimaTemporada && ultimaTemporada.jugadores && ultimaTemporada.jugadores[id];
+    if (el && j) el.outerHTML = primeJugadorHTML(ultimaTemporada, j);
+  };
+  function primeJugadorHTML(t, j) {
+    if (!t || !j) return '';
+    const caja = (cuerpo) => `<div id="v206Prime_${escHtml(j.id)}" style="margin-top:12px; background:rgba(255,255,255,.03); border:1px solid rgba(245,166,35,.35); border-radius:16px; padding:13px;">${cuerpo}</div>`;
+    const titulo = (extra) => `<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:4px;"><span style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:12px; letter-spacing:1px; color:#f5a623;">⚡ SU PRIME</span>${extra || ''}</div>`;
+    if (pesoEsPortero(j)) return caja(titulo() + `<div style="font-size:12px; color:#94a3b8; line-height:1.45;">No se calcula para el portero: sus acciones dependen de lo que le tire el rival.</div>`);
+    const R = primeTemporada(t)[j.id];
+    if (!R || R.sinDatos || R.mins < 30) return caja(titulo() + `<div style="font-size:12px; color:#94a3b8; line-height:1.45;">Sale con los partidos apuntados en directo desde el 17 de octubre (la app guarda sus acciones minuto a minuto). ${R ? `Lleva ${R.mins}' medidos.` : 'Aún no tiene minutos medidos.'}</div>`);
+    const pct = v206PrimeModo === 'pct';
+    const seg = `<div style="display:flex; background:#0f141b; border-radius:9px; padding:3px; gap:3px;">${[['pct', '%'], ['num', 'Cifra']].map(([m, l]) => `<button type="button" onclick="v206PrimeModo('${m}', '${escHtml(j.id)}')" style="border:0; border-radius:7px; padding:6px 10px; font:800 10.5px Montserrat,sans-serif; background:${v206PrimeModo === m ? '#1f2937' : 'transparent'}; color:${v206PrimeModo === m ? '#e2e8f0' : '#94a3b8'};">${l}</button>`).join('')}</div>`;
+    const val = (x) => x.pct == null ? '—' : pct ? x.pct + ' %' : v206Fmt(x.v10);
+    const filas = R.e.map((x, i) => {
+      const esP = i === R.primeE, w = x.pct == null ? 0 : Math.min(100, x.pct / 1.6);
+      const col = esP ? '#f5a623' : x.pct != null && x.pct >= 100 ? '#4ade80' : '#64748b';
+      return `<div style="display:grid; grid-template-columns:52px 1fr 68px; gap:8px; align-items:center; padding:4px 0;">
+        <span style="font-size:12px; color:#cbd5e1;">${PRIME_E[i][2]}</span>
+        <div style="height:14px; border-radius:5px; background:rgba(255,255,255,.05); position:relative; overflow:hidden;"><div style="position:absolute; left:0; top:0; bottom:0; width:${w}%; background:${col}; border-radius:5px;"></div><div style="position:absolute; top:-2px; bottom:-2px; left:${100 / 1.6}%; width:1px; background:rgba(255,255,255,.45);"></div></div>
+        <span style="text-align:right; font:800 12px Montserrat,sans-serif; color:${esP ? '#f5a623' : '#e2e8f0'};">${val(x)}${esP ? ' ⚡' : ''}</span></div>`;
+    }).join('');
+    const colQ = (x, esP) => esP ? 'rgba(245,166,35,.85)' : x.pct == null ? 'rgba(255,255,255,.04)' : x.pct >= 100 ? 'rgba(74,222,128,.32)' : 'rgba(100,116,139,.32)';
+    const celdas = [1, 2].map(parte => `<span style="font-size:11px; color:#cbd5e1;">${parte === 1 ? '1.ª parte' : '2.ª parte'}</span>` + R.q.map((x, i) => [x, i]).filter(([, i]) => PRIME_Q[i][2] === parte)
+      .map(([x, i]) => `<div style="height:30px; border-radius:7px; display:flex; align-items:center; justify-content:center; font:800 11px Montserrat,sans-serif; background:${colQ(x, i === R.primeQ)}; color:${i === R.primeQ ? '#0b0f14' : '#e2e8f0'};">${val(x)}${i === R.primeQ ? ' ⚡' : ''}</div>`).join('')).join('');
+    return caja(titulo(seg) + `
+      <div style="font-size:11.5px; color:#94a3b8; line-height:1.45; margin-bottom:8px;">Cuándo aparece más: los puntos de sus acciones (lo bueno y lo malo que hace él) en cada tramo, frente a su propia media. No cuenta lo que suma el equipo por los goles, así que las goleadas no influyen.</div>
+      <div style="font:800 10.5px Montserrat,sans-serif; letter-spacing:.8px; color:#cbd5e1; margin:6px 0 4px;">DESDE QUE ENTRA AL CAMPO</div>${filas}
+      <div style="font-size:10.5px; color:#64748b; text-align:right;">${pct ? 'la raya = 100 % (su nivel normal)' : `puntos por cada 10' · su media: ${v206Fmt(R.media10)}`}</div>
+      <div style="font:800 10.5px Montserrat,sans-serif; letter-spacing:.8px; color:#cbd5e1; margin:12px 0 6px;">SEGÚN EL MINUTO DEL PARTIDO</div>
+      <div style="display:grid; grid-template-columns:62px repeat(3, minmax(0,1fr)); gap:5px; align-items:center;"><span></span><span style="text-align:center; font-size:10px; color:#94a3b8; font-weight:700;">Inicio</span><span style="text-align:center; font-size:10px; color:#94a3b8; font-weight:700;">Medio</span><span style="text-align:center; font-size:10px; color:#94a3b8; font-weight:700;">Final</span>${celdas}</div>
+      <div style="margin-top:10px; font-size:12.5px; line-height:1.5; background:rgba(255,255,255,.04); border-radius:10px; padding:9px 11px; color:#e2e8f0;">⚡ ${primeFrase(R)}</div>
+      <div style="font-size:10.5px; color:#94a3b8; margin-top:8px; line-height:1.45;">100 % = su nivel normal. Compara al niño consigo mismo: un 130 % no quiere decir que haga más que otro, sino cuándo rinde mejor él. Tramos con menos de ${PRIME_MIN_TRAMO}' medidos: —. ${R.mins}' medidos${R.provisional ? ` · <b style="color:#f5a623;">⏳ provisional</b> hasta los ${PRIME_MIN_TOTAL}'` : ''}.</div>`);
+  }
+  function primeEquipoHTML(t) {
+    const P = primeTemporada(t);
+    const js = Object.values((t && t.jugadores) || {}).filter(j => !pesoEsPortero(j) && P[j.id] && !P[j.id].sinDatos && P[j.id].mins >= 30)
+      .sort((a, b) => (a.dorsal ?? 99) - (b.dorsal ?? 99));
+    if (!js.length) return `<div style="font-size:12px; color:#94a3b8; line-height:1.45;">Sale con los partidos apuntados en directo desde el 17 de octubre. Aún no hay minutos medidos suficientes.</div>`;
+    const chip = (txt, on) => `<span style="display:inline-block; font-size:10.5px; font-weight:800; padding:3px 7px; border-radius:7px; background:${on ? 'rgba(245,166,35,.15)' : 'rgba(255,255,255,.05)'}; color:${on ? '#f5a623' : '#94a3b8'};">${txt}</span>`;
+    const filas = js.map(j => {
+      const R = P[j.id];
+      const e = R.primeE >= 0 ? chip(PRIME_E[R.primeE][2] + ' ⚡', true) : chip('Igual en todos', false);
+      const q = R.primeQ >= 0 ? `${PRIME_Q[R.primeQ][3]} de la ${PRIME_Q[R.primeQ][2]}.ª` : '—';
+      return `<tr role="button" tabindex="0" onclick="v206AbrirEstilo('${escHtml(j.id)}')" style="cursor:pointer;"><td style="padding:8px 4px; border-bottom:1px solid rgba(255,255,255,.04); font-weight:700; font-size:12px; white-space:nowrap;">${escHtml(j.dorsal ?? '')} ${escHtml((j.name || '').split(' ')[0])}</td>
+        <td style="padding:8px 4px; border-bottom:1px solid rgba(255,255,255,.04);">${e}</td>
+        <td style="padding:8px 4px; border-bottom:1px solid rgba(255,255,255,.04); font-size:12px; color:#cbd5e1;">${q}${R.provisional ? ' <span title="provisional">⏳</span>' : ''}</td></tr>`;
+    }).join('');
+    return `<div style="font-size:11.5px; color:#94a3b8; line-height:1.45; margin-bottom:8px;">Cuándo aparece más cada niño: según el tiempo que lleva seguido en el campo y según el minuto del partido. Útil para decidir cuándo meter a un suplente o a quién dejar para el final. Toca uno para ver su detalle.</div>
+      <table style="width:100%; border-collapse:collapse;"><thead><tr><th style="font:800 9.5px Montserrat,sans-serif; color:#94a3b8; text-align:left; padding:6px 4px; border-bottom:1px solid rgba(255,255,255,.08);">NIÑO</th><th style="font:800 9.5px Montserrat,sans-serif; color:#94a3b8; text-align:left; padding:6px 4px; border-bottom:1px solid rgba(255,255,255,.08);">DESDE QUE ENTRA</th><th style="font:800 9.5px Montserrat,sans-serif; color:#94a3b8; text-align:left; padding:6px 4px; border-bottom:1px solid rgba(255,255,255,.08);">EN EL PARTIDO</th></tr></thead><tbody>${filas}</tbody></table>
+      <div style="font-size:10.5px; color:#94a3b8; margin-top:8px; line-height:1.45;">⏳ provisional: menos de ${PRIME_MIN_TOTAL}' medidos. «Igual en todos»: ningún tramo pasa del ${PRIME_UMBRAL} % de su media. El portero no se calcula.</div>`;
+  }
+  window.v206AbrirEstilo = function (id) {
+    try { window.abrirPerfilJugadorTemporada(id); setTimeout(() => { try { mostrarPestanaPerfil('estilo'); } catch (e) {} }, 60); } catch (e) { console.error('Prime:', e); }
+  };
+  function primeLineaMiHijoHTML(t, j, col) {
+    if (!t || !j || pesoEsPortero(j)) return '';
+    const R = primeTemporada(t)[j.id];
+    if (!R || R.sinDatos || R.mins < 30) return '';
+    return `<div role="button" tabindex="0" onclick="v206AbrirEstilo('${escHtml(j.id)}')" style="cursor:pointer; margin-top:10px; background:#0f1520; border:1px solid ${col || '#f5a623'}55; border-radius:10px; padding:9px 11px; font-size:12.5px; line-height:1.4; color:#e2e8f0;">⚡ <b>Su prime:</b> ${escHtml(primeResumen(R))}${R.provisional ? ' <span style="color:#94a3b8; font-size:11px;">⏳</span>' : ''} <span style="color:#94a3b8;">›</span></div>`;
+  }
+
+  // ⛓️ CADENAS DE GOL: acciones de compañeros justo antes de cada gol (mismo minuto o el anterior).
+  // Desde la v206 la app lo guarda con cada gol (g.previas, con el tipo de acción). En los partidos anteriores con
+  // registro minuto a minuto se deduce de quién hizo algo positivo en esos dos minutos (sin el tipo de acción).
+  const CAD_IC = { pc: '🔑', pa: '📯', reg: '🌀', def: '🛡️', defC: '🛡️⭐', tp: '🎯', tf: '💨', fr: '🟡', prov: '🎯', x: '➕' };
+  const CAD_TXT = { pc: 'pase clave', pa: 'pase al área', reg: 'regate', def: 'acción defensiva', defC: 'acción def. clave', tp: 'tiro a puerta', tf: 'tiro', fr: 'falta recibida', prov: 'provocó el penalti', x: 'acción' };
+  function cadenasTemporada(t) {
+    const ps = (t && t.partidos) || [];
+    const js = (t && t.jugadores) || {};
+    const por = {}, lista = [];
+    const R = (id) => por[id] || (por[id] = { id, goles: 0, asist: 0, jugada: 0 });
+    let totalGoles = 0, medidos = 0;
+    ps.forEach((p, i) => {
+      totalGoles += Number(p.golesLocal) || 0;
+      const gs = Array.isArray(p.goles) ? p.goles : [];
+      const M = p.minutos && Number(p.minutos.v) === 1 && p.minutos.j ? p.minutos : null;
+      const A = {}; if (M) Object.keys(M.j).forEach(id => { A[id] = v206Lee(M.j[id].a); });
+      const ini = M ? Math.max(0, Number(M.ini) || 0) : 0;
+      gs.forEach(g => {
+        if (!g || g.equipo === 'rival') return;
+        if (g.jugadorId != null && js[g.jugadorId]) R(g.jugadorId).goles++;
+        if (g.asistenteId != null && js[g.asistenteId]) R(g.asistenteId).asist++;
+        let previas = null;
+        if (Array.isArray(g.previas)) previas = g.previas.filter(x => x && x.id != null);
+        else if (M && g.min != null && g.min >= ini) {
+          const fuera = new Set([String(g.jugadorId), String(g.asistenteId)]);
+          previas = Object.keys(A).filter(id => !fuera.has(String(id)) && ((A[id][g.min] || 0) > 1e-6 || (g.min > 0 && (A[id][g.min - 1] || 0) > 1e-6))).map(id => ({ id, k: 'x', min: g.min }));
+        }
+        if (previas) {
+          medidos++;
+          const vistos = new Set();
+          previas.forEach(x => { if (!vistos.has(String(x.id)) && js[x.id]) { vistos.add(String(x.id)); R(x.id).jugada++; } });
+        }
+        lista.push({ i, p, g, previas });
+      });
+    });
+    Object.values(por).forEach(x => { x.total = x.goles + x.asist + x.jugada; });
+    return { por, lista, totalGoles, medidos };
+  }
+  function cadNom(t, id) { const j = t.jugadores && t.jugadores[id]; return j ? (j.name || '').split(' ')[0] : '¿?'; }
+  function cadenaGolHTML(t, x) {
+    const g = x.g, esl = (txt, gol) => `<span style="background:${gol ? 'rgba(180,20,56,.25)' : 'rgba(255,255,255,.05)'}; border:1px solid ${gol ? 'rgba(255,85,119,.5)' : 'rgba(255,255,255,.08)'}; border-radius:8px; padding:4px 7px; font-size:11.5px; ${gol ? 'font-weight:700;' : ''}">${txt}</span>`;
+    const fl = '<span style="color:#94a3b8; font-size:11px;">→</span>';
+    const partes = [];
+    (x.previas || []).forEach(a => partes.push(esl(`${CAD_IC[a.k] || '➕'} ${escHtml(cadNom(t, a.id))}${a.min != null && a.min !== g.min ? ` <small style="color:#94a3b8;">${a.min}'</small>` : ''}`)));
+    if (g.asistenteId != null) partes.push(esl(`👟 ${escHtml(g.asistente || cadNom(t, g.asistenteId))}`));
+    partes.push(esl(g.propia ? '⚽ En propia del rival' : `⚽ ${escHtml(g.nombre || cadNom(t, g.jugadorId))}${g.penalti ? ' (p)' : ''}`, true));
+    const nota = x.previas == null ? '<span style="font-size:11px; color:#64748b;">· sin registro de acciones</span>' : (!x.previas.length && g.asistenteId == null ? '<span style="font-size:11px; color:#94a3b8;">· jugada directa, sin acciones antes</span>' : '');
+    return `<div style="padding:9px 0; border-top:1px solid rgba(255,255,255,.06);"><span style="font:900 12px Montserrat,sans-serif; color:#f5a623; margin-right:6px;">J${x.i + 1}${g.min != null ? ' · ' + g.min + "'" : ''}</span><span style="font-size:11px; color:#94a3b8;">vs ${escHtml(x.p.rival)}</span>
+      <div style="display:flex; flex-wrap:wrap; align-items:center; gap:5px; margin-top:5px;">${partes.join(fl)}${nota}</div></div>`;
+  }
+  function cadenasEquipoHTML(t) {
+    const C = cadenasTemporada(t);
+    if (!C.lista.length) return `<div style="font-size:12px; color:#94a3b8;">Aún no hay goles con detalle.</div>`;
+    const conCad = C.lista.filter(x => x.previas != null).slice().reverse();
+    const ult = conCad.slice(0, 5).map(x => cadenaGolHTML(t, x)).join('');
+    const resto = conCad.slice(5).map(x => cadenaGolHTML(t, x)).join('');
+    const rk = Object.values(C.por).filter(x => x.total > 0).sort((a, b) => b.total - a.total || b.jugada - a.jugada).slice(0, 10);
+    const max = Math.max(1, ...rk.map(x => x.total));
+    const filas = rk.map((x, k) => `<div role="button" tabindex="0" onclick="abrirPerfilJugadorTemporada('${escHtml(x.id)}')" style="cursor:pointer; display:grid; grid-template-columns:20px 1fr 30px; gap:8px; align-items:center; padding:6px 0; border-top:1px solid rgba(255,255,255,.05);">
+        <span style="font:800 12px Montserrat,sans-serif; color:#94a3b8;">${k + 1}</span>
+        <div><div style="font-size:12.5px; font-weight:600;">${escHtml(cadNom(t, x.id))} <span style="font-size:10.5px; color:#94a3b8; font-weight:400;">${x.goles} G · ${x.asist} A · ${x.jugada} en la jugada</span></div>
+          <div style="display:flex; height:8px; border-radius:4px; overflow:hidden; margin-top:4px; width:${Math.round(x.total / max * 100)}%;"><i style="flex:${x.goles}; background:#ff5577;"></i><i style="flex:${x.asist}; background:#5dade2;"></i><i style="flex:${x.jugada}; background:#f5a623;"></i></div></div>
+        <span style="font:900 16px Montserrat,sans-serif; color:#2ed573; text-align:right;">${x.total}</span></div>`).join('');
+    const oculto = rk.filter(x => x.goles <= 1 && x.jugada >= 2).sort((a, b) => b.jugada - a.jugada)[0];
+    return `<div style="font-size:11.5px; color:#94a3b8; line-height:1.45; margin-bottom:6px;">Las acciones del Hergar del mismo minuto del gol o del anterior. Es orientativo: la cronología va por minutos, no por segundos.</div>
+      ${ult || '<div style="font-size:12px; color:#94a3b8;">Aún no hay goles con el registro de acciones (desde el 17 oct).</div>'}
+      ${resto ? `<details style="margin-top:4px;"><summary style="font-size:11.5px; font-weight:700; color:#2ed573; cursor:pointer; padding:6px 0;">Ver los otros ${conCad.length - 5} goles</summary>${resto}</details>` : ''}
+      <div style="font:800 10.5px Montserrat,sans-serif; letter-spacing:.8px; color:#cbd5e1; margin:14px 0 4px;">QUIÉN PARTICIPA EN LOS GOLES</div>${filas}
+      <div style="display:flex; gap:10px; flex-wrap:wrap; font-size:10.5px; color:#94a3b8; margin-top:8px;"><span><i style="display:inline-block; width:9px; height:9px; border-radius:3px; background:#ff5577; margin-right:4px;"></i>Goles</span><span><i style="display:inline-block; width:9px; height:9px; border-radius:3px; background:#5dade2; margin-right:4px;"></i>Asistencias</span><span><i style="display:inline-block; width:9px; height:9px; border-radius:3px; background:#f5a623; margin-right:4px;"></i>En la jugada (antes del pase de gol)</span></div>
+      ${oculto ? `<div style="margin-top:10px; font-size:12.5px; line-height:1.5; background:rgba(255,255,255,.04); border-radius:10px; padding:9px 11px;">🔎 <b>${escHtml(cadNom(t, oculto.id))}</b> ${oculto.goles ? 'apenas marca' : 'no ha marcado'}, pero está en el origen de ${oculto.jugada} goles.</div>` : ''}
+      <div style="font-size:10.5px; color:#94a3b8; margin-top:8px; line-height:1.45;">Goles y asistencias cuentan toda la temporada; «en la jugada», solo desde el 17 oct (${C.medidos} de ${C.totalGoles} goles con registro de acciones).</div>`;
+  }
+  function cadenasJugadorHTML(t, j) {
+    if (!t || !j) return '';
+    const C = cadenasTemporada(t), x = C.por[j.id];
+    if (!C.totalGoles || !x || !x.total) return '';
+    const pc = Math.round(x.total / C.totalGoles * 100);
+    return `<div style="background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:12px 14px; margin-top:12px;">
+      <div style="font-size:11px; font-weight:800; color:#f5a623; letter-spacing:.5px; margin-bottom:6px;">⛓️ EN LOS GOLES</div>
+      <div style="font-size:13px; line-height:1.5;">Ha participado en <b style="color:#2ed573;">${x.total} de los ${C.totalGoles} goles</b> del equipo (${pc} %).</div>
+      <div style="display:flex; height:10px; border-radius:5px; overflow:hidden; margin:8px 0 6px;"><i style="flex:${x.goles}; background:#ff5577;"></i><i style="flex:${x.asist}; background:#5dade2;"></i><i style="flex:${x.jugada}; background:#f5a623;"></i><i style="flex:${Math.max(0, C.totalGoles - x.total)}; background:rgba(255,255,255,.08);"></i></div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; font-size:10.5px; color:#94a3b8;"><span>${x.goles} ${x.goles === 1 ? 'gol' : 'goles'}</span><span>${x.asist} ${x.asist === 1 ? 'asistencia' : 'asistencias'}</span><span>${x.jugada} en la jugada</span></div>
+      <div style="font-size:10.5px; color:#64748b; margin-top:6px;">«En la jugada»: hizo algo justo antes del gol (mismo minuto o el anterior) sin marcar ni dar el pase de gol. Cuenta desde el 17 oct.</div></div>`;
+  }
+
+  // 🗓️ MAPA DE CALOR: el peso en el equipo de cada niño en cada partido (frente a sus compañeros de ese día).
+  let v206MapaOrden = 'dorsal';
+  window.v206MapaOrdenar = function (o) { v206MapaOrden = o; const el = document.getElementById('mapaCalorLista'); if (el && ultimaTemporada) el.innerHTML = mapaCalorHTML(ultimaTemporada); };
+  function mapaCalorColor(d) { return d >= 1.5 ? '#16a34a' : d >= 0.5 ? '#4ade80' : d > -0.5 ? '#64748b' : d > -1.5 ? '#f87171' : '#b91c1c'; }
+  function mapaCalorHTML(t) {
+    const ps = (t && t.partidos) || [];
+    if (!ps.length) return `<div style="font-size:12px; color:#94a3b8;">Aún no hay partidos.</div>`;
+    const W = pesoEquipoTemporada(t);
+    const filas = Object.values(W).filter(r => r.partidos.length && r.peso !== null).map(r => {
+      const dif = r.partidos.filter(x => x.valorado).map(x => x.dif);
+      const m = dif.length ? dif.reduce((a, b) => a + b, 0) / dif.length : 0;
+      const sd = dif.length >= 3 ? Math.sqrt(dif.reduce((a, b) => a + (b - m) ** 2, 0) / dif.length) : null;
+      return { r, sd };
+    });
+    const conSd = filas.filter(f => f.sd != null).map(f => f.sd).sort((a, b) => a - b);
+    const t1 = conSd[Math.floor(conSd.length / 3)], t2 = conSd[Math.floor(conSd.length * 2 / 3)];
+    filas.forEach(f => { f.reg = f.sd == null ? null : (conSd.length < 3 ? 1 : f.sd < t1 ? 0 : f.sd < t2 ? 1 : 2); });
+    const REG = [['🎯', 'Muy regular', '#4ade80'], ['〰️', 'Normal', '#cbd5e1'], ['🎢', 'Irregular', '#f5a623']];
+    filas.sort((a, b) => v206MapaOrden === 'peso' ? b.r.peso - a.r.peso : v206MapaOrden === 'reg' ? ((a.sd ?? 99) - (b.sd ?? 99)) : ((a.r.j.dorsal ?? 99) - (b.r.j.dorsal ?? 99)));
+    const th = `<th></th>${ps.map((p, i) => `<th style="font:800 9.5px Montserrat,sans-serif; color:#94a3b8; padding:3px 1px; text-align:center;" title="${escHtml(p.rival)}">J${i + 1}</th>`).join('')}<th style="font:800 9.5px Montserrat,sans-serif; color:#94a3b8; padding:3px 4px;">PESO</th><th style="font:800 9.5px Montserrat,sans-serif; color:#94a3b8; padding:3px 2px;">REG.</th>`;
+    const tb = filas.map(({ r, reg }) => {
+      const celdas = ps.map((p, i) => {
+        const x = r.partidos.find(q => q.i === i);
+        if (!x) return `<td style="padding:2px 1px;"><div style="width:24px; height:24px; margin:auto; display:flex; align-items:center; justify-content:center; color:#475569; font-size:12px;">·</div></td>`;
+        const est = x.valorado ? `background:${mapaCalorColor(x.dif)};` : 'border:1px dashed #475569;';
+        return `<td style="padding:2px 1px;"><div role="button" tabindex="0" onclick="abrirFichaPartido(${i}, '${escHtml(r.j.id)}')" title="J${i + 1} vs ${escHtml(p.rival)} · ${x.mins}' · ${(x.dif >= 0 ? '+' : '−') + v206Fmt(Math.abs(x.dif))}" style="cursor:pointer; width:24px; height:24px; margin:auto; border-radius:5px; ${est}"></div></td>`;
+      }).join('');
+      const R = reg == null ? '<span style="color:#475569;">—</span>' : `<span title="${REG[reg][1]}">${REG[reg][0]}</span>`;
+      return `<tr><td style="text-align:left; white-space:nowrap; padding:2px 6px 2px 0; font-size:11.5px; font-weight:600; cursor:pointer;" onclick="abrirPerfilJugadorTemporada('${escHtml(r.j.id)}')">${escHtml(r.j.dorsal ?? '')} ${escHtml((r.j.name || '').split(' ')[0])}</td>${celdas}
+        <td style="font:800 11px Montserrat,sans-serif; color:${r.peso >= 0 ? '#4ade80' : '#f87171'}; padding:2px 4px; text-align:right;">${(r.peso >= 0 ? '+' : '−') + v206Fmt(Math.abs(r.peso))}</td><td style="text-align:center;">${R}</td></tr>`;
+    }).join('');
+    const bo = (o, l) => `<button type="button" onclick="v206MapaOrdenar('${o}')" style="flex:1; min-height:36px; border-radius:9px; border:1px solid ${v206MapaOrden === o ? '#2ed573' : 'rgba(255,255,255,.08)'}; background:#0f141b; color:${v206MapaOrden === o ? '#2ed573' : '#94a3b8'}; font:800 10.5px Montserrat,sans-serif;">${l}</button>`;
+    const ley = (c, l, dash) => `<span><i style="display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:4px; vertical-align:-1px; ${dash ? 'border:1px dashed #475569;' : 'background:' + c + ';'}"></i>${l}</span>`;
+    return `<div style="font-size:11.5px; color:#94a3b8; line-height:1.45; margin-bottom:8px;">Cada casilla es su peso en el equipo ese día: frente a sus compañeros del mismo partido. Una goleada no lo pinta todo de verde. Toca una casilla para ver su ficha de ese partido.</div>
+      <div style="display:flex; gap:6px; margin-bottom:8px;">${bo('dorsal', 'Dorsal')}${bo('peso', 'Peso')}${bo('reg', 'Regularidad')}</div>
+      <div style="overflow-x:auto; -webkit-overflow-scrolling:touch;"><table style="border-collapse:collapse; font-size:11px;"><thead><tr>${th}</tr></thead><tbody>${tb}</tbody></table></div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; font-size:10.5px; color:#94a3b8; margin-top:8px;">${ley('#16a34a', 'Muy por encima')}${ley('#4ade80', 'Por encima')}${ley('#64748b', 'En la media')}${ley('#f87171', 'Por debajo')}${ley('#b91c1c', 'Muy por debajo')}${ley('', 'Menos de 10\'', true)}<span>· no jugó</span></div>
+      <div style="font-size:10.5px; color:#94a3b8; margin-top:8px; line-height:1.45;"><b>Peso:</b> su media de la temporada (sobre la media de sus compañeros, por 70'). <b>Regularidad</b> (desde 3 partidos), comparando a unos niños con otros: 🎯 los que rinden más parecido todos los partidos · 〰️ normal · 🎢 los que más alternan partidazos con partidos flojos.</div>`;
+  }
+
   // 🧬 El ADN del equipo (Temporada → Más análisis)
   function adnEquipoHTML(t, abrir) {
     const R = estilosTemporada(t), lista = Object.values(R);
@@ -4621,14 +4897,14 @@
       }
     };
     let pesoHtml = ''; try { pesoHtml = pesoJugadorHTML(ultimaTemporada, j, minMinutosRanking(), '#f5a623'); } catch (e) { console.error('Peso:', e); } // v132
-    try { pesoHtml = puntosMasMenosHTML(ultimaTemporada, j, minMinutosRanking(), '#f5a623') + pesoHtml; } catch (e) { console.error('Puntos/más-menos:', e); } // v133
+    try { pesoHtml = puntosMasMenosHTML(ultimaTemporada, j, minMinutosRanking(), '#f5a623') + (() => { try { return cadenasJugadorHTML(ultimaTemporada, j); } catch (e) { console.error('Cadenas:', e); return ''; } })() + pesoHtml; } catch (e) { console.error('Puntos/más-menos:', e); } // v133 · v206: + cadenas de gol
     try { pesoHtml = claveEchaHTML(ultimaTemporada, j, '#f5a623') + pesoHtml; } catch (e) { console.error('Momento clave:', e); } // v134
     try { pesoHtml = proJugadorHTML(ultimaTemporada, ultimaLiga, j, minMinutosRanking(), '#f5a623') + pesoHtml; } catch (e) { console.error('Victorias añadidas:', e); } // v135
     try { pesoHtml = companeroJugadorHTML(ultimaTemporada, j, true, '#f5a623') + pesoHtml; } catch (e) { console.error('Compañeros:', e); } // v140
     let mgHtml = ''; try { mgHtml = mgJugadorHTML(ultimaTemporada, j); } catch (e) { console.error('Mapa de goles:', e); } // v169
     document.getElementById('perfilDatosContenido').innerHTML = renderFichaDatosHTML(statsDatos) + pesoHtml + mgHtml + sociosJugadorHTML(ultimaTemporada, j.name) + lineasJugadorHTMLV(j); // v95
     try { document.getElementById('perfilEvoContenido').innerHTML = evolucionJugadorHTML(ultimaTemporada, j) + recordsJugadorHTML(ultimaTemporada, j, '#f5a623'); mostrarBotonEvo(true); } catch (e) { console.error('Evolución:', e); mostrarBotonEvo(false); }
-    try { document.getElementById('perfilEstiloContenido').innerHTML = estiloJugadorHTML(ultimaTemporada, j); mostrarBotonEstilo(true); } catch (e) { console.error('Estilo:', e); mostrarBotonEstilo(false); } // v150
+    try { document.getElementById('perfilEstiloContenido').innerHTML = estiloJugadorHTML(ultimaTemporada, j) + (() => { try { return primeJugadorHTML(ultimaTemporada, j); } catch (e) { console.error('Prime:', e); return ''; } })(); mostrarBotonEstilo(true); } catch (e) { console.error('Estilo:', e); mostrarBotonEstilo(false); } // v150
     mostrarPestanaPerfil('cromo');
     document.getElementById('perfilModal').style.display = 'flex';
   };
@@ -8590,7 +8866,7 @@
     const secActivo = !!panelMas.querySelector('.subtab-btn.active');
     btn.setAttribute('aria-expanded', abierto ? 'true' : 'false');
     btn.classList.toggle('sec-activo', secActivo && !abierto);
-    if (txt) txt.textContent = abierto ? 'ocultar ▴' : '12 apartados en 3 bloques ▾';
+    if (txt) txt.textContent = abierto ? 'ocultar ▴' : '15 apartados en 3 bloques ▾';
   }
   function toggleMasTemp() {
     const panelMas = document.getElementById('tmpMasPanel');
@@ -9148,6 +9424,9 @@
       try { document.getElementById('marcadorEquipoLista').innerHTML = marcadorEquipoHTML(t, '#f5a623'); document.getElementById('tirosEquipoLista').innerHTML = tirosEquipoHTML(t, '#f5a623'); } catch (e) { console.error('Marcador/tiros:', e); } // v135
     },
     subBanquillo: (t) => { try { document.getElementById('banquilloLista').innerHTML = banquilloHTML(t, '#f5a623', 'bqv'); } catch (e) { console.error('Banquillo:', e); } }, // v137
+    subCadenas: (t) => { try { document.getElementById('cadenasLista').innerHTML = cadenasEquipoHTML(t); } catch (e) { console.error('Cadenas:', e); } }, // v206
+    subPrime: (t) => { try { document.getElementById('primeLista').innerHTML = primeEquipoHTML(t); } catch (e) { console.error('Prime:', e); } }, // v206
+    subMapaCalor: (t) => { try { document.getElementById('mapaCalorLista').innerHTML = mapaCalorHTML(t); } catch (e) { console.error('Mapa de calor:', e); } }, // v206
     subContexto: (t) => { try { document.getElementById('contextoLista').innerHTML = ctxContextoHTML(t); } catch (e) { console.error('Contexto:', e); } }, // v97
     subComparativa: (t) => { pintarComparativa(t); try { pintarCompVs(t); } catch (e) { console.error('Comparativa:', e); } }, // v167
     subOnceIdeal: (t) => pintarOnceIdeal(t),
@@ -9312,6 +9591,7 @@
             ${jc ? `<div style="display:inline-block; margin-top:10px; background:#0f1520; border:1px solid ${col}66; border-radius:12px; padding:8px 14px;"><div style="font-size:14px; color:#fff;">⚽ Juega como <b style="color:${col};">${escHtml(jc[0])}</b></div><div style="font-size:11.5px; color:#cbd5e1; margin-top:2px;">${escHtml(jc[1])}</div></div>` : ''}
           </div>
           ${lineas ? `<div style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:10.5px; letter-spacing:1px; color:${col}; margin-top:12px;">${x.portero ? 'SUS NÚMEROS' : 'SUPERPODERES'}</div>${lineas}` : ''}
+          ${(() => { try { return primeLineaMiHijoHTML(t, j, col); } catch (e) { return ''; } })()}
         </div>`;
       }
     } catch (e) { console.error('Mi hijo · estilo:', e); }

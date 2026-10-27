@@ -1159,6 +1159,7 @@
   // v140 (app) · «Hace mejores a los demás»: impacto de los compañeros con él y sin él (Sinergias, Ranking, ficha) y 🧲 al mejor compañero en la Plantilla. En el visor, solo los positivos.
   // v139 (app) · Acta del partido en PDF (3 páginas). En el visor, botón en cada partido si la app lo permite, sin el más/menos de cada niño.
   // v137 (app) · Más análisis → 🔄 Banquillo: el equipo antes y después de los cambios, lo que aporta el banquillo, cambio a cambio y cada niño de titular y de suplente.
+  // v207 (solo visor) · Su prime: nota para los que juegan las partes enteras («+30'» = finales de parte; en la tabla, «Partes enteras») y los tramos en negativo salen como 0 %.
   // v206 (app + visor) · ⚡ Su prime (ficha → Estilo, línea en Mi hijo y tabla en Más análisis → Jugadores), ⛓️ Cadenas de gol (Más análisis → Goles y ficha → Datos) y 🗓️ Mapa de calor con regularidad (Más análisis → Jugadores). La app guarda con cada gol las acciones previas (g.previas).
   // v205 (app + visor + delegado) · Nuevas acciones: gol en propia puerta del rival (sin goleador; origen «En propia» en el mapa de goles, también para los goles en contra), tiros al palo (cuentan como tiro a puerta; Hergar por niño y rival) y faltas recibidas por niño (sin puntos). Modo TV, minuto a minuto, estadísticas del partido, ficha del niño y actuación del partido.
   // v204 (app + visor) · Dominio por tramos en todos los gráficos de momentum (En vivo, descanso, final, visor y acta) y las acciones defensivas cuentan: de portero o defensa para el rival, de delantero para el Hergar.
@@ -3937,15 +3938,20 @@
       const ini = Math.max(0, Number(M.ini) || 0);
       Object.keys(M.j).forEach(id => {
         const c = v206Lee(M.j[id].c), a = v206Lee(M.j[id].a);
-        const R = res[id] || (res[id] = { segs: 0, pts: 0, partidos: 0, e: PRIME_E.map(() => ({ s: 0, p: 0 })), q: PRIME_Q.map(() => ({ s: 0, p: 0 })) });
+        const R = res[id] || (res[id] = { segs: 0, pts: 0, segsEnteras: 0, partidos: 0, e: PRIME_E.map(() => ({ s: 0, p: 0 })), q: PRIME_Q.map(() => ({ s: 0, p: 0 })) });
         let seguido = 0, jugo = false;
         const n = Math.max(c.length, a.length);
+        // v207 · tandas: si empieza con la parte (0' o 35') y dura casi toda la parte, ha jugado la parte entera
+        let k0 = null, kUlt = null, tm = 0;
+        const cierra = () => { if (k0 != null && (k0 <= 1 || (k0 >= 35 && k0 <= 36)) && kUlt - k0 >= 28) R.segsEnteras += tm; k0 = null; tm = 0; };
         for (let k = 0; k < n; k++) {
           const s = c[k] || 0;
-          if (k === 35) seguido = 0;           // la 2.ª parte empieza de cero (el descanso cuenta como recuperación)
-          if (s <= 0) { seguido = 0; continue; }
+          if (k === 35) { seguido = 0; cierra(); } // la 2.ª parte empieza de cero (el descanso cuenta como recuperación)
+          if (s <= 0) { seguido = 0; cierra(); continue; }
+          if (k0 == null) k0 = k;
+          kUlt = k;
           if (k < ini) { seguido += s; continue; } // llegó tarde: ese tramo no tiene las acciones
-          jugo = true;
+          jugo = true; tm += s;
           const pts = a[k] || 0, enMin = seguido / 60;
           const ie = PRIME_E.findIndex(([d, h]) => enMin >= d && enMin < h), iq = PRIME_Q.findIndex(([d, h]) => k >= d && k < h);
           R.segs += s; R.pts += pts;
@@ -3953,6 +3959,7 @@
           if (iq >= 0) { R.q[iq].s += s; R.q[iq].p += pts; }
           seguido += s;
         }
+        cierra();
         if (jugo) R.partidos++;
       });
     });
@@ -3967,19 +3974,21 @@
       R.primeE = mejor(R.e); R.primeQ = mejor(R.q);
       R.sinDatos = media <= 0;
       R.provisional = R.mins < PRIME_MIN_TOTAL;
+      R.enteras = R.segs > 0 && R.segsEnteras / R.segs >= 0.7; // v207: juega casi siempre las partes enteras
     });
     return res;
   }
   function primeFrase(R) {
     if (!R || R.sinDatos) return '';
+    const b = R.primeQ >= 0 ? `aparece más <b>${PRIME_Q[R.primeQ][4]}</b>` : 'no tiene un momento del partido que destaque';
+    if (R.enteras) return `Juega las partes enteras y ${b}.`; // v207
     const a = R.primeE >= 0 ? `Rinde más <b>${PRIME_E[R.primeE][3]}</b>` : 'Rinde parecido en todos los tramos desde que entra';
-    const b = R.primeQ >= 0 ? `y aparece más <b>${PRIME_Q[R.primeQ][4]}</b>` : 'y no tiene un momento del partido que destaque';
-    return `${a}, ${b}.`;
+    return `${a}, y ${b}.`;
   }
   function primeResumen(R) { // una línea corta (pestaña Mi hijo)
     if (!R || R.sinDatos) return '';
     const p = [];
-    if (R.primeE >= 0) p.push(PRIME_E[R.primeE][3]);
+    if (R.primeE >= 0 && !R.enteras) p.push(PRIME_E[R.primeE][3]);
     if (R.primeQ >= 0) p.push('aparece más ' + PRIME_Q[R.primeQ][4]);
     return p.length ? p.join(' · ') : 'rinde parecido en todos los tramos';
   }
@@ -3998,9 +4007,10 @@
     if (!R || R.sinDatos || R.mins < 30) return caja(titulo() + `<div style="font-size:12px; color:#94a3b8; line-height:1.45;">Sale con los partidos apuntados en directo desde el 17 de octubre (la app guarda sus acciones minuto a minuto). ${R ? `Lleva ${R.mins}' medidos.` : 'Aún no tiene minutos medidos.'}</div>`);
     const pct = v206PrimeModo === 'pct';
     const seg = `<div style="display:flex; background:#0f141b; border-radius:9px; padding:3px; gap:3px;">${[['pct', '%'], ['num', 'Cifra']].map(([m, l]) => `<button type="button" onclick="v206PrimeModo('${m}', '${escHtml(j.id)}')" style="border:0; border-radius:7px; padding:6px 10px; font:800 10.5px Montserrat,sans-serif; background:${v206PrimeModo === m ? '#1f2937' : 'transparent'}; color:${v206PrimeModo === m ? '#e2e8f0' : '#94a3b8'};">${l}</button>`).join('')}</div>`;
-    const val = (x) => x.pct == null ? '—' : pct ? x.pct + ' %' : v206Fmt(x.v10);
+    const val = (x) => x.pct == null ? '—' : pct ? Math.max(0, x.pct) + ' %' : v206Fmt(x.v10); // v207: en negativo, 0 %
+    const hayCero = [...R.e, ...R.q].some(x => x.pct != null && x.pct <= 0);
     const filas = R.e.map((x, i) => {
-      const esP = i === R.primeE, w = x.pct == null ? 0 : Math.min(100, x.pct / 1.6);
+      const esP = i === R.primeE && !R.enteras, w = x.pct == null ? 0 : Math.max(0, Math.min(100, x.pct / 1.6));
       const col = esP ? '#f5a623' : x.pct != null && x.pct >= 100 ? '#4ade80' : '#64748b';
       return `<div style="display:grid; grid-template-columns:52px 1fr 68px; gap:8px; align-items:center; padding:4px 0;">
         <span style="font-size:12px; color:#cbd5e1;">${PRIME_E[i][2]}</span>
@@ -4012,12 +4022,13 @@
       .map(([x, i]) => `<div style="height:30px; border-radius:7px; display:flex; align-items:center; justify-content:center; font:800 11px Montserrat,sans-serif; background:${colQ(x, i === R.primeQ)}; color:${i === R.primeQ ? '#0b0f14' : '#e2e8f0'};">${val(x)}${i === R.primeQ ? ' ⚡' : ''}</div>`).join('')).join('');
     return caja(titulo(seg) + `
       <div style="font-size:11.5px; color:#94a3b8; line-height:1.45; margin-bottom:8px;">Cuándo aparece más: los puntos de sus acciones (lo bueno y lo malo que hace él) en cada tramo, frente a su propia media. No cuenta lo que suma el equipo por los goles, así que las goleadas no influyen.</div>
-      <div style="font:800 10.5px Montserrat,sans-serif; letter-spacing:.8px; color:#cbd5e1; margin:6px 0 4px;">DESDE QUE ENTRA AL CAMPO</div>${filas}
+      <div style="font:800 10.5px Montserrat,sans-serif; letter-spacing:.8px; color:#cbd5e1; margin:6px 0 4px;">DESDE QUE ENTRA AL CAMPO</div>
+      ${R.enteras ? `<div style="font-size:11.5px; line-height:1.45; color:#cbd5e1; background:rgba(93,173,226,.10); border:1px solid rgba(93,173,226,.35); border-radius:9px; padding:7px 10px; margin-bottom:6px;">ℹ️ Juega casi siempre las partes enteras: aquí «+30'» son los finales de cada parte. Para él, mira mejor el minuto del partido.</div>` : ''}${filas}
       <div style="font-size:10.5px; color:#64748b; text-align:right;">${pct ? 'la raya = 100 % (su nivel normal)' : `puntos por cada 10' · su media: ${v206Fmt(R.media10)}`}</div>
       <div style="font:800 10.5px Montserrat,sans-serif; letter-spacing:.8px; color:#cbd5e1; margin:12px 0 6px;">SEGÚN EL MINUTO DEL PARTIDO</div>
       <div style="display:grid; grid-template-columns:62px repeat(3, minmax(0,1fr)); gap:5px; align-items:center;"><span></span><span style="text-align:center; font-size:10px; color:#94a3b8; font-weight:700;">Inicio</span><span style="text-align:center; font-size:10px; color:#94a3b8; font-weight:700;">Medio</span><span style="text-align:center; font-size:10px; color:#94a3b8; font-weight:700;">Final</span>${celdas}</div>
       <div style="margin-top:10px; font-size:12.5px; line-height:1.5; background:rgba(255,255,255,.04); border-radius:10px; padding:9px 11px; color:#e2e8f0;">⚡ ${primeFrase(R)}</div>
-      <div style="font-size:10.5px; color:#94a3b8; margin-top:8px; line-height:1.45;">100 % = su nivel normal. Compara al niño consigo mismo: un 130 % no quiere decir que haga más que otro, sino cuándo rinde mejor él. Tramos con menos de ${PRIME_MIN_TRAMO}' medidos: —. ${R.mins}' medidos${R.provisional ? ` · <b style="color:#f5a623;">⏳ provisional</b> hasta los ${PRIME_MIN_TOTAL}'` : ''}.</div>`);
+      <div style="font-size:10.5px; color:#94a3b8; margin-top:8px; line-height:1.45;">100 % = su nivel normal. Compara al niño consigo mismo: un 130 % no quiere decir que haga más que otro, sino cuándo rinde mejor él. Tramos con menos de ${PRIME_MIN_TRAMO}' medidos: —.${hayCero ? ' 0 %: en ese tramo no hizo nada o tuvo más fallos que aciertos.' : ''} ${R.mins}' medidos${R.provisional ? ` · <b style="color:#f5a623;">⏳ provisional</b> hasta los ${PRIME_MIN_TOTAL}'` : ''}.</div>`);
   }
   function primeEquipoHTML(t) {
     const P = primeTemporada(t);
@@ -4027,7 +4038,7 @@
     const chip = (txt, on) => `<span style="display:inline-block; font-size:10.5px; font-weight:800; padding:3px 7px; border-radius:7px; background:${on ? 'rgba(245,166,35,.15)' : 'rgba(255,255,255,.05)'}; color:${on ? '#f5a623' : '#94a3b8'};">${txt}</span>`;
     const filas = js.map(j => {
       const R = P[j.id];
-      const e = R.primeE >= 0 ? chip(PRIME_E[R.primeE][2] + ' ⚡', true) : chip('Igual en todos', false);
+      const e = R.enteras ? chip('Partes enteras', false) : R.primeE >= 0 ? chip(PRIME_E[R.primeE][2] + ' ⚡', true) : chip('Igual en todos', false);
       const q = R.primeQ >= 0 ? `${PRIME_Q[R.primeQ][3]} de la ${PRIME_Q[R.primeQ][2]}.ª` : '—';
       return `<tr role="button" tabindex="0" onclick="v206AbrirEstilo('${escHtml(j.id)}')" style="cursor:pointer;"><td style="padding:8px 4px; border-bottom:1px solid rgba(255,255,255,.04); font-weight:700; font-size:12px; white-space:nowrap;">${escHtml(j.dorsal ?? '')} ${escHtml((j.name || '').split(' ')[0])}</td>
         <td style="padding:8px 4px; border-bottom:1px solid rgba(255,255,255,.04);">${e}</td>
@@ -4035,7 +4046,7 @@
     }).join('');
     return `<div style="font-size:11.5px; color:#94a3b8; line-height:1.45; margin-bottom:8px;">Cuándo aparece más cada niño: según el tiempo que lleva seguido en el campo y según el minuto del partido. Útil para decidir cuándo meter a un suplente o a quién dejar para el final. Toca uno para ver su detalle.</div>
       <table style="width:100%; border-collapse:collapse;"><thead><tr><th style="font:800 9.5px Montserrat,sans-serif; color:#94a3b8; text-align:left; padding:6px 4px; border-bottom:1px solid rgba(255,255,255,.08);">NIÑO</th><th style="font:800 9.5px Montserrat,sans-serif; color:#94a3b8; text-align:left; padding:6px 4px; border-bottom:1px solid rgba(255,255,255,.08);">DESDE QUE ENTRA</th><th style="font:800 9.5px Montserrat,sans-serif; color:#94a3b8; text-align:left; padding:6px 4px; border-bottom:1px solid rgba(255,255,255,.08);">EN EL PARTIDO</th></tr></thead><tbody>${filas}</tbody></table>
-      <div style="font-size:10.5px; color:#94a3b8; margin-top:8px; line-height:1.45;">⏳ provisional: menos de ${PRIME_MIN_TOTAL}' medidos. «Igual en todos»: ningún tramo pasa del ${PRIME_UMBRAL} % de su media. El portero no se calcula.</div>`;
+      <div style="font-size:10.5px; color:#94a3b8; margin-top:8px; line-height:1.45;">⏳ provisional: menos de ${PRIME_MIN_TOTAL}' medidos. «Igual en todos»: ningún tramo pasa del ${PRIME_UMBRAL} % de su media. «Partes enteras»: casi siempre juega la parte completa, así que cuenta su minuto del partido. El portero no se calcula.</div>`;
   }
   window.v206AbrirEstilo = function (id) {
     try { window.abrirPerfilJugadorTemporada(id); setTimeout(() => { try { mostrarPestanaPerfil('estilo'); } catch (e) {} }, 60); } catch (e) { console.error('Prime:', e); }

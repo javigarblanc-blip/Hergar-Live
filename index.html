@@ -1114,6 +1114,8 @@
 </div>
 
 <script type="module">
+  // v210 (app v208 + visor) · Liga → Clasificación: 🧭 Dificultad del calendario (Elo medio de hoy de los rivales jugados y de los que quedan, y puntos con un calendario medio) y 🏠 Lo que vale jugar en casa. El Elo usa ahora la ventaja de casa medida en la Liga (mezclada con los 100 de partida mientras hay pocos partidos).
+  // v209 (visor) · La previa lleva la etiqueta «🤖 PREVIA IA» (en la tarjeta del próximo partido y en Temporada → Partidos), para que se sepa que la escribe la IA.
   // v195 (app + visor) · 🤖 Previa IA del próximo partido: la escribe la app (con la captura del último partido del rival si se sube: solo marcador y minutos) y sale plegada en la tarjeta del próximo partido, bajo la fecha y el tiempo; después queda con el partido en Temporada → Partidos.
   // v194 (app + visor) · Tiros fuera: los 3 primeros de cada partido suman +0,10; desde el 4.º, −0,05 cada uno (recalculados los partidos jugados). Explicado en «¿Cómo se calcula?».
   // v193 (app + visor) · ⏳ Cuenta atrás discreta bajo la fecha del próximo partido. 🎙️ Minuto a minuto: frases que escribe la app en directo (y el delegado), bajo el marcador en Partido y en Temporada → Partidos (los partidos anteriores, con sus goles). 🔁 Hergar vs Hergar: comparar ida, vuelta y 3.ª vuelta contra el mismo rival (Temporada → Partidos y «Así fue la ida» en la tarjeta del próximo partido).
@@ -2151,6 +2153,179 @@
       return { jugadores: res, sinOrden, conLiga: !!R };
   }
   // Elo y tabla de la suerte de toda la Liga
+  // ── 🏠 VENTAJA DE CASA MEDIDA y 🧭 DIFICULTAD DEL CALENDARIO (app v208 + visor v210 · misma función en los dos) ──
+  // Casa: se busca la ventaja (en puntos de Elo, de −100 a 300) con la que el Elo acierta mejor los resultados ya
+  //  jugados en la Liga. Con pocos partidos baila, así que se mezcla con los 100 de partida: con CASA_PESO partidos
+  //  pesan igual. El Elo usa esa mezcla; el Pronóstico ya medía su propia ventaja con los goles (se enseña también).
+  // Dificultad: Elo medio de HOY de los rivales ya jugados y de los que quedan. «Con calendario medio»: sus puntos
+  //  quitando lo que se esperaba de sus rivales reales y poniendo lo esperado contra un rival de Elo medio.
+  const CASA_PRIOR = 100, CASA_PESO = 30;
+  let casaCacheLiga = { k: null, v: null };
+  function casaLiga(liga) {
+      if (!liga || !liga.equipos || !liga.partidos || typeof pronPreparar !== 'function') return null;
+      const D = pronPreparar(liga);
+      const jug = D.P.filter(p => p.jugado).sort((a, b) => a.jg - b.jg);
+      const k = D.NT + '#' + jug.map(p => `${p.l}-${p.v}:${p.gl}-${p.gv}@${p.jg}`).join('|');
+      if (casaCacheLiga.k === k) return casaCacheLiga.v;
+      const N = jug.length;
+      const errorCon = (casa) => {
+          const e = Array(D.NT).fill(ELO_BASE); let err = 0;
+          jug.forEach(p => {
+              const we = 1 / (1 + Math.pow(10, -(e[p.l] + casa - e[p.v]) / 400));
+              const w = p.gl > p.gv ? 1 : p.gl === p.gv ? 0.5 : 0;
+              err += (w - we) * (w - we);
+              const gd = Math.abs(p.gl - p.gv), G = gd <= 1 ? 1 : gd === 2 ? 1.5 : (11 + gd) / 8;
+              const d = ELO_K * G * (w - we); e[p.l] += d; e[p.v] -= d;
+          });
+          return err;
+      };
+      let medida = null;
+      if (N) { let mejor = Infinity; for (let c = -100; c <= 300; c += 5) { const x = errorCon(c); if (x < mejor - 1e-12 || (Math.abs(x - mejor) <= 1e-12 && Math.abs(c - CASA_PRIOR) < Math.abs(medida - CASA_PRIOR))) { mejor = x; medida = c; } } }
+      const usada = N ? Math.round((CASA_PRIOR * CASA_PESO + medida * N) / (CASA_PESO + N)) : CASA_PRIOR;
+      let V = 0, Em = 0, Dr = 0, gl = 0, gv = 0;
+      const eq = liga.equipos.map((e, i) => ({ e, i, pc: 0, nc: 0, pf: 0, nf: 0 }));
+      jug.forEach(p => {
+          if (p.gl > p.gv) V++; else if (p.gl === p.gv) Em++; else Dr++;
+          gl += p.gl; gv += p.gv;
+          eq[p.l].nc++; eq[p.l].pc += p.gl > p.gv ? 3 : p.gl === p.gv ? 1 : 0;
+          eq[p.v].nf++; eq[p.v].pf += p.gv > p.gl ? 3 : p.gl === p.gv ? 1 : 0;
+      });
+      let hGoles = null;
+      try { if (N) hGoles = pronNiveles(D.NT, jug.map(p => Object.assign({}, p)), Math.max(...jug.map(p => p.jg))).h; } catch (e) { hGoles = null; }
+      const v = { N, medida, usada, V, E: Em, D: Dr, gl, gv, eq, hGoles, H: D.H };
+      casaCacheLiga = { k, v };
+      return v;
+  }
+  function eloCasaUsada(liga) { try { const c = casaLiga(liga); return c ? c.usada : ELO_CASA; } catch (e) { return ELO_CASA; } }
+  function dificultadLiga(liga) {
+      const E = eloLiga(liga);
+      if (!E || !E.jugados) return null;
+      const D = pronPreparar(liga), casa = E.casa == null ? ELO_CASA : E.casa;
+      const elo = []; E.equipos.forEach(x => { elo[x.i] = x.elo; });
+      const media = elo.reduce((a, b) => a + b, 0) / elo.length;
+      const jug = D.P.filter(p => p.jugado), rest = D.P.filter(p => !p.jugado);
+      const emp = (jug.filter(p => p.gl === p.gv).length + 0.25 * 10) / (jug.length + 10); // % de empates de la Liga (con 10 partidos «de partida» al 25 %)
+      const esp = (ea, eb, enCasa) => {
+          const we = 1 / (1 + Math.pow(10, -(ea + (enCasa ? casa : -casa) - eb) / 400));
+          const pd = Math.min(emp, 2 * we, 2 * (1 - we)), pw = Math.max(0, we - pd / 2);
+          return 3 * pw + pd;
+      };
+      const T = liga.equipos.map((e, i) => ({ e, i, pts: 0, pj: 0, rj: [], rq: [], espReal: 0 }));
+      jug.forEach(p => {
+          const L = T[p.l], Vv = T[p.v];
+          L.pj++; Vv.pj++; L.rj.push(p.v); Vv.rj.push(p.l);
+          L.pts += p.gl > p.gv ? 3 : p.gl === p.gv ? 1 : 0; Vv.pts += p.gv > p.gl ? 3 : p.gl === p.gv ? 1 : 0;
+          L.espReal += esp(elo[p.l], elo[p.v], true); Vv.espReal += esp(elo[p.v], elo[p.l], false);
+      });
+      rest.forEach(p => { T[p.l].rq.push(p.v); T[p.v].rq.push(p.l); });
+      const med = a => a.length ? a.reduce((s, x) => s + elo[x], 0) / a.length : null;
+      T.forEach(x => {
+          x.dJ = med(x.rj); x.dQ = med(x.rq);
+          const espMedio = x.pj * (esp(elo[x.i], media, true) + esp(elo[x.i], media, false)) / 2;
+          x.ajust = x.pj ? x.pts - x.espReal + espMedio : null;
+      });
+      return { T, media, H: D.H, jugados: E.jugados };
+  }
+  function difFmt1(v) { return v == null ? '—' : v.toFixed(1).replace('.', ','); }
+  function dificultadFilasHTML(Dd, k) {
+      const esc = momEsc;
+      const lista = Dd.T.filter(x => (k === 'jug' ? x.dJ : x.dQ) != null).sort((a, b) => (k === 'jug' ? b.dJ - a.dJ : b.dQ - a.dQ));
+      if (!lista.length) return `<div style="font-size:12px; color:#94a3b8; padding:6px 0;">${k === 'jug' ? 'Aún no hay partidos jugados.' : 'Ya no quedan partidos por jugar.'}</div>`;
+      const vals = lista.map(x => (k === 'jug' ? x.dJ : x.dQ) - Dd.media);
+      const escala = Math.max(1, ...vals.map(Math.abs));
+      return lista.map((x, n) => {
+          const d = k === 'jug' ? x.dJ : x.dQ, dif = d - Dd.media, me = !!x.e.esHergar;
+          const w = Math.min(50, Math.abs(dif) / escala * 50), col = dif >= 0 ? '#ff6b7a' : '#2ed573';
+          const barra = dif >= 0 ? `left:50%; width:${w}%;` : `left:${50 - w}%; width:${w}%;`;
+          const sub = k === 'jug' ? `${x.pts} ${x.pts === 1 ? 'pt' : 'pts'} · ${difFmt1(x.ajust)} con calendario medio` : `${x.rq.length} ${x.rq.length === 1 ? 'partido' : 'partidos'} por jugar`;
+          return `<div style="display:grid; grid-template-columns:20px 1fr 84px 42px; gap:8px; align-items:center; padding:7px ${me ? '4px' : '0'}; border-top:${n ? '1px solid rgba(255,255,255,.05)' : '0'}; font-size:12.5px;${me ? ' background:rgba(180,20,56,.18); border-radius:8px;' : ''}">
+              <span style="font-family:'Montserrat',sans-serif; font-weight:800; color:#94a3b8; text-align:center;">${n + 1}</span>
+              <span style="min-width:0; color:${me ? '#ff8fa3' : '#e2e8f0'}; font-weight:${me ? 800 : 500};">${esc(x.e.nombre)}<div style="font-size:10.5px; color:#94a3b8; font-weight:400;">${sub}</div></span>
+              <div style="position:relative; height:8px; background:rgba(255,255,255,.06); border-radius:4px;"><span style="position:absolute; left:50%; top:-3px; width:1px; height:14px; background:#64748b;"></span><i style="position:absolute; top:0; bottom:0; ${barra} background:${col}; border-radius:4px;"></i></div>
+              <span style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:14px; text-align:right; color:${col};">${Math.round(d)}</span>
+          </div>`;
+      }).join('');
+  }
+  function dificultadVer(btn, k) {
+      const box = btn.closest('.dif-box'); if (!box) return;
+      box.querySelectorAll('[data-dif-btn]').forEach(b => { const on = b.getAttribute('data-dif-btn') === k; b.style.borderColor = on ? b.dataset.ac : 'rgba(255,255,255,.1)'; b.style.color = on ? b.dataset.ac : '#94a3b8'; b.style.background = on ? 'rgba(245,166,35,.12)' : 'rgba(255,255,255,.03)'; });
+      box.querySelectorAll('[data-dif-vista]').forEach(el => { el.style.display = el.getAttribute('data-dif-vista') === k ? '' : 'none'; });
+  }
+  if (typeof window !== 'undefined') window.dificultadVer = dificultadVer;
+  function dificultadHTML(liga, acento) {
+      acento = acento || '#f5a623';
+      let Dd = null; try { Dd = dificultadLiga(liga); } catch (e) { Dd = null; }
+      if (!Dd) return '';
+      const h = Dd.H >= 0 ? Dd.T[Dd.H] : null;
+      let cab = '';
+      if (h && h.dJ != null) {
+          const ordJ = Dd.T.filter(x => x.dJ != null).sort((a, b) => b.dJ - a.dJ), pJ = ordJ.indexOf(h) + 1;
+          const ordQ = Dd.T.filter(x => x.dQ != null).sort((a, b) => b.dQ - a.dQ), pQ = ordQ.indexOf(h) + 1;
+          const caja = (v, c, txt) => `<div style="background:rgba(255,255,255,.05); border-radius:10px; padding:9px 10px;"><div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:21px; color:${c};">${v}</div><div style="font-size:10.5px; line-height:1.35; color:#94a3b8; margin-top:2px;">${txt}</div></div>`;
+          cab = `<div style="background:rgba(180,20,56,.14); border:1px solid rgba(255,85,119,.4); border-radius:12px; padding:11px 12px; margin-bottom:12px;">
+              <div style="font-size:12.5px; line-height:1.55; color:#e2e8f0;">El Hergar ha tenido el <b style="color:#ff8fa3;">${pJ}.º calendario más duro</b> de los ${ordJ.length} hasta ahora. Con un calendario medio llevaría <b style="color:#ff8fa3;">${difFmt1(h.ajust)} puntos</b> en vez de ${h.pts}.</div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px;">
+                  ${caja(Math.round(h.dJ), h.dJ >= Dd.media ? '#ff6b7a' : '#2ed573', `Elo medio de los rivales ya jugados (Liga: ${Math.round(Dd.media)})`)}
+                  ${h.dQ != null ? caja(Math.round(h.dQ), h.dQ >= Dd.media ? '#ff6b7a' : '#2ed573', `Elo medio de lo que queda · ${pQ}.º más duro`) : caja('—', '#64748b', 'Ya no quedan partidos')}
+              </div></div>`;
+      }
+      const btn = (k, txt, on) => `<button type="button" data-dif-btn="${k}" data-ac="${acento}" onclick="dificultadVer(this,'${k}')" style="flex:1; min-height:38px; border-radius:9px; border:1px solid ${on ? acento : 'rgba(255,255,255,.1)'}; background:${on ? 'rgba(245,166,35,.12)' : 'rgba(255,255,255,.03)'}; color:${on ? acento : '#94a3b8'}; font-family:'Montserrat',sans-serif; font-weight:800; font-size:11.5px; cursor:pointer;">${txt}</button>`;
+      return `<details style="margin-top:12px;"><summary style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:12.5px; color:${acento}; cursor:pointer;">🧭 Dificultad del calendario</summary>
+          <div class="dif-box">
+          <div style="font-size:11.5px; color:#94a3b8; line-height:1.45; margin:6px 0 10px;">Elo medio de los rivales a los que ya se ha enfrentado cada equipo, con el Elo que tienen hoy. Cuanto más alto, más duro ha sido su camino.${Dd.jugados < 20 ? ' Con pocas jornadas aún cambia mucho.' : ''}</div>
+          ${cab}
+          <div style="display:flex; gap:6px; margin:4px 0 8px;">${btn('jug', 'Lo jugado', true)}${btn('que', 'Lo que queda', false)}</div>
+          <div style="display:grid; grid-template-columns:20px 1fr 84px 42px; gap:8px; font-size:9.5px; font-weight:800; color:#64748b; padding-bottom:4px;"><span></span><span>EQUIPO</span><span style="text-align:center;">FÁCIL ← → DURO</span><span style="text-align:right;">ELO RIV.</span></div>
+          <div data-dif-vista="jug">${dificultadFilasHTML(Dd, 'jug')}</div>
+          <div data-dif-vista="que" style="display:none;">${dificultadFilasHTML(Dd, 'que')}</div>
+          <div style="font-size:10.5px; color:#94a3b8; line-height:1.45; margin-top:8px;">La barra parte del Elo medio de la Liga: en rojo, rivales más fuertes que la media; en verde, más flojos. «Con calendario medio»: los puntos que llevaría si sus rivales hubieran sido de nivel medio.</div>
+          </div></details>`;
+  }
+  function casaHTML(liga, acento) {
+      acento = acento || '#f5a623';
+      let C = null; try { C = casaLiga(liga); } catch (e) { C = null; }
+      if (!C || !C.N) return '';
+      const esc = momEsc, N = C.N, pct = x => Math.round(x / N * 100);
+      const seg = (v, c) => v ? `<div style="width:${v / N * 100}%; background:${c}; display:flex; align-items:center; justify-content:center; font-family:'Montserrat',sans-serif; font-weight:800; font-size:11px; color:#0b0f14;">${v / N > .1 ? pct(v) + '%' : ''}</div>` : '';
+      const caja = (v, c, txt) => `<div style="background:rgba(255,255,255,.05); border-radius:10px; padding:9px 10px;"><div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:20px; color:${c};">${v}</div><div style="font-size:10.5px; line-height:1.35; color:#94a3b8; margin-top:2px;">${txt}</div></div>`;
+      const H = C.H >= 0 ? C.eq[C.H] : null;
+      const hc = H && H.nc ? H.pc / H.nc : null, hf = H && H.nf ? H.pf / H.nf : null;
+      const maxV = Math.max(150, C.medida, C.usada);
+      const barraV = (txt, v, c, fuerte) => `<div style="display:grid; grid-template-columns:96px 1fr 40px; gap:8px; align-items:center; padding:4px 0; font-size:11.5px;"><span style="color:${fuerte ? acento : '#cbd5e1'}; font-weight:${fuerte ? 800 : 500};">${txt}</span><div style="height:10px; border-radius:5px; background:rgba(255,255,255,.06); overflow:hidden;"><div style="width:${Math.max(0, v) / maxV * 100}%; height:100%; background:${c}; border-radius:5px;"></div></div><b style="text-align:right; font-family:'Montserrat',sans-serif; color:${fuerte ? acento : '#e2e8f0'};">${v}</b></div>`;
+      const p100 = Math.round(100 / (1 + Math.pow(10, -CASA_PRIOR / 400))), pUs = Math.round(100 / (1 + Math.pow(10, -C.usada / 400)));
+      const filas = C.eq.filter(x => x.nc || x.nf).map(x => ({ x, c: x.nc ? x.pc / x.nc : null, f: x.nf ? x.pf / x.nf : null }))
+          .sort((a, b) => ((b.c ?? 0) - (b.f ?? 0)) - ((a.c ?? 0) - (a.f ?? 0)))
+          .map(({ x, c, f }, n) => {
+              const me = !!x.e.esHergar, d = (c != null && f != null) ? c - f : null;
+              const col = d == null ? '#64748b' : d > 0.05 ? '#2ed573' : d < -0.05 ? '#ff6b7a' : '#f5a623';
+              const num = v => v == null ? '—' : difFmt1(v);
+              return `<div style="display:grid; grid-template-columns:1fr 50px 50px 44px; gap:6px; align-items:center; padding:7px ${me ? '4px' : '0'}; border-top:${n ? '1px solid rgba(255,255,255,.05)' : '0'}; font-size:12px;${me ? ' background:rgba(180,20,56,.18); border-radius:8px;' : ''}"><span style="min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:${me ? '#ff8fa3' : '#e2e8f0'}; font-weight:${me ? 800 : 500};">${esc(x.e.nombre)}</span><span style="text-align:right; font-family:'Montserrat',sans-serif; font-weight:800;">${num(c)}</span><span style="text-align:right; font-family:'Montserrat',sans-serif; font-weight:800;">${num(f)}</span><span style="text-align:right; font-family:'Montserrat',sans-serif; font-weight:900; color:${col};">${d == null ? '—' : Math.abs(d) < 0.05 ? '0,0' : (d > 0 ? '+' : '−') + difFmt1(Math.abs(d))}</span></div>`;
+          }).join('');
+      return `<details style="margin-top:12px;"><summary style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:12.5px; color:${acento}; cursor:pointer;">🏠 Lo que vale jugar en casa</summary>
+          <div style="font-size:11.5px; color:#94a3b8; line-height:1.45; margin:6px 0 10px;">Cómo les va a los locales en esta Liga y cuánto pesa eso en el Elo.</div>
+          <div style="font-size:12px; font-weight:700; color:#e2e8f0;">${N} ${N === 1 ? 'partido jugado' : 'partidos jugados'}: así acaban para el local</div>
+          <div style="display:flex; height:26px; border-radius:8px; overflow:hidden; margin-top:6px;">${seg(C.V, '#2ed573')}${seg(C.E, '#94a3b8')}${seg(C.D, '#ff6b7a')}</div>
+          <div style="display:flex; gap:12px; flex-wrap:wrap; font-size:10.5px; color:#94a3b8; margin-top:6px;"><span><i style="display:inline-block; width:9px; height:9px; border-radius:3px; background:#2ed573; margin-right:4px;"></i>Gana el local ${C.V}</span><span><i style="display:inline-block; width:9px; height:9px; border-radius:3px; background:#94a3b8; margin-right:4px;"></i>Empate ${C.E}</span><span><i style="display:inline-block; width:9px; height:9px; border-radius:3px; background:#ff6b7a; margin-right:4px;"></i>Gana el visitante ${C.D}</span></div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px;">
+              ${caja(`${difFmt1(C.gl / N)} <span style="color:#64748b; font-size:15px;">–</span> ${difFmt1(C.gv / N)}`, '#e2e8f0', 'goles por partido del local y del visitante')}
+              ${caja(`${hc == null ? '—' : difFmt1(hc)} / ${hf == null ? '—' : difFmt1(hf)}`, '#ff8fa3', 'puntos por partido del Hergar en casa / fuera')}
+          </div>
+          <div style="margin-top:12px; background:rgba(255,255,255,.04); border-radius:12px; padding:12px;">
+              <div style="font-size:12px; font-weight:700; color:#e2e8f0; margin-bottom:8px;">Ventaja de casa en el Elo</div>
+              ${barraV('Antes', CASA_PRIOR, '#64748b')}${barraV('Medida', C.medida, '#ff5577')}${barraV('Se usa', C.usada, acento, true)}
+              <div style="font-size:10.5px; color:#94a3b8; line-height:1.45; margin-top:8px;">Con estos ${N} partidos, la ventaja que mejor explica los resultados es de <b style="color:#e2e8f0;">${C.medida} puntos</b>.${N < 135 ? ` Como aún ${N < CASA_PESO ? 'son pocos' : 'no ha acabado la Liga'}, se mezcla con los ${CASA_PRIOR} de partida y el Elo usa <b style="color:${acento};">${C.usada}</b>.` : ''} Contra un rival de su nivel, el Elo da al local un ${pUs} % (antes, un ${p100} %), contando el empate como medio.${C.hGoles != null ? ` En el Pronóstico, que mide la ventaja con los goles, el local marca un ${Math.round((C.hGoles * C.hGoles - 1) * 100)} % más que el visitante.` : ''}</div>
+          </div>
+          <div style="font-size:11px; font-weight:800; color:#cbd5e1; margin:14px 0 4px;">Puntos por partido, en casa y fuera</div>
+          <div style="display:grid; grid-template-columns:1fr 50px 50px 44px; gap:6px; font-size:9.5px; font-weight:800; color:#64748b; padding-bottom:4px;"><span>EQUIPO</span><span style="text-align:right;">CASA</span><span style="text-align:right;">FUERA</span><span style="text-align:right;">DIF.</span></div>
+          ${filas}
+          <div style="font-size:10.5px; color:#94a3b8; line-height:1.45; margin-top:8px;">«Casa» es el campo que pone el calendario de la Liga. El Hergar juega casi siempre en La Aldehuela por las obras, y cuenta como en casa.</div>
+          <details style="margin-top:8px;"><summary style="font-size:11.5px; font-weight:700; color:${acento}; cursor:pointer;">ℹ️ Cómo se calcula</summary>
+              <div style="font-size:12px; line-height:1.55; color:#e2e8f0; padding-top:6px;">
+              <p style="margin:0 0 6px;">Se busca qué ventaja de casa hace que el Elo acierte mejor los resultados ya jugados en la Liga: esa es la ventaja medida.</p>
+              <p style="margin:0 0 6px;">Con pocos partidos la cifra baila, así que se mezcla con los ${CASA_PRIOR} puntos de partida: con ${CASA_PESO} partidos jugados pesan igual lo medido y los ${CASA_PRIOR}; a final de temporada lo medido pesa más de cuatro veces más.</p>
+              <p style="margin:0;">El Elo usa la ventaja que sale de esa mezcla. El Pronóstico ya medía la suya con los goles de los locales y los visitantes.</p></div></details>
+      </details>`;
+  }
   function eloLiga(liga) {
       if (!liga || !liga.equipos || !liga.partidos || typeof pronPreparar !== 'function') return null;
       const D = pronPreparar(liga);
@@ -2158,9 +2333,10 @@
       const elo = Array(D.NT).fill(ELO_BASE);
       const ult = Array(D.NT).fill(0);
       const maxJ = jug.length ? jug[jug.length - 1].jg : 0;
+      const casa = eloCasaUsada(liga);
       const histH = [{ jg: 0, elo: ELO_BASE }];
       jug.forEach(p => {
-          const dr = elo[p.l] + ELO_CASA - elo[p.v];
+          const dr = elo[p.l] + casa - elo[p.v];
           const we = 1 / (1 + Math.pow(10, -dr / 400));
           const w = p.gl > p.gv ? 1 : p.gl === p.gv ? 0.5 : 0;
           const gd = Math.abs(p.gl - p.gv), G = gd <= 1 ? 1 : gd === 2 ? 1.5 : (11 + gd) / 8;
@@ -2169,7 +2345,7 @@
           if (p.jg === maxJ) { ult[p.l] += d; ult[p.v] -= d; }
           if (p.l === D.H || p.v === D.H) histH.push({ jg: p.jg, elo: elo[D.H] });
       });
-      return { equipos: liga.equipos.map((e, i) => ({ e, i, elo: elo[i], ult: ult[i] })).sort((a, b) => b.elo - a.elo), histH, jugados: jug.length };
+      return { equipos: liga.equipos.map((e, i) => ({ e, i, elo: elo[i], ult: ult[i] })).sort((a, b) => b.elo - a.elo), histH, jugados: jug.length, casa };
   }
   function suerteLiga(liga) {
       if (!liga || !liga.equipos || !liga.partidos || typeof pronPreparar !== 'function') return null;
@@ -2217,7 +2393,7 @@
               <div style="font-size:11.5px; color:#94a3b8; line-height:1.45; margin:6px 0;">Puntos que "debería" tener cada equipo por sus goles a favor y en contra, frente a los que tiene. Verde: le ha faltado suerte; rojo: le ha sobrado.${S.maxPj < PITA_FIABLE_PJ ? ` <b style="color:#f5a623;">Aún van pocas jornadas: tómalo como una pista.</b>` : ''}</div>${sf}</details>`;
       }
       return `<details style="margin-top:12px;"><summary style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:12.5px; color:${acento}; cursor:pointer;">📊 Ranking Elo</summary>
-          <div style="font-size:11.5px; color:#94a3b8; line-height:1.45; margin:6px 0;">Todos empiezan con ${ELO_BASE}, como en el ranking FIFA. Cada partido suben o bajan según lo esperado: ganar al de arriba da mucho y ganar al de abajo, poco. Las goleadas cuentan algo más y se tiene en cuenta jugar en casa.${E.jugados < 20 ? ' Las primeras jornadas se mueve mucho.' : ''}</div>${eloFilas}${graf}</details>${suerte}`;
+          <div style="font-size:11.5px; color:#94a3b8; line-height:1.45; margin:6px 0;">Todos empiezan con ${ELO_BASE}, como en el ranking FIFA. Cada partido suben o bajan según lo esperado: ganar al de arriba da mucho y ganar al de abajo, poco. Las goleadas cuentan algo más y se tiene en cuenta jugar en casa (con la ventaja medida en esta Liga: ${E.casa} puntos).${E.jugados < 20 ? ' Las primeras jornadas se mueve mucho.' : ''}</div>${eloFilas}${graf}</details>${suerte}${dificultadHTML(liga, acento)}${casaHTML(liga, acento)}`;
   }
     // ── v153 · 🍀 SUERTE Y NIVEL (misma función en la app y en el visor) ──
     //  · Termómetro de la suerte (PDO del hockey): % de tiros a puerta del Hergar que son gol + % de tiros a puerta del
@@ -2706,7 +2882,7 @@
           <p style="margin:0 0 8px;"><strong>Tiempo por marcador:</strong> minutos que se pasan ganando, empatando y perdiendo. Sale del minuto de cada gol.</p>
           <p style="margin:0 0 8px;"><strong>Cuota de tiros:</strong> tiros del Hergar entre los tiros de los dos equipos. Con los córners, aproxima cuánto se juega en el campo rival. <strong>Con cada niño en el campo:</strong> lo mismo, contando solo los tiros mientras él juega (desde la v135).</p>
           <p style="margin:0 0 8px;"><strong>Victorias añadidas:</strong> cuánto subió cada gol la probabilidad de ganar en ese momento, con el mismo cálculo que el directo del visor. +1,00 es una victoria entera. La asistencia se lleva la mitad.</p>
-          <p style="margin:0 0 8px;"><strong>Elo:</strong> todos empiezan con ${ELO_BASE}. Tras cada partido se compara lo esperado con lo que pasó: ganar al de arriba sube mucho, perder con el de abajo baja mucho. Las goleadas cuentan algo más y jugar en casa se tiene en cuenta.</p>
+          <p style="margin:0 0 8px;"><strong>Elo:</strong> todos empiezan con ${ELO_BASE}. Tras cada partido se compara lo esperado con lo que pasó: ganar al de arriba sube mucho, perder con el de abajo baja mucho. Las goleadas cuentan algo más y jugar en casa se tiene en cuenta, con la ventaja que se mide en la propia Liga.</p>
           <p style="margin:0;"><strong>Tabla de la suerte:</strong> con los goles a favor (GF) y en contra (GC), la parte de los puntos que "tocaría" es GF<sup>1,2</sup> ÷ (GF<sup>1,2</sup> + GC<sup>1,2</sup>). Se compara con los puntos reales. Es poco fiable las primeras ${PITA_FIABLE_PJ} jornadas.</p>
       </div>`;
   }
@@ -7950,7 +8126,7 @@
     if (!pv || !pv.titulo || !Array.isArray(pv.parrafos) || !pv.parrafos.length) return '';
     const id = 'pv' + Math.random().toString(36).slice(2, 8);
     return `<div class="pv-caja">
-      <div class="pv-t">🤖 PREVIA</div>
+      <div class="pv-t">🤖 PREVIA IA</div>
       <div class="pv-tit">${escHtml(pv.titulo)}</div>
       <div class="pv-txt${plegada ? ' cerrado' : ''}" id="${id}">${pv.parrafos.map(x => `<p>${escHtml(x)}</p>`).join('')}</div>
       ${plegada ? `<button type="button" class="pv-mas" onclick="previaToggle('${id}', this)">▾ Leer la previa entera</button>` : ''}
@@ -7965,7 +8141,7 @@
       const lp = (liga.partidos || []).find(x => x.id === id);
       if (!lp || !lp.previaIA) return '';
       return `<details style="margin-top:6px; padding-top:6px; border-top:1px solid rgba(255,255,255,0.06);">
-        <summary style="color:#c084fc; font-size:11px; font-weight:800; cursor:pointer;">🤖 La previa del partido</summary>
+        <summary style="color:#c084fc; font-size:11px; font-weight:800; cursor:pointer;">🤖 Previa IA del partido</summary>
         <div style="margin-top:6px;">${previaVisorHTML(lp.previaIA, false)}</div></details>`;
     } catch (e) { return ''; }
   }

@@ -73,7 +73,7 @@
 
   .match-header {
     background:linear-gradient(135deg,#0f172a 0%,#1a2332 100%);
-    padding:14px 16px; border-bottom:2px solid rgba(46,213,115,.3); position:relative;
+    padding:14px 16px; border-bottom:2px solid rgba(180,20,56,.75); position:relative;
   }
   .readonly-tag {
     position:absolute; top:10px; right:14px; font-size:9px; font-weight:700;
@@ -83,7 +83,7 @@
   .match-meta { text-align:center; font-size:11px; color:#64748b; font-weight:600; margin-bottom:8px; }
   .scoreboard-row { display:flex; align-items:center; justify-content:center; gap:14px; }
   .scoreboard-team { font-family:'Montserrat',sans-serif; font-weight:800; font-size:13px; color:#94a3b8; }
-  .scoreboard-team.hergar { color:#2ed573; }
+  .scoreboard-team.hergar { color:#ff5577; }
   .scoreboard-goals { font-family:'Montserrat',sans-serif; font-weight:900; font-size:32px; color:#f5f7fa; }
   .timer-row { text-align:center; margin-top:8px; }
   .timer-display { font-family:'Montserrat',sans-serif; font-weight:800; font-size:14px; color:#f5a623; letter-spacing:1px; }
@@ -320,7 +320,7 @@
     background: rgba(255,255,255,.03); color:#8da499; font-family:'Montserrat',sans-serif;
     font-weight:700; font-size:11px; cursor:pointer;
   }
-  .fd-tabs button.fd-active { background: linear-gradient(135deg, #2ed573, #27ae60); color:#0a0e14; border-color:transparent; }
+  .fd-tabs button.fd-active { background: rgb(180,20,56); color:#fff; border-color:transparent; } /* v211: rojo del club */
   .fd-header { display:flex; align-items:center; gap:12px; padding:14px; margin-bottom:10px; background: rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06); border-radius:14px; }
   .fd-avatar { width:46px; height:46px; border-radius:50%; flex-shrink:0; background: linear-gradient(145deg, #1a2332, #0f1620); border: 2px solid rgba(46,213,115,.35); display:flex; align-items:center; justify-content:center; font-family:'Montserrat',sans-serif; font-weight:900; font-size:16px; color:#2ed573; }
   .fd-header.fd-portero .fd-avatar { border-color: rgba(52,152,219,.5); color:#3498db; }
@@ -366,15 +366,30 @@
   .vs-rojo .vs-bar .h { background:rgb(180,20,56); }
 
   /* ── Aviso de gol dentro de la página ── */
+  /* v211 · aviso de gol como un rótulo mini del Modo TV: rojo del club y foto del goleador */
   #golBanner { display:none; position:fixed; left:12px; right:12px; top:calc(10px + env(safe-area-inset-top,0px));
-    max-width:456px; margin:0 auto; z-index:990; text-align:center; padding:14px 16px; border-radius:16px;
-    background:#2ed573; color:#06210f; box-shadow:0 14px 40px -8px rgba(46,213,115,.55); cursor:pointer; }
+    max-width:456px; margin:0 auto; z-index:990; border-radius:18px; overflow:hidden;
+    background:rgb(180,20,56); color:#fff; box-shadow:0 18px 44px -10px rgba(180,20,56,.7); cursor:pointer; }
   #golBanner.visible { display:block; animation:golEntra .35s ease-out; }
-  #golBanner .gol-titulo { font-family:'Montserrat',sans-serif; font-weight:900; font-size:19px; letter-spacing:.3px; }
-  #golBanner .gol-marcador { font-family:'Montserrat',sans-serif; font-weight:800; font-size:13px; margin-top:3px; }
-  #golBanner .gol-detalle { font-size:12px; font-weight:700; margin-top:3px; }
+  #golBanner .gb-top { display:flex; align-items:center; gap:12px; padding:14px 50px 12px 14px; position:relative; }
+  #golBanner .gb-foto { width:64px; height:64px; border-radius:50%; border:3px solid #fff; overflow:hidden; flex-shrink:0; background:#7a0d26;
+    display:flex; align-items:center; justify-content:center; font-family:'Montserrat',sans-serif; font-weight:900; font-size:24px; color:#fff; }
+  #golBanner .gb-foto img { width:100%; height:100%; object-fit:cover; display:block; }
+  #golBanner .gb-foto.esc { background:#fff; }
+  #golBanner .gb-txt { min-width:0; }
+  #golBanner .gb-k { font-family:'Montserrat',sans-serif; font-weight:900; font-size:11px; letter-spacing:2px; opacity:.85; }
+  #golBanner .gb-n { font-family:'Montserrat',sans-serif; font-weight:900; font-size:23px; line-height:1.08; margin-top:2px; overflow-wrap:anywhere; }
+  #golBanner .gb-a { font-size:12px; font-weight:600; opacity:.9; margin-top:3px; }
+  #golBanner .gb-esc { position:absolute; right:12px; top:12px; width:30px; height:30px; border-radius:50%; background:#fff; object-fit:cover; }
+  #golBanner .gb-bot { display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; background:rgba(10,14,20,.45); padding:9px 14px; font-family:'Montserrat',sans-serif; font-weight:800; font-size:13px; }
+  #golBanner .gb-m { font-weight:900; font-size:15px; letter-spacing:1px; }
+  #golBanner .gb-p { font-family:'Inter',sans-serif; font-size:11px; font-weight:700; opacity:.9; }
+  #golBanner .gb-bar { height:3px; background:rgba(255,255,255,.25); }
+  #golBanner .gb-bar i { display:block; height:100%; width:100%; background:#fff; transform-origin:left; }
+  #golBanner.visible .gb-bar i { animation:gbBaja 7s linear forwards; }
+  @keyframes gbBaja { to { transform:scaleX(0); } }
   @keyframes golEntra { from { transform:translateY(-130%); opacity:0; } to { transform:none; opacity:1; } }
-  @media (prefers-reduced-motion: reduce) { #golBanner.visible { animation:none; } }
+  @media (prefers-reduced-motion: reduce) { #golBanner.visible, #golBanner.visible .gb-bar i { animation:none; } }
   /* ── Récords ── */
   .rec-cab { display:flex; align-items:center; gap:12px; background:#111827; border:1px solid rgba(245,166,35,.35); border-radius:14px; padding:12px 14px; margin-bottom:12px; }
   .rec-cab img { width:48px; height:48px; border-radius:50%; background:#fff; object-fit:cover; }
@@ -657,6 +672,91 @@
   .iv-chips { display:flex; flex-wrap:wrap; gap:6px; margin:8px 0 2px; }
   .iv-chips span { font-size:11px; color:#cbd5e1; background:rgba(255,255,255,.05); border-radius:8px; padding:4px 8px; }
   @media (prefers-reduced-motion: reduce) { .cd-punto { animation:none; } }
+
+  /* ── v211 · Mejoras visuales ── */
+  /* Cabecera con escudos */
+  .sb-row { display:grid; grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); align-items:center; gap:8px; }
+  .sb-eq { display:flex; flex-direction:column; align-items:center; gap:6px; min-width:0; }
+  .sb-eq .scoreboard-team { font-size:12px; letter-spacing:.4px; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .sb-esc { width:50px; height:50px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .sb-esc:empty { border:1px dashed rgba(255,255,255,.15); }
+  .sb-esc img, .sb-esc > span { width:50px !important; height:50px !important; }
+  .sb-eq.h .sb-esc img { border:3px solid rgb(180,20,56); box-shadow:0 0 0 3px rgba(180,20,56,.25); box-sizing:border-box; }
+  .sb-eq.r .sb-esc img, .sb-eq.r .sb-esc > span { border:3px solid #475569; box-sizing:border-box; }
+  .sb-marc { display:flex; align-items:center; gap:6px; background:#0a0e14; border:1px solid rgba(255,255,255,.1); border-radius:12px; padding:2px 14px; }
+  .sb-marc .scoreboard-goals { font-size:34px; font-variant-numeric:tabular-nums; }
+  .sb-sep { color:#64748b; font-family:'Montserrat',sans-serif; font-weight:900; font-size:22px; }
+  /* Campo de Partido con fotos */
+  .campo.v211::before { background-image:repeating-linear-gradient(0deg, rgba(255,255,255,.035) 0 10%, transparent 10% 20%); }
+  .campo-lineas { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+  .jf-wrap { position:absolute; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; width:64px; }
+  .jf-foto { position:relative; width:40px; height:40px; border-radius:50%; border:2px solid #fff; background:rgb(180,20,56);
+    box-shadow:0 3px 10px rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center;
+    font-family:'Montserrat',sans-serif; font-weight:900; font-size:14px; color:#fff; }
+  .jf-foto img { width:100%; height:100%; border-radius:50%; object-fit:cover; display:block; }
+  .jf-wrap.gk .jf-foto { border-color:#f5a623; }
+  .jf-dor { margin-top:-8px; position:relative; min-width:17px; height:17px; padding:0 3px; border-radius:9px; background:rgb(180,20,56); border:1.5px solid #fff;
+    font-family:'Montserrat',sans-serif; font-weight:900; font-size:9px; color:#fff; display:flex; align-items:center; justify-content:center; }
+  .jf-wrap.gk .jf-dor { background:#f5a623; color:#0a0e14; }
+  .jf-nom { margin-top:2px; font-size:9px; font-weight:700; color:#fff; background:rgba(10,14,20,.72); padding:1px 5px; border-radius:5px; white-space:nowrap; max-width:64px; overflow:hidden; text-overflow:ellipsis; }
+  .jf-ic { position:absolute; left:-7px; top:-6px; font-size:12px; line-height:1; filter:drop-shadow(0 1px 2px #000); }
+  .jf-ic.d { left:auto; right:-7px; }
+  /* Historial de partidos en tarjetas */
+  .hp-res { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; margin-bottom:6px; }
+  .hp-res div { text-align:center; border-radius:10px; padding:7px 4px; background:rgba(255,255,255,.04); }
+  .hp-res b { display:block; font-family:'Montserrat',sans-serif; font-weight:900; font-size:18px; color:#e2e8f0; }
+  .hp-res span { font-size:10px; color:#94a3b8; }
+  .hp-racha { display:flex; gap:4px; justify-content:center; align-items:center; margin-bottom:10px; font-size:10px; color:#64748b; }
+  .hp-racha i { width:16px; height:16px; border-radius:50%; font-style:normal; font-family:'Montserrat',sans-serif; font-weight:900; font-size:8.5px; color:#0a0e14; display:inline-flex; align-items:center; justify-content:center; }
+  .hp-racha i.V { background:#2ed573; } .hp-racha i.E { background:#94a3b8; } .hp-racha i.D { background:#ff6b7a; }
+  .hp-racha i.u { box-shadow:0 0 0 2px #fff; }
+  .hp-lista { display:flex; flex-direction:column; gap:8px; }
+  .hp-det { border-radius:13px; }
+  .hp-det > summary { list-style:none; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .hp-det > summary::-webkit-details-marker { display:none; }
+  .hp-card { position:relative; display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:10px; align-items:center;
+    background:rgba(255,255,255,.035); border:1px solid rgba(255,255,255,.08); border-radius:13px; padding:10px 12px 0 15px; overflow:hidden; }
+  .hp-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:#94a3b8; }
+  .hp-card.V::before { background:#2ed573; } .hp-card.D::before { background:#ff6b7a; }
+  .hp-det[open] .hp-card { border-color:rgba(245,166,35,.45); border-bottom-left-radius:0; border-bottom-right-radius:0; }
+  .hp-rv { font-family:'Montserrat',sans-serif; font-weight:800; font-size:13px; color:#e2e8f0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .hp-sub { font-size:10.5px; color:#94a3b8; margin-top:2px; }
+  .hp-chips { display:flex; flex-wrap:wrap; gap:4px; margin-top:6px; }
+  .hp-chips span { font-size:10px; font-weight:700; padding:2px 7px; border-radius:7px; background:rgba(255,255,255,.06); color:#cbd5e1; line-height:1.4; }
+  .hp-chips span.mvp { background:rgba(245,166,35,.14); color:#f5a623; }
+  .hp-chips span.vid { background:rgba(180,20,56,.22); color:#ff8fa3; }
+  .hp-r { display:flex; flex-direction:column; align-items:center; gap:3px; }
+  .hp-marc { font-family:'Montserrat',sans-serif; font-weight:900; font-size:19px; padding:3px 10px; border-radius:9px; font-variant-numeric:tabular-nums; color:#e2e8f0; background:rgba(148,163,184,.14); white-space:nowrap; }
+  .hp-card.V .hp-marc { color:#2ed573; background:rgba(46,213,115,.12); } .hp-card.D .hp-marc { color:#ff6b7a; background:rgba(255,107,122,.12); }
+  .hp-r small { font-family:'Montserrat',sans-serif; font-weight:800; font-size:9px; letter-spacing:.6px; color:#64748b; }
+  .hp-extra { grid-column:1 / -1; }
+  .hp-extra:empty { display:none; }
+  .hp-pie { grid-column:1 / -1; display:flex; align-items:center; justify-content:space-between; gap:8px; margin:0 -12px 0 -15px; padding:8px 12px 8px 15px;
+    border-top:1px solid rgba(255,255,255,.06); background:rgba(255,255,255,.025); font-size:10.5px; color:#94a3b8; }
+  .hp-pie > span:first-child { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .hp-pie b { font-family:'Montserrat',sans-serif; font-weight:800; font-size:11px; color:#f5a623; white-space:nowrap; display:inline-flex; align-items:center; gap:5px; }
+  .hp-pie b i { font-style:normal; display:inline-block; transition:transform .2s; }
+  .hp-det[open] .hp-pie b i { transform:rotate(180deg); }
+  .hp-det[open] .hp-pie .cerr, .hp-det:not([open]) .hp-pie .abie { display:none; }
+  .hp-cuerpo { border:1px solid rgba(245,166,35,.45); border-top:0; border-radius:0 0 13px 13px; padding:8px 12px 12px; background:rgba(0,0,0,.18); display:flex; flex-direction:column; gap:2px; }
+  .hp-mes { font-family:'Montserrat',sans-serif; font-weight:800; font-size:10px; letter-spacing:1.2px; color:#64748b; margin:6px 2px 0; }
+  @media (prefers-reduced-motion: reduce) { .hp-pie b i { transition:none; } }
+  /* Ficha del niño con foto (pestaña Datos) */
+  .fd-header.v211 { position:relative; overflow:hidden; border:0; padding:16px 14px; gap:14px;
+    background:linear-gradient(120deg, rgb(150,14,46) 0%, rgb(96,8,30) 55%, #1a0a10 100%); }
+  .fd-header.v211::after { content:''; position:absolute; right:-30px; top:-30px; width:140px; height:140px; border-radius:50%; border:18px solid rgba(255,255,255,.05); pointer-events:none; }
+  .fd-fotobox { position:relative; flex-shrink:0; }
+  .fd-foto { width:80px; height:80px; border-radius:50%; border:3px solid #fff; overflow:hidden; background:#7a0d26; box-shadow:0 6px 18px rgba(0,0,0,.45);
+    display:flex; align-items:center; justify-content:center; font-family:'Montserrat',sans-serif; font-weight:900; font-size:28px; color:#fff; }
+  .fd-foto img { width:100%; height:100%; object-fit:cover; display:block; }
+  .fd-header.v211.fd-portero .fd-foto { border-color:#f5a623; }
+  .fd-chapa { position:absolute; right:-6px; bottom:-4px; min-width:28px; height:28px; padding:0 6px; border-radius:14px; background:#fff; color:rgb(180,20,56);
+    font-family:'Montserrat',sans-serif; font-weight:900; font-size:13px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,.4); }
+  .fd-header.v211 .fd-info { position:relative; z-index:1; }
+  .fd-header.v211 .fd-nombre { font-weight:900; font-size:20px; line-height:1.1; white-space:normal; overflow-wrap:anywhere; }
+  .fd-header.v211 .fd-meta { color:rgba(255,255,255,.82); font-size:11.5px; margin-top:4px; }
+  .fd-tags { display:flex; flex-wrap:wrap; gap:4px; margin-top:8px; }
+  .fd-tags span { font-size:10px; font-weight:800; padding:2px 8px; border-radius:8px; background:rgba(0,0,0,.28); color:#fff; line-height:1.5; }
 </style>
 </head>
 <body>
@@ -668,12 +768,10 @@
   <div class="match-header">
     <span class="readonly-tag">👁️ HERGAR LIVE</span>
     <div class="match-meta" id="matchMeta">Cargando...</div>
-    <div class="scoreboard-row">
-      <div class="scoreboard-team hergar">HERGAR</div>
-      <div class="scoreboard-goals" id="scoreLocal">-</div>
-      <div class="scoreboard-goals" style="color:#64748b;">—</div>
-      <div class="scoreboard-goals" id="scoreRival">-</div>
-      <div class="scoreboard-team" id="rivalName">RIVAL</div>
+    <div class="sb-row">
+      <div class="sb-eq h"><span class="sb-esc" id="escLocal"></span><div class="scoreboard-team hergar">HERGAR</div></div>
+      <div class="sb-marc"><span class="scoreboard-goals" id="scoreLocal">-</span><span class="sb-sep">–</span><span class="scoreboard-goals" id="scoreRival">-</span></div>
+      <div class="sb-eq r"><span class="sb-esc" id="escRival"></span><div class="scoreboard-team" id="rivalName">RIVAL</div></div>
     </div>
     <div class="timer-row"><span class="timer-display" id="timerDisplay">⏱ --:-- </span></div>
     <div style="text-align:center;"><button type="button" class="btn-modo-tv" onclick="abrirModoTV()">📺 Modo TV</button></div>
@@ -705,9 +803,16 @@
       <div class="card" id="narracionCard" style="display:none;"></div>
       <div class="card">
         <div class="card-title" id="formacionTitulo">Formación en el campo</div>
-        <div class="campo" id="campoContainer">
-          <div class="linea-medio"></div>
-          <div class="circulo-medio"></div>
+        <div class="campo v211" id="campoContainer">
+          <svg class="campo-lineas" viewBox="0 0 300 400" preserveAspectRatio="none" aria-hidden="true">
+            <g fill="none" stroke="rgba(255,255,255,.26)" stroke-width="1.5" vector-effect="non-scaling-stroke">
+              <rect x="8" y="8" width="284" height="384" rx="3"/><line x1="8" y1="200" x2="292" y2="200"/><circle cx="150" cy="200" r="34"/>
+              <rect x="80" y="8" width="140" height="56"/><rect x="118" y="8" width="64" height="20"/><path d="M122 64a34 34 0 0 0 56 0"/>
+              <rect x="80" y="336" width="140" height="56"/><rect x="118" y="372" width="64" height="20"/><path d="M122 336a34 34 0 0 1 56 0"/>
+              <rect x="132" y="2" width="36" height="6"/><rect x="132" y="392" width="36" height="6"/>
+            </g>
+            <circle cx="150" cy="200" r="2.5" fill="rgba(255,255,255,.4)"/>
+          </svg>
         </div>
       </div>
       <div class="card" id="banquilloPreviaCard" style="display:none;">
@@ -1066,9 +1171,13 @@
 <p class="note">HERGAR Live — visor de solo lectura para familias del club.<br><span style="font-size:9px; opacity:.6;">© Javi García Blanco · <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener" style="color:inherit;">CC BY-NC-SA 4.0</a> · Datos del tiempo: <a href="https://open-meteo.com/" target="_blank" rel="noopener" style="color:inherit;">Open-Meteo</a></span></p>
 
 <div id="golBanner" role="status" aria-live="polite" onclick="ocultarGolBanner()">
-  <div class="gol-titulo">⚽ ¡GOOOL DE HERGAR!</div>
-  <div class="gol-marcador" id="golMarcador"></div>
-  <div class="gol-detalle" id="golDetalle"></div>
+  <div class="gb-top">
+    <div class="gb-foto" id="golFoto"></div>
+    <div class="gb-txt"><div class="gb-k">¡GOOOL DEL HERGAR!</div><div class="gb-n" id="golNombre"></div><div class="gb-a" id="golAsist"></div></div>
+    <img class="gb-esc" id="golEsc" alt="">
+  </div>
+  <div class="gb-bot"><span class="gb-m" id="golMarcador"></span><span id="golMin"></span><span class="gb-p" id="golDetalle"></span></div>
+  <div class="gb-bar"><i></i></div>
 </div>
 
 <div id="recordBanner" role="status" aria-live="polite" onclick="ocultarRecordBanner()">
@@ -1114,6 +1223,7 @@
 </div>
 
 <script type="module">
+  // v211 (visor) · Mejoras visuales: escudos del Hergar y del rival en la cabecera (Hergar en rojo, marcador en un cajón); fotos en dibujo en el campo de Partido con dorsal en chapita, áreas dibujadas y ⚽/🟨 en directo; aviso de gol rojo con la foto del goleador, asistencia, minuto y opciones de ganar; Temporada → Partidos en tarjetas (escudo, marcador de color, jornada, casa/fuera, goleadores, MVP, vídeos, «Ver más») con resumen V/E/D y últimos 5; ficha del niño con foto, puesto y estilo en la pestaña Datos y pestañas en rojo.
   // v210 (app v208 + visor) · Liga → Clasificación: 🧭 Dificultad del calendario (Elo medio de hoy de los rivales jugados y de los que quedan, y puntos con un calendario medio) y 🏠 Lo que vale jugar en casa. El Elo usa ahora la ventaja de casa medida en la Liga (mezclada con los 100 de partida mientras hay pocos partidos).
   // v209 (visor) · La previa lleva la etiqueta «🤖 PREVIA IA» (en la tarjeta del próximo partido y en Temporada → Partidos), para que se sepa que la escribe la IA.
   // v195 (app + visor) · 🤖 Previa IA del próximo partido: la escribe la app (con la captura del último partido del rival si se sube: solo marcador y minutos) y sale plegada en la tarjeta del próximo partido, bajo la fecha y el tiempo; después queda con el partido en Temporada → Partidos.
@@ -1246,9 +1356,15 @@
     return `⏱ ${min}' · ${parte === 2 ? '2ª parte' : '1ª parte'}`;
   }
 
+  // v211 · foto de un niño (las sube la app a plantilla_fotos/<id>); null si no tiene
+  function fotoNinoV(id) {
+    try { const f = id != null ? fotosJugadores[id] : null; return f && f.foto ? f.foto : null; } catch (e) { return null; }
+  }
   function pintarCampo(matchData) {
+    if (!matchData) return;
     const container = document.getElementById('campoContainer');
-    container.querySelectorAll('.jugador-wrap').forEach(el => el.remove());
+    container.querySelectorAll('.jugador-wrap, .jf-wrap').forEach(el => el.remove());
+    const enJuego = !(matchData.previa === true && !matchData.matchFinished && !matchData.matchRunning);
     const formacion = matchData.formacion || '4-3-3';
     const coords = COORDENADAS_FORMACIONES[formacion] || COORDENADAS_FORMACIONES['4-3-3'];
     const onField = matchData.onFieldIds || [];
@@ -1259,12 +1375,17 @@
       const p = jugadores[id];
       if (!p || !coords[i]) return;
       const wrap = document.createElement('div');
-      wrap.className = 'jugador-wrap';
+      wrap.className = 'jf-wrap' + (i === 0 ? ' gk' : '');
       wrap.style.left = coords[i].x + '%';
       wrap.style.top = coords[i].y + '%';
+      // v211: foto en dibujo con el dorsal en una chapita; sin foto, el dorsal en rojo. En directo, ⚽ si ha marcado y 🟨/🟥
+      const foto = fotoNinoV(id);
+      const icGol = enJuego && (p.goles || 0) > 0 ? `<span class="jf-ic">⚽${p.goles > 1 ? '<sub style="font-size:8px;">' + p.goles + '</sub>' : ''}</span>` : '';
+      const icTarj = enJuego && p.roja ? '<span class="jf-ic d">🟥</span>' : (enJuego && (p.amarillas || 0) > 0 ? '<span class="jf-ic d">🟨</span>' : '');
       wrap.innerHTML = `
-        <div class="jugador ${i === 0 ? 'gk' : ''}">${p.dorsal}</div>
-        <div class="jugador-nombre">${(p.name || '').split(' ')[0]}</div>`;
+        <div class="jf-foto">${foto ? `<img src="${foto}" alt="">` : escHtml(p.dorsal ?? '')}${icGol}${icTarj}</div>
+        ${foto ? `<span class="jf-dor">${escHtml(p.dorsal ?? '')}</span>` : ''}
+        <div class="jf-nom">${escHtml((p.name || '').split(' ')[0])}</div>`;
       container.appendChild(wrap);
     });
   }
@@ -1454,12 +1575,17 @@
         + (t.fuerasJuego ? fdStatRow('🚩', 'Fueras de juego', t.fuerasJuego, minutosTotal) : '') // v117
         + (t.palos ? fdStatRow('🪵', 'Tiros al palo', t.palos, minutosTotal) : '') // v205
         + (t.faltasRecibidas ? fdStatRow('🟡', 'Faltas recibidas', t.faltasRecibidas, minutosTotal) : ''); // v205
+    // v211: cabecera con su foto en dibujo sobre el rojo del club, dorsal en chapa, puesto y etiquetas
+    const fotoF = fotoNinoV(stats.id);
+    const metaF = stats.meta || `#${stats.dorsal} · ${stats.esPortero ? 'Portero' : 'Jugador'}`;
+    const tagsF = (stats.tags || []).filter(Boolean).map(t => `<span>${escHtml(t)}</span>`).join('');
     return `
-      <div class="fd-header${stats.esPortero ? ' fd-portero' : ''}">
-        <div class="fd-avatar">${stats.dorsal}</div>
+      <div class="fd-header v211${stats.esPortero ? ' fd-portero' : ''}">
+        <div class="fd-fotobox"><div class="fd-foto">${fotoF ? `<img src="${fotoF}" alt="">` : escHtml(stats.dorsal ?? '')}</div>${fotoF ? `<span class="fd-chapa">${escHtml(stats.dorsal ?? '')}</span>` : ''}</div>
         <div class="fd-info">
-          <div class="fd-nombre">${stats.nombre}</div>
-          <div class="fd-meta">#${stats.dorsal} · ${stats.esPortero ? 'Portero' : 'Jugador'}</div>
+          <div class="fd-nombre">${escHtml(stats.nombre)}</div>
+          <div class="fd-meta">${escHtml(metaF)}</div>
+          ${tagsF ? `<div class="fd-tags">${tagsF}</div>` : ''}
         </div>
       </div>
       <div class="fd-resumen-row">
@@ -4725,6 +4851,7 @@
     }
     // FICHA DE DATOS del partido en vivo (un solo partido = el que está en juego)
     const statsDatos = {
+      id, meta: `${p.esPortero ? 'Portero' : 'Jugador'} · este partido`, // v211
       nombre: p.name, dorsal: p.dorsal, esPortero: !!p.esPortero, esPartidoSuelto: true,
       portero: p.esPortero ? porteroStatsPartidoSuelto(p) : null, // v114
       partidos: 1, minutosTotal: p.minutos || 0, minsPromedio: p.minutos || 0,
@@ -5078,7 +5205,19 @@
             </div>`).join('')}
         </div>`;
     }
+    // v211: puesto principal y etiquetas (estilo y su superpoder) para la cabecera con foto
+    let metaFicha = '', tagsFicha = [];
+    try { const et = etiquetaPosicionV(j); metaFicha = (et ? et.split(' · ').pop() : (esPortero ? 'Portero' : 'Jugador')) + ` · ${j.partidos || 0} ${j.partidos === 1 ? 'partido' : 'partidos'}`; } catch (e) {}
+    try {
+      const xs = estilosTemporada(ultimaTemporada)[j.id];
+      if (xs && ESTILOS[xs.estilo]) {
+        tagsFicha.push('🎨 ' + (xs.portero ? 'El Guardián' : ESTILOS[xs.estilo].n));
+        const sp = (xs.sp || []).find(s => s.r === 1);
+        if (sp && sp.txt && sp.txt.length <= 34) tagsFicha.push('⭐ ' + sp.txt);
+      }
+    } catch (e) {}
     const statsDatos = {
+      id: j.id, meta: metaFicha, tags: tagsFicha,
       nombre: j.name, dorsal: j.dorsal, esPortero, esPartidoSuelto: false,
       portero: j.porteroStats || null, // v114
       partidos: j.partidos||0, minutosTotal: j.minutos||0, minsPromedio: statsAttrs.minutos,
@@ -5153,10 +5292,23 @@
     try { avisarRecordsSiProcede(matchData, goles, foto, marcanIds); } catch (e) { console.error('Récords:', e); }
     let wpTxt = '';
     try { const a = wpGanarAhora(matchData, goles - 1), b = wpGanarAhora(matchData, goles); wpTxt = `📈 Opciones de ganar: ${pronPct(a)}% → ${pronPct(b)}%`; } catch (e) {}
-    const detalle = [marcan.length ? `⚽ ${marcan.join(', ')}` : (golPropiaReciente(matchData) ? '⚽ En propia puerta del rival' : ''), asisten.length ? `👟 ${asisten.join(', ')}` : '', wpTxt].filter(Boolean).join('  ·  ');
-    document.getElementById('golMarcador').textContent = `HERGAR ${goles} – ${Number(matchData.golesRival) || 0} ${(matchData.rival || 'RIVAL').toUpperCase()}`;
+    // v211: rótulo mini del Modo TV con la foto del goleador (en propia puerta: el escudo del Hergar)
+    const enPropia = !marcan.length && golPropiaReciente(matchData);
+    const fotoG = marcanIds.length ? fotoNinoV(marcanIds[0]) : null;
+    const jG = marcanIds.length ? (matchData.jugadores || {})[marcanIds[0]] : null;
+    const fEl = document.getElementById('golFoto');
+    fEl.classList.toggle('esc', !fotoG && (enPropia || !jG));
+    fEl.innerHTML = fotoG ? `<img src="${fotoG}" alt="">` : (jG ? escHtml(jG.dorsal ?? '⚽') : `<img src="${ESCUDO_HERGAR_SRC}" alt="">`);
+    document.getElementById('golNombre').textContent = marcan.length ? marcan.join(' y ') : (enPropia ? 'En propia puerta' : 'HERGAR');
+    const aEl = document.getElementById('golAsist');
+    aEl.textContent = asisten.length ? `👟 Asistencia de ${asisten.join(' y ')}` : (enPropia ? 'Gol en propia del rival' : '');
+    aEl.style.display = aEl.textContent ? '' : 'none';
+    document.getElementById('golEsc').src = ESCUDO_HERGAR_SRC;
+    let abrevR = 'RIV'; try { abrevR = rsAbrev(matchData.rival); } catch (e) {}
+    document.getElementById('golMarcador').textContent = `HERGAR ${goles} – ${Number(matchData.golesRival) || 0} ${abrevR}`;
+    document.getElementById('golMin').textContent = `${Number(matchData.minuto) || 0}'`;
     const det = document.getElementById('golDetalle');
-    det.textContent = detalle; det.style.display = detalle ? 'block' : 'none';
+    det.textContent = wpTxt.replace('Opciones de ganar: ', ''); det.style.display = wpTxt ? '' : 'none';
     const b = document.getElementById('golBanner');
     b.classList.remove('visible'); void b.offsetWidth; b.classList.add('visible');
     clearTimeout(golBannerTimer);
@@ -5170,9 +5322,20 @@
     const limpio = String(nombre || '').replace(/^(C\.D\.F\.|C\.D\.|C\.F\.|U\.D\.|A\.D\.|D\.)\s*/i, '').replace(/['"]/g, '').trim();
     return (limpio || 'RIVAL').toUpperCase();
   }
+  // v211 · escudos en la cabecera: el del Hergar y el del rival (si no lo tiene, sus iniciales)
+  function pintarEscudosCabecera(eqRival, nombreRival) {
+    const l = document.getElementById('escLocal'), r = document.getElementById('escRival');
+    if (l && !l.firstChild) l.innerHTML = `<img src="${ESCUDO_HERGAR_SRC}" alt="C.D. Hergar" style="width:50px; height:50px; border-radius:50%; object-fit:cover; background:#fff;">`;
+    if (r) r.innerHTML = (eqRival || nombreRival) ? escudoEquipoVisorHTML(eqRival, 50, nombreRival) : '';
+  }
   function pintarCabeceraPartido(matchData) {
     const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
     const d = (typeof proximoPartidoActual === 'function') ? proximoPartidoActual() : null;
+    try {
+      if (d && !(matchData && (matchData.matchRunning || (matchData.previa === true && !matchData.matchFinished)))) pintarEscudosCabecera(d.rival, d.rival.nombre);
+      else if (matchData) pintarEscudosCabecera(equipoLigaPorNombre(matchData.rival), matchData.rival || 'RIVAL');
+      else pintarEscudosCabecera(null, '');
+    } catch (e) { console.error('Escudos cabecera:', e); }
     if (d && !(matchData && (matchData.matchRunning || (matchData.previa === true && !matchData.matchFinished)))) {
       let jor = '';
       try { jor = `Jornada ${numJornadaGlobalViewer(d.liga, d.p)} · `; } catch (e) {}
@@ -8013,7 +8176,18 @@
     const cont = document.getElementById('partidosLista');
     if (partidos.length === 0) { cont.innerHTML = '<div class="loader">Sin partidos todavía</div>'; return; }
     let snCtx = null; try { snCtx = snPreparar(temporada, (typeof ultimaLiga !== 'undefined') ? ultimaLiga : null); } catch (e) { console.error('Suerte y nivel:', e); } // v153
-    cont.innerHTML = partidos.map((p, i) => {
+    // v211 · resumen arriba: victorias, empates, derrotas y los últimos 5 (el más reciente con aro)
+    const resDe = (p) => p.resultado === 'V' || p.resultado === 'E' || p.resultado === 'D' ? p.resultado : ((Number(p.golesLocal) || 0) > (Number(p.golesRival) || 0) ? 'V' : (Number(p.golesLocal) || 0) < (Number(p.golesRival) || 0) ? 'D' : 'E');
+    const nRes = { V: 0, E: 0, D: 0 }; partidos.forEach(p => { nRes[resDe(p)]++; });
+    const ult5 = partidos.slice(0, 5).reverse();
+    const cabHist = `<div class="hp-res"><div><b style="color:#2ed573;">${nRes.V}</b><span>${nRes.V === 1 ? 'victoria' : 'victorias'}</span></div><div><b>${nRes.E}</b><span>${nRes.E === 1 ? 'empate' : 'empates'}</span></div><div><b style="color:#ff6b7a;">${nRes.D}</b><span>${nRes.D === 1 ? 'derrota' : 'derrotas'}</span></div></div>
+      <div class="hp-racha" aria-label="Últimos ${ult5.length} resultados">${ult5.map((p, k) => `<i class="${resDe(p)}${k === ult5.length - 1 ? ' u' : ''}">${resDe(p)}</i>`).join('')}<span style="margin-left:4px;">últimos ${ult5.length}</span></div>`;
+    const ligaH = (typeof ultimaLiga !== 'undefined') ? ultimaLiga : null;
+    const jornadaDe = (p) => { try { const id = p.contexto && p.contexto.ligaId; if (ligaH && id != null) { const lp = (ligaH.partidos || []).find(x => x.id === id); if (lp) return numJornadaGlobalViewer(ligaH, lp); } } catch (e) {} return null; };
+    const MESES = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
+    const mesDe = (p) => { const m = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/.exec(p.fecha || '') || /^(\d{4})-(\d{2})-(\d{2})/.exec(p.fecha || ''); if (!m) return ''; const mm = m[1].length === 4 ? Number(m[2]) : Number(m[2]); return MESES[mm - 1] || ''; };
+    let mesPrevio = null;
+    cont.innerHTML = cabHist + '<div class="hp-lista">' + partidos.map((p, i) => {
       const chipClass = p.resultado === 'V' ? 'streak-win' : p.resultado === 'D' ? 'streak-loss' : 'streak-draw';
       const icon = p.resultado === 'V' ? '✅' : p.resultado === 'D' ? '❌' : '➖';
       const golesMin = golesPartidoHtml(p);
@@ -8029,17 +8203,32 @@
       const cromoBtn = (tieneMvp && p.mvpId) ? `<div style="display:flex; justify-content:flex-end; margin-top:2px;"><button onclick="abrirCromoMvpGuardado(${i})" style="background:rgba(245,166,35,0.14); border:1px solid rgba(245,166,35,0.4); color:#f5a623; border-radius:6px; padding:3px 9px; font-size:10px; font-weight:700; white-space:nowrap;">🎴 Cromo del MVP</button></div>` : '';
       const clavePartido = `${p.fecha || ''}|${p.rival || ''}`;
       const abierto = partidosAbiertos.has(clavePartido);
-      return `<details class="rank-row partido-det" data-k="${escHtml(clavePartido)}" ${abierto ? 'open' : ''} ontoggle="partidoToggle(this)" style="flex-direction:column; align-items:stretch; gap:2px; display:block;">
-        <summary style="cursor:pointer; list-style:none; -webkit-tap-highlight-color:transparent;">
-          <div style="display:flex; align-items:center; gap:8px;">
-            <div class="rank-name">${p.fecha || ''} · vs ${p.rival}</div>
-            <div class="streak-chip ${chipClass}">${p.golesLocal}–${p.golesRival} ${icon}</div>
+      // v211 · tarjeta: escudo del rival, marcador de color, jornada / fecha / casa-fuera y chips; al tocarla se abre todo lo de antes
+      const r = resDe(p);
+      let casa = null; try { casa = mdCasa(p, ligaH); } catch (e) {}
+      const jn = jornadaDe(p);
+      const nVid = Array.isArray(p.goles) ? p.goles.filter(g => g && g.equipo !== 'rival' && videoValido(g)).length : 0;
+      let escR = ''; try { escR = rsEscR(p, 40); } catch (e) {}
+      const chips = [goleadoresTxt ? `<span>⚽ ${escHtml(goleadoresTxt)}</span>` : '', tieneMvp ? `<span class="mvp">⭐ ${escHtml(p.mvp)}</span>` : '', nVid ? `<span class="vid">🎥 ${nVid}</span>` : ''].filter(Boolean).join('');
+      const dentro = ['📊 Estadísticas', '👥 Actuación', (p.analisisIA || p.resumenIA) ? '🤖 Informe IA' : '', rsTieneVideos(p) ? '🎬 Resumen' : '', temporada.actaVisor ? '📄 Acta' : ''].filter(Boolean).join(' · ');
+      const mes = mesDe(p);
+      const sepMes = mes && mes !== mesPrevio ? `<div class="hp-mes">${mes}</div>` : '';
+      if (mes) mesPrevio = mes;
+      return `${sepMes}<details class="hp-det" data-k="${escHtml(clavePartido)}" ${abierto ? 'open' : ''} ontoggle="partidoToggle(this)">
+        <summary>
+          <div class="hp-card ${r}">
+            ${escR}
+            <div style="min-width:0;">
+              <div class="hp-rv">${casa === false ? 'en' : 'vs'} ${escHtml(p.rival || '')}</div>
+              <div class="hp-sub">${[jn ? 'J' + jn : '', escHtml(p.fecha || ''), casa === true ? '🏠 En casa' : casa === false ? '🚌 Fuera' : ''].filter(Boolean).join(' · ')}</div>
+              ${chips ? `<div class="hp-chips">${chips}</div>` : ''}
+            </div>
+            <div class="hp-r"><span class="hp-marc">${p.golesLocal}-${p.golesRival}</span><small>${r === 'V' ? 'VICTORIA' : r === 'D' ? 'DERROTA' : 'EMPATE'}</small></div>
+            <div class="hp-extra">${ivBotonHTML(temporada, p)}</div>
+            <div class="hp-pie"><span>${dentro}</span><b><span class="cerr">Ver más</span><span class="abie">Cerrar</span><i>▾</i></b></div>
           </div>
-          ${resumenPlegado}
-          ${ivBotonHTML(temporada, p)}
-          <div class="partido-hint"><span class="h-cerrado">▾ Toca para ver goles y estadísticas</span><span class="h-abierto">▴ Ocultar</span></div>
         </summary>
-        <div style="display:flex; flex-direction:column; gap:2px; margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.06);">
+        <div class="hp-cuerpo">
           ${ctxTiempoChip(p.contexto) ? `<div style="margin-top:2px;">${ctxTiempoChip(p.contexto)}</div>` : ''}
           ${golesMin}
           ${resumenFilaHTML(p)}
@@ -8053,7 +8242,7 @@
           ${temporada.actaVisor ? `<button type="button" onclick="descargarActaVisor(${(temporada.partidos || []).length - 1 - i})" style="margin-top:8px; width:100%; min-height:42px; border-radius:10px; background:rgba(192,57,43,0.15); border:1px solid rgba(231,76,60,0.45); color:#ff8a80; font-weight:800; font-size:12.5px; cursor:pointer;">📄 Descargar acta (PDF)</button>` : ''}
         </div>
       </details>`;
-    }).join('');
+    }).join('') + '</div>';
   }
 
     // ── v104 · ACTUACIÓN DE CADA JUGADOR EN UN PARTIDO (misma función en la app y en el visor) ──
@@ -10302,6 +10491,8 @@
     if (ultimoPerfilAbiertoId != null) reabrirPerfilActual();
     if (typeof pintarProximoPartido === 'function') pintarProximoPartido();
     if (ultimaLiga) { try { pintarLigaEquipos(ultimaLiga); renderLigaViewerJornada(); pintarLigaClasificacion(ultimaLiga); } catch (e) {} }
+    try { pintarCabeceraPartido(ultimoMatchData); if (ultimoMatchData) pintarCampo(ultimoMatchData); } catch (e) {} // v211: escudos y fotos
+    try { if (ultimaTemporada) pintarPartidos(ultimaTemporada); } catch (e) {} // v211: escudos del historial
     if (tvActivo) tvRender();
   }, (err) => { console.error('Firebase fotos read error:', err); });
 

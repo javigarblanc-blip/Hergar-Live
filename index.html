@@ -4709,13 +4709,14 @@
   }
 
   // ── v213 · EVOLUCIÓN DE CADA NIÑO: tres vistas ──
-  //  · «Frente al equipo» (la principal): barra por partido = su impacto por 70' menos la media de los que jugaron ese día.
-  //    Así el resultado y el rival no deciden (el mismo cálculo que el peso en el equipo).
+  //  · «Su nivel» (la principal, v214): cada niño frente a SÍ MISMO. Cada partido = (su impacto por 70' − la media de los
+  //    que jugaron ese día) − su propia media de eso en la temporada. Arriba: un día mejor de lo normal en él; abajo, peor.
+  //    El resultado y el rival no deciden, y nadie sale comparado con sus compañeros (eso ya está en el mapa de calor).
   //  · «Impacto total»: la gráfica de antes (su impacto por 70' y la media del equipo).
   //  · «Sus acciones»: solo lo que hace él (impacto − la parte de equipo), con los fallos restando.
   //    Desde la v213 cada partido lo guarda (accImp); antes, del registro minuto a minuto (desde el 17 oct);
   //    y en los partidos más antiguos se rehace con sus acciones, sin fallos (se avisa).
-  let evoVista = 'equipo', evoJug = null;
+  let evoVista = 'nivel', evoJug = null;
   const EVO_R = { gol: .75, asist: .40, dp: .30, df: .10, pal: .30, pc: .25, pa: .15, reg: .10, def: .30, defC: 1.00, par: .30, parD: 1.00, fj: -.05 };
   function evoSusAcciones(p, j, h) {
     if (h.accImp !== undefined && h.accImp !== null) return { v: Number(h.accImp) || 0, conFallos: true };
@@ -4748,6 +4749,11 @@
       out.push({ i, p, h, mins: m, v, media, dif: v !== null && media !== null ? v - media : null, puesto, deCuantos: del.length,
         sa: val && s ? s.v / m * 70 : null, saFallos: s ? s.conFallos : true, mediaSa: minsSa ? sa / minsSa * 70 : null });
     });
+    // v214 · su nivel normal = su media (pesada por minutos) de la diferencia con el equipo; cada partido, cuánto se separó de ella
+    const conDif = out.filter(x => x.dif !== null);
+    const mins = conDif.reduce((s, x) => s + x.mins, 0);
+    const normal = mins ? conDif.reduce((s, x) => s + x.dif * x.mins, 0) / mins : 0;
+    out.forEach(x => { x.rel = x.dif !== null ? x.dif - normal : null; });
     return out;
   }
   function evoEscala(vals) {
@@ -4774,6 +4780,33 @@
       g += `<rect x="${X(k) - ancho / 2}" y="${T}" width="${ancho}" height="${H - T - B}" fill="transparent" style="cursor:pointer" onclick="evoDetalle(${k})"/>`;
     });
     return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Diferencia con la media del equipo en cada partido">${g + evoEtiq(pts, X, H)}</svg>`;
+  }
+  function evoNivel(pts) {
+    const W = 320, H = 180, L = 28, R = 12, T = 12, B = 24;
+    const val = pts.map((x, k) => ({ k, v: x.rel })).filter(x => x.v !== null);
+    const [mn, mx] = evoEscala(val.map(x => x.v));
+    const n = pts.length, X = k => n === 1 ? (L + W - R) / 2 : L + k * (W - L - R) / (n - 1), Y = v => T + (1 - (v - mn) / (mx - mn)) * (H - T - B);
+    const y0 = Y(0);
+    let g = '';
+    // banda suave de «su nivel normal»
+    g += `<rect x="${L}" y="${Y(0.4)}" width="${W - L - R}" height="${Math.max(1, Y(-0.4) - Y(0.4))}" fill="rgba(255,255,255,.045)"/>`;
+    g += `<line x1="${L}" x2="${W - R}" y1="${y0}" y2="${y0}" stroke="rgba(255,255,255,.3)" stroke-dasharray="3 3"/>`;
+    g += `<text x="${L - 6}" y="${T + 9}" text-anchor="end" font-size="11" fill="#64748b">▲</text><text x="${L - 6}" y="${H - B - 2}" text-anchor="end" font-size="11" fill="#64748b">▼</text>`;
+    if (val.length > 1) {
+      const P = val.map(x => [X(x.k), Y(x.v)]);
+      let d = `M${P[0][0].toFixed(1)},${P[0][1].toFixed(1)}`;
+      for (let i = 1; i < P.length; i++) { const xm = (P[i - 1][0] + P[i][0]) / 2; d += ` C${xm.toFixed(1)},${P[i - 1][1].toFixed(1)} ${xm.toFixed(1)},${P[i][1].toFixed(1)} ${P[i][0].toFixed(1)},${P[i][1].toFixed(1)}`; }
+      const area = `${d} L${P[P.length - 1][0].toFixed(1)},${y0} L${P[0][0].toFixed(1)},${y0} Z`;
+      g += `<defs><clipPath id="evoArr"><rect x="0" y="0" width="${W}" height="${y0}"/></clipPath><clipPath id="evoAbj"><rect x="0" y="${y0}" width="${W}" height="${H}"/></clipPath></defs>`;
+      g += `<path d="${area}" fill="rgba(255,85,119,.22)" clip-path="url(#evoArr)"/><path d="${area}" fill="rgba(148,163,184,.14)" clip-path="url(#evoAbj)"/>`;
+      g += `<path d="${d}" fill="none" stroke="#ff5577" stroke-width="2.5" stroke-linecap="round"/>`;
+    }
+    pts.forEach((x, k) => {
+      if (x.rel === null) g += `<circle cx="${X(k)}" cy="${y0}" r="4" fill="#0f172a" stroke="#475569" stroke-width="1.5"/>`;
+      else g += `<circle cx="${X(k)}" cy="${Y(x.rel)}" r="4.5" fill="${x.rel >= 0 ? '#ff5577' : '#94a3b8'}" stroke="#0f172a" stroke-width="1.5"/>`;
+      g += `<rect x="${X(k) - 14}" y="${T}" width="28" height="${H - T - B}" fill="transparent" style="cursor:pointer" onclick="evoDetalle(${k})"/>`;
+    });
+    return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Cada partido frente a su propio nivel normal">${g + evoEtiq(pts, X, H)}</svg>`;
   }
   function evoLineas(pts, key, keyMedia, color, aria) {
     const W = 320, H = 170, L = 28, R = 12, T = 10, B = 24;
@@ -4807,25 +4840,25 @@
     const it = (estilo, txt) => `<span><span style="display:inline-block; vertical-align:middle; margin-right:4px; ${estilo}"></span>${txt}</span>`;
     const boton = (v, txt) => `<button type="button" onclick="evoCambiarVista('${v}')" style="flex:1; min-height:34px; border:none; border-radius:9px; font-weight:800; font-size:11px; background:${evoVista === v ? '#1e293b' : 'transparent'}; color:${evoVista === v ? '#fff' : '#94a3b8'};">${txt}</button>`;
     let cuerpo = '';
-    if (evoVista === 'equipo') {
-      const conDif = valorados.filter(x => x.dif !== null);
-      const peso = conDif.reduce((s, x) => s + x.dif * x.mins, 0) / Math.max(1, conDif.reduce((s, x) => s + x.mins, 0));
-      const ult = media(conDif.slice(-3).map(x => x.dif));
-      const mejor = conDif.reduce((a, b) => b.dif > a.dif ? b : a, conDif[0]);
-      const encima = conDif.filter(x => x.dif >= 0).length;
-      let racha = 0; const signo = conDif.length ? conDif[conDif.length - 1].dif >= 0 : true;
-      for (let k = conDif.length - 1; k >= 0 && (conDif[k].dif >= 0) === signo; k--) racha++;
-      const col = v => v >= 0 ? '#2ed573' : '#ff6b7a';
-      cuerpo = `<div style="font-size:11.5px; color:#94a3b8; line-height:1.45; margin-bottom:6px;">Cada barra es lo que ${nombre} estuvo <b style="color:#e2e8f0;">por encima o por debajo de sus compañeros</b> ese día (impacto por 70'). Así no influye si se ganó 8-0 o se perdió 0-3.</div>
-        ${evoBarras(puntos)}
-        ${ley([it('width:10px; height:10px; background:#2ed573; border-radius:2px;', 'Por encima'), it('width:10px; height:10px; background:#ff6b7a; border-radius:2px;', 'Por debajo'), it('width:10px; height:3px; background:#475569;', `Menos de ${EVO_MIN}'`)])}
+    if (evoVista === 'nivel') {
+      const conRel = valorados.filter(x => x.rel !== null);
+      const ult = media(conRel.slice(-3).map(x => x.rel));
+      const mejor = conRel.reduce((a, b) => b.rel > a.rel ? b : a, conRel[0]);
+      const sobre = conRel.filter(x => x.rel >= 0).length;
+      let racha = 0; for (let k = conRel.length - 1; k >= 0 && conRel[k].rel >= 0; k--) racha++;
+      const primeros = media(conRel.slice(0, Math.ceil(conRel.length / 2)).map(x => x.rel)), segundos = media(conRel.slice(Math.ceil(conRel.length / 2)).map(x => x.rel));
+      const momento = conRel.length < 4 ? '—' : ult > 0.3 ? '↗ por encima de lo normal' : ult < -0.3 ? '↘ algo por debajo de lo normal' : '→ en su nivel';
+      const colM = conRel.length < 4 ? '#94a3b8' : ult > 0.3 ? '#ff5577' : '#e2e8f0';
+      cuerpo = `<div style="font-size:11.5px; color:#94a3b8; line-height:1.45; margin-bottom:6px;">Cada partido de ${nombre} comparado con <b style="color:#e2e8f0;">su propio nivel normal</b>: arriba, un día mejor de lo habitual en él; abajo, uno más flojo. No se compara con nadie y no influye si se ganó 8-0 o se perdió 0-3.</div>
+        ${evoNivel(puntos)}
+        ${ley([it('width:14px; height:3px; background:#ff5577; border-radius:2px;', nombre), it('width:14px; border-top:2px dashed rgba(255,255,255,.35);', 'Su nivel normal'), it('width:8px; height:8px; border-radius:50%; border:1.5px solid #475569;', `Menos de ${EVO_MIN}'`)])}
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-          ${caja('Peso en el equipo', fs(peso), col(peso))}
-          ${caja('Últimos 3 partidos', fs(ult), col(ult), tendTxt(ult, peso, conDif.length))}
-          ${caja('Por encima del equipo', `${encima} <span style="font-family:'Inter',sans-serif; font-size:11px; color:#94a3b8;">de ${conDif.length}</span>`)}
-          ${caja('Su mejor día', fs(mejor.dif), '#2ed573', `<span style="color:#94a3b8;">vs ${escHtml(mejor.p.rival)}</span>`)}
+          ${caja('Últimos 3 partidos', `<span style="font-size:13px;">${momento}</span>`, colM)}
+          ${caja('Su mejor partido', `vs ${escHtml(mejor.p.rival)}`, '#ff5577', `<span style="color:#94a3b8;">J${mejor.i + 1}</span>`)}
+          ${caja('Por encima de su nivel', `${sobre} <span style="font-family:'Inter',sans-serif; font-size:11px; color:#94a3b8;">de ${conRel.length}</span>`)}
+          ${caja('Temporada', conRel.length < 4 ? '—' : segundos - primeros > 0.3 ? '<span style="font-size:13px;">↗ va a más</span>' : segundos - primeros < -0.3 ? '<span style="font-size:13px;">→ le cuesta más</span>' : '<span style="font-size:13px;">→ regular</span>', conRel.length >= 4 && segundos - primeros > 0.3 ? '#ff5577' : '#e2e8f0')}
         </div>
-        ${racha >= 2 ? `<div style="font-size:12px; color:#cbd5e1; margin-top:8px;">${signo ? '🔥' : '🧊'} Lleva <b>${racha} partidos seguidos</b> ${signo ? 'por encima' : 'por debajo'} de sus compañeros.</div>` : ''}`;
+        ${racha >= 2 ? `<div style="font-size:12px; color:#cbd5e1; margin-top:8px;">🔥 Lleva <b>${racha} partidos seguidos</b> por encima de su nivel normal.</div>` : ''}`;
     } else if (evoVista === 'total') {
       const tot = media(valorados.map(x => x.v)), ult = media(valorados.slice(-3).map(x => x.v));
       const mejor = valorados.reduce((a, b) => b.v > a.v ? b : a);
@@ -4854,9 +4887,9 @@
       }
     }
     return `<div style="font-size:11px; font-weight:800; color:#f5a623; letter-spacing:.5px;">📈 EVOLUCIÓN</div>
-      <div style="display:flex; gap:3px; background:rgba(0,0,0,.35); border-radius:11px; padding:3px; margin:8px 0 10px;">${boton('equipo', 'Frente al equipo')}${boton('total', 'Impacto total')}${boton('acciones', 'Sus acciones')}</div>
+      <div style="display:flex; gap:3px; background:rgba(0,0,0,.35); border-radius:11px; padding:3px; margin:8px 0 10px;">${boton('nivel', 'Su nivel')}${boton('total', 'Impacto total')}${boton('acciones', 'Sus acciones')}</div>
       ${cuerpo}
-      <div id="evoDetalleBox" style="margin-top:10px; font-size:12px; line-height:1.45; background:rgba(180,20,56,.1); border:1px solid rgba(180,20,56,.35); border-radius:9px; padding:8px 10px; color:#e2e8f0;">Toca ${evoVista === 'equipo' ? 'una barra' : 'un punto'} para ver ese partido.</div>`;
+      <div id="evoDetalleBox" style="margin-top:10px; font-size:12px; line-height:1.45; background:rgba(180,20,56,.1); border:1px solid rgba(180,20,56,.35); border-radius:9px; padding:8px 10px; color:#e2e8f0;">Toca un punto para ver ese partido.</div>`;
   }
   window.evoCambiarVista = function (v) {
     evoVista = v;
@@ -4873,7 +4906,8 @@
     let linea2;
     if (x.v === null) linea2 = `<span style="color:#94a3b8;">menos de ${EVO_MIN}', sin valorar</span>`;
     else if (evoVista === 'acciones') linea2 = x.sa === null ? '<span style="color:#94a3b8;">partido cargado a mano: sin detalle de acciones</span>' : `sus acciones <b style="color:#6fb6ff;">${f1(x.sa)}</b> por 70'${x.mediaSa != null ? ` <span style="color:#94a3b8;">(equipo ${f1(x.mediaSa)})</span>` : ''}${x.saFallos ? '' : ' <span style="color:#94a3b8;">· sin fallos apuntados</span>'}`;
-    else linea2 = `impacto <b>${f1(x.v)}</b> por 70'${x.media !== null ? ` <span style="color:#94a3b8;">(equipo ${f1(x.media)})</span>` : ''}${x.dif !== null ? ` · <b style="color:${x.dif >= 0 ? '#2ed573' : '#ff6b7a'};">${fs(x.dif)}</b> sobre el equipo` : ''}${x.puesto ? `<br>🏅 Ese día, el <b>${x.puesto}.º</b> de ${x.deCuantos} del equipo` : ''}`;
+    else if (evoVista === 'nivel') linea2 = x.rel === null ? '' : x.rel >= 0.3 ? `<b style="color:#ff5577;">mejor de lo normal en él</b> (${fs(x.rel)})` : x.rel <= -0.3 ? `<span style="color:#cbd5e1;">algo más flojo de lo habitual</span> (${fs(x.rel)})` : `<span style="color:#cbd5e1;">en su nivel de siempre</span>`;
+    else linea2 = `impacto <b>${f1(x.v)}</b> por 70'${x.media !== null ? ` <span style="color:#94a3b8;">(equipo ${f1(x.media)})</span>` : ''}`;
     box.innerHTML = `<b>J${x.i + 1}</b> · vs ${escHtml(p.rival)} ${p.golesLocal}-${p.golesRival} <span style="color:#94a3b8;">· ${escHtml(p.fecha || '')}</span><br>${x.mins}'${extra ? ' · ' + extra : ''} · ${linea2}`;
   };
 

@@ -4708,8 +4708,8 @@
   }
 
   // ── v213 · EVOLUCIÓN DE CADA NIÑO: tres vistas ──
-  //  · «Su nivel» (la principal, v214): cada niño frente a SÍ MISMO. Cada partido = (su impacto por 70' − la media de los
-  //    que jugaron ese día) − su propia media de eso en la temporada. Arriba: un día mejor de lo normal en él; abajo, peor.
+  //  · «Su nivel» (la principal, v214 · v218 con sus acciones): cada niño frente a SÍ MISMO. Cada partido = (sus acciones por 70' − la
+  //    media de acciones del equipo ese día) − su propia media de eso en la temporada. Arriba: un día mejor de lo normal en él; abajo, peor.
   //    El resultado y el rival no deciden, y nadie sale comparado con sus compañeros (eso ya está en el mapa de calor).
   //  · «Impacto total»: la gráfica de antes (su impacto por 70' y la media del equipo).
   //  · «Sus acciones»: solo lo que hace él (impacto − la parte de equipo), con los fallos restando.
@@ -4748,11 +4748,14 @@
       out.push({ i, p, h, mins: m, v, media, dif: v !== null && media !== null ? v - media : null, puesto, deCuantos: del.length,
         sa: val && s ? s.v / m * 70 : null, saFallos: s ? s.conFallos : true, mediaSa: minsSa ? sa / minsSa * 70 : null });
     });
-    // v214 · su nivel normal = su media (pesada por minutos) de la diferencia con el equipo; cada partido, cuánto se separó de ella
-    const conDif = out.filter(x => x.dif !== null);
-    const mins = conDif.reduce((s, x) => s + x.mins, 0);
-    const normal = mins ? conDif.reduce((s, x) => s + x.dif * x.mins, 0) / mins : 0;
-    out.forEach(x => { x.rel = x.dif !== null ? x.dif - normal : null; });
+    // v218 · «Su nivel» sale de SUS ACCIONES (no del impacto, que lleva el +1 de los goles del equipo):
+    //   1) sus acciones por 70' − la media de acciones del equipo ese día (quita si se apuntó más o menos y el nivel del rival);
+    //   2) − su propia media de eso en la temporada (pesada por minutos). Partidos sin detalle (a mano) o con menos de 10': sin punto.
+    const conA = out.filter(x => x.sa !== null && x.mediaSa !== null);
+    conA.forEach(x => { x.difA = x.sa - x.mediaSa; });
+    const mins = conA.reduce((s, x) => s + x.mins, 0);
+    const normal = mins ? conA.reduce((s, x) => s + x.difA * x.mins, 0) / mins : 0;
+    out.forEach(x => { x.rel = (x.sa !== null && x.mediaSa !== null) ? x.difA - normal : null; });
     return out;
   }
   function evoEscala(vals) {
@@ -4841,6 +4844,9 @@
     let cuerpo = '';
     if (evoVista === 'nivel') {
       const conRel = valorados.filter(x => x.rel !== null);
+      if (conRel.length < 2) { cuerpo = `<div style="text-align:center; padding:20px 10px; color:#94a3b8; font-size:12.5px; line-height:1.5;">Aún no hay 2 partidos en directo con ${EVO_MIN}' o más para ver su nivel.</div>`; }
+      else {
+      const sinDet = valorados.length - conRel.length, sinFal = conRel.filter(x => !x.saFallos).length;
       const ult = media(conRel.slice(-3).map(x => x.rel));
       const mejor = conRel.reduce((a, b) => b.rel > a.rel ? b : a, conRel[0]);
       const sobre = conRel.filter(x => x.rel >= 0).length;
@@ -4848,16 +4854,18 @@
       const primeros = media(conRel.slice(0, Math.ceil(conRel.length / 2)).map(x => x.rel)), segundos = media(conRel.slice(Math.ceil(conRel.length / 2)).map(x => x.rel));
       const momento = conRel.length < 4 ? '—' : ult > 0.3 ? '↗ por encima de lo normal' : ult < -0.3 ? '↘ algo por debajo de lo normal' : '→ en su nivel';
       const colM = conRel.length < 4 ? '#94a3b8' : ult > 0.3 ? '#ff5577' : '#e2e8f0';
-      cuerpo = `<div style="font-size:11.5px; color:#94a3b8; line-height:1.45; margin-bottom:6px;">Cada partido de ${nombre} comparado con <b style="color:#e2e8f0;">su propio nivel normal</b>: arriba, un día mejor de lo habitual en él; abajo, uno más flojo. No se compara con nadie y no influye si se ganó 8-0 o se perdió 0-3.</div>
+      cuerpo = `<div style="font-size:11.5px; color:#94a3b8; line-height:1.45; margin-bottom:6px;">Cada partido de ${nombre} comparado con <b style="color:#e2e8f0;">su propio nivel normal</b>: arriba, un día mejor de lo habitual en él; abajo, uno más flojo. Sale de lo que hace él (sus acciones), así que no influye el resultado ni si estaba en el campo cuando cayeron los goles.</div>
         ${evoNivel(puntos)}
-        ${ley([it('width:14px; height:3px; background:#ff5577; border-radius:2px;', nombre), it('width:14px; border-top:2px dashed rgba(255,255,255,.35);', 'Su nivel normal'), it('width:8px; height:8px; border-radius:50%; border:1.5px solid #475569;', `Menos de ${EVO_MIN}'`)])}
+        ${ley([it('width:14px; height:3px; background:#ff5577; border-radius:2px;', nombre), it('width:14px; border-top:2px dashed rgba(255,255,255,.35);', 'Su nivel normal'), it('width:8px; height:8px; border-radius:50%; border:1.5px solid #475569;', `Sin datos`)])}
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
           ${caja('Últimos 3 partidos', `<span style="font-size:13px;">${momento}</span>`, colM)}
           ${caja('Su mejor partido', `vs ${escHtml(mejor.p.rival)}`, '#ff5577', `<span style="color:#94a3b8;">J${mejor.i + 1}</span>`)}
           ${caja('Por encima de su nivel', `${sobre} <span style="font-family:'Inter',sans-serif; font-size:11px; color:#94a3b8;">de ${conRel.length}</span>`)}
           ${caja('Temporada', conRel.length < 4 ? '—' : segundos - primeros > 0.3 ? '<span style="font-size:13px;">↗ va a más</span>' : segundos - primeros < -0.3 ? '<span style="font-size:13px;">→ le cuesta más</span>' : '<span style="font-size:13px;">→ regular</span>', conRel.length >= 4 && segundos - primeros > 0.3 ? '#ff5577' : '#e2e8f0')}
         </div>
-        ${racha >= 2 ? `<div style="font-size:12px; color:#cbd5e1; margin-top:8px;">🔥 Lleva <b>${racha} partidos seguidos</b> por encima de su nivel normal.</div>` : ''}`;
+        ${racha >= 2 ? `<div style="font-size:12px; color:#cbd5e1; margin-top:8px;">🔥 Lleva <b>${racha} partidos seguidos</b> por encima de su nivel normal.</div>` : ''}
+        ${sinDet || sinFal ? `<div style="font-size:10.5px; color:#94a3b8; line-height:1.45; margin-top:8px;">${sinDet ? `${sinDet} ${sinDet === 1 ? 'partido cargado' : 'partidos cargados'} a mano no ${sinDet === 1 ? 'tiene' : 'tienen'} punto: no hay detalle de sus acciones. ` : ''}${sinFal ? `En ${sinFal} ${sinFal === 1 ? 'partido' : 'partidos'} de antes del 17 de octubre los fallos no restan.` : ''}</div>` : ''}`;
+      }
     } else if (evoVista === 'total') {
       const tot = media(valorados.map(x => x.v)), ult = media(valorados.slice(-3).map(x => x.v));
       const mejor = valorados.reduce((a, b) => b.v > a.v ? b : a);
@@ -4905,7 +4913,7 @@
     let linea2;
     if (x.v === null) linea2 = `<span style="color:#94a3b8;">menos de ${EVO_MIN}', sin valorar</span>`;
     else if (evoVista === 'acciones') linea2 = x.sa === null ? '<span style="color:#94a3b8;">partido cargado a mano: sin detalle de acciones</span>' : `sus acciones <b style="color:#6fb6ff;">${f1(x.sa)}</b> por 70'${x.mediaSa != null ? ` <span style="color:#94a3b8;">(equipo ${f1(x.mediaSa)})</span>` : ''}${x.saFallos ? '' : ' <span style="color:#94a3b8;">· sin fallos apuntados</span>'}`;
-    else if (evoVista === 'nivel') linea2 = x.rel === null ? '' : x.rel >= 0.3 ? `<b style="color:#ff5577;">mejor de lo normal en él</b> (${fs(x.rel)})` : x.rel <= -0.3 ? `<span style="color:#cbd5e1;">algo más flojo de lo habitual</span> (${fs(x.rel)})` : `<span style="color:#cbd5e1;">en su nivel de siempre</span>`;
+    else if (evoVista === 'nivel') linea2 = x.rel === null ? '<span style="color:#94a3b8;">sin detalle de sus acciones (cargado a mano)</span>' : x.rel >= 0.3 ? `<b style="color:#ff5577;">mejor de lo normal en él</b> (${fs(x.rel)})` : x.rel <= -0.3 ? `<span style="color:#cbd5e1;">algo más flojo de lo habitual</span> (${fs(x.rel)})` : `<span style="color:#cbd5e1;">en su nivel de siempre</span>`;
     else linea2 = `impacto <b>${f1(x.v)}</b> por 70'${x.media !== null ? ` <span style="color:#94a3b8;">(equipo ${f1(x.media)})</span>` : ''}`;
     box.innerHTML = `<b>J${x.i + 1}</b> · vs ${escHtml(p.rival)} ${p.golesLocal}-${p.golesRival} <span style="color:#94a3b8;">· ${escHtml(p.fecha || '')}</span><br>${x.mins}'${extra ? ' · ' + extra : ''} · ${linea2}`;
   };

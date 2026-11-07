@@ -10801,6 +10801,38 @@
         keyIdx.forEach((m,ci) => { const c=cond[ci][res[m]]; c[0]+=champ; c[1]++; });
         if (H >= 0) { winC[wH][0]+=champ; winC[wH][1]++; const k = pts[H]; if (!ptsC[k]) ptsC[k] = [0,0]; ptsC[k][0]+=champ; ptsC[k][1]++; }
       }
+      // v219 · «Lo que está en juego» y «el partido que también te interesa»: las opciones de cada resultado se calculan
+      // FORZANDO ese resultado (mismos sorteos para el resto de la Liga), no con las pocas simulaciones en que salió por azar.
+      // Con un 99 % de victoria, «si pierde» salía de ~100 simulaciones y daba cosas como «si pierdes, más opciones».
+      // Se guarda en el mismo formato [campeón, veces]: «veces» sigue siendo lo probable que es cada resultado.
+      if (N >= PRON_N && H >= 0 && keyIdx.length) {
+        const NF = 2000;
+        const forzar = (m, o, sem) => {
+          const r2 = pronRng(sem), rf = pronRng(sem + 7919);
+          let c = 0;
+          for (let s=0; s<NF; s++){
+            for (let i=0;i<NT;i++){ pts[i]=bp[i]; gf[i]=bg[i]; gc[i]=bc[i]; tb[i]=r2(); }
+            for (let k=0; k<rest.length; k++){
+              const p=rest[k]; let a, b;
+              if (k === m) {
+                let t = 0;
+                do { a=pronPoisson(lam[k][0],rf); b=pronPoisson(lam[k][1],rf); t++; } while (t < 60 && (o==='L' ? !(a>b) : o==='V' ? !(a<b) : a!==b));
+                if (o==='L' && !(a>b)) { a=1; b=0; } else if (o==='V' && !(a<b)) { a=0; b=1; } else if (o==='E' && a!==b) { a=b=1; }
+                pronPoisson(lam[k][0],r2); pronPoisson(lam[k][1],r2); // mantiene alineados los sorteos del resto
+              } else { a=pronPoisson(lam[k][0],r2); b=pronPoisson(lam[k][1],r2); }
+              gf[p.l]+=a; gc[p.l]+=b; gf[p.v]+=b; gc[p.v]+=a;
+              if (a>b) pts[p.l]+=3; else if (a<b) pts[p.v]+=3; else { pts[p.l]++; pts[p.v]++; }
+            }
+            ord.sort((x,y) => pts[y]-pts[x] || (gf[y]-gc[y])-(gf[x]-gc[x]) || gf[y]-gf[x] || tb[y]-tb[x]);
+            if (ord[0]===H) c++;
+          }
+          return c / NF;
+        };
+        keyIdx.forEach((m, ci) => {
+          const sem = (seed * 131 + ci * 17 + 5) | 0;
+          ['L','E','V'].forEach(o => { const fr = forzar(m, o, sem), n = cond[ci][o][1]; cond[ci][o] = n > 0 ? [fr * n, n] : [fr * 1e-6, 1e-6]; });
+        });
+      }
       const expPts = [...Array(NT).keys()].map(i => { let e=bp[i]; rest.forEach((p,m) => { if (p.l!==i && p.v!==i) return;
         const my = p.l===i ? lam[m][0] : lam[m][1], ot = p.l===i ? lam[m][1] : lam[m][0]; const [w,d] = pronGanaEmpata(my,ot); e += 3*w + d; }); return e; });
       return { N, pos, bp, bg, bc, rest, lam, nextH, keyMatches: keyIdx.map(i => rest[i]), cond, expPts, winC, ptsC, R };

@@ -1419,6 +1419,17 @@
   function escHtml(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
   // v220 · tarjetas nuestras en directo (amarillas + rojas de los niños)
+  // v221 · tarjetas del rival: con el partido terminado manda el partido guardado en la temporada
+  // (ahí se corrigen después en Editar partido); en directo, lo que publica la app.
+  function tarjRivalVisor(m) {
+    try {
+      if (m && m.matchFinished && !m.matchRunning && typeof indicePartidoDeMatch === 'function') {
+        const i = indicePartidoDeMatch(m), p = i >= 0 ? ultimaTemporada.partidos[i] : null;
+        if (p && p.tarjetasRival) return Object.values(p.tarjetasRival).filter(Boolean).length;
+      }
+    } catch (e) {}
+    return Object.values((m && m.tarjetasRival) || {}).filter(Boolean).length;
+  }
   function liveTarjNuestras(m) { return Object.values((m && m.jugadores) || {}).reduce((s, p) => s + (Number(p && p.amarillas) || 0) + (p && p.roja && (Number(p.amarillas) || 0) < 2 ? 1 : 0), 0); }
   // v43: Hergar vs Rival — barras enfrentadas con los datos que ya publica la app
   function pintarStatsGrid(matchData) {
@@ -1433,7 +1444,7 @@
       ['Córners',          n(matchData.cornersFavor), n(matchData.cornersContra)],
       ['Faltas cometidas', n(matchData.faltasContra), n(matchData.faltasFavor)],
       ['Fueras de juego',  n(matchData.fuerasJuegoNuestros), n(matchData.fuerasJuegoRival)], // v117
-      ['Tarjetas', liveTarjNuestras(matchData), Object.values(matchData.tarjetasRival || {}).length] // v220 · 🟨+🟥
+      ['Tarjetas', liveTarjNuestras(matchData), tarjRivalVisor(matchData)] // v220 · 🟨+🟥
     ].filter(([l, h, r]) => (l !== 'Fueras de juego' && l !== 'Al palo' && l !== 'Tarjetas') || h + r > 0);
     const amarillas = Object.values(matchData.jugadores || {}).reduce((sum, p) => sum + (p.amarillas || 0), 0);
     cont.innerHTML = `
@@ -7246,7 +7257,7 @@
       ['Córners', n(m.cornersFavor), n(m.cornersContra)],
       ['Faltas cometidas', n(m.faltasContra), n(m.faltasFavor)],
       ['Fueras de juego', n(m.fuerasJuegoNuestros), n(m.fuerasJuegoRival)], // v117
-      ['Tarjetas', liveTarjNuestras(m), Object.values(m.tarjetasRival || {}).length] // v220 · 🟨+🟥
+      ['Tarjetas', liveTarjNuestras(m), tarjRivalVisor(m)] // v220 · 🟨+🟥
     ].filter(([l, h, r]) => (l !== 'Fueras de juego' && l !== 'Al palo' && l !== 'Tarjetas') || h + r > 0);
   }
   function tvListaGoles(m) {
@@ -8080,7 +8091,7 @@
       ['Córners', n(m.cornersFavor), n(m.cornersContra)],
       ['Faltas cometidas', n(m.faltasContra), n(m.faltasFavor)],
       ['Fueras de juego', n(m.fuerasJuegoNuestros), n(m.fuerasJuegoRival)], // v117
-      ['Tarjetas', liveTarjNuestras(m), Object.values(m.tarjetasRival || {}).length] // v220 · 🟨+🟥
+      ['Tarjetas', liveTarjNuestras(m), tarjRivalVisor(m)] // v220 · 🟨+🟥
     ].filter(([, h, r]) => h + r > 0);
     const totT = n(m.tirosNuestrosPuerta) + n(m.tirosNuestrosFuera);
     // destacados: los 3 mejores por impacto por 70' (con 10' o más)

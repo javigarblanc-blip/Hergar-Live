@@ -227,6 +227,8 @@ h2{font:900 19px Montserrat;margin-bottom:4px}
       <div class="act riv" data-r="parD"><i>🧤⭐</i>Parada difícil</div>
       <div class="act riv" data-r="palR"><i>🪵</i>Al palo</div>
       <div class="act riv" data-r="tfR"><i>💨</i>Tiro sin peligro</div>
+      <div class="act riv small" data-r="taR"><i>🟨</i>Amarilla al rival</div>
+      <div class="act riv small" data-r="trR"><i>🟥</i>Roja al rival</div>
     </div>
     <div class="sec">PARTIDO</div>
     <div class="grid">
@@ -408,6 +410,9 @@ function cambio() { procesarTiempo(); guardarLocal(); publicar(false); pintarTod
         amarilla: ['Amarilla para {J}.', '{J} ve la amarilla.', 'Tarjeta amarilla a {J}.', 'El árbitro amonesta a {J}.'],
         dobleAmarilla: ['Segunda amarilla para {J}: expulsado.', '{J} ve la segunda amarilla y se va a la calle.'],
         roja: ['Roja directa a {J}.', '{J} es expulsado con roja directa.'],
+        // v220 · tarjetas del rival
+        amarillaRival: ['Amarilla para un jugador del {RIV}.', 'El árbitro amonesta a uno del {RIV}.', 'Tarjeta amarilla para el {RIV}.'],
+        rojaRival: ['¡Expulsión en el {RIV}! El Hergar jugará con uno más.', 'Roja para un jugador del {RIV}: se quedan con uno menos.', '¡El {RIV} se queda con uno menos!'],
         descanso: {
             cero: ['Descanso sin goles.', '0-0 al descanso. Todo por decidir.', 'Al vestuario con el marcador a cero.'],
             ventaja: ['Descanso con ventaja: {H}-{R}.', 'Al vestuario por delante, {H}-{R}.', 'Buen primer tiempo: {H}-{R} al descanso.', '{H}-{R} al descanso. Media parte, media faena.'],
@@ -467,6 +472,8 @@ function cambio() { procesarTiempo(); guardarLocal(); publicar(false); pintarTod
             else if ((g = /^🔄 Sale #\S+ (\S+) ➡️ Entra #\S+ (\S+)/.exec(t))) out.push({ tipo: 'cambio', min, idx, sale: g[1], entra: g[2] });
             else if ((g = /^🟨 Amarilla #\S+ (\S+)(.*)$/.exec(t))) out.push({ tipo: /DOBLE AMARILLA/.test(g[2]) ? 'dobleAmarilla' : 'amarilla', min, idx, j: g[1] });
             else if ((g = /^🟥 Roja directa #\S+ (\S+)/.exec(t))) out.push({ tipo: 'roja', min, idx, j: g[1] });
+            else if (/^🟨 Amarilla al rival/.test(t)) out.push({ tipo: 'amarillaRival', min, idx }); // v220
+            else if (/^🟥 Roja al rival/.test(t)) out.push({ tipo: 'rojaRival', min, idx });
         });
         return out;
     }
@@ -566,6 +573,8 @@ function cambio() { procesarTiempo(); guardarLocal(); publicar(false); pintarTod
                 const y = (arr) => arr.length > 1 ? arr.slice(0, -1).join(', ') + ' y ' + arr[arr.length - 1] : arr[0];
                 const v = { E: y(L.map(c => c.entra)), S: y(L.map(c => c.sale)) };
                 res.push({ m: h.min, ic: '🔄', k: 'cambio', h: '', x: narrRellena(narrElige(ctx, L.length > 1 ? 'cambioD' : 'cambio', L.length > 1 ? NARR.cambioDoble : NARR.cambio, clave), v) });
+            } else if (h.tipo === 'amarillaRival' || h.tipo === 'rojaRival') { // v220
+                res.push({ m: h.min, ic: h.tipo === 'amarillaRival' ? '🟨' : '🟥', k: 'tarjeta', h: '', x: narrRellena(narrElige(ctx, h.tipo, NARR[h.tipo], clave), { RIV }) });
             } else if (h.tipo === 'amarilla' || h.tipo === 'dobleAmarilla' || h.tipo === 'roja') {
                 res.push({ m: h.min, ic: h.tipo === 'amarilla' ? '🟨' : '🟥', k: 'tarjeta', h: '', x: narrRellena(narrElige(ctx, h.tipo, NARR[h.tipo], clave), { J: h.j }) });
             }
@@ -627,6 +636,7 @@ function payloadVisor() {
     golesMin: S.ev.filter(e => e.k === 'gol' || e.k === 'golR' || e.k === 'golP').map(e => e.k === 'golP' ? { min: Math.floor(e.t / 60), equipo: 'hergar', nombre: 'Gol en propia', propia: true } : ({ min: Math.floor(e.t / 60), equipo: e.k === 'gol' ? 'hergar' : 'rival', nombre: e.k === 'gol' ? nom(e.j) : '' })),
     tirosNuestrosPuerta: T.tp, tirosNuestrosFuera: T.tf, tirosRivalesPuerta: T.tpR, tirosRivalesFuera: T.tfR,
     faltasFavor: T.ff || 0, faltasContra: 0, cornersFavor: T.cf, cornersContra: T.cc, fuerasJuegoNuestros: 0, fuerasJuegoRival: 0, palosNuestros: T.palo || 0, palosRival: T.palR || 0,
+    tarjetasRival: S.ev.filter(e => e.k === 'taR' || e.k === 'trR').map(e => ({ min: Math.floor(e.t / 60), tipo: e.k === 'trR' ? 'R' : 'A' })), // v220
     analisisIA: '', resumenIA: '', notasIA: {}, narracion: narracionDelegado(), // v193
     delegado: Object.assign({}, D, { st: S })
   };
@@ -1065,6 +1075,9 @@ function accionRival(k) {
     suceso({ k }, '🥅 Tiro rival a puerta (al palo)'); toast('🪵 Al palo del rival');
   } else if (k === 'tfR') {
     S.team.tfR++; enCampo().forEach(x => imp(x, -.05)); mom(-.5); suceso({ k }, '💨 Tiro rival sin peligro'); toast('💨 Tiro sin peligro del rival');
+  } else if (k === 'taR' || k === 'trR') { // v220 · tarjetas del rival: solo el minuto, sin puntos
+    if (k === 'trR' && !confirm('🟥 ¿Roja al rival?\n\nSi es su segunda amarilla, apúntala también así.')) { hist.pop(); return; }
+    suceso({ k }, k === 'trR' ? '🟥 Roja al rival' : '🟨 Amarilla al rival'); toast(k === 'trR' ? '🟥 Roja al rival' : '🟨 Amarilla al rival');
   } else if (k === 'cf') {
     S.team.cf++; mom(.5); suceso({ k }, '⛳ Córner a favor'); toast('⛳ Córner a favor');
   } else if (k === 'cc') {
@@ -1203,7 +1216,8 @@ function pintarFinal() {
     <div class="row"><span>🛡️⭐ Def. clave · ❌ Fallos</span><span>${n('defC')} · ${n('fa') + n('faI')}${n('faI') ? ` (${n('faI')} importantes)` : ''}</span></div>
     <div class="row"><span>⛳ Córners</span><span>${S.team.cf} – ${S.team.cc}</span></div>
     <div class="row"><span>🔄 Cambios · ↔ puestos</span><span>${n('sub')} · ${n('swap') + n('form')}</span></div>
-    <div class="row"><span>🟨 🟥 Tarjetas</span><span>${n('am') + n('ro')}</span></div>`;
+    <div class="row"><span>🟨 🟥 Tarjetas</span><span>${n('am') + n('ro')}</span></div>
+    ${(n('taR') || n('trR')) ? `<div class="row"><span>🟨 🟥 Tarjetas al rival</span><span>${n('taR')} · ${n('trR')}</span></div>` : ''}`;
   pintarSync();
 }
 

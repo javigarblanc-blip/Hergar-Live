@@ -1223,6 +1223,7 @@
 </div>
 
 <script type="module">
+  // v220 (app + visor + delegado) · 🟨🟥 Tarjetas del rival: en las barras del partido, el minuto a minuto, el acta, las medias, el cara a cara del próximo partido y el tiempo jugado con uno más / uno menos (y el marcador en ese rato).
   // v211 (visor) · Mejoras visuales: escudos del Hergar y del rival en la cabecera (Hergar en rojo, marcador en un cajón); fotos en dibujo en el campo de Partido con dorsal en chapita, áreas dibujadas y ⚽/🟨 en directo; aviso de gol rojo con la foto del goleador, asistencia, minuto y opciones de ganar; Temporada → Partidos en tarjetas (escudo, marcador de color, jornada, casa/fuera, goleadores, MVP, vídeos, «Ver más») con resumen V/E/D y últimos 5; ficha del niño con foto, puesto y estilo en la pestaña Datos y pestañas en rojo.
   // v210 (app v208 + visor) · Liga → Clasificación: 🧭 Dificultad del calendario (Elo medio de hoy de los rivales jugados y de los que quedan, y puntos con un calendario medio) y 🏠 Lo que vale jugar en casa. El Elo usa ahora la ventaja de casa medida en la Liga (mezclada con los 100 de partida mientras hay pocos partidos).
   // v209 (visor) · La previa lleva la etiqueta «🤖 PREVIA IA» (en la tarjeta del próximo partido y en Temporada → Partidos), para que se sepa que la escribe la IA.
@@ -1416,6 +1417,8 @@
 
   function escHtml(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
+  // v220 · tarjetas nuestras en directo (amarillas + rojas de los niños)
+  function liveTarjNuestras(m) { return Object.values((m && m.jugadores) || {}).reduce((s, p) => s + (Number(p && p.amarillas) || 0) + (p && p.roja && (Number(p.amarillas) || 0) < 2 ? 1 : 0), 0); }
   // v43: Hergar vs Rival — barras enfrentadas con los datos que ya publica la app
   function pintarStatsGrid(matchData) {
     const cont = document.getElementById('statGrid');
@@ -1428,8 +1431,9 @@
       ['Al palo',          n(matchData.palosNuestros), n(matchData.palosRival)], // v205
       ['Córners',          n(matchData.cornersFavor), n(matchData.cornersContra)],
       ['Faltas cometidas', n(matchData.faltasContra), n(matchData.faltasFavor)],
-      ['Fueras de juego',  n(matchData.fuerasJuegoNuestros), n(matchData.fuerasJuegoRival)] // v117
-    ].filter(([l, h, r]) => (l !== 'Fueras de juego' && l !== 'Al palo') || h + r > 0);
+      ['Fueras de juego',  n(matchData.fuerasJuegoNuestros), n(matchData.fuerasJuegoRival)], // v117
+      ['Tarjetas', liveTarjNuestras(matchData), Object.values(matchData.tarjetasRival || {}).length] // v220 · 🟨+🟥
+    ].filter(([l, h, r]) => (l !== 'Fueras de juego' && l !== 'Al palo' && l !== 'Tarjetas') || h + r > 0);
     const amarillas = Object.values(matchData.jugadores || {}).reduce((sum, p) => sum + (p.amarillas || 0), 0);
     cont.innerHTML = `
       <div class="vs-head"><span class="h">HERGAR</span><span class="r">${escHtml((matchData.rival || 'RIVAL').toUpperCase())}</span></div>
@@ -2787,6 +2791,9 @@
             js.forEach(j => { const h = ptsHistDe(j, p); if (h && h.acc) { hay = true; n += mdNum(h.acc.am) + mdNum(h.acc.ro); } });
             if (hay) { conTarj++; tarj += n; }
         });
+        { const conTR = S.filter(p => trLista(p) && trNuestras(t, p)); // v220 · tarjetas del rival
+          if (conTR.length) filas.push(['Tarjetas', media(conTR, p => { const x = trNuestras(t, p); return x.am + x.ro; }), media(conTR, p => { const x = trCuenta(p); return x.am + x.ro; }), conTR.length]); }
+        const sup = trTemporada(S); // v220
         // indicadores
         const sTn = sum(live, tn), sTr = sum(live, tr), sTrP = sum(live, trP);
         const sGl = sum(live, p => mdNum(p.golesLocal)), sGr = sum(live, p => mdNum(p.golesRival));
@@ -2809,7 +2816,7 @@
                 cf: (x, a) => a ? x.cf : x.cornersFavor };
             partes = { n: conP.length, filas: [['Goles a favor', 'gl'], ['Goles en contra', 'gr'], ['Disparos Hergar', 'tn'], ['Disparos rival', 'tr'], ['Córners a favor', 'cf']].map(([l, k]) => [l, m1(G[k]), Math.max(0, m2(G[k]))]) };
         }
-        return { pj, live: live.length, gf, gc, pts, filas, tarj: conTarj ? tarj / conTarj : null, conTarj, cuota, acierto, paradas, imp, nImp: impPart.length, partes };
+        return { pj, live: live.length, gf, gc, pts, filas, sup, tarj: conTarj ? tarj / conTarj : null, conTarj, cuota, acierto, paradas, imp, nImp: impPart.length, partes };
     }
     function mdFilaHTML(label, h, r, n, nLive) {
         const max = Math.max(h || 0, r || 0, 0.01);
@@ -2841,6 +2848,7 @@
             h += `<div style="font-size:10px; color:#64748b; text-align:center; margin-bottom:2px;">${mdNota(M.live)} con estadísticas</div>`;
             h += M.filas.map(([l, a, b, n]) => mdFilaHTML(l, a, b, n, M.live)).join('');
             if (M.tarj != null) h += `<div style="font-size:11.5px; color:#cbd5e1; margin-top:6px;">🟨🟥 <b>${mdFmt(M.tarj)}</b> tarjetas del Hergar por partido <span style="color:#64748b;">(${mdNota(M.conTarj)})</span></div>`;
+            if (M.sup && (M.sup.mas || M.sup.menos)) h += `<div style="font-size:11.5px; color:#cbd5e1; margin-top:6px; line-height:1.55;">${M.sup.mas ? `💪 <b>${Math.round(M.sup.mas)}'</b> con uno más en la temporada · goles en ese rato <b>${M.sup.gMas[0]}-${M.sup.gMas[1]}</b>` : ''}${M.sup.mas && M.sup.menos ? '<br>' : ''}${M.sup.menos ? `🛡️ <b>${Math.round(M.sup.menos)}'</b> con uno menos · goles en ese rato <b>${M.sup.gMenos[0]}-${M.sup.gMenos[1]}</b>` : ''}</div>`; // v220
         } else {
             h += `<div style="font-size:11.5px; color:#94a3b8; margin-top:10px;">Son partidos cargados a mano: no tienen tiros, córners ni faltas apuntados.</div>`;
         }
@@ -2924,6 +2932,49 @@
         });
         return { am, ro };
     }
+    // ── v220 · TARJETAS DEL RIVAL y SUPERIORIDAD NUMÉRICA (misma función en la app y en el visor) ──
+    // p.tarjetasRival = [{ min, tipo: 'A' | 'R' }] (una segunda amarilla del rival se apunta como roja).
+    // Superioridad: con el minuto de las rojas (del rival y nuestras, del acta) se sabe cuánto se jugó con uno más / uno menos.
+    function trLista(p) { return Array.isArray(p && p.tarjetasRival) ? p.tarjetasRival : null; }
+    function trCuenta(p) { const L = trLista(p); return L ? { am: L.filter(x => x && x.tipo === 'A').length, ro: L.filter(x => x && x.tipo === 'R').length } : null; }
+    function trNuestras(t, p) {
+        let am = 0, ro = 0, hay = false;
+        Object.values((t && t.jugadores) || {}).forEach(j => { const h = (j.historial || []).find(x => x.fecha === p.fecha && x.rival === p.rival); if (h && h.acc) { hay = true; am += Number(h.acc.am) || 0; ro += h.acc.ro ? 1 : 0; } });
+        return hay ? { am, ro } : null;
+    }
+    function trSuperioridad(p) {
+        const dur = parseInt(String((p && p.duracion) || ''), 10) || 70;
+        const exp = [];
+        (trLista(p) || []).forEach(x => { if (x && x.tipo === 'R' && x.min != null && x.min !== '') exp.push({ min: Number(x.min), d: 1 }); });
+        const A = p && p.acta && Array.isArray(p.acta.tarjetas) ? p.acta.tarjetas : [];
+        A.forEach(x => { if (x && !x.rival && (x.tipo === 'R' || x.tipo === 'AA') && x.min != null) exp.push({ min: Number(x.min), d: -1 }); });
+        if (!exp.length) return null;
+        exp.sort((a, b) => a.min - b.min);
+        const estadoEn = (m) => exp.reduce((s, e) => s + (e.min < m ? e.d : 0), 0);
+        const r = { mas: 0, menos: 0, gMas: [0, 0], gMenos: [0, 0], desdeMas: null, desdeMenos: null };
+        let dif = 0, desde = 0;
+        const tramo = (a, b) => { if (b <= a) return; if (dif > 0) r.mas += b - a; else if (dif < 0) r.menos += b - a; };
+        exp.forEach(e => { tramo(desde, e.min); dif += e.d; desde = e.min; if (e.d > 0 && r.desdeMas == null) r.desdeMas = e.min; if (e.d < 0 && r.desdeMenos == null) r.desdeMenos = e.min; });
+        tramo(desde, Math.max(desde, dur));
+        (Array.isArray(p.goles) ? p.goles : []).forEach(g => {
+            const m = g && (g.min != null ? g.min : g.minuto); if (m == null) return;
+            const d = estadoEn(Number(m)), k = g.equipo === 'rival' ? 1 : 0;
+            if (d > 0) r.gMas[k]++; else if (d < 0) r.gMenos[k]++;
+        });
+        return r;
+    }
+    function trSuperioridadHTML(p) {
+        const s = trSuperioridad(p); if (!s || (!s.mas && !s.menos)) return '';
+        const L = [];
+        if (s.mas) L.push(`💪 <b>${Math.round(s.mas)}'</b> con uno más (desde el ${s.desdeMas}') · en ese rato, <b>${s.gMas[0]}-${s.gMas[1]}</b>`);
+        if (s.menos) L.push(`🛡️ <b>${Math.round(s.menos)}'</b> con uno menos (desde el ${s.desdeMenos}') · en ese rato, <b>${s.gMenos[0]}-${s.gMenos[1]}</b>`);
+        return `<div style="font-size:11.5px; color:#cbd5e1; margin-top:6px; line-height:1.55;">${L.join('<br>')}</div>`;
+    }
+    function trTemporada(ps) {
+        const out = { mas: 0, menos: 0, gMas: [0, 0], gMenos: [0, 0], n: 0 };
+        (ps || []).forEach(p => { const s = trSuperioridad(p); if (!s) return; out.n++; out.mas += s.mas; out.menos += s.menos; out.gMas[0] += s.gMas[0]; out.gMas[1] += s.gMas[1]; out.gMenos[0] += s.gMenos[0]; out.gMenos[1] += s.gMenos[1]; });
+        return out;
+    }
     function estadisticasPartidoHTML(t, p, snCtx, plegado) {
         if (!p) return '';
         const n = v => Number(v) || 0;
@@ -2941,7 +2992,8 @@
                 ['Córners', n(p.cornersFavor), n(p.cornersContra)],
                 ['Faltas cometidas', n(p.faltasContra), n(p.faltasFavor)],
                 ['Fueras de juego', n(p.fuerasJuegoNuestros), n(p.fuerasJuegoRival)]
-            ].filter(([, a, b]) => a + b > 0);
+            ].concat((() => { const C = trCuenta(p), Nn = C ? trNuestras(t, p) : null; return C && Nn ? [['Amarillas', Nn.am, C.am], ['Rojas', Nn.ro, C.ro]] : []; })()) // v220
+            .filter(([, a, b]) => a + b > 0);
             h += `<div style="display:flex; justify-content:space-between; font-size:10.5px; font-weight:800; letter-spacing:.6px; margin-bottom:8px;"><span style="color:#ff5577;">HERGAR</span><span style="color:#94a3b8;">${momEsc(String(p.rival || 'RIVAL').toUpperCase())}</span></div>`;
             h += filas.map(([l, a, b]) => epFila(l, a, b)).join('');
             const acH = tn ? Math.round(gl / tn * 100) : null, acR = tr ? Math.round(gr / tr * 100) : null;
@@ -2975,6 +3027,7 @@
         // Tarjetas
         const T = epTarjetas(t, p);
         if (T.am.length || T.ro.length) h += `<div style="font-size:11.5px; color:#cbd5e1; margin-top:10px; line-height:1.5;">${T.am.length ? `🟨 ${T.am.join(', ')}` : ''}${T.am.length && T.ro.length ? ' · ' : ''}${T.ro.length ? `🟥 ${T.ro.join(', ')}` : ''}</div>`;
+    { const C = trCuenta(p); if (C && (C.am || C.ro)) h += `<div style="font-size:11.5px; color:#cbd5e1; margin-top:6px;">Rival: ${C.am ? '🟨 ×' + C.am : ''}${C.am && C.ro ? ' · ' : ''}${C.ro ? '🟥 ×' + C.ro : ''}</div>`; h += trSuperioridadHTML(p); } // v220
         const cuerpo = `<div style="padding-top:8px;">${h}</div>`;
         if (!plegado) return `<div style="margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.06);"><div style="font-size:11px; font-weight:800; color:#f5a623; letter-spacing:.4px;">📊 ESTADÍSTICAS DEL PARTIDO</div>${cuerpo}</div>`;
         return `<details style="margin-top:6px; padding-top:6px; border-top:1px solid rgba(255,255,255,0.06);"><summary style="color:#2ed573; font-size:11px; font-weight:800; cursor:pointer;">📊 Estadísticas del partido</summary>${cuerpo}</details>`;
@@ -3345,7 +3398,9 @@
           tarjetas = [];
           jugadores.forEach(x => { for (let k = 0; k < x.am; k++) tarjetas.push({ min: null, nombre: x.nombre, dorsal: x.dorsal, tipo: 'A' }); if (x.ro) tarjetas.push({ min: null, nombre: x.nombre, dorsal: x.dorsal, tipo: 'R' }); });
       }
-      // tiros y cuota
+          (trLista(p) || []).forEach(x => { if (x) tarjetas.push({ min: x.min != null && x.min !== '' ? Number(x.min) : null, nombre: 'Rival (' + (p.rival || '') + ')', dorsal: null, tipo: x.tipo === 'R' ? 'R' : 'A', rival: true }); }); // v220
+    tarjetas.sort((a, b) => (a.min == null ? 999 : a.min) - (b.min == null ? 999 : b.min));
+    // tiros y cuota
       const tN = (Number(p.tirosNuestrosPuerta) || 0) + (Number(p.tirosNuestrosFuera) || 0), tR = (Number(p.tirosRivalesPuerta) || 0) + (Number(p.tirosRivalesFuera) || 0);
       let cuota = null;
       if (p.tirosNuestrosPuerta != null && tN + tR > 0) {
@@ -7184,8 +7239,9 @@
       ['Disparos fuera', n(m.tirosNuestrosFuera), n(m.tirosRivalesFuera)],
       ['Córners', n(m.cornersFavor), n(m.cornersContra)],
       ['Faltas cometidas', n(m.faltasContra), n(m.faltasFavor)],
-      ['Fueras de juego', n(m.fuerasJuegoNuestros), n(m.fuerasJuegoRival)] // v117
-    ].filter(([l, h, r]) => (l !== 'Fueras de juego' && l !== 'Al palo') || h + r > 0);
+      ['Fueras de juego', n(m.fuerasJuegoNuestros), n(m.fuerasJuegoRival)], // v117
+      ['Tarjetas', liveTarjNuestras(m), Object.values(m.tarjetasRival || {}).length] // v220 · 🟨+🟥
+    ].filter(([l, h, r]) => (l !== 'Fueras de juego' && l !== 'Al palo' && l !== 'Tarjetas') || h + r > 0);
   }
   function tvListaGoles(m) {
     // v92: si la app publica los goles con minuto, salen todos, también los antiguos
@@ -7840,6 +7896,16 @@
         <span style="font-weight:700; color:${color};">${x.golesLocal} – ${x.golesVisitante}</span>
       </div>`;
     }).join('') : `<div style="font-size:12.5px; color:#64748b; padding:2px 0;">Primer enfrentamiento de la temporada.</div>`;
+    // v220 · tarjetas del rival en los partidos de esta temporada contra él (si están apuntadas)
+    let caraTR = '';
+    try {
+      const iR = liga.equipos.findIndex(e => e.id === rival.id);
+      const ps = ccGolesPartidos(ultimaTemporada, liga, iR).map(x => x.p).filter(q => Array.isArray(q.tarjetasRival));
+      if (ps.length) {
+        const am = ps.reduce((s, q) => s + trCuenta(q).am, 0), ro = ps.reduce((s, q) => s + trCuenta(q).ro, 0), sup = trTemporada(ps);
+        caraTR = `<div style="font-size:11.5px; color:#cbd5e1; margin:-2px 0 10px; line-height:1.55;">Tarjetas que vio el rival: ${am || ro ? `${am ? '🟨 ×' + am : ''}${am && ro ? ' · ' : ''}${ro ? '🟥 ×' + ro : ''}` : 'ninguna'}${sup.mas ? ` · jugamos <b>${Math.round(sup.mas)}'</b> con uno más (en ese rato, ${sup.gMas[0]}-${sup.gMas[1]})` : ''}</div>`;
+      }
+    } catch (e) { console.error('Tarjetas del rival:', e); }
     const convocados = (pub.convocados || []).slice().sort((a, b) => (a.dorsal || 99) - (b.dorsal || 99));
     // v94 · Convocatoria en lista: once inicial (por líneas) y reservas. Sin papeles (app antigua): como antes.
     const conRol = convocados.some(c => c.rol === 'T' || c.rol === 'R');
@@ -7911,6 +7977,7 @@
       ${idaProx}
       <div style="font-size:11.5px; color:#8da499; margin-bottom:6px;">Enfrentamientos anteriores</div>
       ${cara}
+      ${caraTR}
       ${ccProx}
       ${srProx}
       ${convocatoriaHTML}`;
@@ -8006,7 +8073,8 @@
       ['Al palo', n(m.palosNuestros), n(m.palosRival)], // v205
       ['Córners', n(m.cornersFavor), n(m.cornersContra)],
       ['Faltas cometidas', n(m.faltasContra), n(m.faltasFavor)],
-      ['Fueras de juego', n(m.fuerasJuegoNuestros), n(m.fuerasJuegoRival)] // v117
+      ['Fueras de juego', n(m.fuerasJuegoNuestros), n(m.fuerasJuegoRival)], // v117
+      ['Tarjetas', liveTarjNuestras(m), Object.values(m.tarjetasRival || {}).length] // v220 · 🟨+🟥
     ].filter(([, h, r]) => h + r > 0);
     const totT = n(m.tirosNuestrosPuerta) + n(m.tirosNuestrosFuera);
     // destacados: los 3 mejores por impacto por 70' (con 10' o más)
@@ -8567,6 +8635,9 @@
         amarilla: ['Amarilla para {J}.', '{J} ve la amarilla.', 'Tarjeta amarilla a {J}.', 'El árbitro amonesta a {J}.'],
         dobleAmarilla: ['Segunda amarilla para {J}: expulsado.', '{J} ve la segunda amarilla y se va a la calle.'],
         roja: ['Roja directa a {J}.', '{J} es expulsado con roja directa.'],
+        // v220 · tarjetas del rival
+        amarillaRival: ['Amarilla para un jugador del {RIV}.', 'El árbitro amonesta a uno del {RIV}.', 'Tarjeta amarilla para el {RIV}.'],
+        rojaRival: ['¡Expulsión en el {RIV}! El Hergar jugará con uno más.', 'Roja para un jugador del {RIV}: se quedan con uno menos.', '¡El {RIV} se queda con uno menos!'],
         descanso: {
             cero: ['Descanso sin goles.', '0-0 al descanso. Todo por decidir.', 'Al vestuario con el marcador a cero.'],
             ventaja: ['Descanso con ventaja: {H}-{R}.', 'Al vestuario por delante, {H}-{R}.', 'Buen primer tiempo: {H}-{R} al descanso.', '{H}-{R} al descanso. Media parte, media faena.'],
@@ -8626,6 +8697,8 @@
             else if ((g = /^🔄 Sale #\S+ (\S+) ➡️ Entra #\S+ (\S+)/.exec(t))) out.push({ tipo: 'cambio', min, idx, sale: g[1], entra: g[2] });
             else if ((g = /^🟨 Amarilla #\S+ (\S+)(.*)$/.exec(t))) out.push({ tipo: /DOBLE AMARILLA/.test(g[2]) ? 'dobleAmarilla' : 'amarilla', min, idx, j: g[1] });
             else if ((g = /^🟥 Roja directa #\S+ (\S+)/.exec(t))) out.push({ tipo: 'roja', min, idx, j: g[1] });
+            else if (/^🟨 Amarilla al rival/.test(t)) out.push({ tipo: 'amarillaRival', min, idx }); // v220
+            else if (/^🟥 Roja al rival/.test(t)) out.push({ tipo: 'rojaRival', min, idx });
         });
         return out;
     }
@@ -8725,6 +8798,8 @@
                 const y = (arr) => arr.length > 1 ? arr.slice(0, -1).join(', ') + ' y ' + arr[arr.length - 1] : arr[0];
                 const v = { E: y(L.map(c => c.entra)), S: y(L.map(c => c.sale)) };
                 res.push({ m: h.min, ic: '🔄', k: 'cambio', h: '', x: narrRellena(narrElige(ctx, L.length > 1 ? 'cambioD' : 'cambio', L.length > 1 ? NARR.cambioDoble : NARR.cambio, clave), v) });
+            } else if (h.tipo === 'amarillaRival' || h.tipo === 'rojaRival') { // v220
+                res.push({ m: h.min, ic: h.tipo === 'amarillaRival' ? '🟨' : '🟥', k: 'tarjeta', h: '', x: narrRellena(narrElige(ctx, h.tipo, NARR[h.tipo], clave), { RIV }) });
             } else if (h.tipo === 'amarilla' || h.tipo === 'dobleAmarilla' || h.tipo === 'roja') {
                 res.push({ m: h.min, ic: h.tipo === 'amarilla' ? '🟨' : '🟥', k: 'tarjeta', h: '', x: narrRellena(narrElige(ctx, h.tipo, NARR[h.tipo], clave), { J: h.j }) });
             }

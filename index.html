@@ -1223,6 +1223,7 @@
 </div>
 
 <script type="module">
+  // v221 (visor) · 🎬 Resumen: el rótulo de dominio sale en todos los partidos, salvo cuando el Hergar gana por más de 5 goles (antes, solo con menos de 3 goles en total).
   // v220 (app + visor + delegado) · 🟨🟥 Tarjetas del rival: en las barras del partido, el minuto a minuto, el acta, las medias, el cara a cara del próximo partido y el tiempo jugado con uno más / uno menos (y el marcador en ese rato).
   // v211 (visor) · Mejoras visuales: escudos del Hergar y del rival en la cabecera (Hergar en rojo, marcador en un cajón); fotos en dibujo en el campo de Partido con dorsal en chapita, áreas dibujadas y ⚽/🟨 en directo; aviso de gol rojo con la foto del goleador, asistencia, minuto y opciones de ganar; Temporada → Partidos en tarjetas (escudo, marcador de color, jornada, casa/fuera, goleadores, MVP, vídeos, «Ver más») con resumen V/E/D y últimos 5; ficha del niño con foto, puesto y estilo en la pestaña Datos y pestañas en rojo.
   // v210 (app v208 + visor) · Liga → Clasificación: 🧭 Dificultad del calendario (Elo medio de hoy de los rivales jugados y de los que quedan, y puntos con un calendario medio) y 🏠 Lo que vale jugar en casa. El Elo usa ahora la ventaja de casa medida en la Liga (mezclada con los 100 de partida mientras hay pocos partidos).
@@ -6084,7 +6085,7 @@
   const RSD_TIPOS = ['once', 'nums', 'dom', 'liga'];
   const RSD_DUR = { once: 6500, nums: 6000, dom: 6000, liga: 6500 };
   const RSD_NOMBRE = { once: 'Once inicial', nums: 'Números', dom: 'Dominio', liga: 'Liga' };
-  const RSD_DOM_MAX_GOLES = 3; // el dominio sale solo con menos de 3 goles entre los dos equipos
+  const RSD_DOM_MAX_VENTAJA = 5; // v221 · el dominio sale siempre, salvo que el Hergar gane por más de 5 goles
   function rsdOn() { return !(ultimaTemporada && ultimaTemporada.resumenDatos === false); }
   function rsdEsTipo(t) { return RSD_TIPOS.includes(t); }
   function rsdDatos(p, pi) {
@@ -6122,9 +6123,9 @@
         };
       }
     } catch (e) { out.nums = null; }
-    // Dominio (momentum): solo con menos de 3 goles entre los dos
+    // Dominio (momentum): siempre, salvo en una goleada del Hergar de más de 5 goles (v221)
     try {
-      if (D.momentum && (D.gl + D.gr) < RSD_DOM_MAX_GOLES) {
+      if (D.momentum && (D.gl - D.gr) <= RSD_DOM_MAX_VENTAJA) {
         const pts = D.momentum.map(q => ({ m: Number(q[0]) || 0, v: Number(q[1]) || 0 }));
         const dur = Math.max(70, D.dur || 0, ...pts.map(q => q.m));
         out.dom = { dur, serie: rsdDomSerie(pts, dur), goles: (D.goles || []).filter(g => g.min != null) };
@@ -6294,17 +6295,22 @@
     c.restore();
     c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = 2; c.beginPath(); c.moveTo(x0, mid); c.lineTo(x1, mid); c.stroke();
     c.setLineDash([6, 6]); c.strokeStyle = 'rgba(255,255,255,.2)'; c.beginPath(); c.moveTo(X(35), y0); c.lineTo(X(35), y1); c.stroke(); c.setLineDash([]);
-    exFont(c, 800, 18); exLS(c, 2); c.textBaseline = 'alphabetic'; c.textAlign = 'left';
-    c.fillStyle = 'rgba(255,255,255,.75)'; c.fillText('▲ HERGAR', x0 + 6, y0 + 20);
-    c.fillStyle = 'rgba(203,213,225,.75)'; c.fillText('▼ ' + String(p.rival || 'RIVAL').toUpperCase(), x0 + 6, y1 - 6, 600);
+    // v221 · los nombres van a la izquierda, fuera del gráfico, para que no los pisen las etiquetas de los goles
+    exFont(c, 800, 16); exLS(c, 1); c.textBaseline = 'middle'; c.textAlign = 'right';
+    c.fillStyle = 'rgba(255,255,255,.8)'; c.fillText('▲ HERGAR', x0 - 12, mid - 26, 112);
+    c.fillStyle = 'rgba(203,213,225,.8)'; c.fillText(String(p.rival || 'RIVAL').toUpperCase() + ' ▼', x0 - 12, mid + 26, 112);
     exLS(c, 0); exFont(c, 700, 18, 'i'); c.fillStyle = '#94a3b8'; c.textAlign = 'center';
     c.fillText("0'", x0, y1 + 36); c.fillText("35'", X(35), y1 + 36); c.fillText(`${maxM}'`, x1, y1 + 36);
-    Dm.goles.forEach(g => {
+    const ultX = { h: [-1e9, -1e9], r: [-1e9, -1e9] }; // v221 · con muchos goles, las etiquetas que se pisan bajan (o suben) un escalón
+    Dm.goles.slice().sort((a, b) => a.min - b.min).forEach(g => {
       if (X(g.min) > xr) return;
-      const nuestro = g.equipo === 'hergar', xg = X(g.min);
-      c.strokeStyle = nuestro ? '#fff' : '#cbd5e1'; c.lineWidth = 3; c.beginPath(); c.moveTo(xg, nuestro ? y0 + 30 : mid); c.lineTo(xg, nuestro ? mid : y1 - 30); c.stroke();
+      const nuestro = g.equipo === 'hergar', xg = X(g.min), u = ultX[nuestro ? 'h' : 'r'];
+      const fila = xg - u[0] >= 78 ? 0 : (xg - u[1] >= 78 ? 1 : 0);
+      u[fila] = xg;
+      const dy = fila * 26;
+      c.strokeStyle = nuestro ? '#fff' : '#cbd5e1'; c.lineWidth = 3; c.beginPath(); c.moveTo(xg, nuestro ? y0 + 30 + dy : mid); c.lineTo(xg, nuestro ? mid : y1 - 30 - dy); c.stroke();
       exFont(c, 900, 20); exLS(c, 0); c.textAlign = 'center'; c.textBaseline = 'alphabetic'; c.fillStyle = nuestro ? '#fff' : '#cbd5e1';
-      c.fillText(`${nuestro ? '⚽' : '🥅'} ${g.min}'`, xg, nuestro ? y0 + 22 : y1 - 8);
+      c.fillText(`${nuestro ? '⚽' : '🥅'} ${g.min}'`, xg, nuestro ? y0 + 22 + dy : y1 - 8 - dy);
     });
   }
   function rsdLigaDib(c, e, L, A) {

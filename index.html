@@ -1238,6 +1238,7 @@
 </div>
 
 <script type="module">
+  // v226 (visor) · 🔗 Química: cada pareja sobre los minutos del que menos jugó de los dos (mínimo 140'); ficha con las 5 parejas más bajas y «ver todas», tramos de menos de 5' juntos; la comparación de la temporada, por encima / por debajo de la química media.
   // v225 (visor) · 🔗 Química: rodada 65 % o más, a medias 25-65 %, casi nueva menos del 25 % (solo cambia el color y la lista; la nota no).
   // v224 (visor) · 🔗 Química: cada enlace por los minutos juntos en los 4 partidos anteriores (sobre los minutos de esos partidos) y por tramos entre cambios (el que entra ocupa el hueco del que sale).
   // v223 (visor) · 🏟️ Grandes: los 4 rivales con más Elo el día del partido (antes, el tercio alto).
@@ -5107,7 +5108,7 @@
   //  cambio el que entra ocupa el hueco del que sale, y la química del partido es la media de los tramos según sus minutos.
   //  Los cambios salen de los guardados con el partido (v139) o se deducen de los minutos de cada uno.
   //  Solo partidos con los 11 titulares en el orden de la pizarra (los cargados a mano no; sí cuentan sus minutos juntos).
-  const QM_VENTANA = 4;
+  const QM_VENTANA = 4, QM_MIN_BASE = 140; // v226: cada pareja, sobre los minutos del que menos jugó de los dos (nunca menos de 140')
   const QM_ENLACES = {
     '4-2-3-1': [[0, 2], [0, 3], [2, 3], [1, 2], [3, 4], [1, 5], [4, 6], [2, 5], [3, 6], [5, 6], [5, 8], [6, 8], [1, 7], [4, 9], [7, 8], [9, 8], [8, 10], [5, 7], [6, 9], [7, 10], [9, 10]],
     '4-3-3': [[0, 2], [0, 3], [2, 3], [1, 2], [3, 4], [2, 5], [3, 5], [1, 6], [4, 7], [5, 6], [5, 7], [6, 8], [7, 10], [6, 9], [7, 9], [8, 9], [10, 9], [1, 8], [4, 10]],
@@ -5139,7 +5140,7 @@
     if (!t) return null;
     if (qmCache.has(t)) return qmCache.get(t);
     const ps = t.partidos || [];
-    const acum = {}, porPartido = [], durs = [];
+    const acum = {}, porPartido = [], durs = [], minsJug = [];
     const partidos = ps.map((p, i) => {
       let res = null;
       const form = p.formacion, E = QM_ENLACES[form];
@@ -5150,11 +5151,14 @@
         if (i === 0) res = { q: null, primero: true, form, tit };
         else {
           // minutos juntos de los QM_VENTANA partidos anteriores
-          const desde = Math.max(0, i - QM_VENTANA), ven = {}; let base = 0;
-          for (let k = desde; k < i; k++) { base += durs[k] || 0; Object.entries(porPartido[k] || {}).forEach(([c, m]) => { ven[c] = (ven[c] || 0) + m; }); }
+          const desde = Math.max(0, i - QM_VENTANA), ven = {}, mj = {}; let base = 0;
+          for (let k = desde; k < i; k++) { base += durs[k] || 0; Object.entries(porPartido[k] || {}).forEach(([c, m]) => { ven[c] = (ven[c] || 0) + m; }); Object.entries(minsJug[k] || {}).forEach(([id, m]) => { mj[id] = (mj[id] || 0) + m; }); }
           const PU = (typeof ACTA_PUESTOS_FORM !== 'undefined' && ACTA_PUESTOS_FORM[form]) || [];
           const once = (sl) => {
-            const enlaces = E.map(([x, y]) => { const m = ven[qmClave(sl[x], sl[y])] || 0; return { x, y, a: sl[x], b: sl[y], pa: PU[x] || '', pb: PU[y] || '', min: Math.round(m), v: base ? Math.min(1, m / base) * 10 : 0 }; });
+            const enlaces = E.map(([x, y]) => {
+              const m = ven[qmClave(sl[x], sl[y])] || 0, den = Math.max(QM_MIN_BASE, Math.min(mj[sl[x]] || 0, mj[sl[y]] || 0));
+              return { x, y, a: sl[x], b: sl[y], pa: PU[x] || '', pb: PU[y] || '', min: Math.round(m), den: Math.round(den), v: Math.min(1, m / den) * 10 };
+            });
             return { q: enlaces.reduce((s, e) => s + e.v, 0) / enlaces.length, enlaces, tit: sl.slice() };
           };
           // tramos: en cada cambio el que entra ocupa el hueco del que sale
@@ -5183,6 +5187,7 @@
         }
       } catch (e) { console.error('Química · minutos juntos:', e); }
       porPartido[i] = mio; durs[i] = filas.length ? dur : 0;
+      const mm = {}; filas.forEach(f => { mm[String(f.j.id)] = (mm[String(f.j.id)] || 0) + (Number(f.mins) || 0); }); minsJug[i] = mm;
       return res;
     });
     const R = { partidos, acum };
@@ -5213,12 +5218,12 @@
         <span><i style="display:inline-block; width:14px; height:4px; border-radius:2px; background:#2ed573; vertical-align:middle; margin-right:4px;"></i>Rodada</span>
         <span><i style="display:inline-block; width:14px; height:4px; border-radius:2px; background:#f5a623; vertical-align:middle; margin-right:4px;"></i>A medias</span>
         <span><i style="display:inline-block; width:14px; height:0; border-top:4px dashed #ff6b7a; vertical-align:middle; margin-right:4px;"></i>Casi nueva</span></div>
-      <div style="font-size:10.5px; color:#94a3b8; margin-top:4px;">Minutos juntos en ${r.nPrevios === 1 ? 'el partido anterior' : `los ${r.nPrevios} partidos anteriores`} (de ${r.base}' posibles). Rodada: 65 % o más · a medias: del 25 % al 65 % · casi nueva: menos del 25 %.</div>`;
+      <div style="font-size:10.5px; color:#94a3b8; margin-top:4px;">Minutos juntos en ${r.nPrevios === 1 ? 'el partido anterior' : `los ${r.nPrevios} partidos anteriores`}, sobre los minutos del que menos jugó de los dos (mínimo ${QM_MIN_BASE}'). Rodada: 65 % o más · a medias: del 25 % al 65 % · casi nueva: menos del 25 %.</div>`;
   }
   function qmExplicacionHTML() {
     return `<div style="font-size:12px; line-height:1.55; color:#cbd5e1; padding-top:6px;">
       <p style="margin:0 0 6px;">Cuánto se conocían los que estaban en el campo. Cada jugador se enlaza con sus vecinos en la pizarra (21 enlaces en el 1-4-2-3-1: defensas entre sí y con el portero, cada lateral con su pivote y su extremo, los pivotes con el mediapunta y con el extremo de su lado, y los extremos y el mediapunta con el delantero).</p>
-      <p style="margin:0 0 6px;">Cada enlace vale de 0 a 10 según los minutos que esa pareja jugó junta en los <b>${QM_VENTANA} partidos anteriores</b>, sobre los minutos de esos partidos (280' si fueron 4 enteros). Así mide la continuidad reciente y no se llena con la temporada: si se rota o hay bajas, baja.</p>
+      <p style="margin:0 0 6px;">Cada enlace vale de 0 a 10 según los minutos que esa pareja jugó junta en los <b>${QM_VENTANA} partidos anteriores</b>, sobre los minutos que jugó en ellos <b>el que menos jugó de los dos</b> (nunca menos de ${QM_MIN_BASE}', para que unos minutos sueltos no cuenten como pareja rodada). Si Mario jugó 100' y 80' de ellos con Rubén, ese enlace vale 8: cuando Mario está, casi siempre está con Rubén. Así las rotaciones de minutos no la hunden, y quien vuelve de una lesión o sube de otro equipo sale como pareja casi nueva.</p>
       <p style="margin:0;">Se calcula <b>por tramos</b>: en cada cambio, el que entra ocupa el hueco del que sale. La química del partido es la media de los tramos según los minutos de cada uno.</p></div>`;
   }
   // Ficha del partido (Temporada → Partidos)
@@ -5228,12 +5233,19 @@
     if (r.primero) return `<div style="font-size:11px; color:#94a3b8; margin-top:6px; padding-top:6px; border-top:1px solid rgba(255,255,255,0.06);">🔗 Química: sin dato en el primer partido (aún no había minutos juntos).</div>`;
     const [et, col] = qmEtiqueta(r.q), media = qmMediaTemporada(t);
     const T = r.tramos;
-    const tramosHTML = T.length > 1 ? `<div style="display:flex; gap:3px; height:26px; margin-top:10px; border-radius:7px; overflow:hidden;">${T.map(x => { const c = x.q >= 6.5 ? '#2ed573' : x.q >= 4.5 ? '#f5a623' : '#ff6b7a'; return `<div style="flex:${Math.max(1, x.fin - x.ini)}; background:${c}; display:flex; align-items:center; justify-content:center; font-family:'Montserrat',sans-serif; font-weight:900; font-size:11px; color:#0a0e14; min-width:0; overflow:hidden;">${qmFmt(x.q)}</div>`; }).join('')}</div>
-      <div style="display:flex; gap:3px; font-size:9.5px; color:#94a3b8; margin-top:3px;">${T.map(x => `<div style="flex:${Math.max(1, x.fin - x.ini)}; text-align:center; min-width:0; overflow:hidden; white-space:nowrap;">${Math.round(x.ini)}'–${Math.round(x.fin)}'</div>`).join('')}</div>
-      <div style="font-size:10.5px; color:#94a3b8; margin-top:4px;">Química de cada tramo entre cambios. La del partido es la media según los minutos.</div>` : '';
+    const TV = []; // para la barra: los tramos de menos de 5' se juntan con el siguiente (o con el anterior si es el último)
+    T.forEach(x => { const d = x.fin - x.ini, prev = TV[TV.length - 1];
+      if (prev && prev.corto) { const dp = prev.fin - prev.ini; prev.q = (prev.q * dp + x.q * d) / Math.max(1, dp + d); prev.fin = x.fin; prev.corto = (prev.fin - prev.ini) < 5; }
+      else TV.push({ ini: x.ini, fin: x.fin, q: x.q, corto: d < 5 }); });
+    if (TV.length > 1 && TV[TV.length - 1].corto) { const a2 = TV[TV.length - 2], b2 = TV.pop(), da = a2.fin - a2.ini, db = b2.fin - b2.ini; a2.q = (a2.q * da + b2.q * db) / Math.max(1, da + db); a2.fin = b2.fin; }
+    const tramosHTML = TV.length > 1 ? `<div style="display:flex; gap:3px; height:26px; margin-top:10px; border-radius:7px; overflow:hidden;">${TV.map(x => { const c = x.q >= 6.5 ? '#2ed573' : x.q >= 4.5 ? '#f5a623' : '#ff6b7a'; return `<div style="flex:${Math.max(1, x.fin - x.ini)}; background:${c}; display:flex; align-items:center; justify-content:center; font-family:'Montserrat',sans-serif; font-weight:900; font-size:11px; color:#0a0e14; min-width:0; overflow:hidden;">${qmFmt(x.q)}</div>`; }).join('')}</div>
+      <div style="display:flex; gap:3px; font-size:9.5px; color:#94a3b8; margin-top:3px;">${TV.map(x => `<div style="flex:${Math.max(1, x.fin - x.ini)}; text-align:center; min-width:0; overflow:hidden; white-space:nowrap;">${Math.round(x.ini)}'–${Math.round(x.fin)}'</div>`).join('')}</div>
+      <div style="font-size:10.5px; color:#94a3b8; margin-top:4px;">Química de cada tramo entre cambios (los de menos de 5' van con el siguiente). La del partido es la media según los minutos.</div>` : '';
     const bajos = (tr) => tr.enlaces.filter(e => e.v < QM_RODADA).sort((a, b) => a.v - b.v);
     const tag = (e) => e.v >= QM_CASI_NUEVA ? `<span style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:10px; padding:2px 7px; border-radius:7px; background:rgba(245,166,35,.15); color:#f5a623; white-space:nowrap;">A MEDIAS</span>` : `<span style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:10px; padding:2px 7px; border-radius:7px; background:rgba(255,107,122,.15); color:#ff8fa3; white-space:nowrap;">CASI NUEVA</span>`;
-    const lista = (tr) => { const B = bajos(tr); return B.length ? B.map(e => `<div style="display:flex; align-items:center; gap:8px; padding:6px 0; border-top:1px solid rgba(255,255,255,.06); font-size:12px;">${tag(e)}<span style="flex:1; min-width:0; color:#e2e8f0;">${escHtml(qmNom(t, e.a))} – ${escHtml(qmNom(t, e.b))} <span style="color:#94a3b8;">· ${e.pa} y ${e.pb}</span></span><b style="font-family:'Montserrat',sans-serif;">${e.min}'</b></div>`).join('') + `<div style="font-size:10.5px; color:#94a3b8; margin-top:4px;">Los otros ${tr.enlaces.length - B.length} enlaces, rodados.</div>` : `<div style="font-size:11.5px; color:#2ed573; margin-top:6px;">Todos los enlaces, rodados.</div>`; };
+    const filaB = (e) => `<div style="display:flex; align-items:center; gap:8px; padding:6px 0; border-top:1px solid rgba(255,255,255,.06); font-size:12px;">${tag(e)}<span style="flex:1; min-width:0; color:#e2e8f0;">${escHtml(qmNom(t, e.a))} – ${escHtml(qmNom(t, e.b))} <span style="color:#94a3b8;">· ${e.pa} y ${e.pb}</span></span><b style="font-family:'Montserrat',sans-serif; white-space:nowrap;">${e.min}' <span style="font-weight:600; color:#94a3b8; font-size:10.5px;">de ${e.den}'</span></b></div>`;
+    const lista = (tr) => { const B = bajos(tr); if (!B.length) return `<div style="font-size:11.5px; color:#2ed573; margin-top:6px;">Todos los enlaces, rodados.</div>`;
+      return B.slice(0, 5).map(filaB).join('') + (B.length > 5 ? `<details><summary style="font-size:11px; font-weight:700; color:#f5a623; cursor:pointer; padding:6px 0;">Ver las ${B.length} parejas</summary>${B.slice(5).map(filaB).join('')}</details>` : '') + `<div style="font-size:10.5px; color:#94a3b8; margin-top:4px;">Los otros ${tr.enlaces.length - B.length} enlaces, rodados.</div>`; };
     const bloque = (titulo, tr) => `<div style="font-size:11px; font-weight:800; color:#cbd5e1; letter-spacing:.5px; margin:12px 0 0;">${titulo} · ${qmFmt(tr.q)}</div>${qmCampoHTML(t, r, tr)}<div style="font-size:10.5px; font-weight:800; color:#94a3b8; letter-spacing:.5px; margin:10px 0 2px;">LO QUE BAJÓ LA QUÍMICA</div>${lista(tr)}`;
     const ult = T[T.length - 1];
     return `<details style="margin-top:6px; padding-top:6px; border-top:1px solid rgba(255,255,255,0.06);">
@@ -5255,7 +5267,7 @@
     const L = R ? R.partidos.map((r, i) => ({ r, i, p: ps[i] })).filter(x => x.r) : [];
     if (!L.length) return `<div style="font-size:12px; color:#94a3b8;">Aún no hay partidos con los 11 titulares y la formación guardados.</div>`;
     const conQ = L.filter(x => x.r.q != null);
-    const barras = L.map(x => { const q = x.r.q, h = q == null ? 3 : Math.max(4, q / 10 * 120), c = q == null ? '#3a4556' : q >= 8 ? '#2ed573' : q >= 5 ? '#f5a623' : '#ff6b7a';
+    const barras = L.map(x => { const q = x.r.q, h = q == null ? 3 : Math.max(4, q / 10 * 120), c = q == null ? '#3a4556' : q >= 6.5 ? '#2ed573' : q >= 4.5 ? '#f5a623' : '#ff6b7a';
       return `<div style="flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:3px; height:100%;"><em style="font-style:normal; font-family:'Montserrat',sans-serif; font-weight:800; font-size:9.5px; color:#e2e8f0;">${q == null ? '—' : qmFmt(q)}</em><i style="display:block; width:100%; height:${h}px; border-radius:4px 4px 0 0; background:${c};"></i><small style="font-size:9.5px; color:#94a3b8; font-weight:700;">J${x.i + 1}</small></div>`; }).join('');
     let comp = '';
     let C = null; try { C = snPreparar(t, liga); } catch (e) { C = null; }
@@ -5265,7 +5277,8 @@
       const nv = arr.map(x => { const f = C && C.porPartido ? C.porPartido.get(x.p) : null; return f && f.nivel != null ? f.nivel : null; }).filter(v => v != null);
       return { n: arr.length, pts, nivel: nv.length ? nv.reduce((s, v) => s + v, 0) / nv.length : null };
     };
-    const A = grupo(conQ.filter(x => x.r.q >= 8)), B = grupo(conQ.filter(x => x.r.q < 8));
+    const mediaQ = conQ.length ? conQ.reduce((s2, x) => s2 + x.r.q, 0) / conQ.length : 0; // v226: por encima / por debajo de la química media
+    const A = grupo(conQ.filter(x => x.r.q >= mediaQ)), B = grupo(conQ.filter(x => x.r.q < mediaQ));
     const caja = (G, titulo, col) => G ? `<div style="background:rgba(255,255,255,.05); border:1px solid ${col}59; border-radius:10px; padding:10px;">
         <div style="font-size:10.5px; color:${col}; font-weight:800;">${titulo}</div>
         <div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:22px; margin-top:4px;">${G.pts.toFixed(1).replace('.', ',')} <span style="font-size:10.5px; color:#94a3b8; font-weight:700;">pts/partido</span></div>
@@ -5274,8 +5287,8 @@
     if (conQ.length) {
       let frase = '';
       if (A && B && A.nivel != null && B.nivel != null) { const d = A.nivel - B.nivel; frase = Math.abs(d) < 0.2 ? '⚖️ De momento, rodado o no, el equipo rinde parecido frente a lo que se espera de cada rival.' : d > 0 ? `💡 Con el once rodado, el Hergar rinde <b>${d.toFixed(1).replace('.', ',')} goles por partido más</b> de lo que se espera ante cada rival.` : `💡 Curioso: con el once menos rodado el equipo rinde <b>${Math.abs(d).toFixed(1).replace('.', ',')} goles por partido más</b> de lo esperado.`; }
-      comp = `<div style="font-size:11px; font-weight:800; color:#cbd5e1; letter-spacing:.5px; margin:14px 0 6px;">¿RINDE MÁS UN ONCE RODADO?</div>
-        <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px;">${caja(A, 'QUÍMICA 8 O MÁS', '#2ed573')}${caja(B, 'MENOS DE 8', '#f5a623')}</div>
+      comp = `<div style="font-size:11px; font-weight:800; color:#cbd5e1; letter-spacing:.5px; margin:14px 0 6px;">¿RINDE MÁS UN ONCE RODADO?</div><div style="font-size:10.5px; color:#94a3b8; margin:-2px 0 6px;">Partidos por encima y por debajo de la química media (${qmFmt(mediaQ)}).</div>
+        <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px;">${caja(A, `QUÍMICA ${qmFmt(mediaQ)} O MÁS`, '#2ed573')}${caja(B, `MENOS DE ${qmFmt(mediaQ)}`, '#f5a623')}</div>
         ${frase ? `<div style="font-size:12px; line-height:1.5; color:#e2e8f0; margin-top:10px; background:rgba(180,20,56,.15); border:1px solid rgba(255,85,119,.35); border-radius:10px; padding:9px 10px;">${frase}</div>` : ''}
         <div style="font-size:10.5px; color:#94a3b8; margin-top:6px; line-height:1.45;">Con pocos partidos es una pista, no una conclusión: la química baja coincide con rotaciones, bajas o el arranque de la temporada.</div>`;
     }

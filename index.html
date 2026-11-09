@@ -1238,6 +1238,7 @@
 </div>
 
 <script type="module">
+  // v227 (visor; app v226) · 🔗 Química por tramos con la pizarra real: la que guarda la app en cada cambio o recolocación (p.pizarra) o, en partidos anteriores, deducida de los cambios y de los puestos de cada niño.
   // v226 (visor) · 🔗 Química: cada pareja sobre los minutos del que menos jugó de los dos (mínimo 140'); ficha con las 5 parejas más bajas y «ver todas», tramos de menos de 5' juntos; la comparación de la temporada, por encima / por debajo de la química media.
   // v225 (visor) · 🔗 Química: rodada 65 % o más, a medias 25-65 %, casi nueva menos del 25 % (solo cambia el color y la lista; la nota no).
   // v224 (visor) · 🔗 Química: cada enlace por los minutos juntos en los 4 partidos anteriores (sobre los minutos de esos partidos) y por tramos entre cambios (el que entra ocupa el hueco del que sale).
@@ -5136,6 +5137,103 @@
       return { min: e.min, entra: String(e.j.id), sale: s ? String(s.j.id) : null };
     });
   }
+  // v227 · Pizarra de cada tramo: [{ ini, fin, form, ids:[11 ids o null por hueco] }]
+  //  · Partidos desde la app v226: la app guarda la pizarra entera cada vez que cambia (p.pizarra), con su minuto.
+  //  · Partidos anteriores: con los cambios y los puestos donde jugó cada niño (h.puestos). La recolocación se hace
+  //    justo después de los cambios: el titular sigue en su puesto de inicio los minutos que jugó ahí y después pasa
+  //    a su otro puesto (ese momento se lleva al cambio más cercano); el que entra empieza en el puesto del que sale.
+  const QM_LINEA_PU = { POR: 'P', LI: 'D', DFC: 'D', LD: 'D', MCD: 'M', MC: 'M', MI: 'M', MD: 'M', MP: 'M', EI: 'A', ED: 'A', DC: 'A' };
+  function qmColocar(ids, puesto, form, prev) {
+    // reparte a los niños (con su puesto) en los huecos de la formación; prev = huecos del tramo anterior (para no bailar)
+    const PU = (typeof ACTA_PUESTOS_FORM !== 'undefined' && ACTA_PUESTOS_FORM[form]) || [];
+    const sl = new Array(11).fill(null), pend = ids.slice();
+    const quitar = id => { const k = pend.indexOf(id); if (k >= 0) pend.splice(k, 1); };
+    // 1) se queda en su hueco si sigue en ese mismo puesto
+    if (prev) prev.forEach((id, k) => { if (id && pend.includes(id) && puesto[id] && puesto[id] === PU[k]) { sl[k] = id; quitar(id); } });
+    // 2) a un hueco libre de su puesto
+    pend.slice().forEach(id => { const k = PU.findIndex((pu, kk) => !sl[kk] && pu === puesto[id]); if (k >= 0) { sl[k] = id; quitar(id); } });
+    // 3) a un hueco libre de su línea, 4) si no, a su hueco de antes o al primero libre
+    pend.slice().forEach(id => { const L = QM_LINEA_PU[puesto[id]]; const k = PU.findIndex((pu, kk) => !sl[kk] && L && QM_LINEA_PU[pu] === L); if (k >= 0) { sl[k] = id; quitar(id); } });
+    pend.slice().forEach(id => { let k = prev ? prev.indexOf(id) : -1; if (k < 0 || sl[k]) k = sl.findIndex(x => !x); if (k >= 0) { sl[k] = id; quitar(id); } });
+    return sl;
+  }
+  function qmTramosPartido(t, p, tit, form, dur, filas) {
+    // 1) con la pizarra guardada por la app
+    if (Array.isArray(p.pizarra) && p.pizarra.length) {
+      const L = p.pizarra.map(x => ({ m: Number(x.m) || 0, f: x.f || form, ids: (Array.isArray(x.ids) ? x.ids : String(x.ids || '').split(',')).map(v => v === '' || v == null ? null : String(v)) })).sort((a, b) => a.m - b.m);
+      const out = []; let prev = null;
+      L.forEach((x, k) => {
+        let sl;
+        if (x.ids.length === 11) sl = x.ids.slice();
+        else { // con un expulsado la app quita su hueco: se mantiene a cada uno donde estaba
+          sl = prev ? prev.map(id => (id && x.ids.includes(id)) ? id : null) : new Array(11).fill(null);
+          x.ids.filter(id => id && !sl.includes(id)).forEach(id => { const h = sl.findIndex(v => !v); if (h >= 0) sl[h] = id; });
+        }
+        const ini = k === 0 ? 0 : Math.min(dur, x.m), fin = k === L.length - 1 ? dur : Math.min(dur, Math.max(ini, L[k + 1].m));
+        if (fin > ini) out.push({ ini, fin, form: QM_ENLACES[x.f] ? x.f : form, ids: sl });
+        prev = sl;
+      });
+      if (out.length) return out;
+    }
+    // 2) partido anterior: cambios + puestos
+    const PU0 = (typeof ACTA_PUESTOS_FORM !== 'undefined' && ACTA_PUESTOS_FORM[form]) || [];
+    const cambios = qmCambios(t, p);
+    const mins = cambios.map(c => Math.min(dur, Math.max(0, c.min)));
+    const snap = (m) => { let best = m, d = 6; mins.forEach(c => { if (Math.abs(c - m) < d) { d = Math.abs(c - m); best = c; } }); return best; };
+    const conPuestos = filas.some(f => f.h.puestos && Object.keys(f.h.puestos).length);
+    const seg = {}; // id → [{ ini, fin, pu }]
+    const salePu = {}; // puesto final de cada titular (para el que entra por él)
+    filas.forEach(f => {
+      const id = String(f.j.id), tr = muroTramo(p, f.h, dur, tit, f.j.id);
+      if (!tr) return;
+      const pz = f.h.puestos || {}, keys = Object.keys(pz).filter(k => (Number(pz[k]) || 0) > 0);
+      const k0 = tit.indexOf(id);
+      const L = [];
+      if (k0 >= 0) { // titular: primero su puesto de inicio
+        const P0 = PU0[k0];
+        if (keys.length > 1 && keys.includes(P0)) {
+          const corte = snap(tr.ini + (Number(pz[P0]) || 0));
+          L.push({ ini: tr.ini, fin: corte, pu: P0 });
+          const resto = keys.filter(k => k !== P0).sort((a, b) => pz[b] - pz[a]);
+          L.push({ ini: corte, fin: tr.fin, pu: resto[0] });
+        } else L.push({ ini: tr.ini, fin: tr.fin, pu: keys.length === 1 ? keys[0] : P0 });
+      } else L.push({ ini: tr.ini, fin: tr.fin, pu: null, keys, pz }); // suplente: se completa con el que sale
+      seg[id] = L;
+    });
+    Object.keys(seg).forEach(id => { const L = seg[id]; if (tit.includes(id)) salePu[id] = L[L.length - 1].pu; });
+    cambios.forEach(c => {
+      const L = c.entra && seg[c.entra]; if (!L || L[0].pu) return;
+      const x = L[0], Ps = c.sale ? salePu[c.sale] : null;
+      if (x.keys.length > 1 && Ps && x.keys.includes(Ps)) {
+        const corte = snap(x.ini + (Number(x.pz[Ps]) || 0));
+        const otro = x.keys.filter(k => k !== Ps).sort((a, b) => x.pz[b] - x.pz[a])[0];
+        seg[c.entra] = [{ ini: x.ini, fin: corte, pu: Ps }, { ini: corte, fin: x.fin, pu: otro }];
+      } else x.pu = x.keys.length === 1 ? x.keys[0] : (Ps || x.keys.sort((a, b) => x.pz[b] - x.pz[a])[0] || null);
+      salePu[c.entra] = seg[c.entra][seg[c.entra].length - 1].pu;
+    });
+    Object.values(seg).forEach(L => L.forEach(x => { if (!x.pu) x.pu = (x.keys || []).sort((a, b) => x.pz[b] - x.pz[a])[0] || null; }));
+    const cortes = new Set([0, dur]);
+    mins.forEach(m => cortes.add(m));
+    Object.values(seg).forEach(L => L.forEach(x => { cortes.add(Math.max(0, Math.min(dur, x.ini))); cortes.add(Math.max(0, Math.min(dur, x.fin))); }));
+    const C = [...cortes].sort((a, b) => a - b);
+    const out = []; let prev = tit.slice();
+    for (let k = 0; k < C.length - 1; k++) {
+      const a = C[k], b = C[k + 1]; if (b - a < 0.5) continue;
+      const mid = (a + b) / 2, puesto = {}, ids = [];
+      Object.entries(seg).forEach(([id, L]) => { const x = L.find(s => s.ini <= mid && mid < s.fin); if (x) { ids.push(id); puesto[id] = x.pu; } });
+      if (!ids.length) continue;
+      let sl;
+      if (!conPuestos) { // sin puestos: el que entra ocupa el hueco del que sale
+        sl = prev.map(id => ids.includes(id) ? id : null);
+        ids.filter(id => !sl.includes(id)).forEach(id => { const c = cambios.find(cc => cc.entra === id); let h = c && c.sale ? prev.indexOf(c.sale) : -1; if (h < 0 || sl[h]) h = sl.findIndex(v => !v); if (h >= 0) sl[h] = id; });
+      } else sl = qmColocar(ids, puesto, form, prev);
+      const last = out[out.length - 1];
+      if (last && last.ids.join(',') === sl.join(',')) last.fin = b;
+      else out.push({ ini: a, fin: b, form, ids: sl });
+      prev = sl;
+    }
+    return out.length ? out : [{ ini: 0, fin: dur, form, ids: tit.slice() }];
+  }
   function qmTemporada(t) {
     if (!t) return null;
     if (qmCache.has(t)) return qmCache.get(t);
@@ -5153,25 +5251,16 @@
           // minutos juntos de los QM_VENTANA partidos anteriores
           const desde = Math.max(0, i - QM_VENTANA), ven = {}, mj = {}; let base = 0;
           for (let k = desde; k < i; k++) { base += durs[k] || 0; Object.entries(porPartido[k] || {}).forEach(([c, m]) => { ven[c] = (ven[c] || 0) + m; }); Object.entries(minsJug[k] || {}).forEach(([id, m]) => { mj[id] = (mj[id] || 0) + m; }); }
-          const PU = (typeof ACTA_PUESTOS_FORM !== 'undefined' && ACTA_PUESTOS_FORM[form]) || [];
-          const once = (sl) => {
-            const enlaces = E.map(([x, y]) => {
+          const once = (sl, f) => {
+            const EE = QM_ENLACES[f] || E, PU = (typeof ACTA_PUESTOS_FORM !== 'undefined' && ACTA_PUESTOS_FORM[f]) || [];
+            const enlaces = EE.filter(([x, y]) => sl[x] && sl[y]).map(([x, y]) => {
               const m = ven[qmClave(sl[x], sl[y])] || 0, den = Math.max(QM_MIN_BASE, Math.min(mj[sl[x]] || 0, mj[sl[y]] || 0));
               return { x, y, a: sl[x], b: sl[y], pa: PU[x] || '', pb: PU[y] || '', min: Math.round(m), den: Math.round(den), v: Math.min(1, m / den) * 10 };
             });
-            return { q: enlaces.reduce((s, e) => s + e.v, 0) / enlaces.length, enlaces, tit: sl.slice() };
+            return { q: enlaces.length ? enlaces.reduce((s2, e) => s2 + e.v, 0) / enlaces.length : 0, enlaces, tit: sl.slice(), form: f };
           };
-          // tramos: en cada cambio el que entra ocupa el hueco del que sale
-          const slots = tit.slice(), tramos = [];
-          let ini = 0;
-          qmCambios(t, p).forEach(c => {
-            const k = c.sale ? slots.indexOf(c.sale) : -1;
-            if (k < 0) return; // sin saber por quién entra, no se mueve la pizarra
-            const fin = Math.min(dur, Math.max(ini, c.min));
-            if (fin > ini) tramos.push(Object.assign({ ini, fin }, once(slots)));
-            ini = fin; slots[k] = c.entra;
-          });
-          if (dur > ini || !tramos.length) tramos.push(Object.assign({ ini, fin: Math.max(ini, dur) }, once(slots)));
+          // tramos con la pizarra de cada momento (v227: guardada por la app, o deducida de cambios y puestos)
+          const tramos = qmTramosPartido(t, p, tit, form, dur, filas).map(x => Object.assign({ ini: x.ini, fin: x.fin }, once(x.ids, x.form)));
           const tot = tramos.reduce((s, x) => s + (x.fin - x.ini), 0);
           const q = tot ? tramos.reduce((s, x) => s + x.q * (x.fin - x.ini), 0) / tot : tramos[0].q;
           res = { q, tramos, form, tit, base, nPrevios: i - desde, enlaces: tramos[0].enlaces };
@@ -5203,10 +5292,10 @@
   function qmMediaTemporada(t) { const L = (qmTemporada(t) || { partidos: [] }).partidos.filter(x => x && x.q != null); return L.length ? L.reduce((s, x) => s + x.q, 0) / L.length : null; }
   function qmChip(t, p) { const r = qmDe(t, p); return r && r.q != null ? `<span>🔗 Química ${qmFmt(r.q)}</span>` : ''; }
   function qmCampoHTML(t, r, tr) {
-    const co = (typeof COORDENADAS_FORMACIONES !== 'undefined' && COORDENADAS_FORMACIONES[r.form]) || null;
+    const co = (typeof COORDENADAS_FORMACIONES !== 'undefined' && COORDENADAS_FORMACIONES[tr.form || r.form]) || null;
     if (!co) return '';
     const lineas = tr.enlaces.map(e => { const A = co[e.x], B = co[e.y]; return `<line x1="${A.x}" y1="${A.y}" x2="${B.x}" y2="${B.y}" stroke="${qmColor(e)}" stroke-width="3.2" stroke-linecap="round" vector-effect="non-scaling-stroke"${e.v >= QM_CASI_NUEVA ? '' : ' stroke-dasharray="6 5"'}/>`; }).join('');
-    const js = tr.tit.map((id, k) => { const c = co[k]; const j = (t.jugadores || {})[id] || {}; const nuevo = !r.tit.includes(String(id)); return `<div style="position:absolute; left:${c.x}%; top:${c.y}%; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; width:62px;">
+    const js = tr.tit.map((id, k) => { const c = co[k]; if (!id || !c) return ''; const j = (t.jugadores || {})[id] || {}; const nuevo = !r.tit.includes(String(id)); return `<div style="position:absolute; left:${c.x}%; top:${c.y}%; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; width:62px;">
         <span style="width:28px; height:28px; border-radius:50%; background:${k === 0 ? '#f5a623' : 'rgb(180,20,56)'}; color:${k === 0 ? '#0a0e14' : '#fff'}; border:2px solid ${nuevo ? '#5dade2' : '#fff'}; display:flex; align-items:center; justify-content:center; font-family:'Montserrat',sans-serif; font-weight:900; font-size:11px;">${escHtml(j.dorsal ?? '')}</span>
         <span style="margin-top:2px; font-size:9.5px; font-weight:700; color:#fff; background:rgba(10,14,20,.8); padding:1px 5px; border-radius:5px; white-space:nowrap; max-width:62px; overflow:hidden; text-overflow:ellipsis;">${nuevo ? '🔄 ' : ''}${escHtml(qmNom(t, id))}</span></div>`; }).join('');
     return `<div style="position:relative; width:100%; aspect-ratio:3/4; margin-top:8px; border-radius:12px; background:#123f1f; border:1px solid rgba(255,255,255,.08); overflow:hidden;">
@@ -5224,7 +5313,7 @@
     return `<div style="font-size:12px; line-height:1.55; color:#cbd5e1; padding-top:6px;">
       <p style="margin:0 0 6px;">Cuánto se conocían los que estaban en el campo. Cada jugador se enlaza con sus vecinos en la pizarra (21 enlaces en el 1-4-2-3-1: defensas entre sí y con el portero, cada lateral con su pivote y su extremo, los pivotes con el mediapunta y con el extremo de su lado, y los extremos y el mediapunta con el delantero).</p>
       <p style="margin:0 0 6px;">Cada enlace vale de 0 a 10 según los minutos que esa pareja jugó junta en los <b>${QM_VENTANA} partidos anteriores</b>, sobre los minutos que jugó en ellos <b>el que menos jugó de los dos</b> (nunca menos de ${QM_MIN_BASE}', para que unos minutos sueltos no cuenten como pareja rodada). Si Mario jugó 100' y 80' de ellos con Rubén, ese enlace vale 8: cuando Mario está, casi siempre está con Rubén. Así las rotaciones de minutos no la hunden, y quien vuelve de una lesión o sube de otro equipo sale como pareja casi nueva.</p>
-      <p style="margin:0;">Se calcula <b>por tramos</b>: en cada cambio, el que entra ocupa el hueco del que sale. La química del partido es la media de los tramos según los minutos de cada uno.</p></div>`;
+      <p style="margin:0;">Se calcula <b>por tramos</b>, con la pizarra de cada momento (cambios y recolocaciones). Desde la app v226 la pizarra se guarda cada vez que cambia; en los partidos anteriores se deduce de los cambios y de los puestos donde jugó cada niño (la recolocación, justo después de los cambios). La química del partido es la media de los tramos según los minutos de cada uno.</p></div>`;
   }
   // Ficha del partido (Temporada → Partidos)
   function quimicaPartidoHTML(t, p) {

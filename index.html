@@ -1238,6 +1238,7 @@
 </div>
 
 <script type="module">
+  // v223 (visor) · 🏟️ Grandes: los 4 rivales con más Elo el día del partido (antes, el tercio alto).
   // v222 (visor; app v225) · 🔗 Química del once (ficha del partido con el campo y los enlaces, chip en la tarjeta y Más análisis → Equipo), 🏟️ Se crece en los grandes (Más análisis → Jugadores y ficha, solo en positivo), 📦 Box-to-box (4+4; total 6+6: minuto a minuto, aviso del total en directo, ficha del partido, actuación, ficha → Datos, Ranking, Récords, Mi hijo) y 📍 Dónde ha jugado por puesto con impacto y sus acciones.
   // v221 (visor) · 🎬 Resumen: el rótulo de dominio sale en todos los partidos, salvo cuando el Hergar gana por más de 5 goles (antes, solo con menos de 3 goles en total).
   // v220 (app + visor + delegado) · 🟨🟥 Tarjetas del rival: en las barras del partido, el minuto a minuto, el acta, las medias, el cara a cara del próximo partido y el tiempo jugado con uno más / uno menos (y el marcador en ese rato).
@@ -5234,10 +5235,10 @@
       <details style="margin-top:10px;"><summary style="font-size:11.5px; font-weight:700; color:#f5a623; cursor:pointer;">ℹ️ Cómo se calcula</summary>${qmExplicacionHTML()}</details>`;
   }
 
-  // GRANDES: partido grande = contra un rival del tercio alto del Elo el día del partido (Elo de antes de esa jornada).
+  // GRANDES: partido grande = contra uno de los GR_TOP rivales con más Elo el día del partido (sin contar al Hergar; Elo de antes de esa jornada).
   //  Se compara el peso en el equipo de cada niño (frente a sus compañeros del mismo partido) en los grandes y en el resto.
   //  En el visor solo salen quienes se crecen (positivo). Mínimo GR_MIN minutos en grandes y en el resto.
-  const GR_MIN = 70, GR_FIABLE = 4;
+  const GR_MIN = 70, GR_FIABLE = 4, GR_TOP = 4; // v223: los 4 rivales con más Elo
   function grPartidosGrandes(t, liga) {
     const out = new Map();
     if (!t || !liga || !liga.equipos || !liga.partidos || typeof pronPreparar !== 'function') return out;
@@ -5253,7 +5254,7 @@
       const gd = Math.abs(p.gl - p.gv), G = gd <= 1 ? 1 : gd === 2 ? 1.5 : (11 + gd) / 8;
       const d = ELO_K * G * (w - we); elo[p.l] += d; elo[p.v] -= d;
     });
-    const nGrandes = Math.ceil((D.NT - 1) / 3), usados = new Set(), vistas = {};
+    const nGrandes = GR_TOP, usados = new Set(), vistas = {};
     (t.partidos || []).forEach((p, i) => {
       const rv = proRivalLiga(liga, p);
       if (rv.i < 0 || rv.i === D.H) return;
@@ -5302,7 +5303,7 @@
           <div style="flex:1; min-width:0;"><div style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:14px;">${escHtml(String(x.j.name || '').split(' ')[0])}</div><div style="font-size:11px; color:#94a3b8;">${x.ng} ${x.ng === 1 ? 'grande' : 'grandes'} · ${x.gm}'</div></div>
           <div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:18px; color:#2ed573;">${pesoFmt(x.dif, 1)}</div></div>${grBarras(x, maxAbs)}</div>`; }).join('');
     const prov = R.grandes.length < GR_FIABLE;
-    return `<div style="font-size:12px; line-height:1.5; color:#cbd5e1;">Partido grande: contra un rival del <b>tercio alto del Elo</b> el día del partido. Se compara el <b>peso en el equipo</b> de cada niño en esos partidos con el resto: así las goleadas no influyen.</div>
+    return `<div style="font-size:12px; line-height:1.5; color:#cbd5e1;">Partido grande: contra uno de los <b>${GR_TOP} equipos con más Elo</b> (sin contar al Hergar) el día del partido. Se compara el <b>peso en el equipo</b> de cada niño en esos partidos con el resto: así las goleadas no influyen.</div>
       ${R.grandes.length ? ps : `<div style="font-size:12px; color:#94a3b8; padding:8px 0;">Aún no se ha jugado ningún partido grande.</div>`}
       ${R.grandes.length && prov ? `<div style="font-size:11px; color:#f5a623; margin-top:6px;">⏳ ${R.grandes.length === 1 ? 'Solo 1 partido grande' : `Solo ${R.grandes.length} partidos grandes`}: dato provisional hasta el ${GR_FIABLE}.º.</div>` : ''}
       ${R.grandes.length ? `<div style="font-size:11px; font-weight:800; color:#cbd5e1; letter-spacing:.5px; margin:14px 0 2px;">LOS QUE SE CRECEN</div>${filas || `<div style="font-size:12px; color:#94a3b8; padding:6px 0;">De momento nadie rinde claramente más en los grandes que en el resto.</div>`}

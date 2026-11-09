@@ -1238,6 +1238,8 @@
 </div>
 
 <script type="module">
+  // v225 (visor) · 🔗 Química: rodada 65 % o más, a medias 25-65 %, casi nueva menos del 25 % (solo cambia el color y la lista; la nota no).
+  // v224 (visor) · 🔗 Química: cada enlace por los minutos juntos en los 4 partidos anteriores (sobre los minutos de esos partidos) y por tramos entre cambios (el que entra ocupa el hueco del que sale).
   // v223 (visor) · 🏟️ Grandes: los 4 rivales con más Elo el día del partido (antes, el tercio alto).
   // v222 (visor; app v225) · 🔗 Química del once (ficha del partido con el campo y los enlaces, chip en la tarjeta y Más análisis → Equipo), 🏟️ Se crece en los grandes (Más análisis → Jugadores y ficha, solo en positivo), 📦 Box-to-box (4+4; total 6+6: minuto a minuto, aviso del total en directo, ficha del partido, actuación, ficha → Datos, Ranking, Récords, Mi hijo) y 📍 Dónde ha jugado por puesto con impacto y sus acciones.
   // v221 (visor) · 🎬 Resumen: el rótulo de dominio sale en todos los partidos, salvo cuando el Hergar gana por más de 5 goles (antes, solo con menos de 3 goles en total).
@@ -5099,11 +5101,13 @@
 
 
   // ── v222 (visor) · 🔗 QUÍMICA DEL ONCE · 🏟️ SE CRECE EN LOS GRANDES · 📦 BOX-TO-BOX ──────────────────────
-  // QUÍMICA: cada titular se enlaza con sus vecinos en la pizarra (21 enlaces en el 1-4-2-3-1). Cada enlace vale de 0
-  //  (nunca habían jugado juntos) a 10 (QM_RODADO minutos o más juntos ANTES de ese partido). La química es la media.
-  //  Los minutos juntos salen de titulares y minutos de cada uno (como el más/menos: un cambiado no vuelve a entrar).
-  //  Solo partidos con los 11 titulares en el orden de la pizarra (los cargados a mano no; sí suman minutos juntos).
-  const QM_RODADO = 210;
+  // QUÍMICA (v224): cuánto se conocían los que estaban en el campo. Cada jugador se enlaza con sus vecinos en la pizarra
+  //  (21 enlaces en el 1-4-2-3-1). Cada enlace vale de 0 a 10 según los minutos que esa pareja jugó junta en los
+  //  QM_VENTANA partidos anteriores, sobre los minutos de esos partidos (4 partidos = 280'). Se calcula POR TRAMOS: en cada
+  //  cambio el que entra ocupa el hueco del que sale, y la química del partido es la media de los tramos según sus minutos.
+  //  Los cambios salen de los guardados con el partido (v139) o se deducen de los minutos de cada uno.
+  //  Solo partidos con los 11 titulares en el orden de la pizarra (los cargados a mano no; sí cuentan sus minutos juntos).
+  const QM_VENTANA = 4;
   const QM_ENLACES = {
     '4-2-3-1': [[0, 2], [0, 3], [2, 3], [1, 2], [3, 4], [1, 5], [4, 6], [2, 5], [3, 6], [5, 6], [5, 8], [6, 8], [1, 7], [4, 9], [7, 8], [9, 8], [8, 10], [5, 7], [6, 9], [7, 10], [9, 10]],
     '4-3-3': [[0, 2], [0, 3], [2, 3], [1, 2], [3, 4], [2, 5], [3, 5], [1, 6], [4, 7], [5, 6], [5, 7], [6, 8], [7, 10], [6, 9], [7, 9], [8, 9], [10, 9], [1, 8], [4, 10]],
@@ -5113,35 +5117,72 @@
   };
   const qmCache = new WeakMap();
   function qmClave(a, b) { a = String(a); b = String(b); return a < b ? a + '|' + b : b + '|' + a; }
+  // Cambios del partido: [{ min, entra: id, sale: id|null }]
+  function qmCambios(t, p) {
+    const js = Object.values(t.jugadores || {});
+    const porDorsal = d => { const j = js.find(x => String(x.dorsal) === String(d).replace(/^#/, '')); return j ? String(j.id) : null; };
+    const A = p.acta || {};
+    if (Array.isArray(A.cambios) && A.cambios.length) {
+      return A.cambios.map(c => ({ min: Number(c.min) || 0, entra: porDorsal(c.entraD), sale: porDorsal(c.saleD) })).filter(c => c.entra).sort((a, b) => a.min - b.min);
+    }
+    let inf = null; try { inf = bqPartidoInfo(t, p); } catch (e) { inf = null; }
+    if (!inf) return [];
+    const sal = inf.sal.slice().sort((a, b) => a.min - b.min), usadas = new Set();
+    return inf.ent.slice().sort((a, b) => a.min - b.min).map(e => {
+      let k = -1, mejor = 99;
+      sal.forEach((s, si) => { if (usadas.has(si)) return; const d = Math.abs(s.min - e.min); if (d < mejor) { mejor = d; k = si; } });
+      const s = (k >= 0 && mejor <= 2) ? sal[k] : null; if (s) usadas.add(k);
+      return { min: e.min, entra: String(e.j.id), sale: s ? String(s.j.id) : null };
+    });
+  }
   function qmTemporada(t) {
     if (!t) return null;
     if (qmCache.has(t)) return qmCache.get(t);
     const ps = t.partidos || [];
-    const acum = {};
+    const acum = {}, porPartido = [], durs = [];
     const partidos = ps.map((p, i) => {
       let res = null;
       const form = p.formacion, E = QM_ENLACES[form];
       const tit = Array.isArray(p.titulares) ? p.titulares.map(String) : null;
+      let filas = [], dur = 70;
+      try { filas = proFilas(t, p); dur = mmDuracion(p, filas); } catch (e) {}
       if (E && tit && tit.length === 11 && !p.manual) {
         if (i === 0) res = { q: null, primero: true, form, tit };
         else {
+          // minutos juntos de los QM_VENTANA partidos anteriores
+          const desde = Math.max(0, i - QM_VENTANA), ven = {}; let base = 0;
+          for (let k = desde; k < i; k++) { base += durs[k] || 0; Object.entries(porPartido[k] || {}).forEach(([c, m]) => { ven[c] = (ven[c] || 0) + m; }); }
           const PU = (typeof ACTA_PUESTOS_FORM !== 'undefined' && ACTA_PUESTOS_FORM[form]) || [];
-          const enlaces = E.map(([x, y]) => {
-            const m = acum[qmClave(tit[x], tit[y])] || 0;
-            return { x, y, a: tit[x], b: tit[y], pa: PU[x] || '', pb: PU[y] || '', min: Math.round(m), v: Math.min(1, m / QM_RODADO) * 10 };
+          const once = (sl) => {
+            const enlaces = E.map(([x, y]) => { const m = ven[qmClave(sl[x], sl[y])] || 0; return { x, y, a: sl[x], b: sl[y], pa: PU[x] || '', pb: PU[y] || '', min: Math.round(m), v: base ? Math.min(1, m / base) * 10 : 0 }; });
+            return { q: enlaces.reduce((s, e) => s + e.v, 0) / enlaces.length, enlaces, tit: sl.slice() };
+          };
+          // tramos: en cada cambio el que entra ocupa el hueco del que sale
+          const slots = tit.slice(), tramos = [];
+          let ini = 0;
+          qmCambios(t, p).forEach(c => {
+            const k = c.sale ? slots.indexOf(c.sale) : -1;
+            if (k < 0) return; // sin saber por quién entra, no se mueve la pizarra
+            const fin = Math.min(dur, Math.max(ini, c.min));
+            if (fin > ini) tramos.push(Object.assign({ ini, fin }, once(slots)));
+            ini = fin; slots[k] = c.entra;
           });
-          res = { q: enlaces.reduce((s, e) => s + e.v, 0) / enlaces.length, enlaces, form, tit };
+          if (dur > ini || !tramos.length) tramos.push(Object.assign({ ini, fin: Math.max(ini, dur) }, once(slots)));
+          const tot = tramos.reduce((s, x) => s + (x.fin - x.ini), 0);
+          const q = tot ? tramos.reduce((s, x) => s + x.q * (x.fin - x.ini), 0) / tot : tramos[0].q;
+          res = { q, tramos, form, tit, base, nPrevios: i - desde, enlaces: tramos[0].enlaces };
         }
       }
-      // los minutos juntos de este partido se suman después (cuentan para los siguientes)
+      // los minutos juntos de este partido (para los siguientes)
+      const mio = {};
       try {
-        const filas = proFilas(t, p), dur = mmDuracion(p, filas);
         const tr = filas.map(f => ({ id: String(f.j.id), t: muroTramo(p, f.h, dur, tit, f.j.id) })).filter(x => x.t);
         for (let a = 0; a < tr.length; a++) for (let b = a + 1; b < tr.length; b++) {
-          const ini = Math.max(tr[a].t.ini, tr[b].t.ini), fin = Math.min(tr[a].t.fin, tr[b].t.fin);
-          if (fin > ini) { const k = qmClave(tr[a].id, tr[b].id); acum[k] = (acum[k] || 0) + (fin - ini); }
+          const s = Math.max(tr[a].t.ini, tr[b].t.ini), f = Math.min(tr[a].t.fin, tr[b].t.fin);
+          if (f > s) { const k = qmClave(tr[a].id, tr[b].id); mio[k] = (mio[k] || 0) + (f - s); acum[k] = (acum[k] || 0) + (f - s); }
         }
       } catch (e) { console.error('Química · minutos juntos:', e); }
+      porPartido[i] = mio; durs[i] = filas.length ? dur : 0;
       return res;
     });
     const R = { partidos, acum };
@@ -5151,46 +5192,60 @@
   function qmDe(t, p) { const R = qmTemporada(t); if (!R) return null; const i = (t.partidos || []).indexOf(p); return i >= 0 ? R.partidos[i] : null; }
   function qmFmt(v) { return v == null ? '—' : v.toFixed(1).replace('.', ','); }
   function qmNom(t, id) { const j = (t.jugadores || {})[id] || Object.values(t.jugadores || {}).find(x => String(x.id) === String(id)); return j ? String(j.name || '').split(' ')[0] : '¿?'; }
-  function qmEtiqueta(q) { return q >= 8.5 ? ['Once muy rodado', '#2ed573'] : q >= 6.5 ? ['Once bastante rodado', '#2ed573'] : q >= 4.5 ? ['Once a medio rodar', '#f5a623'] : ['Muchas parejas nuevas', '#ff6b7a']; }
-  function qmColor(e) { return e.min >= QM_RODADO ? '#2ed573' : e.min > 0 ? '#f5a623' : '#ff6b7a'; }
+  function qmEtiqueta(q) { return q >= 8.5 ? ['Muy rodados', '#2ed573'] : q >= 6.5 ? ['Bastante rodados', '#2ed573'] : q >= 4.5 ? ['A medio rodar', '#f5a623'] : ['Muchas parejas nuevas', '#ff6b7a']; }
+  const QM_RODADA = 6.5, QM_CASI_NUEVA = 2.5; // v225: rodada 65 % o más · a medias 25-65 % · casi nueva menos del 25 %
+  function qmColor(e) { return e.v >= QM_RODADA ? '#2ed573' : e.v >= QM_CASI_NUEVA ? '#f5a623' : '#ff6b7a'; }
   function qmMediaTemporada(t) { const L = (qmTemporada(t) || { partidos: [] }).partidos.filter(x => x && x.q != null); return L.length ? L.reduce((s, x) => s + x.q, 0) / L.length : null; }
   function qmChip(t, p) { const r = qmDe(t, p); return r && r.q != null ? `<span>🔗 Química ${qmFmt(r.q)}</span>` : ''; }
-  function qmCampoHTML(t, r) {
+  function qmCampoHTML(t, r, tr) {
     const co = (typeof COORDENADAS_FORMACIONES !== 'undefined' && COORDENADAS_FORMACIONES[r.form]) || null;
     if (!co) return '';
-    const lineas = r.enlaces.map(e => { const A = co[e.x], B = co[e.y]; return `<line x1="${A.x}" y1="${A.y}" x2="${B.x}" y2="${B.y}" stroke="${qmColor(e)}" stroke-width="3.2" stroke-linecap="round" vector-effect="non-scaling-stroke"${e.min > 0 ? '' : ' stroke-dasharray="6 5"'}/>`; }).join('');
-    const js = r.tit.map((id, k) => { const c = co[k]; const j = (t.jugadores || {})[id] || {}; return `<div style="position:absolute; left:${c.x}%; top:${c.y}%; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; width:62px;">
-        <span style="width:28px; height:28px; border-radius:50%; background:${k === 0 ? '#f5a623' : 'rgb(180,20,56)'}; color:${k === 0 ? '#0a0e14' : '#fff'}; border:2px solid #fff; display:flex; align-items:center; justify-content:center; font-family:'Montserrat',sans-serif; font-weight:900; font-size:11px;">${escHtml(j.dorsal ?? '')}</span>
-        <span style="margin-top:2px; font-size:9.5px; font-weight:700; color:#fff; background:rgba(10,14,20,.8); padding:1px 5px; border-radius:5px; white-space:nowrap; max-width:62px; overflow:hidden; text-overflow:ellipsis;">${escHtml(qmNom(t, id))}</span></div>`; }).join('');
-    return `<div style="position:relative; width:100%; aspect-ratio:3/4; margin-top:10px; border-radius:12px; background:#123f1f; border:1px solid rgba(255,255,255,.08); overflow:hidden;">
+    const lineas = tr.enlaces.map(e => { const A = co[e.x], B = co[e.y]; return `<line x1="${A.x}" y1="${A.y}" x2="${B.x}" y2="${B.y}" stroke="${qmColor(e)}" stroke-width="3.2" stroke-linecap="round" vector-effect="non-scaling-stroke"${e.v >= QM_CASI_NUEVA ? '' : ' stroke-dasharray="6 5"'}/>`; }).join('');
+    const js = tr.tit.map((id, k) => { const c = co[k]; const j = (t.jugadores || {})[id] || {}; const nuevo = !r.tit.includes(String(id)); return `<div style="position:absolute; left:${c.x}%; top:${c.y}%; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; width:62px;">
+        <span style="width:28px; height:28px; border-radius:50%; background:${k === 0 ? '#f5a623' : 'rgb(180,20,56)'}; color:${k === 0 ? '#0a0e14' : '#fff'}; border:2px solid ${nuevo ? '#5dade2' : '#fff'}; display:flex; align-items:center; justify-content:center; font-family:'Montserrat',sans-serif; font-weight:900; font-size:11px;">${escHtml(j.dorsal ?? '')}</span>
+        <span style="margin-top:2px; font-size:9.5px; font-weight:700; color:#fff; background:rgba(10,14,20,.8); padding:1px 5px; border-radius:5px; white-space:nowrap; max-width:62px; overflow:hidden; text-overflow:ellipsis;">${nuevo ? '🔄 ' : ''}${escHtml(qmNom(t, id))}</span></div>`; }).join('');
+    return `<div style="position:relative; width:100%; aspect-ratio:3/4; margin-top:8px; border-radius:12px; background:#123f1f; border:1px solid rgba(255,255,255,.08); overflow:hidden;">
         <svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute; inset:0; width:100%; height:100%;" aria-hidden="true">
-          <g fill="none" stroke="rgba(255,255,255,.18)" stroke-width="1.2" vector-effect="non-scaling-stroke"><rect x="2" y="2" width="96" height="96" rx="1" vector-effect="non-scaling-stroke"/><line x1="2" y1="50" x2="98" y2="50" vector-effect="non-scaling-stroke"/></g>${lineas}</svg>${js}</div>
-      <div style="display:flex; gap:12px; flex-wrap:wrap; font-size:10.5px; color:#cbd5e1; margin-top:6px;">
-        <span><i style="display:inline-block; width:14px; height:4px; border-radius:2px; background:#2ed573; vertical-align:middle; margin-right:4px;"></i>Rodada (${QM_RODADO}' o más)</span>
+          <g fill="none" stroke="rgba(255,255,255,.18)" stroke-width="1.2"><rect x="2" y="2" width="96" height="96" rx="1" vector-effect="non-scaling-stroke"/><line x1="2" y1="50" x2="98" y2="50" vector-effect="non-scaling-stroke"/></g>${lineas}</svg>${js}</div>`;
+  }
+  function qmLeyenda(r) {
+    return `<div style="display:flex; gap:12px; flex-wrap:wrap; font-size:10.5px; color:#cbd5e1; margin-top:6px;">
+        <span><i style="display:inline-block; width:14px; height:4px; border-radius:2px; background:#2ed573; vertical-align:middle; margin-right:4px;"></i>Rodada</span>
         <span><i style="display:inline-block; width:14px; height:4px; border-radius:2px; background:#f5a623; vertical-align:middle; margin-right:4px;"></i>A medias</span>
-        <span><i style="display:inline-block; width:14px; height:0; border-top:4px dashed #ff6b7a; vertical-align:middle; margin-right:4px;"></i>Pareja nueva</span></div>`;
+        <span><i style="display:inline-block; width:14px; height:0; border-top:4px dashed #ff6b7a; vertical-align:middle; margin-right:4px;"></i>Casi nueva</span></div>
+      <div style="font-size:10.5px; color:#94a3b8; margin-top:4px;">Minutos juntos en ${r.nPrevios === 1 ? 'el partido anterior' : `los ${r.nPrevios} partidos anteriores`} (de ${r.base}' posibles). Rodada: 65 % o más · a medias: del 25 % al 65 % · casi nueva: menos del 25 %.</div>`;
   }
   function qmExplicacionHTML() {
-    return `<div style="font-size:12px; line-height:1.55; color:#cbd5e1; padding-top:6px;">Cada titular se enlaza con sus vecinos en la pizarra (21 enlaces en el 1-4-2-3-1: defensas entre sí y con el portero, cada lateral con su pivote y su extremo, los pivotes con el mediapunta y con el extremo de su lado, y los extremos y el mediapunta con el delantero). Cada enlace vale de 0 (nunca habían jugado juntos) a 10 (${QM_RODADO}' o más juntos, unos 3 partidos). La química es la media. Cuentan los minutos juntos <b>antes</b> de ese partido y solo el once inicial.</div>`;
+    return `<div style="font-size:12px; line-height:1.55; color:#cbd5e1; padding-top:6px;">
+      <p style="margin:0 0 6px;">Cuánto se conocían los que estaban en el campo. Cada jugador se enlaza con sus vecinos en la pizarra (21 enlaces en el 1-4-2-3-1: defensas entre sí y con el portero, cada lateral con su pivote y su extremo, los pivotes con el mediapunta y con el extremo de su lado, y los extremos y el mediapunta con el delantero).</p>
+      <p style="margin:0 0 6px;">Cada enlace vale de 0 a 10 según los minutos que esa pareja jugó junta en los <b>${QM_VENTANA} partidos anteriores</b>, sobre los minutos de esos partidos (280' si fueron 4 enteros). Así mide la continuidad reciente y no se llena con la temporada: si se rota o hay bajas, baja.</p>
+      <p style="margin:0;">Se calcula <b>por tramos</b>: en cada cambio, el que entra ocupa el hueco del que sale. La química del partido es la media de los tramos según los minutos de cada uno.</p></div>`;
   }
   // Ficha del partido (Temporada → Partidos)
   function quimicaPartidoHTML(t, p) {
     const r = qmDe(t, p);
     if (!r) return '';
-    if (r.primero) return `<div style="font-size:11px; color:#94a3b8; margin-top:6px; padding-top:6px; border-top:1px solid rgba(255,255,255,0.06);">🔗 Química del once: sin dato en el primer partido (aún no había minutos juntos).</div>`;
+    if (r.primero) return `<div style="font-size:11px; color:#94a3b8; margin-top:6px; padding-top:6px; border-top:1px solid rgba(255,255,255,0.06);">🔗 Química: sin dato en el primer partido (aún no había minutos juntos).</div>`;
     const [et, col] = qmEtiqueta(r.q), media = qmMediaTemporada(t);
-    const bajos = r.enlaces.filter(e => e.min < QM_RODADO).sort((a, b) => a.min - b.min);
-    const tag = (e) => e.min > 0 ? `<span style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:10px; padding:2px 7px; border-radius:7px; background:rgba(245,166,35,.15); color:#f5a623; white-space:nowrap;">A MEDIAS</span>` : `<span style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:10px; padding:2px 7px; border-radius:7px; background:rgba(255,107,122,.15); color:#ff8fa3; white-space:nowrap;">NUEVA</span>`;
-    const filas = bajos.map(e => `<div style="display:flex; align-items:center; gap:8px; padding:6px 0; border-top:1px solid rgba(255,255,255,.06); font-size:12px;">${tag(e)}<span style="flex:1; min-width:0; color:#e2e8f0;">${escHtml(qmNom(t, e.a))} – ${escHtml(qmNom(t, e.b))} <span style="color:#94a3b8;">· ${e.pa} y ${e.pb}</span></span><b style="font-family:'Montserrat',sans-serif;">${e.min}'</b></div>`).join('');
+    const T = r.tramos;
+    const tramosHTML = T.length > 1 ? `<div style="display:flex; gap:3px; height:26px; margin-top:10px; border-radius:7px; overflow:hidden;">${T.map(x => { const c = x.q >= 6.5 ? '#2ed573' : x.q >= 4.5 ? '#f5a623' : '#ff6b7a'; return `<div style="flex:${Math.max(1, x.fin - x.ini)}; background:${c}; display:flex; align-items:center; justify-content:center; font-family:'Montserrat',sans-serif; font-weight:900; font-size:11px; color:#0a0e14; min-width:0; overflow:hidden;">${qmFmt(x.q)}</div>`; }).join('')}</div>
+      <div style="display:flex; gap:3px; font-size:9.5px; color:#94a3b8; margin-top:3px;">${T.map(x => `<div style="flex:${Math.max(1, x.fin - x.ini)}; text-align:center; min-width:0; overflow:hidden; white-space:nowrap;">${Math.round(x.ini)}'–${Math.round(x.fin)}'</div>`).join('')}</div>
+      <div style="font-size:10.5px; color:#94a3b8; margin-top:4px;">Química de cada tramo entre cambios. La del partido es la media según los minutos.</div>` : '';
+    const bajos = (tr) => tr.enlaces.filter(e => e.v < QM_RODADA).sort((a, b) => a.v - b.v);
+    const tag = (e) => e.v >= QM_CASI_NUEVA ? `<span style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:10px; padding:2px 7px; border-radius:7px; background:rgba(245,166,35,.15); color:#f5a623; white-space:nowrap;">A MEDIAS</span>` : `<span style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:10px; padding:2px 7px; border-radius:7px; background:rgba(255,107,122,.15); color:#ff8fa3; white-space:nowrap;">CASI NUEVA</span>`;
+    const lista = (tr) => { const B = bajos(tr); return B.length ? B.map(e => `<div style="display:flex; align-items:center; gap:8px; padding:6px 0; border-top:1px solid rgba(255,255,255,.06); font-size:12px;">${tag(e)}<span style="flex:1; min-width:0; color:#e2e8f0;">${escHtml(qmNom(t, e.a))} – ${escHtml(qmNom(t, e.b))} <span style="color:#94a3b8;">· ${e.pa} y ${e.pb}</span></span><b style="font-family:'Montserrat',sans-serif;">${e.min}'</b></div>`).join('') + `<div style="font-size:10.5px; color:#94a3b8; margin-top:4px;">Los otros ${tr.enlaces.length - B.length} enlaces, rodados.</div>` : `<div style="font-size:11.5px; color:#2ed573; margin-top:6px;">Todos los enlaces, rodados.</div>`; };
+    const bloque = (titulo, tr) => `<div style="font-size:11px; font-weight:800; color:#cbd5e1; letter-spacing:.5px; margin:12px 0 0;">${titulo} · ${qmFmt(tr.q)}</div>${qmCampoHTML(t, r, tr)}<div style="font-size:10.5px; font-weight:800; color:#94a3b8; letter-spacing:.5px; margin:10px 0 2px;">LO QUE BAJÓ LA QUÍMICA</div>${lista(tr)}`;
+    const ult = T[T.length - 1];
     return `<details style="margin-top:6px; padding-top:6px; border-top:1px solid rgba(255,255,255,0.06);">
-      <summary style="color:#2ed573; font-size:11px; font-weight:800; cursor:pointer;">🔗 Química del once · ${qmFmt(r.q)}/10</summary>
+      <summary style="color:#2ed573; font-size:11px; font-weight:800; cursor:pointer;">🔗 Química · ${qmFmt(r.q)}/10</summary>
       <div style="display:flex; align-items:flex-end; gap:12px; margin-top:8px;">
         <div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:38px; line-height:1; color:#fff;">${qmFmt(r.q)}<span style="font-size:15px; color:#94a3b8;">/10</span></div>
         <div style="padding-bottom:3px;"><div style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:13px; color:${col};">${et}</div>${media != null ? `<div style="font-size:11px; color:#94a3b8; margin-top:2px;">Media de la temporada: ${qmFmt(media)}</div>` : ''}</div>
       </div>
-      <div style="font-size:11.5px; line-height:1.5; color:#cbd5e1; margin-top:8px;">Cuánto se conocían en el campo los 11 que empezaron: los minutos que cada pareja de vecinos llevaba jugando junta <b>antes</b> de este partido.</div>
-      ${qmCampoHTML(t, r)}
-      ${bajos.length ? `<div style="font-size:11px; font-weight:800; color:#cbd5e1; letter-spacing:.5px; margin:12px 0 2px;">LO QUE BAJÓ LA QUÍMICA</div>${filas}<div style="font-size:10.5px; color:#94a3b8; margin-top:4px;">Los otros ${r.enlaces.length - bajos.length} enlaces, rodados. Minutos juntos antes de este partido.</div>` : `<div style="font-size:11.5px; color:#2ed573; margin-top:10px;">Todos los enlaces del once estaban rodados.</div>`}
+      <div style="font-size:11.5px; line-height:1.5; color:#cbd5e1; margin-top:8px;">Cuánto se conocían los que estaban en el campo: los minutos que cada pareja de vecinos había jugado junta en los partidos anteriores.</div>
+      ${tramosHTML}
+      ${bloque(T.length > 1 ? 'ONCE INICIAL' : 'EL ONCE', T[0])}${qmLeyenda(r)}
+      ${T.length > 1 ? `<details style="margin-top:10px;"><summary style="font-size:11.5px; font-weight:700; color:#f5a623; cursor:pointer;">Ver cómo acabó (tras los cambios)</summary>${bloque(`DEL ${Math.round(ult.ini)}' AL FINAL`, ult)}<div style="font-size:10.5px; color:#94a3b8; margin-top:4px;">🔄 y borde azul: entraron desde el banquillo.</div></details>` : ''}
       <details style="margin-top:8px;"><summary style="font-size:11px; font-weight:700; color:#f5a623; cursor:pointer;">ℹ️ Cómo se calcula</summary>${qmExplicacionHTML()}</details>
     </details>`;
   }
@@ -5222,11 +5277,11 @@
       comp = `<div style="font-size:11px; font-weight:800; color:#cbd5e1; letter-spacing:.5px; margin:14px 0 6px;">¿RINDE MÁS UN ONCE RODADO?</div>
         <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px;">${caja(A, 'QUÍMICA 8 O MÁS', '#2ed573')}${caja(B, 'MENOS DE 8', '#f5a623')}</div>
         ${frase ? `<div style="font-size:12px; line-height:1.5; color:#e2e8f0; margin-top:10px; background:rgba(180,20,56,.15); border:1px solid rgba(255,85,119,.35); border-radius:10px; padding:9px 10px;">${frase}</div>` : ''}
-        <div style="font-size:10.5px; color:#94a3b8; margin-top:6px; line-height:1.45;">Con pocos partidos es una pista, no una conclusión: la química baja suele coincidir con el arranque de la temporada.</div>`;
+        <div style="font-size:10.5px; color:#94a3b8; margin-top:6px; line-height:1.45;">Con pocos partidos es una pista, no una conclusión: la química baja coincide con rotaciones, bajas o el arranque de la temporada.</div>`;
     }
     const pares = Object.entries(R.acum).sort((a, b) => b[1] - a[1]).slice(0, 3);
     const top = conQ.slice().sort((a, b) => b.r.q - a.r.q)[0];
-    return `<div style="font-size:11.5px; color:#94a3b8; line-height:1.45; margin-bottom:6px;">Cuánto se conocían los 11 que empezaron cada partido. Toca un partido en Temporada → Partidos para ver su campo.</div>
+    return `<div style="font-size:11.5px; color:#94a3b8; line-height:1.45; margin-bottom:6px;">Cuánto se conocían los que estaban en el campo en cada partido (minutos juntos en los 4 partidos anteriores, por tramos entre cambios). Toca un partido en Temporada → Partidos para ver su campo.</div>
       <div style="display:flex; gap:4px; height:150px; margin-top:12px; padding-bottom:2px; border-bottom:1px solid rgba(255,255,255,.12); overflow:hidden;">${barras}</div>
       ${L[0] && L[0].r.primero ? `<div style="font-size:10.5px; color:#94a3b8; margin-top:6px;">J1 sin dato: aún no había minutos juntos.</div>` : ''}
       ${comp}

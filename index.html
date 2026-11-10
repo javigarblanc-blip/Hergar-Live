@@ -821,6 +821,7 @@
   .num-k .l { display:block; font-size:10px; color:#cbd5e1; margin-top:2px; white-space:nowrap; }
   .num-k .n { display:block; font-size:9.5px; font-weight:800; color:#2ed573; margin-top:2px; white-space:nowrap; min-height:12px; transition:opacity .4s; }
   .num-k .n.gris { color:#64748b; }
+  .num-k .x { display:block; font-size:9.5px; font-weight:700; color:#f5a623; margin-top:2px; white-space:nowrap; } /* v232 · minutos en horas y días */
   .num-cab { display:flex; justify-content:space-between; align-items:baseline; margin:2px 0 6px; }
   .num-cab b { font-family:'Montserrat',sans-serif; font-weight:800; font-size:12px; color:#e2e8f0; }
   .num-cab span { font-size:10px; color:#64748b; }
@@ -1313,6 +1314,7 @@
 </div>
 
 <script type="module">
+  // v232 (visor; app v231) · 📊 La temporada en números: ➕ diferencia de goles, 🧱 porterías a cero, 🌀 regates, ⛳ córners a favor y ⏱ minutos jugados por todos los niños (en horas y días).
   // v231 (visor; app v231) · 🎨 Color de cada equipo (lo elige la app en Liga → Equipos: barras del rival en las estadísticas del partido, cara a cara, rivales en común, Modo TV y resumen), 📸 Plantilla en fotos (Fotos / Tabla), 🎯 hitos a la vista (Mi hijo, ficha → Datos, «Hitos de hoy» y Récords) y 🔒 el portero en los momentos clave (ficha → Datos y Mi hijo).
   // v230 (visor; app v230) · Cabecera fina fuera de Partido (marcador pequeño con el partido en juego), 📊 la temporada en números (tira arriba de Temporada), 🔗 química en el Modo TV (parejas, insignia y antes → después en cada cambio) y 🏆 premios de la vuelta (historias; los publica la app).
   // v229 (visor; app v227) · 🧩 El pegamento (Sinergias, ficha → Datos y Mi hijo): con cuántos compañeros forma pareja rodada cada niño en los 4 últimos partidos. La app pasa a la IA la química, si es partido grande y el box-to-box.
@@ -5831,6 +5833,12 @@
     const par = p => enP(p, h => h.acc ? (Number(h.acc.par) || 0) + (Number(h.acc.parD) || 0) : 0);
     const asi = p => enP(p, h => Number(h.asistencias) || 0);
     const tir = p => (Number(p.tirosNuestrosPuerta) || 0);
+    // v232 · diferencia de goles, porterías a cero, córners, regates y minutos de todos los niños
+    const dg = p => (Number(p.golesLocal) || 0) - (Number(p.golesRival) || 0);
+    const cero = p => (Number(p.golesRival) || 0) === 0 ? 1 : 0;
+    const cor = p => p.manual ? 0 : (Number(p.cornersFavor) || 0);
+    const reg = p => enP(p, h => h.acc ? (Number(h.acc.reg) || 0) : 0);
+    const mins = p => enP(p, h => Number(h.mins) || 0);
     let racha = 0; for (let k = ps.length - 1; k >= 0 && ps[k].resultado !== 'D'; k--) racha++;
     let b2b = 0, b2bU = 0;
     try { const B = b2bTemporada(t); Object.values(B).forEach(x => { b2b += x.n; b2bU += x.lista.filter(y => y.i === n - 1).length; }); } catch (e) {}
@@ -5838,27 +5846,39 @@
     const it = [];
     it.push({ e: '⚽', l: 'goles', v: suma(p => Number(p.golesLocal) || 0), u: Number(ult.golesLocal) || 0, ir: { sub: 'subMapaGoles' } });
     it.push({ e: '🏆', l: 'puntos', v: suma(pts), u: pts(ult), ir: { sub: 'subLigaClasif' } });
+    it.push({ e: '➕', l: 'diferencia de goles', v: suma(dg), u: dg(ult), signo: true, ir: { sub: 'subLigaClasif' } }); // v232
+    const vc = suma(cero); if (vc > 0) it.push({ e: '🧱', l: vc === 1 ? 'portería a cero' : 'porterías a cero', v: vc, u: cero(ult), ir: { sub: 'subRecords' } }); // v232
     const vr = suma(rec); if (vr > 0) it.push({ e: '🛡️', l: 'recuperaciones', v: vr, u: rec(ult), ir: { sub: 'subRanking' } });
     const vp = suma(par); if (vp > 0) it.push({ e: '🧤', l: 'paradas', v: vp, u: par(ult), ir: { tipo: 'portero' } });
     const va = suma(asi); if (va > 0) it.push({ e: '🅰️', l: 'asistencias', v: va, u: asi(ult), ir: { sub: 'subRanking' } });
     const vt = suma(tir); if (vt > 0) it.push({ e: '🎯', l: 'tiros a puerta', v: vt, u: tir(ult), ir: { sub: 'subMedias' } });
+    const vg = suma(reg); if (vg > 0) it.push({ e: '🌀', l: 'regates', v: vg, u: reg(ult), ir: { sub: 'subComparativa', sel: 'regates' } }); // v232
+    const vco = suma(cor); if (vco > 0) it.push({ e: '⛳', l: 'córners a favor', v: vco, u: cor(ult), ir: { sub: 'subMedias' } }); // v232
+    const vm = suma(mins); if (vm > 0) it.push({ e: '⏱', l: 'minutos jugados', v: vm, u: mins(ult), extra: numTiempo(vm), ir: { sub: 'subPlantilla' } }); // v232 · todos los niños
     if (racha >= 2) it.push({ e: '🔥', l: 'sin perder', v: racha, txt: 'racha actual', ir: { sub: 'subRachas' } });
     if (b2b > 0) it.push({ e: '📦', l: 'box-to-box', v: b2b, u: b2bU, ir: { sub: 'subRecords' } });
-    it.forEach(x => { if (x.txt == null) x.txt = x.u > 0 ? `+${x.u.toLocaleString('es-ES')} ${dia}` : ''; });
+    it.forEach(x => { if (x.txt == null) x.txt = x.u > 0 ? `+${x.u.toLocaleString('es-ES')} ${dia}` : (x.signo && x.u < 0 ? `−${Math.abs(x.u).toLocaleString('es-ES')} ${dia}` : ''); });
     return { it, n, clave: n + '|' + ult.fecha + '|' + ult.rival };
   }
+  // v232 · minutos en horas y días: «41 h 20 min» o «1 día y 17 h»
+  function numTiempo(m) {
+    const h = Math.floor(m / 60), mi = m % 60;
+    if (h < 24) return h ? `= ${h} h${mi ? ' ' + mi + ' min' : ''}` : '';
+    const d = Math.floor(h / 24), hr = h % 24;
+    return `= ${h.toLocaleString('es-ES')} h · ${d} ${d === 1 ? 'día' : 'días'}${hr ? ' y ' + hr + ' h' : ''}`;
+  }
   let numItems = [];
-  window.numIr = function (k) { const x = numItems[k]; if (!x) return; try { buscaIr(Object.assign({ tipo: 'tarjeta' }, x.ir)); } catch (e) { console.error('Números:', e); } };
+  window.numIr = function (k) { const x = numItems[k]; if (!x) return; try { buscaIr(Object.assign({ tipo: 'tarjeta' }, x.ir)); if (x.ir && x.ir.sel === 'regates') { const se = document.getElementById('comparativaStatSelect'); if (se) { se.value = 'regates'; try { rerenderComparativa(); } catch (e) {} } } } catch (e) { console.error('Números:', e); } };
   function numPintar() {
     const box = document.getElementById('numTira'); if (!box) return;
     const t = (typeof ultimaTemporada !== 'undefined') ? ultimaTemporada : null;
     let R = null; try { R = numTemporada(t); } catch (e) { console.error('Números de la temporada:', e); }
     if (!R || !R.it.length) { box.style.display = 'none'; return; }
     numItems = R.it;
-    const fmt = v => Number(v).toLocaleString('es-ES');
+    const fmt = (v, sg) => (sg && v > 0 ? '+' : sg && v < 0 ? '−' : '') + Math.abs(Number(v)).toLocaleString('es-ES');
     box.style.display = '';
     box.innerHTML = `<div class="num-cab"><b>📊 La temporada en números</b><span>${R.n} ${R.n === 1 ? 'partido' : 'partidos'} · desliza →</span></div>
-      <div class="num-tira">${R.it.map((x, k) => `<button type="button" class="num-k" onclick="numIr(${k})"><b data-v="${x.v}">${fmt(x.v)}</b><span class="l">${x.e} ${escHtml(x.l)}</span><span class="n${x.u > 0 ? '' : ' gris'}">${escHtml(x.txt)}</span></button>`).join('')}</div>`;
+      <div class="num-tira">${R.it.map((x, k) => `<button type="button" class="num-k" onclick="numIr(${k})"><b data-v="${x.v}"${x.signo ? ' data-s="1"' : ''}${x.signo && x.v < 0 ? ' style="color:#ff6b7a;"' : ''}>${fmt(x.v, x.signo)}</b><span class="l">${x.e} ${escHtml(x.l)}</span>${x.extra ? `<span class="x">${escHtml(x.extra)}</span>` : ''}<span class="n${x.u > 0 ? '' : ' gris'}"${x.signo && x.u < 0 ? ' style="color:#ff6b7a;"' : ''}>${escHtml(x.txt)}</span></button>`).join('')}</div>`;
     // la primera vez tras cada partido, los números cuentan desde 0 y después sale lo que sumó el último
     let visto = null; try { visto = localStorage.getItem(NUM_VISTO_KEY); } catch (e) {}
     const panel = document.getElementById('temporada');
@@ -5869,7 +5889,7 @@
     const t0 = performance.now(), dur = 900;
     const paso = now => {
       const f = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - f, 3);
-      bs.forEach(b => { b.textContent = fmt(Math.round(Number(b.dataset.v) * e)); });
+      bs.forEach(b => { b.textContent = fmt(Math.round(Number(b.dataset.v) * e), b.dataset.s === '1'); });
       if (f < 1) requestAnimationFrame(paso); else ns.forEach(x => { x.style.opacity = '1'; });
     };
     requestAnimationFrame(paso);

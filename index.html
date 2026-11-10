@@ -1314,6 +1314,8 @@
 </div>
 
 <script type="module">
+  // v234 (visor) · 🧩 El pegamento: solo cuentan las parejas que juegan como vecinos en la pizarra (enlaces de la química); el portero ya no sale rodado con los delanteros.
+  // v233 (visor) · 📊 La temporada en números, por bloques: goles, puntos, diferencia, racha sin perder y porterías a cero · asistencias, tiros, regates y córners · recuperaciones y paradas · box-to-box y minutos.
   // v232 (visor; app v231) · 📊 La temporada en números: ➕ diferencia de goles, 🧱 porterías a cero, 🌀 regates, ⛳ córners a favor y ⏱ minutos jugados por todos los niños (en horas y días).
   // v231 (visor; app v231) · 🎨 Color de cada equipo (lo elige la app en Liga → Equipos: barras del rival en las estadísticas del partido, cara a cara, rivales en común, Modo TV y resumen), 📸 Plantilla en fotos (Fotos / Tabla), 🎯 hitos a la vista (Mi hijo, ficha → Datos, «Hitos de hoy» y Récords) y 🔒 el portero en los momentos clave (ficha → Datos y Mi hijo).
   // v230 (visor; app v230) · Cabecera fina fuera de Partido (marcador pequeño con el partido en juego), 📊 la temporada en números (tira arriba de Temporada), 🔗 química en el Modo TV (parejas, insignia y antes → después en cada cambio) y 🏆 premios de la vuelta (historias; los publica la app).
@@ -5322,7 +5324,7 @@
     if (!t) return null;
     if (qmCache.has(t)) return qmCache.get(t);
     const ps = t.partidos || [];
-    const acum = {}, porPartido = [], durs = [], minsJug = [];
+    const acum = {}, porPartido = [], durs = [], minsJug = [], porVecinos = [], minsVec = []; // v234: minutos juntos como vecinos de la pizarra (para el pegamento)
     const partidos = ps.map((p, i) => {
       let res = null;
       const form = p.formacion, E = QM_ENLACES[form];
@@ -5359,11 +5361,22 @@
           if (f > s) { const k = qmClave(tr[a].id, tr[b].id); mio[k] = (mio[k] || 0) + (f - s); acum[k] = (acum[k] || 0) + (f - s); }
         }
       } catch (e) { console.error('Química · minutos juntos:', e); }
+      // v234 · minutos como vecinos en la pizarra (enlaces de la química), tramo a tramo, también en el primer partido
+      if (E && tit && tit.length === 11 && !p.manual) {
+        try {
+          const vec = {}, mv = {};
+          const TR = (res && res.tramos) ? res.tramos.map(x => ({ ini: x.ini, fin: x.fin, ids: x.tit, form: x.form })) : qmTramosPartido(t, p, tit, form, dur, filas);
+          TR.forEach(x => { const d = x.fin - x.ini; if (!(d > 0)) return; const EE = QM_ENLACES[x.form] || E;
+            x.ids.forEach(id => { if (id) mv[id] = (mv[id] || 0) + d; });
+            EE.forEach(([a, b]) => { const A = x.ids[a], B = x.ids[b]; if (A && B) { const k = qmClave(A, B); vec[k] = (vec[k] || 0) + d; } }); });
+          porVecinos[i] = vec; minsVec[i] = mv;
+        } catch (e) { console.error('Pegamento · vecinos:', e); }
+      }
       porPartido[i] = mio; durs[i] = filas.length ? dur : 0;
       const mm = {}; filas.forEach(f => { mm[String(f.j.id)] = (mm[String(f.j.id)] || 0) + (Number(f.mins) || 0); }); minsJug[i] = mm;
       return res;
     });
-    const R = { partidos, acum, porPartido, minsJug };
+    const R = { partidos, acum, porPartido, minsJug, porVecinos, minsVec };
     qmCache.set(t, R);
     return R;
   }
@@ -5438,11 +5451,15 @@
   // v229 · 🧩 EL PEGAMENTO: con cuántos compañeros forma pareja rodada cada niño en los 4 últimos partidos (mismo criterio
   //  que la química: minutos juntos ÷ los minutos del que menos jugó de los dos, como poco 140'; rodada = 65 % o más).
   //  Mide quién une al equipo. Siempre en positivo.
+  //  v234: solo cuentan los minutos jugando como VECINOS en la pizarra (los mismos enlaces de la química). Antes valía
+  //  cualquier pareja en el campo, y el portero (que juega todo) salía rodado con todos, delanteros incluidos.
   function pegamentoTemporada(t) {
     const R = qmTemporada(t); if (!R) return null;
     const n = (t.partidos || []).length; if (!n) return null;
     const desde = Math.max(0, n - QM_VENTANA), ven = {}, mj = {};
-    for (let k = desde; k < n; k++) { Object.entries(R.porPartido[k] || {}).forEach(([c, m]) => { ven[c] = (ven[c] || 0) + m; }); Object.entries(R.minsJug[k] || {}).forEach(([id, m]) => { mj[id] = (mj[id] || 0) + m; }); }
+    let nV = 0;
+    for (let k = desde; k < n; k++) { if (!R.minsVec[k]) continue; nV++; Object.entries(R.porVecinos[k] || {}).forEach(([c, m]) => { ven[c] = (ven[c] || 0) + m; }); Object.entries(R.minsVec[k] || {}).forEach(([id, m]) => { mj[id] = (mj[id] || 0) + m; }); }
+    if (!nV) return null;
     const ids = Object.keys(mj).filter(id => mj[id] > 0), res = {};
     ids.forEach(id => { res[id] = { id, j: (t.jugadores || {})[id], socios: [] }; });
     for (let a = 0; a < ids.length; a++) for (let b = a + 1; b < ids.length; b++) {
@@ -5450,17 +5467,17 @@
       if (m / den >= QM_RODADA / 10) { res[ids[a]].socios.push(ids[b]); res[ids[b]].socios.push(ids[a]); }
     }
     const lista = Object.values(res).filter(x => x.j && !x.j.invitado).map(x => Object.assign(x, { n: x.socios.length })).sort((a, b) => b.n - a.n);
-    return { lista, partidos: n - desde, total: ids.length };
+    return { lista, partidos: nV, total: ids.length };
   }
   function pegamentoHTML(t) {
     const P = pegamentoTemporada(t); if (!P || !P.lista.length || !P.lista[0].n) return `<div style="font-size:12px; color:#94a3b8;">Aún no hay parejas rodadas.</div>`;
     const top = P.lista.filter(x => x.n > 0).slice(0, 6), max = top[0].n;
-    return `<div style="font-size:11.5px; color:#94a3b8; line-height:1.45; margin-bottom:6px;">Con cuántos compañeros forma pareja rodada cada uno en los ${P.partidos} últimos partidos: los que más unen al equipo.</div>
+    return `<div style="font-size:11.5px; color:#94a3b8; line-height:1.45; margin-bottom:6px;">Con cuántos compañeros forma pareja rodada cada uno en los ${P.partidos} últimos partidos, jugando a su lado en la pizarra: los que más unen al equipo.</div>
       ${top.map((x, k) => `<div role="button" tabindex="0" onclick="abrirPerfilJugadorTemporada('${escHtml(x.id)}')" style="cursor:pointer; display:grid; grid-template-columns:20px 1fr 90px 26px; gap:8px; align-items:center; padding:8px 0; border-top:${k ? '1px solid rgba(255,255,255,.06)' : '0'}; font-size:12.5px;">
         <span style="font-family:'Montserrat',sans-serif; font-weight:800; color:#94a3b8;">${k + 1}</span><span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escHtml(String(x.j.name || '').split(' ')[0])}</span>
         <div style="height:8px; border-radius:4px; background:rgba(255,255,255,.06); overflow:hidden;"><i style="display:block; height:100%; width:${Math.round(x.n / max * 100)}%; background:#2ed573; border-radius:4px;"></i></div>
         <b style="font-family:'Montserrat',sans-serif; text-align:right;">${x.n}</b></div>`).join('')}
-      <div style="font-size:10.5px; color:#94a3b8; margin-top:6px;">Pareja rodada: han jugado juntos el 65 % o más de los minutos del que menos jugó de los dos (como poco, de 140'). Mismo criterio que la química del once.</div>`;
+      <div style="font-size:10.5px; color:#94a3b8; margin-top:6px;">Pareja rodada: han jugado juntos, como vecinos en la pizarra, el 65 % o más de los minutos del que menos jugó de los dos (como poco, de 140'). Mismos enlaces y criterio que la química del once: el portero, con sus defensas; el delantero, con extremos y mediapunta.</div>`;
   }
   function pegamentoJugadorHTML(t, j) {
     const P = pegamentoTemporada(t); if (!P || !j) return '';
@@ -5468,7 +5485,7 @@
     const pos = P.lista.filter(y => y.n > x.n).length + 1;
     const nombres = x.socios.map(id => qmNom(t, id)).join(', ');
     return `<div style="background:rgba(46,213,115,.06); border:1px solid rgba(46,213,115,.3); border-radius:12px; padding:10px 12px; margin-top:12px;">
-      <div style="display:flex; align-items:center; gap:10px;"><span style="font-size:18px;">🧩</span><div style="flex:1; min-width:0;"><div style="font-size:12.5px; font-weight:700; color:#e2e8f0;">El pegamento${pos <= 3 ? ` · ${pos}.º del equipo` : ''}</div><div style="font-size:11px; color:#94a3b8;">Pareja rodada con ${x.n} ${x.n === 1 ? 'compañero' : 'compañeros'} en los ${P.partidos} últimos partidos</div></div><b style="font-family:'Montserrat',sans-serif; font-size:18px; color:#2ed573;">${x.n}</b></div>
+      <div style="display:flex; align-items:center; gap:10px;"><span style="font-size:18px;">🧩</span><div style="flex:1; min-width:0;"><div style="font-size:12.5px; font-weight:700; color:#e2e8f0;">El pegamento${pos <= 3 ? ` · ${pos}.º del equipo` : ''}</div><div style="font-size:11px; color:#94a3b8;">Pareja rodada con ${x.n} ${x.n === 1 ? 'compañero' : 'compañeros'} a su lado en la pizarra · ${P.partidos} últimos partidos</div></div><b style="font-family:'Montserrat',sans-serif; font-size:18px; color:#2ed573;">${x.n}</b></div>
       <div style="font-size:11px; color:#cbd5e1; margin-top:6px; line-height:1.4;">${escHtml(nombres)}</div></div>`;
   }
   // Más análisis → 🏟️ Equipo → 🔗 Química
@@ -5857,6 +5874,9 @@
     const vm = suma(mins); if (vm > 0) it.push({ e: '⏱', l: 'minutos jugados', v: vm, u: mins(ult), extra: numTiempo(vm), ir: { sub: 'subPlantilla' } }); // v232 · todos los niños
     if (racha >= 2) it.push({ e: '🔥', l: 'sin perder', v: racha, txt: 'racha actual', ir: { sub: 'subRachas' } });
     if (b2b > 0) it.push({ e: '📦', l: 'box-to-box', v: b2b, u: b2bU, ir: { sub: 'subRecords' } });
+    // v233 · orden por bloques: resultados → ataque → defensa → esfuerzo del equipo
+    const ORDEN = ['⚽', '🏆', '➕', '🔥', '🧱', '🅰️', '🎯', '🌀', '⛳', '🛡️', '🧤', '📦', '⏱'];
+    it.sort((a, b) => ORDEN.indexOf(a.e) - ORDEN.indexOf(b.e));
     it.forEach(x => { if (x.txt == null) x.txt = x.u > 0 ? `+${x.u.toLocaleString('es-ES')} ${dia}` : (x.signo && x.u < 0 ? `−${Math.abs(x.u).toLocaleString('es-ES')} ${dia}` : ''); });
     return { it, n, clave: n + '|' + ult.fecha + '|' + ult.rival };
   }

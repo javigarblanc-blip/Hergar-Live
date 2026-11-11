@@ -1344,6 +1344,7 @@
   @media (prefers-reduced-motion: reduce) { #ddAviso.on, #ddAviso .dd-in { animation:none; } }
 </style>
 <script type="module">
+  // v237 (visor; app v238) · 👥 Visitas al visor: contador propio y anónimo. Cada móvil apunta en visitas/dias/<día>/<id al azar> que ha entrado, a qué horas y qué pestañas y apartados abre (una vez por móvil y día), y durante el directo deja su presencia en visitas/vivo. No guarda nombres ni de qué niño es la ficha. Con ?nocontar=1 ese móvil deja de contar. Para las familias no cambia nada.
   // v236 (visor; app v236 + delegado) · 💡 Dato del día (aviso una vez al día al abrir, nunca en directo ni en el Modo TV, y tarjeta bajo «La temporada en números»), 🦶 con qué marcó (Mapa de goles: reparto, cruces, filtro y cada niño con su etiqueta; ficha → Datos; hitos de cabeza y pierna mala; récord de cabeza), 📊 jornadas en cada puesto (Liga → Clasificación), rojos del Hergar unificados y medias sin los fueras de juego y faltas en contra que el delegado no apuntaba.
   // v235 (visor) · 🧩 El pegamento por zona: cada pareja de vecinos, sobre los minutos que jugó cada uno en los puestos donde fue vecino del otro (quien juega de lateral y de MCD sale rodado con las dos zonas) · «Ver minutos a su lado» en la ficha.
   // v234 (visor) · 🧩 El pegamento: solo cuentan las parejas que juegan como vecinos en la pizarra (enlaces de la química); el portero ya no sale rodado con los delanteros.
@@ -1448,7 +1449,7 @@
   }
 
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
-  import { getDatabase, ref, onValue, get } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js";
+  import { getDatabase, ref, onValue, get, set, update, remove, onDisconnect, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js"; // v237: + escritura solo para visitas/
 
   const firebaseConfig = {
     apiKey: "AIzaSyBtCX0v3z5GTCv-X_5VBtWzXMSGQubL7O8",
@@ -6670,6 +6671,7 @@
     try { mhPintarElegir(); } catch (e) {} // v176: la tarjeta de elegir no sale con el partido en juego
     try { semActualizar(); } catch (e) {} // v179
     try { if (!ddAvisoHecho) ddIntentar(); } catch (e) {} // v236
+    try { visVivo(); } catch (e) {} // v237
 
     const liveBanner = document.getElementById('liveBanner');
     const offlineBanner = document.getElementById('offlineBanner');
@@ -7052,6 +7054,7 @@
   function abrirListaVideo(lista, pos) {
     if (!lista.length) return;
     vgLista = lista; vgPos = Math.max(0, Math.min(pos, lista.length - 1));
+    try { visMarca('s', 'video'); } catch (e) {} // v237
     pintarVideoGol();
     document.getElementById('videoGolModal').classList.add('on');
     document.body.style.overflow = 'hidden';
@@ -10651,6 +10654,7 @@
     if (id === 'temporada') tmpPintarVisible(); // v175
     cabTabActual = id; try { cabFinaPintar(); } catch (e) { console.error('Cabecera fina:', e); } // v230
     if (id === 'temporada') { try { numPintar(); } catch (e) { console.error('Números:', e); } try { ddPintar(); } catch (e) { console.error('Dato del día:', e); } }
+    try { visApuntarTab(id); } catch (e) {} // v237
   }
   function showSub(ev, id){
     const btn = ev.currentTarget || ev.target.closest('.subtab-btn') || ev.target;
@@ -10660,6 +10664,7 @@
     panel.querySelectorAll('.subtab-btn').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
     if (panel.id === 'temporada') { actualizarMasTemp(); tmpPintarVisible(); } // v175
+    try { visMarca('s', id); } catch (e) {} // v237
   }
   // ── Temporada · "Más análisis": se despliega y el visor recuerda si lo dejaste abierto ──
   function masTempAbierto() { try { return localStorage.getItem('hergarLive_masAnalisis') === '1'; } catch (e) { return false; } }
@@ -13492,6 +13497,116 @@
     } catch (e) { console.error('Dato del día:', e); }
   }
   setTimeout(ddIntentar, 6300);
+
+  // ── v237 · 👥 VISITAS AL VISOR (contador propio y anónimo; lo consulta solo la app) ─────────────
+  // visitas/dias/<AAAA-MM-DD>/<id>: { t, a (instalado como app), mh («Mi hijo» elegido, nunca cuál), n (avisos de gol),
+  //   h/<hora>, p/<pestaña>, s/<apartado>, d/<código del partido seguido en directo> } · todo a 1, una vez por móvil y día.
+  // visitas/vivo/<id>: { t, c } mientras se ve un partido en juego (se borra solo al salir).
+  // Si Firebase no deja escribir (reglas sin la ruta visitas) no pasa nada: el visor sigue igual.
+  const VIS_ID_KEY = 'hergarLive_vid', VIS_NO_KEY = 'hergarLive_noContar';
+  let visId = null, visNo = false, visDia = '', visHechas = new Set(), visVivoOn = false, visVivoTimer = null;
+  function visAviso(txt) {
+    try {
+      const d = document.createElement('div');
+      d.setAttribute('role', 'status');
+      d.style.cssText = 'position:fixed; left:12px; right:12px; bottom:calc(84px + env(safe-area-inset-bottom)); z-index:9000; background:#111827; border:1px solid rgba(255,255,255,.2); border-radius:14px; padding:12px 14px; color:#e2e8f0; font-size:13px; line-height:1.45; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,.6);';
+      d.textContent = txt; document.body.appendChild(d);
+      setTimeout(() => { try { d.remove(); } catch (e) {} }, 6000);
+    } catch (e) {}
+  }
+  try {
+    const q = new URLSearchParams(window.location.search).get('nocontar');
+    if (q === '1') { localStorage.setItem(VIS_NO_KEY, '1'); setTimeout(() => visAviso('✓ Este móvil ya no cuenta en las visitas del visor.'), 1200); }
+    else if (q === '0') { localStorage.removeItem(VIS_NO_KEY); setTimeout(() => visAviso('Este móvil vuelve a contar en las visitas del visor.'), 1200); }
+    visNo = localStorage.getItem(VIS_NO_KEY) === '1';
+    visId = localStorage.getItem(VIS_ID_KEY);
+    if (!visId || !/^[a-z0-9]{8,24}$/.test(visId)) {
+      visId = (Date.now().toString(36) + Math.random().toString(36).slice(2, 10)).slice(0, 20);
+      localStorage.setItem(VIS_ID_KEY, visId);
+      if (localStorage.getItem(VIS_ID_KEY) !== visId) visId = null;
+    }
+  } catch (e) { visId = null; } // sin memoria en el navegador no se cuenta (cada visita parecería un móvil nuevo)
+  function visHoy() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+  function visClave(k) { return String(k == null ? '' : k).replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 40); }
+  function visActivo() { return !!visId && !visNo; }
+  function visEscribir(obj) {
+    if (!visActivo()) return;
+    try { update(ref(db, `visitas/dias/${visDia}/${visId}`), obj).catch(() => {}); } catch (e) {}
+  }
+  function visVisita() {
+    if (!visActivo()) return;
+    const hoy = visHoy();
+    if (hoy !== visDia) { visDia = hoy; visHechas = new Set(); }
+    const h = 'h/' + new Date().getHours();
+    if (visHechas.has(h)) return;
+    visHechas.add(h);
+    let inst = false, mh = false, av = false;
+    try { inst = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; } catch (e) {}
+    try { mh = !!mhIdElegido(); } catch (e) {}
+    try { av = ('Notification' in window) && Notification.permission === 'granted'; } catch (e) {}
+    const o = { t: Date.now(), a: inst ? 1 : 0, mh: mh ? 1 : 0, n: av ? 1 : 0 };
+    o[h] = 1;
+    visEscribir(o);
+    try { const act = document.querySelector('.panel.active'); if (act) visApuntarTab(act.id); } catch (e) {}
+  }
+  function visMarca(tipo, clave) {
+    if (!visActivo()) return;
+    const c = visClave(clave); if (!c) return;
+    if (visHoy() !== visDia) { visVisita(); }
+    const k = tipo + '/' + c;
+    if (visHechas.has(k)) return;
+    visHechas.add(k);
+    const o = {}; o[k] = 1;
+    visEscribir(o);
+  }
+  function visApuntarTab(id) {
+    visMarca('p', id);
+    const panel = document.getElementById(id);
+    const sub = panel ? panel.querySelector('.sub-panel.active') : null; // el apartado que ya sale abierto también cuenta
+    if (sub && sub.id) visMarca('s', sub.id);
+  }
+  // Presencia en directo: solo con un partido en juego (o en el descanso), reciente y con el visor a la vista.
+  function visEnDirecto() {
+    const m = ultimoMatchData;
+    if (!m || m.matchFinished || !(m.matchRunning || (m.previa !== true && Number(m.minuto) > 0))) return false;
+    if (m.actualizado && Date.now() - Number(m.actualizado) > 3 * 3600 * 1000) return false;
+    return document.visibilityState === 'visible';
+  }
+  function visLatido() {
+    try {
+      const r = ref(db, 'visitas/vivo/' + visId);
+      onDisconnect(r).remove().catch(() => {});
+      set(r, { t: serverTimestamp(), c: visClave(codigoPartidoActual || '') }).catch(() => {});
+    } catch (e) {}
+  }
+  function visVivo() {
+    if (!visActivo()) return;
+    const si = visEnDirecto();
+    if (si && !visVivoOn) {
+      visVivoOn = true;
+      visLatido();
+      visVivoTimer = setInterval(() => { if (visEnDirecto()) visLatido(); else visVivo(); }, 60000);
+      if (codigoPartidoActual) visMarca('d', codigoPartidoActual);
+    } else if (!si && visVivoOn) {
+      visVivoOn = false;
+      clearInterval(visVivoTimer); visVivoTimer = null;
+      try { remove(ref(db, 'visitas/vivo/' + visId)).catch(() => {}); } catch (e) {}
+    }
+  }
+  document.addEventListener('visibilitychange', () => { try { if (document.visibilityState === 'visible') visVisita(); visVivo(); } catch (e) {} });
+  window.addEventListener('pagehide', () => { try { if (visVivoOn) { visVivoOn = false; clearInterval(visVivoTimer); remove(ref(db, 'visitas/vivo/' + visId)).catch(() => {}); } } catch (e) {} });
+  // Lo que se abre tocando: se envuelve la función para apuntarlo, sin cambiar lo que hace.
+  (function () {
+    const ENV = { abrirPerfilJugadorTemporada: 'ficha', abrirPerfilJugador: 'ficha', abrirFichaPartido: 'fichaPartido', verVideoPartido: 'video',
+      abrirResumenPartido: 'resumen', descargarActaVisor: 'acta', abrirModoTV: 'tv', pmAbrir: 'premios', semAbrir: 'semana', informeUltimoToggle: 'informe' };
+    Object.keys(ENV).forEach(k => {
+      const f = window[k]; if (typeof f !== 'function') return;
+      window[k] = function () { try { visMarca('s', ENV[k]); } catch (e) {} return f.apply(this, arguments); };
+    });
+    const fp = window.mostrarPestanaPerfil;
+    if (typeof fp === 'function') window.mostrarPestanaPerfil = function (cual) { try { if (cual && cual !== 'cromo') visMarca('s', 'ficha_' + cual); } catch (e) {} return fp.apply(this, arguments); };
+  })();
+  setTimeout(() => { try { visVisita(); visVivo(); } catch (e) {} }, 1500);
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('OneSignalSDKWorker.js', { scope: '/Hergar-Live/' }).catch(()=>{}); // v158: un solo trabajador (notificaciones + abrir rápido)

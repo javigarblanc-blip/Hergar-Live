@@ -938,7 +938,7 @@
         <button type="button" class="subtab-btn" onclick="showSub(event,'subRecords')">🏆 Récords</button>
       </div>
       <button type="button" class="tmp-mas" id="tmpMasBtn" onclick="toggleMasTemp()" aria-expanded="false" aria-controls="tmpMasPanel">
-        <span>📊 Más análisis</span><span class="txt" id="tmpMasTxt">17 apartados en 3 bloques ▾</span>
+        <span>📊 Más análisis</span><span class="txt" id="tmpMasTxt">18 apartados en 3 bloques ▾</span>
       </button>
       <div class="tmp-sec" id="tmpMasPanel">
         <div class="tmp-blq"><b>⚽ Goles</b><span>Dónde, cómo y cuándo marcamos</span></div>
@@ -954,6 +954,7 @@
         <button type="button" class="subtab-btn" onclick="showSub(event,'subPrime')">⚡ Prime</button>
         <button type="button" class="subtab-btn" onclick="showSub(event,'subMapaCalor')">🗓️ Mapa de calor</button>
         <button type="button" class="subtab-btn" onclick="showSub(event,'subGrandes')">🏟️ Grandes</button>
+        <button type="button" class="subtab-btn" onclick="showSub(event,'subComodines')">🔄 Los comodines</button>
         <div class="tmp-blq"><b>🏟️ Equipo</b><span>Cómo es el equipo y cómo va</span></div>
         <button type="button" class="subtab-btn" onclick="showSub(event,'subMedias')">📊 Medias</button>
         <button type="button" class="subtab-btn" onclick="showSub(event,'subRachas')">🔥 Rachas</button>
@@ -1072,6 +1073,12 @@
         <div class="card">
           <div class="card-title">🏟️ Se crecen en los partidos grandes</div>
           <div id="grandesLista"><div class="loader">Cargando...</div></div>
+        </div>
+      </div>
+      <div id="subComodines" class="sub-panel">
+        <div class="card">
+          <div class="card-title">🔄 Los comodines: los más polivalentes</div>
+          <div id="comodinesLista"><div class="loader">Cargando...</div></div>
         </div>
       </div>
       <div id="subQuimica" class="sub-panel">
@@ -1344,6 +1351,8 @@
   @media (prefers-reduced-motion: reduce) { #ddAviso.on, #ddAviso .dd-in { animation:none; } }
 </style>
 <script type="module">
+  // v240 (visor; app v241) · 🔄 Polivalencia: un puesto o una línea cuenta con 35' o más en la temporada; polivalente = 3 puestos en 2 líneas, o 3 líneas. Etiqueta en «Dónde ha jugado» de la ficha y apartado «🔄 Los comodines» en Más análisis → Jugadores (ranking por líneas y luego puestos). En la app, premio «🔄 El comodín» de la vuelta.
+  // v239 (visor; app v240) · 🧤 Jugador de campo que hace de portero un partido: en las estadísticas de campo (peso en el equipo y cuota de acciones, mapa de calor, evolución «Su nivel» y «Sus acciones», su prime y las medias de su estilo) ese partido no cuenta, como si no hubiera jugado; en lo de portero, minutos, impacto y MVP cuenta normal. Regla: la mitad o más de sus minutos de ese partido en la portería y no ser el portero de la temporada.
   // v238 (visor; app v239) · 🦶 Pie de cada niño (diestro / zurdo / las dos, lo marca la app en la convocatoria y llega con la plantilla): la etiqueta de «con qué marca» respeta el pie marcado, y se cuentan los goles con su pierna buena y con la otra (por niño en su ficha y en el Mapa de goles, y del equipo).
   // v237 (visor; app v238) · 👥 Visitas al visor: contador propio y anónimo. Cada móvil apunta en visitas/dias/<día>/<id al azar> que ha entrado, a qué horas y qué pestañas y apartados abre (una vez por móvil y día), y durante el directo deja su presencia en visitas/vivo. No guarda nombres ni de qué niño es la ficha. Con ?nocontar=1 ese móvil deja de contar. Para las familias no cambia nada.
   // v236 (visor; app v236 + delegado) · 💡 Dato del día (aviso una vez al día al abrir, nunca en directo ni en el Modo TV, y tarjeta bajo «La temporada en números»), 🦶 con qué marcó (Mapa de goles: reparto, cruces, filtro y cada niño con su etiqueta; ficha → Datos; hitos de cabeza y pierna mala; récord de cabeza), 📊 jornadas en cada puesto (Liga → Clasificación), rojos del Hergar unificados y medias sin los fueras de juego y faltas en contra que el delegado no apuntaba.
@@ -1792,6 +1801,17 @@
       Object.keys(mp).forEach(k => { if ((mp[k] || 0) > max) { max = mp[k] || 0; mejor = k; } });
       return mejor === 'portero';
   }
+  // v239 · 🧤 ¿Jugó de portero en ESTE partido? (la mitad o más de sus minutos en la portería)
+  function minsPorteroPartido(h) {
+      if (!h) return 0;
+      if (h.puestos && Object.keys(h.puestos).length) return Number(h.puestos.POR) || 0;
+      if (h.lineas && Object.keys(h.lineas).length) return Number(h.lineas.portero) || 0;
+      return 0;
+  }
+  function jugoDePortero(h) { const m = Number(h && h.mins) || 0; return m > 0 && minsPorteroPartido(h) * 2 >= m; }
+  // Jugador de campo (no es el portero de la temporada) que ese partido hizo de portero: fuera de las estadísticas de campo
+  function partidoPorteroDeCampo(j, h) { return !!(j && h) && jugoDePortero(h) && !pesoEsPortero(j); }
+  function jugadorDeId(t, id) { const J = (t && t.jugadores) || {}; return J[id] || Object.values(J).find(z => String(z.id) === String(id)) || null; }
   function pesoAccionesDe(h) {
       const a = h.acc || {};
       return (h.goles || 0) + (h.asistencias || 0) + PESO_ACC.reduce((s, k) => s + (Number(a[k]) || 0), 0);
@@ -1808,11 +1828,12 @@
           if (!minsEq) return;
           const media = filas.reduce((s, f) => s + f.imp, 0) / minsEq * 70;
           // cuota: solo si el partido tiene el detalle de acciones (en directo) y sin contar porteros
-          const conDetalle = filas.filter(f => f.h.acc !== undefined && !res[f.j.id].esPortero);
+          const conDetalle = filas.filter(f => f.h.acc !== undefined && !res[f.j.id].esPortero && !jugoDePortero(f.h)); // v239: ni quien hizo de portero ese día
           const accEq = conDetalle.reduce((s, f) => s + pesoAccionesDe(f.h), 0);
           const minsAccEq = conDetalle.reduce((s, f) => s + f.mins, 0);
           filas.forEach(f => {
               const r = res[f.j.id];
+              if (partidoPorteroDeCampo(f.j, f.h)) { r.dePortero = (r.dePortero || 0) + 1; return; } // v239: ese partido no cuenta en su peso
               const p70 = f.imp / f.mins * 70;
               const dif = p70 - media;
               r.sumDif += dif * f.mins; r.mins += f.mins;
@@ -1862,11 +1883,12 @@
       }).join('');
       const caja = (valor, color, texto) => `<div style="background:rgba(255,255,255,.04); border-radius:10px; padding:9px 10px;"><div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:22px; color:${color};">${valor}</div><div style="font-size:10.5px; line-height:1.3; color:#94a3b8; margin-top:2px;">${texto}</div></div>`;
       const cuotaTxt = r.esPortero ? 'cuota de acciones: no se calcula para el portero' : (r.cuota == null ? 'cuota de acciones: aún sin partidos con detalle de acciones' : 'cuota de acciones: lo que hace frente a lo que le tocaría por sus minutos');
+      const portTxt = r.dePortero ? ` · 🧤 ${r.dePortero === 1 ? 'el partido que jugó de portero no cuenta' : `los ${r.dePortero} partidos que jugó de portero no cuentan`} aquí` : ''; // v239
       return `<div style="background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:12px 14px; margin-top:12px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;"><div style="font-size:11px; font-weight:800; color:${acento}; letter-spacing:.5px;">⚖️ PESO EN EL EQUIPO</div><div style="font-size:11px; color:#94a3b8;">${puesto}</div></div>
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
               ${caja(pesoFmt(r.peso), pesoColor(r.peso), 'sobre la media de sus compañeros de partido (por 70\')')}
-              ${caja(pesoFmtCuota(r.cuota), r.cuota == null ? '#64748b' : (r.cuota >= 1 ? '#2ed573' : '#ff6b7a'), cuotaTxt)}
+              ${caja(pesoFmtCuota(r.cuota), r.cuota == null ? '#64748b' : (r.cuota >= 1 ? '#2ed573' : '#ff6b7a'), cuotaTxt + portTxt)}
           </div>
           ${(j.minutos || 0) < minMinutos ? `<div style="font-size:11px; color:#94a3b8; margin-top:8px;">Aún no llega a ${minMinutos} minutos: dato provisional.</div>` : ''}
           <details style="margin-top:10px;"><summary style="font-size:11.5px; font-weight:700; color:${acento}; cursor:pointer;">Partido a partido (${r.partidos.length})</summary>
@@ -4189,7 +4211,20 @@
   }
   function estTiros(j) { return (j.disparosPuerta || 0) + (j.disparosFuera || 0); }
   function estGolesTiro(j) { const g = j.golesConTiros !== undefined ? (j.golesConTiros || 0) : (j.goles || 0); return Math.min(g, estTiros(j)); }
+  // v239 · totales de la temporada sin los partidos en que un jugador de campo hizo de portero
+  function estSinPartidosPortero(j) {
+    if (!j || estEsPortero(j) || pesoEsPortero(j)) return j;
+    const hs = (j.historial || []).filter(h => partidoPorteroDeCampo(j, h));
+    if (!hs.length) return j;
+    const o = Object.assign({}, j), menos = (k, v) => { if (o[k] !== undefined) o[k] = Math.max(0, (Number(o[k]) || 0) - (Number(v) || 0)); };
+    hs.forEach(h => { const a = h.acc || {};
+      menos('minutos', h.mins); menos('goles', h.goles); menos('golesConTiros', h.goles); menos('asistencias', h.asistencias);
+      menos('disparosPuerta', a.dp); menos('disparosFuera', a.df); menos('pasesClave', a.pc); menos('pasesArea', a.pa);
+      menos('regates', a.reg); menos('accionesDef', a.def); menos('accionesDefClave', a.defC); });
+    return o;
+  }
   function estValores(j) {
+    j = estSinPartidosPortero(j); // v239
     const m = (j.minutos || 0) / 70, ti = estTiros(j);
     return {
       pun: ti >= ESTILO_MIN_TIROS ? estGolesTiro(j) / ti : null,
@@ -4450,6 +4485,7 @@
       if (!M || Number(M.v) !== 1 || !M.j) return;
       const ini = Math.max(0, Number(M.ini) || 0);
       Object.keys(M.j).forEach(id => {
+        try { const jj = jugadorDeId(t, id); if (jj && partidoPorteroDeCampo(jj, pesoHistDe(jj, p))) return; } catch (e) {} // v239
         const c = v206Lee(M.j[id].c), a = v206Lee(M.j[id].a);
         const R = res[id] || (res[id] = { segs: 0, pts: 0, segsEnteras: 0, partidos: 0, e: PRIME_E.map(() => ({ s: 0, p: 0 })), q: PRIME_Q.map(() => ({ s: 0, p: 0 })) });
         let seguido = 0, jugo = false;
@@ -4683,6 +4719,7 @@
     const tb = filas.map(({ r, reg }) => {
       const celdas = ps.map((p, i) => {
         const x = r.partidos.find(q => q.i === i);
+        if (!x && partidoPorteroDeCampo(r.j, pesoHistDe(r.j, p))) return `<td style="padding:2px 1px;"><div title="J${i + 1} vs ${escHtml(p.rival)} · de portero (no cuenta en el peso)" aria-label="De portero" style="width:24px; height:24px; margin:auto; display:flex; align-items:center; justify-content:center; border:1px dashed #475569; border-radius:6px; font-size:12px;">🧤</div></td>`; // v239
         if (!x) return `<td style="padding:2px 1px;"><div style="width:24px; height:24px; margin:auto; display:flex; align-items:center; justify-content:center; color:#475569; font-size:12px;">·</div></td>`;
         const est = x.valorado ? `background:${mapaCalorColor(x.dif)};` : 'border:1px dashed #475569;';
         return `<td style="padding:2px 1px;"><div role="button" tabindex="0" onclick="abrirFichaPartido(${i}, '${escHtml(r.j.id)}')" title="J${i + 1} vs ${escHtml(p.rival)} · ${x.mins}' · ${(x.dif >= 0 ? '+' : '−') + v206Fmt(Math.abs(x.dif))}" style="cursor:pointer; width:24px; height:24px; margin:auto; border-radius:5px; ${est}"></div></td>`;
@@ -4942,6 +4979,7 @@
     ps.forEach((p, i) => {
       const h = evoHistDe(j, p);
       if (!h || !((h.mins || 0) > 0 || h.goles || h.asistencias)) return;
+      if (partidoPorteroDeCampo(j, h)) return; // v239: de portero ese día, no cuenta en su evolución de campo
       let imp = 0, mins = 0, sa = 0, minsSa = 0;
       const del = [];
       todos.forEach(o => {
@@ -5992,6 +6030,45 @@
     const pu = puestoPrincipalV(j, li);
     return pu ? `${pu} · ${PUESTO_LARGO_V[pu]}` : LINEA_LARGA_V[li];
   }
+  // ── v240 · 🔄 POLIVALENCIA ───────────────────────────────────────────────────────────
+  // Un puesto (o una línea) cuenta si ha jugado ahí 35' o más en la temporada (una parte entera).
+  // Polivalente: 3 puestos en 2 líneas distintas, o 3 líneas. Ranking: más líneas y, a igualdad, más puestos.
+  // Los partidos antiguos sin puesto exacto cuentan para las líneas (no para los puestos).
+  const POLI_MIN = 35;
+  function poliJugador(j) {
+    const mpu = (j && j.minutosPorPuesto) || {}, mp = (j && j.minutosPorPosicion) || {};
+    const pus = PUESTOS_ORDEN_V.filter(pu => (Number(mpu[pu]) || 0) >= POLI_MIN);
+    const lin = LINEAS_ORDEN_V.filter(l => l !== 'suplente' && (Number(mp[l]) || 0) >= POLI_MIN);
+    const np = Math.max(pus.length, lin.length), nl = lin.length; // sin puesto exacto, cada línea vale al menos un puesto
+    return { j, pus, lin, np, nl, ok: (nl >= 2 && np >= 3) || nl >= 3, mins: Number(j && j.minutos) || 0, mpu, mp };
+  }
+  function poliTxt(x) { return `${x.np} ${x.np === 1 ? 'puesto' : 'puestos'} en ${x.nl} ${x.nl === 1 ? 'línea' : 'líneas'}`; }
+  function poliChips(x) {
+    const ch = (txt, c) => `<span style="font-size:10px; font-weight:800; padding:3px 6px; border-radius:6px; background:${c}26; color:${c}; white-space:nowrap;">${txt}</span>`;
+    const conPu = new Set(x.pus.map(pu => PUESTO_LINEA_V[pu]));
+    return x.pus.map(pu => ch(`${pu} ${Math.round(x.mpu[pu])}'`, LINEA_COLOR_V[PUESTO_LINEA_V[pu]]))
+      .concat(x.lin.filter(l => !conPu.has(l)).map(l => ch(`${LINEA_CORTA_V[l]} ${Math.round(x.mp[l])}'`, LINEA_COLOR_V[l]))).join(' ');
+  }
+  function poliEtiquetaHTML(j) {
+    const x = poliJugador(j); if (!x.ok) return '';
+    return `<span style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:10.5px; padding:4px 8px; border-radius:8px; white-space:nowrap; color:#5dade2; background:rgba(93,173,226,.14);">🔄 Polivalente · ${poliTxt(x)}</span>`;
+  }
+  function poliEquipoHTML(t) {
+    const js = Object.values((t && t.jugadores) || {}).filter(j => (Number(j.minutos) || 0) > 0);
+    if (!js.length) return `<div style="font-size:12px; color:#94a3b8;">Aún no hay partidos.</div>`;
+    const R = js.map(poliJugador).sort((a, b) => b.nl - a.nl || b.np - a.np || b.mins - a.mins);
+    const ok = R.filter(x => x.ok);
+    const fila = (x, k) => `<div role="button" tabindex="0" onclick="abrirPerfilJugadorTemporada('${escHtml(x.j.id)}')" style="display:flex; gap:10px; align-items:flex-start; padding:10px 0; border-top:1px solid rgba(255,255,255,.06); cursor:pointer;">
+        <div style="width:26px; flex-shrink:0; font-family:'Montserrat',sans-serif; font-weight:900; font-size:15px; color:${k === 0 ? '#f5a623' : '#94a3b8'}; text-align:center;">${k + 1}</div>
+        <div style="flex:1; min-width:0;"><div style="display:flex; justify-content:space-between; gap:8px; align-items:baseline;"><b style="font-size:13px; color:#fff;">${escHtml((x.j.name || '').split(' ')[0])}${x.j.dorsal != null ? ` <span style="font-weight:600; font-size:11px; color:#94a3b8;">#${escHtml(x.j.dorsal)}</span>` : ''}</b><span style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:12px; color:#5dade2; white-space:nowrap;">${poliTxt(x)}</span></div>
+        <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:6px;">${poliChips(x)}</div></div></div>`;
+    let h = ok.length ? ok.slice(0, 6).map(fila).join('')
+      : `<div style="font-size:12.5px; line-height:1.5; color:#cbd5e1;">Aún nadie llega. Para ser polivalente hace falta jugar <b>35' o más</b> en <b>3 puestos de 2 líneas distintas</b>, o en 3 líneas.</div>`;
+    const cerca = R.filter(x => !x.ok && x.nl >= 2).slice(0, 4);
+    if (cerca.length) h += `<div style="font-size:10.5px; font-weight:800; color:#64748b; letter-spacing:.5px; margin:14px 0 2px;">A UN PASO</div>` + cerca.map(x => `<div style="display:flex; justify-content:space-between; gap:8px; padding:7px 0; border-top:1px solid rgba(255,255,255,.06); font-size:12px;"><span style="color:#e2e8f0;">${escHtml((x.j.name || '').split(' ')[0])}</span><span style="color:#94a3b8;">${poliTxt(x)}</span></div>`).join('');
+    h += `<div style="font-size:10.5px; color:#94a3b8; line-height:1.45; margin-top:10px;">Un puesto cuenta con 35' o más jugados ahí en la temporada. Primero va quien toca más líneas (portería, defensa, medio, ataque) y después quien juega en más puestos. Los partidos antiguos sin puesto exacto solo cuentan para las líneas.</div>`;
+    return h;
+  }
   function lineasJugadorHTMLV(j, t) {
     if (!j) return '';
     const mp = j.minutosPorPosicion || {}, mpu = j.minutosPorPuesto || {}, ipu = j.impactoPorPuesto || {}, ppu = j.partidosPorPuesto || {};
@@ -6038,7 +6115,7 @@
     const partidos = hist.map(h => `<div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; padding:7px 9px; background:rgba(255,255,255,0.03); border-radius:8px; margin-bottom:5px;">
       <div style="flex:1; min-width:110px; font-size:11.5px; color:#e2e8f0;">vs ${escHtml(h.rival || '—')}<span style="display:block; font-size:10px; color:#64748b;">${escHtml(h.fecha || '')} · ${h.mins || 0}'</span></div>${chips(h)}</div>`).join('');
     return `<div style="margin-top:12px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.07); border-radius:10px; padding:10px 12px; font-size:12px; color:#e2e8f0;">
-      <div style="font-size:11px; font-weight:800; color:#f5a623; letter-spacing:.5px; margin-bottom:8px;">📍 DÓNDE HA JUGADO</div>
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:8px;"><div style="font-size:11px; font-weight:800; color:#f5a623; letter-spacing:.5px;">📍 DÓNDE HA JUGADO</div>${(() => { try { return poliEtiquetaHTML(j); } catch (e) { return ''; } })()}</div>
       <div style="display:flex; height:24px; border-radius:7px; overflow:hidden; margin-bottom:8px;">${barra}</div>
       ${filas ? `<table style="width:100%; border-collapse:collapse; font-size:11.5px;">
         <tr style="color:#94a3b8; font-size:9.5px; font-weight:800;"><th style="text-align:left; padding:5px 4px;">PUESTO</th><th style="padding:5px 2px;">MIN</th><th style="padding:5px 2px;">IMPACTO</th><th style="padding:5px 2px;">SUS ACCIONES</th></tr>
@@ -10676,7 +10753,7 @@
     const secActivo = !!panelMas.querySelector('.subtab-btn.active');
     btn.setAttribute('aria-expanded', abierto ? 'true' : 'false');
     btn.classList.toggle('sec-activo', secActivo && !abierto);
-    if (txt) txt.textContent = abierto ? 'ocultar ▴' : '17 apartados en 3 bloques ▾';
+    if (txt) txt.textContent = abierto ? 'ocultar ▴' : '18 apartados en 3 bloques ▾';
   }
   function toggleMasTemp() {
     const panelMas = document.getElementById('tmpMasPanel');
@@ -11249,6 +11326,7 @@
     subOnceIdeal: (t) => pintarOnceIdeal(t),
     subAdn: (t) => { try { document.getElementById('adnLista').innerHTML = adnEquipoHTML(t, 'abrirPerfilJugadorTemporada'); } catch (e) { console.error('ADN:', e); } }, // v150
     subGrandes: (t) => { try { document.getElementById('grandesLista').innerHTML = grandesHTML(t, (typeof ultimaLiga !== 'undefined') ? ultimaLiga : null); } catch (e) { console.error('Grandes:', e); } }, // v222
+    subComodines: (t) => { try { document.getElementById('comodinesLista').innerHTML = poliEquipoHTML(t); } catch (e) { console.error('Comodines:', e); } }, // v240
     subQuimica: (t) => { try { document.getElementById('quimicaLista').innerHTML = quimicaTemporadaHTML(t, (typeof ultimaLiga !== 'undefined') ? ultimaLiga : null); } catch (e) { console.error('Química:', e); } } // v222
   };
   let tmpPintado = {}; // apartados ya calculados con los datos actuales

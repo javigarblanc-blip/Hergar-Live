@@ -1344,6 +1344,7 @@
   @media (prefers-reduced-motion: reduce) { #ddAviso.on, #ddAviso .dd-in { animation:none; } }
 </style>
 <script type="module">
+  // v238 (visor; app v239) · 🦶 Pie de cada niño (diestro / zurdo / las dos, lo marca la app en la convocatoria y llega con la plantilla): la etiqueta de «con qué marca» respeta el pie marcado, y se cuentan los goles con su pierna buena y con la otra (por niño en su ficha y en el Mapa de goles, y del equipo).
   // v237 (visor; app v238) · 👥 Visitas al visor: contador propio y anónimo. Cada móvil apunta en visitas/dias/<día>/<id al azar> que ha entrado, a qué horas y qué pestañas y apartados abre (una vez por móvil y día), y durante el directo deja su presencia en visitas/vivo. No guarda nombres ni de qué niño es la ficha. Con ?nocontar=1 ese móvil deja de contar. Para las familias no cambia nada.
   // v236 (visor; app v236 + delegado) · 💡 Dato del día (aviso una vez al día al abrir, nunca en directo ni en el Modo TV, y tarjeta bajo «La temporada en números»), 🦶 con qué marcó (Mapa de goles: reparto, cruces, filtro y cada niño con su etiqueta; ficha → Datos; hitos de cabeza y pierna mala; récord de cabeza), 📊 jornadas en cada puesto (Liga → Clasificación), rojos del Hergar unificados y medias sin los fueras de juego y faltas en contra que el delegado no apuntaba.
   // v235 (visor) · 🧩 El pegamento por zona: cada pareja de vecinos, sobre los minutos que jugó cada uno en los puestos donde fue vecino del otro (quien juega de lateral y de MCD sale rodado con las dos zonas) · «Ver minutos a su lado» en la ficha.
@@ -11913,7 +11914,7 @@
   let ultimaPlantilla = [];
   onValue(ref(db, 'temporada/plantilla'), (snap) => {
     ultimaPlantilla = snap.val() || [];
-    tmpCambio(['subPlantilla']); // v175
+    tmpCambio(['subPlantilla', 'subMapaGoles']); // v175 · v238: el mapa de goles usa el pie de cada niño
     try { mhActualizar(); } catch (e) {} // v176
   }, (err) => { console.error('Firebase plantilla read error:', err); });
 
@@ -13216,11 +13217,34 @@
     if (c.izq / pie >= 0.7) return { t: '🦶 Zurdo', k: 'izq', col: '#5dade2', bg: 'rgba(93,173,226,.14)' };
     return { t: '⚖️ Ambidiestro', k: 'amb', col: '#f5a623', bg: 'rgba(245,166,35,.14)' };
   }
+  // v238 · pie marcado en la app (plantilla): 'der' | 'izq' | 'amb' | ''
+  var PIE_TXT = { der: 'Diestro', izq: 'Zurdo', amb: 'Las dos piernas' };
+  function cpoPie(id) {
+    try {
+      const L = Array.isArray(ultimaPlantilla) ? ultimaPlantilla : Object.values(ultimaPlantilla || {});
+      const p = L.find(z => z && String(z.id) === String(id));
+      return p && PIE_TXT[p.pie] ? p.pie : '';
+    } catch (e) { return ''; }
+  }
+  // Con el pie marcado manda lo que se ha puesto en la app (salvo que la mitad o más de sus goles sean de cabeza)
+  function cpoEtiquetaPie(c, pie) {
+    if (!pie) return cpoEtiqueta(c);
+    if (c && c.n >= 3 && c.cab * 2 >= c.n) return cpoEtiqueta(c);
+    if (pie === 'der') return { t: '🦶 Diestro', k: 'der', col: '#2ed573', bg: 'rgba(46,213,115,.12)', marcado: true };
+    if (pie === 'izq') return { t: '🦶 Zurdo', k: 'izq', col: '#5dade2', bg: 'rgba(93,173,226,.14)', marcado: true };
+    return { t: '⚖️ Las dos', k: 'amb', col: '#f5a623', bg: 'rgba(245,166,35,.14)', marcado: true };
+  }
+  // Pierna buena y la otra (solo con el pie marcado diestro o zurdo)
+  function cpoBuenaMala(c, pie) {
+    if (pie === 'der') return { buena: c.der, mala: c.izq, kb: 'der', km: 'izq' };
+    if (pie === 'izq') return { buena: c.izq, mala: c.der, kb: 'izq', km: 'der' };
+    return null;
+  }
   function cpoPorJugador(t) {
     const out = {};
     mgGoles(t).F.forEach(x => { if (!x.jid || !x.g || !x.g.cuerpo || x.g.propia) return; (out[x.jid] = out[x.jid] || []).push(x); });
     const r = {};
-    Object.keys(out).forEach(id => { const c = cpoCuenta(out[id]); r[id] = { id, c, et: cpoEtiqueta(c), lista: out[id] }; });
+    Object.keys(out).forEach(id => { const c = cpoCuenta(out[id]), pie = cpoPie(id); r[id] = { id, c, pie, bm: cpoBuenaMala(c, pie), et: cpoEtiquetaPie(c, pie), lista: out[id] }; });
     return r;
   }
   function cpoBarra(c, alto) {
@@ -13248,6 +13272,12 @@
     if (pen.length) fila('🎯 Penaltis', [['der', 'der.'], ['izq', 'izq.']].map(([k, s]) => `${pen.filter(x => x.g.cuerpo === k).length} ${s}`).join(' · '));
     const area = con.filter(x => mgZona(x) === 'Área pequeña');
     if (area.length >= 2 && c.cab) fila('🗣️ De cabeza en el área pequeña', `${area.filter(x => x.g.cuerpo === 'cab').length} de ${area.length}`);
+    if (!nombre) { // v238 · el equipo con la pierna buena y con la otra (niños con el pie marcado)
+      let b = 0, m = 0; Object.values(cpoPorJugador(t)).forEach(x => { if (x.bm) { b += x.bm.buena; m += x.bm.mala; } });
+      if (b + m > 0) fila('🦶 Con la pierna mala', `${m} de ${b + m} (${Math.round(m / (b + m) * 100)} %)`);
+    } else { const x = mgJug ? cpoPorJugador(t)[String(mgJug)] : null;
+      if (x && x.bm && (x.bm.buena + x.bm.mala)) fila(`🦶 Con su pierna buena (${CPO[x.bm.kb][0].toLowerCase()}) · con la otra`, `${x.bm.buena} · ${x.bm.mala}`);
+    }
     if (filas.length) h += `<div style="margin-top:8px;">${filas.join('')}</div>`;
     const faltan = L.length - con.length;
     if (faltan > 0) h += `<div style="font-size:10.5px; color:#94a3b8; margin-top:6px;">${con.length} de ${L.length} goles con el dato · el resto se va rellenando desde la app.</div>`;
@@ -13258,9 +13288,9 @@
         h += `<div style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:11px; letter-spacing:.5px; color:#f5a623; margin:14px 0 4px;">CADA NIÑO</div>`
           + J.map(x => `<div style="display:flex; align-items:center; gap:10px; padding:7px 0; border-top:1px solid rgba(255,255,255,.06);">
               <div style="flex:1; min-width:0;"><div style="font-size:12.5px; font-weight:700; color:#e2e8f0;">${mgEsc(nomDe(x.id))} <span style="font-weight:500; font-size:11px; color:#94a3b8;">· ${x.c.n} ${x.c.n === 1 ? 'gol' : 'goles'}</span></div>
-              <div style="display:flex; align-items:center; gap:8px; margin-top:4px;"><div style="width:110px; flex-shrink:0;">${cpoBarra(x.c, 7)}</div><span style="font-size:10.5px; color:#94a3b8;">${CPO_LISTA.filter(k => x.c[k]).map(k => `${CPO[k][1]}${k === 'izq' ? 'I' : k === 'der' ? 'D' : ''} ${x.c[k]}`).join(' · ')}</span></div></div>
+              <div style="display:flex; align-items:center; gap:8px; margin-top:4px;"><div style="width:110px; flex-shrink:0;">${cpoBarra(x.c, 7)}</div><span style="font-size:10.5px; color:#94a3b8;">${CPO_LISTA.filter(k => x.c[k]).map(k => `${CPO[k][1]}${k === 'izq' ? 'I' : k === 'der' ? 'D' : ''} ${x.c[k]}`).join(' · ')}${x.bm && x.bm.mala ? ` · <b style="color:#f5a623;">${x.bm.mala} con la otra</b>` : ''}</span></div></div>
               ${cpoEtiquetaHTML(x.et)}</div>`).join('')
-          + `<div style="font-size:10.5px; color:#94a3b8; margin-top:6px; line-height:1.45;">La etiqueta sale a partir de 3 goles con el dato: <b>diestro</b> o <b>zurdo</b> (70 % o más con esa pierna), <b>ambidiestro</b> (al menos un 30 % con cada una) y <b>cabeceador</b> (la mitad o más de cabeza).</div>`;
+          + `<div style="font-size:10.5px; color:#94a3b8; margin-top:6px; line-height:1.45;">La etiqueta sale a partir de 3 goles con el dato: <b>diestro</b> o <b>zurdo</b> (70 % o más con esa pierna), <b>ambidiestro</b> (al menos un 30 % con cada una) y <b>cabeceador</b> (la mitad o más de cabeza). Si en la app está marcado su pie, sale ese desde el primer gol; «con la otra» son los goles con su pierna mala.</div>`;
       }
     }
     return h;
@@ -13279,18 +13309,22 @@
   // Ficha del niño: línea con sus goles por pierna/cabeza y la etiqueta
   function cpoJugadorHTML(t, j) {
     const x = cpoPorJugador(t)[String(j.id)];
-    if (!x || !x.c.n) return '';
+    if (!x || !x.c.n) { // v238 · sin goles con el dato: al menos su pie, si está marcado
+      const pie = cpoPie(j.id); if (!pie) return '';
+      return `<div style="display:flex; align-items:center; gap:10px; margin-top:10px;"><div style="flex:1; min-width:0; font-size:11px; font-weight:800; color:#f5a623; letter-spacing:.5px;">🦶 SU PIE</div>${cpoEtiquetaHTML(cpoEtiquetaPie(null, pie))}</div>`;
+    }
     return `<div style="display:flex; align-items:center; gap:10px; margin-top:10px;">
         <div style="flex:1; min-width:0;"><div style="font-size:11px; font-weight:800; color:#f5a623; letter-spacing:.5px;">🦶 CON QUÉ MARCA</div>
         <div style="margin-top:5px;">${cpoBarra(x.c, 8)}</div>
-        <div style="font-size:11px; color:#cbd5e1; margin-top:4px;">${CPO_LISTA.filter(k => x.c[k]).map(k => `${CPO[k][1]} ${CPO[k][0].toLowerCase()} ${x.c[k]}`).join(' · ')}</div></div>
+        <div style="font-size:11px; color:#cbd5e1; margin-top:4px;">${CPO_LISTA.filter(k => x.c[k]).map(k => `${CPO[k][1]} ${CPO[k][0].toLowerCase()} ${x.c[k]}`).join(' · ')}</div>
+        ${x.bm && (x.bm.buena + x.bm.mala) ? `<div style="font-size:11px; color:#cbd5e1; margin-top:3px;">Con su pierna buena <b style="color:#fff;">${x.bm.buena}</b> · con la otra <b style="color:#f5a623;">${x.bm.mala}</b></div>` : ''}</div>
         ${cpoEtiquetaHTML(x.et)}</div>`;
   }
   // Hitos nuevos: primer gol de cabeza y primer gol con su pierna mala (solo si es claramente diestro o zurdo)
   function cpoHitosJugador(t, j) {
     const x = cpoPorJugador(t)[String(j.id)];
     if (!x) return [];
-    const out = [], mala = x.et && x.et.k === 'der' ? 'izq' : x.et && x.et.k === 'izq' ? 'der' : null;
+    const out = [], mala = x.bm ? x.bm.km : (x.et && x.et.k === 'der' ? 'izq' : x.et && x.et.k === 'izq' ? 'der' : null); // v238: con el pie marcado, manda ese
     const prim = (k) => x.lista.filter(y => y.g.cuerpo === k).sort((a, b) => a.i - b.i || (a.g.min || 0) - (b.g.min || 0))[0];
     const c1 = prim('cab'); if (c1) out.push({ i: c1.i, p: c1.p, ic: '🗣️', t: 'Primer gol de cabeza', frase: 'marca su primer gol de cabeza', k: 'cab1' });
     if (mala) { const m1 = prim(mala); if (m1) out.push({ i: m1.i, p: m1.p, ic: '🦶', t: `Primer gol con la ${CPO[mala][0].toLowerCase()}`, frase: `marca su primer gol con la ${CPO[mala][0].toLowerCase()}`, k: 'mala1' }); }

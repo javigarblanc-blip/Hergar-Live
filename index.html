@@ -1351,6 +1351,7 @@
   @media (prefers-reduced-motion: reduce) { #ddAviso.on, #ddAviso .dd-in { animation:none; } }
 </style>
 <script type="module">
+  // v241 (visor; app v242) · 📷 Fotos de los niños en GitHub: plantilla_fotos/<id> trae { foto: miniatura, url: foto buena en la carpeta fotos/ }; el visor usa la url (mismo sitio que el visor, así también vale para el resumen y el acta) y guarda la miniatura en f.mini.
   // v240 (visor; app v241) · 🔄 Polivalencia: un puesto o una línea cuenta con 35' o más en la temporada; polivalente = 3 puestos en 2 líneas, o 3 líneas. Etiqueta en «Dónde ha jugado» de la ficha y apartado «🔄 Los comodines» en Más análisis → Jugadores (ranking por líneas y luego puestos). En la app, premio «🔄 El comodín» de la vuelta.
   // v239 (visor; app v240) · 🧤 Jugador de campo que hace de portero un partido: en las estadísticas de campo (peso en el equipo y cuota de acciones, mapa de calor, evolución «Su nivel» y «Sus acciones», su prime y las medias de su estilo) ese partido no cuenta, como si no hubiera jugado; en lo de portero, minutos, impacto y MVP cuenta normal. Regla: la mitad o más de sus minutos de ese partido en la portería y no ser el portero de la temporada.
   // v238 (visor; app v239) · 🦶 Pie de cada niño (diestro / zurdo / las dos, lo marca la app en la convocatoria y llega con la plantilla): la etiqueta de «con qué marca» respeta el pie marcado, y se cuentan los goles con su pierna buena y con la otra (por niño en su ficha y en el Mapa de goles, y del equipo).
@@ -12006,8 +12007,10 @@
     else if (ultimoPerfilAbiertoOrigen === 'temporada') window.abrirPerfilJugadorTemporada(ultimoPerfilAbiertoId);
     else if (ultimoPerfilAbiertoOrigen === 'mvp-guardado') window.abrirCromoMvpGuardado(ultimoPerfilAbiertoId);
   }
+  // v241 · con la foto en GitHub (url) se usa esa; la miniatura queda en f.mini
+  function fotosNormalizar(o) { Object.keys(o || {}).forEach(k => { const f = o[k]; if (f && typeof f === 'object' && f.url) { f.mini = f.foto || null; f.foto = f.url; } }); return o || {}; }
   onValue(ref(db, 'plantilla_fotos'), (snap) => {
-    fotosJugadores = snap.val() || {};
+    fotosJugadores = fotosNormalizar(snap.val() || {});
     try { mhPintarPagina(); } catch (e) {} // v176
     try { semActualizar(); } catch (e) {} // v179
     if (ultimoPerfilAbiertoId != null) reabrirPerfilActual();

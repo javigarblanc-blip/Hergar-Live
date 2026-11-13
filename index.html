@@ -1351,6 +1351,7 @@
   @media (prefers-reduced-motion: reduce) { #ddAviso.on, #ddAviso .dd-in { animation:none; } }
 </style>
 <script type="module">
+  // v242 (visor, sin cambios en la app) · 🍀 Suerte y 📈 Nivel de cada partido como chips en la tarjeta del historial (Temporada → Partidos), como en la app; ya no se repiten dentro al abrir.
   // v241 (visor; app v242) · 📷 Fotos de los niños en GitHub: plantilla_fotos/<id> trae { foto: miniatura, url: foto buena en la carpeta fotos/ }; el visor usa la url (mismo sitio que el visor, así también vale para el resumen y el acta) y guarda la miniatura en f.mini.
   // v240 (visor; app v241) · 🔄 Polivalencia: un puesto o una línea cuenta con 35' o más en la temporada; polivalente = 3 puestos en 2 líneas, o 3 líneas. Etiqueta en «Dónde ha jugado» de la ficha y apartado «🔄 Los comodines» en Más análisis → Jugadores (ranking por líneas y luego puestos). En la app, premio «🔄 El comodín» de la vuelta.
   // v239 (visor; app v240) · 🧤 Jugador de campo que hace de portero un partido: en las estadísticas de campo (peso en el equipo y cuota de acciones, mapa de calor, evolución «Su nivel» y «Sus acciones», su prime y las medias de su estilo) ese partido no cuenta, como si no hubiera jugado; en lo de portero, minutos, impacto y MVP cuenta normal. Regla: la mitad o más de sus minutos de ese partido en la portería y no ser el portero de la temporada.
@@ -2790,6 +2791,16 @@
         return { S, N, R, conLiga: !!B, porPartido };
     }
     // Línea pequeña en cada partido de la lista: "🍀 113 · 📈 +1,3"
+    // v242 · 🍀 suerte y 📈 nivel como chips en la tarjeta del historial (antes solo al abrir «Ver más»)
+    function snChipsTarjeta(C, p) {
+        if (!C || !C.porPartido) return '';
+        const f = C.porPartido.get(p);
+        if (!f) return '';
+        let h = '';
+        if (f.suerte != null) h += `<span>🍀 Suerte <b style="color:${snVeredicto(f.suerte)[1]};">${Math.round(f.suerte)}</b></span>`;
+        if (f.nivel != null) h += `<span>📈 Nivel <b style="color:${snColor(f.nivel)};">${snSig(f.nivel)}</b></span>`;
+        return h;
+    }
     function snChipPartido(C, p) {
         if (!C || !C.porPartido) return '';
         const f = C.porPartido.get(p);
@@ -9700,7 +9711,7 @@
       const jn = jornadaDe(p);
       const nVid = Array.isArray(p.goles) ? p.goles.filter(g => g && g.equipo !== 'rival' && videoValido(g)).length : 0;
       let escR = ''; try { escR = rsEscR(p, 40); } catch (e) {}
-      const chips = [goleadoresTxt ? `<span>⚽ ${escHtml(goleadoresTxt)}</span>` : '', tieneMvp ? `<span class="mvp">⭐ ${escHtml(p.mvp)}</span>` : '', nVid ? `<span class="vid">🎥 ${nVid}</span>` : '', (() => { try { return b2bChips(temporada, p) + qmChip(temporada, p); } catch (e) { return ''; } })()].filter(Boolean).join(''); // v222: 📦 box-to-box y 🔗 química
+      const chips = [goleadoresTxt ? `<span>⚽ ${escHtml(goleadoresTxt)}</span>` : '', tieneMvp ? `<span class="mvp">⭐ ${escHtml(p.mvp)}</span>` : '', nVid ? `<span class="vid">🎥 ${nVid}</span>` : '', (() => { try { return b2bChips(temporada, p) + qmChip(temporada, p); } catch (e) { return ''; } })(), (() => { try { return snChipsTarjeta(snCtx, p); } catch (e) { return ''; } })()].filter(Boolean).join(''); // v222: 📦 box-to-box y 🔗 química
       const dentro = ['📊 Estadísticas', '👥 Actuación', (p.analisisIA || p.resumenIA) ? '🤖 Informe IA' : '', rsTieneVideos(p) ? '🎬 Resumen' : '', temporada.actaVisor ? '📄 Acta' : ''].filter(Boolean).join(' · ');
       const mes = mesDe(p);
       const sepMes = mes && mes !== mesPrevio ? `<div class="hp-mes">${mes}</div>` : '';
@@ -9724,7 +9735,6 @@
           ${golesMin}
           ${resumenFilaHTML(p)}
           ${cromoBtn}
-          ${snChipPartido(snCtx, p)}
           ${estadisticasPartidoHTML(temporada, p, snCtx, false)}
           ${actuacionPartidoHtml(temporada, p)}
           ${(() => { try { return quimicaPartidoHTML(temporada, p); } catch (e) { console.error('Química:', e); return ''; } })()}

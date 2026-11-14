@@ -1351,6 +1351,7 @@
   @media (prefers-reduced-motion: reduce) { #ddAviso.on, #ddAviso .dd-in { animation:none; } }
 </style>
 <script type="module">
+  // v244 (visor; app v247) · ⚽ Posesión en el acta PDF (barra del partido y por tramos), solo si el partido la tiene publicada.
   // v243 (visor; app v246) · ⚽ Posesión por muestreo: barra en Estadísticas del partido (con tramos) y en Último partido; solo los partidos que en la app se marcaron «Mostrar en el visor».
   // v242 (visor, sin cambios en la app) · 🍀 Suerte y 📈 Nivel de cada partido como chips en la tarjeta del historial (Temporada → Partidos), como en la app; ya no se repiten dentro al abrir.
   // v241 (visor; app v242) · 📷 Fotos de los niños en GitHub: plantilla_fotos/<id> trae { foto: miniatura, url: foto buena en la carpeta fotos/ }; el visor usa la url (mismo sitio que el visor, así también vale para el resumen y el acta) y guarda la miniatura en f.mini.
@@ -3853,6 +3854,33 @@
           ], { columnStyles: { 0: { halign: 'left', fontStyle: 'bold' } } });
           font('italic', 7); color(ACTA_GRIS); doc.text('El detalle por partes se guarda desde la v139.', M, y + 2); y += 4;
       }
+      // v246 · ⚽ posesión por muestreo (solo si el partido la tiene: los del delegado no la traen)
+      try {
+          const z = p.posesion, pv = z ? (z.aj != null ? z.aj : (z.v != null ? z.v : z.med)) : null;
+          if (pv != null) {
+              titulo('POSESIÓN (medida por muestreo)');
+              const ms = String(z.m || '').split(',').filter(Boolean).map(x => ({ s: parseInt(x, 10), v: x.slice(-1) })).filter(x => !isNaN(x.s) && x.v !== 'N');
+              const tramos = [[0, 12], [12, 24], [24, 35], [35, 47], [47, 59], [59, 999]].map(([a, b]) => {
+                  const xs = ms.filter(x => x.s >= a * 60 && x.s < b * 60), hh = xs.filter(x => x.v === 'H').length;
+                  return { lab: b === 999 ? `De ${a}' al final` : `De ${a}' a ${b}'`, n: xs.length, p: xs.length ? hh / xs.length : null };
+              });
+              const barraP = (label, v, fuerte) => {
+                  sitio(7); font(fuerte ? 'bold' : 'normal', 8); color(ACTA_TINTA); doc.text(actaTxt(label), M, y + 3.6);
+                  const x0 = M + 38, w = CW - 38, wn = Math.max(0, Math.min(1, v)) * w;
+                  fill(ACTA_ROJO); doc.rect(x0, y, wn, 5, 'F'); fill(ACTA_AZUL); doc.rect(x0 + wn, y, w - wn, 5, 'F');
+                  font('bold', 7.5); doc.setTextColor(255, 255, 255);
+                  if (wn > 9) doc.text(`${Math.round(v * 100)} %`, x0 + 2, y + 3.6);
+                  if (w - wn > 9) doc.text(`${Math.round((1 - v) * 100)} %`, x0 + w - 2, y + 3.6, { align: 'right' });
+                  y += 7;
+              };
+              barraP('Partido', pv / 100, true);
+              const conTramos = tramos.filter(f => f.n >= 3);
+              if (conTramos.length >= 2) conTramos.forEach(f => barraP(f.lab, f.p));
+              font('normal', 6.5); color(ACTA_GRIS);
+              doc.text(actaTxt(`Cada ${z.ritmo || 30} s se apuntó de quién era el balón (${z.n} fotos, margen de unos ${z.mg} puntos).${conTramos.length >= 2 ? ' Por tramos hay pocas fotos: orientativo.' : ''}`), M, y + 1);
+              y += 5;
+          }
+      } catch (e) { console.error('Posesión (acta):', e); }
       if (D.cuota) {
           titulo('CUOTA DE TIROS (parte de los tiros del partido que son del Hergar)');
           const barra = (label, v) => {

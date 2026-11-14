@@ -1351,6 +1351,7 @@
   @media (prefers-reduced-motion: reduce) { #ddAviso.on, #ddAviso .dd-in { animation:none; } }
 </style>
 <script type="module">
+  // v243 (visor; app v246) · ⚽ Posesión por muestreo: barra en Estadísticas del partido (con tramos) y en Último partido; solo los partidos que en la app se marcaron «Mostrar en el visor».
   // v242 (visor, sin cambios en la app) · 🍀 Suerte y 📈 Nivel de cada partido como chips en la tarjeta del historial (Temporada → Partidos), como en la app; ya no se repiten dentro al abrir.
   // v241 (visor; app v242) · 📷 Fotos de los niños en GitHub: plantilla_fotos/<id> trae { foto: miniatura, url: foto buena en la carpeta fotos/ }; el visor usa la url (mismo sitio que el visor, así también vale para el resumen y el acta) y guarda la miniatura en f.mini.
   // v240 (visor; app v241) · 🔄 Polivalencia: un puesto o una línea cuenta con 35' o más en la temporada; polivalente = 3 puestos en 2 líneas, o 3 líneas. Etiqueta en «Dónde ha jugado» de la ficha y apartado «🔄 Los comodines» en Más análisis → Jugadores (ranking por líneas y luego puestos). En la app, premio «🔄 El comodín» de la vuelta.
@@ -3093,6 +3094,26 @@
     // Las barras HERGAR vs rival del «Último partido», para cualquier partido de la temporada, más paradas, acierto,
     // cuota de tiros, tiempo por marcador, tarjetas y la suerte/nivel de la v153. Los partidos cargados a mano
     // muestran solo lo que tienen (goles y tarjetas).
+    // v243 · ⚽ posesión por muestreo (solo llega si en la app se marcó «Mostrar en el visor»)
+    function posVisorHTML(p) {
+        const z = p && p.posesion; if (!z || z.v == null) return '';
+        const v = Math.max(0, Math.min(100, Math.round(Number(z.v) || 0)));
+        let h = epFila('Posesión', v, 100 - v, ' %');
+        const ms = String(z.m || '').split(',').filter(Boolean).map(x => ({ s: parseInt(x, 10), v: x.slice(-1) })).filter(x => !isNaN(x.s) && x.v !== 'N');
+        const cortes = [[0, 12], [12, 24], [24, 35], [35, 47], [47, 59], [59, 999]];
+        const filas = cortes.map(([a, b]) => {
+            const xs = ms.filter(x => x.s >= a * 60 && x.s < b * 60), hh = xs.filter(x => x.v === 'H').length;
+            return { lab: b === 999 ? a + "'-fin" : a + '-' + b + "'", n: xs.length, p: xs.length ? Math.round(hh * 100 / xs.length) : null };
+        });
+        if (filas.filter(f => f.n >= 3).length >= 2) {
+            h += `<details style="margin:-4px 0 10px;"><summary style="font-size:11px; font-weight:700; color:#f5a623; cursor:pointer;">⚽ Posesión por tramos</summary><div style="padding-top:6px;">`
+                + filas.map(f => `<div style="display:grid; grid-template-columns:52px 1fr 38px; gap:8px; align-items:center; margin-bottom:5px; font-size:11px;"><span style="color:#94a3b8;">${f.lab}</span>`
+                    + (f.n >= 3 ? `<div style="height:8px; border-radius:4px; background:var(--rv,#64748b); overflow:hidden;"><div style="height:100%; width:${f.p}%; background:rgb(180,20,56);"></div></div><b style="text-align:right; color:#e2e8f0;">${f.p} %</b>` : `<div style="height:8px;"></div><span style="text-align:right; color:#64748b;">—</span>`)
+                    + `</div>`).join('')
+                + `<div style="font-size:10px; color:#94a3b8; line-height:1.4;">Medida por muestreo: cada 30 s se apunta de quién es el balón. Por tramos hay pocas fotos, así que es orientativo.</div></div></details>`;
+        }
+        return h;
+    }
     function epFila(label, h, r, sufijo) {
         sufijo = sufijo || '';
         const tot = h + r;
@@ -3183,6 +3204,7 @@
             .filter(([, a, b]) => a + b > 0);
             h += `<div style="${typeof rvVars === 'function' ? rvVars(p.rival) : ''}">`; // v231 · color del rival
             h += `<div style="display:flex; justify-content:space-between; font-size:10.5px; font-weight:800; letter-spacing:.6px; margin-bottom:8px;"><span style="color:#ff5577;">HERGAR</span><span style="color:var(--rvt,#94a3b8);">${momEsc(String(p.rival || 'RIVAL').toUpperCase())}</span></div>`;
+            try { h += posVisorHTML(p); } catch (e) { console.error('Posesión:', e); } // v243
             h += filas.map(([l, a, b]) => epFila(l, a, b)).join('');
             const acH = tn ? Math.round(gl / tn * 100) : null, acR = tr ? Math.round(gr / tr * 100) : null;
             if (acH != null || acR != null) h += epFila('Acierto (goles / disparos)', acH ?? 0, acR ?? 0, ' %');
@@ -9366,6 +9388,7 @@
       ['Fueras de juego', n(m.fuerasJuegoNuestros), n(m.fuerasJuegoRival)], // v117
       ['Tarjetas', liveTarjNuestras(m), tarjRivalVisor(m)] // v220 · 🟨+🟥
     ].filter(([, h, r]) => h + r > 0);
+    try { const z = rsP && rsP.posesion; if (z && z.v != null) { const v = Math.max(0, Math.min(100, Math.round(Number(z.v) || 0))); filas.unshift(['Posesión (%)', v, 100 - v]); } } catch (e) {} // v243
     const totT = n(m.tirosNuestrosPuerta) + n(m.tirosNuestrosFuera);
     // destacados: los 3 mejores por impacto por 70' (con 10' o más)
     const minMVP = (reglasImpacto && reglasImpacto.minMinutosMVP) || 10;

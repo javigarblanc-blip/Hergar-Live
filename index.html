@@ -701,6 +701,8 @@
   .jf-nom { margin-top:2px; font-size:9px; font-weight:700; color:#fff; background:rgba(10,14,20,.72); padding:1px 5px; border-radius:5px; white-space:nowrap; max-width:64px; overflow:hidden; text-overflow:ellipsis; }
   .jf-ic { position:absolute; left:-7px; top:-6px; font-size:12px; line-height:1; filter:drop-shadow(0 1px 2px #000); }
   .jf-ic.d { left:auto; right:-7px; }
+  .jf-ic.alin-gol { display:inline-flex; align-items:center; gap:1px; left:-10px; top:-8px; }
+  .jf-ic.alin-gol b { font-family:'Montserrat',sans-serif; font-weight:900; font-size:10px; color:#0a0e14; background:#fff; border-radius:7px; min-width:13px; height:13px; padding:0 3px; display:inline-flex; align-items:center; justify-content:center; margin-left:-3px; }
   /* Historial de partidos en tarjetas */
   .hp-res { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; margin-bottom:6px; }
   .hp-res div { text-align:center; border-radius:10px; padding:7px 4px; background:rgba(255,255,255,.04); }
@@ -870,7 +872,8 @@
         <div id="informeAnalisisIA" style="display:none; font-size:12px; line-height:1.6; color:#cbd5e1; white-space:pre-wrap; margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,.06);"></div>
       </div>
       <div class="card" id="narracionCard" style="display:none;"></div>
-      <div class="card">
+      <div class="card" id="alineacionFinCard" style="display:none; cursor:pointer;" onclick="abrirAlineacionFinal()" role="button" aria-label="Ver la alineación del partido"></div>
+      <div class="card" id="campoCard">
         <div class="card-title" id="formacionTitulo">Formación en el campo</div>
         <div class="campo v211" id="campoContainer">
           <svg class="campo-lineas" viewBox="0 0 300 400" preserveAspectRatio="none" aria-hidden="true">
@@ -888,7 +891,7 @@
         <div class="card-title">🪑 Banquillo</div>
         <div id="banquilloPreviaLista" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
       </div>
-      <div class="card">
+      <div class="card" id="eventosCard">
         <div class="card-title">Últimos eventos</div>
         <div id="eventosLista"><div class="loader">Esperando datos del partido...</div></div>
       </div>
@@ -1356,6 +1359,7 @@
   @media (prefers-reduced-motion: reduce) { #ddAviso.on, #ddAviso .dd-in { animation:none; } }
 </style>
 <script type="module">
+  // v253 (visor, sin cambios en la app) · ⚽ Partido terminado: fuera el campo grande y los últimos eventos; tarjeta «👕 Alineación» que abre el once inicial y el final (fotos, goles con número, cambios). Con la convocatoria del siguiente vuelve el campo.
   // v252 (visor; app v253) · 📊 Al final se llama «Ranking Elo» (botón «📊 Ranking Elo», «puntos Elo»).
   // v251 (visor, sin cambios en la app) · 📊 El «Elo» pasa a llamarse «Ranking» en todo el visor (selector «🏆 Clasificación / 📊 Ranking», «Ranking tipo FIFA», «puntos Elo»); la palabra Elo queda solo en «ℹ️ Cómo se calcula».
   // v250 (visor, sin cambios en la app) · 📈 Liga → Clasif.: tocando un equipo en la tabla se abre su ficha (Elo, goles por partido, casa/fuera, últimos 5, contra el Hergar, goles entre los dos y rivales en común, y su campo).
@@ -1571,6 +1575,88 @@
        </div>`).join('') || '<div class="loader">Sin suplentes</div>';
     card.style.display = 'block';
   }
+
+  // ── v253 · Partido terminado: sin el campo grande ni los últimos eventos; tarjeta «👕 Alineación» que abre
+  //   una hoja con el once inicial y el once final (fotos, goles con número y cambios). Con la convocatoria del
+  //   siguiente partido (previa) vuelve el campo de siempre.
+  let alinDatos = null, alinModo = 'ini';
+  function alinPartidoDatos(m) {
+    const t = ultimaTemporada, out = { ini: null, fin: null, formIni: m.formacion || '4-3-3', formFin: m.formacion || '4-3-3', cambios: [], goles: {}, jug: {} };
+    Object.entries(m.jugadores || {}).forEach(([id, j]) => { if (!j) return; out.jug[String(id)] = { nom: String(j.name || '').split(' ')[0], dorsal: j.dorsal }; if ((Number(j.goles) || 0) > 0) out.goles[String(id)] = Number(j.goles); });
+    out.fin = (m.onFieldIds || []).map(String);
+    let p = null;
+    try { const i = indicePartidoDeMatch(m); p = i >= 0 ? t.partidos[i] : null; } catch (e) {}
+    if (p && Array.isArray(p.titulares) && p.titulares.length === 11) {
+      const tit = p.titulares.map(String), form = p.formacion || out.formIni;
+      let filas = [], dur = 70; try { filas = proFilas(t, p); dur = mmDuracion(p, filas); } catch (e) {}
+      filas.forEach(f => { const id = String(f.j.id); out.jug[id] = out.jug[id] || { nom: String(f.j.name || '').split(' ')[0], dorsal: f.j.dorsal }; const g = Number(f.h.goles) || 0; if (g > 0) out.goles[id] = g; else if (!(id in out.goles)) {} });
+      out.ini = tit; out.formIni = form;
+      try { const T = qmTramosPartido(t, p, tit, form, dur, filas); if (T.length) { const u = T[T.length - 1]; out.fin = u.ids.map(v => v == null ? null : String(v)); out.formFin = u.form || form; } } catch (e) { console.error('Alineación · tramos:', e); }
+      try { out.cambios = qmCambios(t, p).map(c => ({ min: c.min, entra: c.entra && String(c.entra), sale: c.sale && String(c.sale) })); } catch (e) {}
+    }
+    if (!out.fin || !out.fin.filter(Boolean).length) return null;
+    return out;
+  }
+  function pintarAlineacionFinal(m, previa) {
+    const card = document.getElementById('alineacionFinCard'), campo = document.getElementById('campoCard'), ev = document.getElementById('eventosCard');
+    if (!card) return;
+    const terminado = !!(m && m.matchFinished && !m.matchRunning && !previa);
+    alinDatos = terminado ? alinPartidoDatos(m) : null;
+    if (campo) campo.style.display = terminado && alinDatos ? 'none' : '';
+    if (ev) ev.style.display = terminado ? 'none' : '';
+    if (!alinDatos) { card.style.display = 'none'; return; }
+    const nC = alinDatos.cambios.length;
+    card.innerHTML = `<div style="display:flex; align-items:center; gap:12px;"><div style="font-size:26px;">👕</div>
+      <div style="flex:1; min-width:0;"><div style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:14px; color:#e2e8f0;">Alineación</div>
+      <div style="font-size:11.5px; color:#94a3b8;">${alinDatos.ini ? `Once inicial y final${nC ? ' · ' + nC + (nC === 1 ? ' cambio' : ' cambios') : ''}` : 'Cómo acabó en el campo'}</div></div>
+      <div style="color:#f5a623; font-weight:800; font-size:13px;">Ver ›</div></div>`;
+    card.style.display = '';
+  }
+  function alinCampoHTML(D, ids, form, modo) {
+    const co = COORDENADAS_FORMACIONES[form] || COORDENADAS_FORMACIONES['4-3-3'];
+    const ini = D.ini || [], fin = D.fin || [];
+    const js = ids.map((id, k) => {
+      const c = co[k]; if (!id || !c) return '';
+      const j = D.jug[id] || { nom: '¿?', dorsal: '' }, foto = fotoNinoV(id), g = D.goles[id] || 0;
+      const sale = modo === 'ini' && D.ini && !fin.includes(id), entra = modo === 'fin' && D.ini && !ini.includes(id);
+      return `<div class="jf-wrap${k === 0 ? ' gk' : ''}" style="left:${c.x}%; top:${c.y}%;${sale ? ' opacity:.5;' : ''}">
+        <div class="jf-foto"${entra ? ' style="border-color:#5dade2; box-shadow:0 0 0 2px #5dade2;"' : ''}>${foto ? `<img src="${foto}" alt="">` : escHtml(j.dorsal ?? '')}${g ? `<span class="jf-ic alin-gol">⚽<b>${g}</b></span>` : ''}</div>
+        ${foto ? `<span class="jf-dor">${escHtml(j.dorsal ?? '')}</span>` : ''}
+        <div class="jf-nom">${escHtml(j.nom)}</div></div>`;
+    }).join('');
+    return `<div class="campo v211" style="margin-top:6px;"><svg class="campo-lineas" viewBox="0 0 300 400" preserveAspectRatio="none" aria-hidden="true">
+        <g fill="none" stroke="rgba(255,255,255,.26)" stroke-width="1.5" vector-effect="non-scaling-stroke">
+          <rect x="8" y="8" width="284" height="384" rx="3"/><line x1="8" y1="200" x2="292" y2="200"/><circle cx="150" cy="200" r="34"/>
+          <rect x="80" y="8" width="140" height="56"/><rect x="118" y="8" width="64" height="20"/><path d="M122 64a34 34 0 0 0 56 0"/>
+          <rect x="80" y="336" width="140" height="56"/><rect x="118" y="372" width="64" height="20"/><path d="M122 336a34 34 0 0 1 56 0"/></g></svg>${js}</div>`;
+  }
+  function alinPintarHoja() {
+    const D = alinDatos, caja = document.getElementById('alinCaja'); if (!D || !caja) return;
+    const m = ultimoMatchData || {}, modo = D.ini ? alinModo : 'fin';
+    const nom = id => escHtml((D.jug[id] || {}).nom || '¿?');
+    const sel = D.ini ? `<div style="display:flex; background:rgba(0,0,0,.25); border-radius:9px; padding:3px; margin:10px 0 4px;"><button type="button" onclick="alinVer('ini')" class="elo-evo-btn${modo === 'ini' ? ' on' : ''}">Once inicial</button><button type="button" onclick="alinVer('fin')" class="elo-evo-btn${modo === 'fin' ? ' on' : ''}">Once final</button></div>` : '';
+    const ley = modo === 'ini' ? (D.ini && D.ini.some(id => id && !D.fin.includes(id)) ? 'Atenuados, los que luego fueron cambiados · ⚽ goles' : '⚽ goles')
+      : (D.ini ? '<span style="display:inline-block; width:10px; height:10px; border-radius:50%; border:2px solid #5dade2; vertical-align:-2px;"></span> Entró desde el banquillo · ⚽ goles' : '⚽ goles');
+    const camb = D.cambios.length ? `<div style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:11px; color:#cbd5e1; letter-spacing:.6px; margin:14px 0 4px;">CAMBIOS</div>` + D.cambios.map(c => `<div style="display:flex; gap:10px; font-size:12.5px; color:#e2e8f0; padding:6px 0; border-top:1px solid rgba(255,255,255,.06);"><span style="color:#94a3b8; min-width:28px;">${Math.round(c.min)}'</span><span>🔁 Entra <b>${nom(c.entra)}</b>${c.sale ? ` por ${nom(c.sale)}` : ''}</span></div>`).join('') : '';
+    caja.innerHTML = `<div style="width:40px; height:4px; border-radius:2px; background:rgba(255,255,255,.18); margin:0 auto 12px;"></div>
+      <div style="display:flex; align-items:center; gap:10px;"><div style="flex:1; font-family:'Montserrat',sans-serif; font-weight:800; font-size:15px; color:#e2e8f0;">👕 Alineación · Hergar ${Number(m.golesLocal) || 0}–${Number(m.golesRival) || 0}</div>
+        <button type="button" onclick="cerrarAlineacionFinal()" aria-label="Cerrar" style="background:rgba(255,255,255,.08); border:none; color:#e2e8f0; width:34px; height:34px; border-radius:50%; font-size:16px; cursor:pointer;">✕</button></div>
+      ${sel}${alinCampoHTML(D, modo === 'ini' ? D.ini : D.fin, modo === 'ini' ? D.formIni : D.formFin, modo)}
+      <div style="font-size:10.5px; color:#94a3b8; margin-top:6px;">${ley}</div>${camb}`;
+  }
+  window.alinVer = (m) => { alinModo = m; alinPintarHoja(); };
+  window.abrirAlineacionFinal = () => {
+    if (!alinDatos) return;
+    let M = document.getElementById('alinModal');
+    if (!M) {
+      document.body.insertAdjacentHTML('beforeend', `<div id="alinModal" role="dialog" aria-modal="true" aria-label="Alineación del partido" onclick="if(event.target===this)cerrarAlineacionFinal()" style="display:none; position:fixed; inset:0; z-index:960; background:rgba(0,0,0,.8); align-items:flex-end; justify-content:center; overscroll-behavior:contain;">
+        <div id="alinCaja" style="background:linear-gradient(145deg,#111827,#0f172a); border-radius:20px 20px 0 0; padding:16px 16px calc(20px + env(safe-area-inset-bottom)); max-width:480px; width:100%; border:1px solid rgba(255,255,255,.08); border-bottom:none; margin-top:auto; max-height:92vh; max-height:92dvh; overflow-y:auto; overscroll-behavior:contain;"></div></div>`);
+      M = document.getElementById('alinModal');
+    }
+    alinModo = 'ini'; alinPintarHoja();
+    M.style.display = 'flex'; document.getElementById('alinCaja').scrollTop = 0; document.body.style.overflow = 'hidden';
+  };
+  window.cerrarAlineacionFinal = () => { const M = document.getElementById('alinModal'); if (M) M.style.display = 'none'; document.body.style.overflow = ''; };
 
   function pintarEventos(matchData) {
     const cont = document.getElementById('eventosLista');
@@ -7147,6 +7233,7 @@
     pintarCampo(matchData);
     pintarBanquilloPrevia(matchData, previa);
     pintarEventos(matchData);
+    try { pintarAlineacionFinal(matchData, previa); } catch (e) { console.error('Alineación del partido:', e); } // v253
     try { pintarNarracion(matchData); } catch (e) { console.error('Minuto a minuto:', e); } // v193
     pintarStatsGrid(matchData);
     try { pintarWP(matchData); } catch (e) { console.error('Probabilidad en directo:', e); }

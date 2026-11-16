@@ -1359,6 +1359,7 @@
   @media (prefers-reduced-motion: reduce) { #ddAviso.on, #ddAviso .dd-in { animation:none; } }
 </style>
 <script type="module">
+  // v255 (visor) · 👕 La Alineación va siempre pegada al resumen y los récords del último partido: arriba los 3 primeros días y luego, con ellos, debajo de Próximo partido.
   // v254 (visor) · 👕 La tarjeta Alineación va justo después de lo del partido anterior, antes de Próximo partido.
   // v253 (visor, sin cambios en la app) · ⚽ Partido terminado: fuera el campo grande y los últimos eventos; tarjeta «👕 Alineación» que abre el once inicial y el final (fotos, goles con número, cambios). Con la convocatoria del siguiente vuelve el campo.
   // v252 (visor; app v253) · 📊 Al final se llama «Ranking Elo» (botón «📊 Ranking Elo», «puntos Elo»).
@@ -9897,6 +9898,9 @@
     if (!rec || !res || res.parentNode !== rec.parentNode) return;
     const tras = (inf && inf.parentNode === rec.parentNode && inf.style.display !== 'none') ? inf : res;
     if (tras.nextSibling !== rec) tras.parentNode.insertBefore(rec, tras.nextSibling);
+    // v255 · la tarjeta 👕 Alineación va pegada detrás de los récords (sube y baja con el resumen del partido)
+    const al = document.getElementById('alineacionFinCard');
+    if (al && al.parentNode === rec.parentNode && rec.nextSibling !== al) rec.parentNode.insertBefore(al, rec.nextSibling);
   }
 
   function pintarInformeIA(matchData) { pintarInformeIABase(matchData); try { colocarRecordsHoy(); } catch (e) {} } // v162

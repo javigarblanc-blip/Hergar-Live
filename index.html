@@ -1359,6 +1359,7 @@
   @media (prefers-reduced-motion: reduce) { #ddAviso.on, #ddAviso .dd-in { animation:none; } }
 </style>
 <script type="module">
+  // v258 (visor) · 📊 Último partido con los escudos de los dos equipos encima de los nombres y el marcador más grande.
   // v257 (visor) · 👕 Alineación (once inicial y final, goles y cambios) también en cada partido de Temporada → Partidos.
   // v256 (visor) · Mientras el último partido sale arriba en Partido (3 primeros días) y ya está publicado el próximo, la cabecera grande del próximo partido se cambia por la fina (escudo, HERGAR LIVE y 📺 TV); cuando el próximo sube, vuelve la grande.
   // v255 (visor) · 👕 La Alineación va siempre pegada al resumen y los récords del último partido: arriba los 3 primeros días y luego, con ellos, debajo de Próximo partido.
@@ -9884,10 +9885,10 @@
         <span style="font-size:11px; background:rgba(180,20,56,.18); color:#ff5577; border-radius:6px; padding:3px 9px; font-weight:700;">📊 Último partido</span>
         <span style="font-size:11px; color:#8da499;">${escHtml(fechaTxt)}</span>
       </div>
-      <div style="display:flex; align-items:center; justify-content:center; gap:12px; margin-bottom:4px;">
-        <span style="font-size:13px; font-weight:800; color:#ff5577;">HERGAR</span>
-        <span style="font-family:'Montserrat',sans-serif; font-size:28px; font-weight:900; color:#fff;">${gl} – ${gr}</span>
-        <span style="font-size:13px; font-weight:800; color:#94a3b8;">${rival}</span>
+      <div style="display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:10px; margin:2px 0 6px;">
+        <div style="display:flex; flex-direction:column; align-items:center; gap:6px; min-width:0;"><img src="${ESCUDO_HERGAR_SRC}" alt="" style="width:52px; height:52px; border-radius:50%; object-fit:cover; background:#fff; box-shadow:0 0 0 2px rgba(255,85,119,.45);"><span style="font-size:12px; font-weight:800; color:#ff5577; letter-spacing:.5px;">HERGAR</span></div>
+        <span style="font-family:'Montserrat',sans-serif; font-size:34px; font-weight:900; color:#fff; white-space:nowrap;">${gl} – ${gr}</span>
+        <div style="display:flex; flex-direction:column; align-items:center; gap:6px; min-width:0;">${(() => { try { return escudoEquipoVisorHTML(equipoLigaPorNombre(m.rival), 52, m.rival); } catch (e) { return ''; } })()}<span style="font-size:12px; font-weight:800; color:#94a3b8; letter-spacing:.5px; max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${rival}</span></div>
       </div>
       <div style="text-align:center; font-size:11px; font-weight:800; letter-spacing:1px; color:${res[1]}; margin-bottom:10px;">${res[0]}</div>
       ${gH ? `<div style="font-size:12px; color:#cbd5e1; line-height:1.5; margin-bottom:4px;">⚽ ${gH}</div>` : ''}

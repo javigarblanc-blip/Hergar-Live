@@ -1226,7 +1226,7 @@
       <div id="subLigaClasif" class="sub-panel active">
         <div class="card">
           <div class="card-title">Clasificación</div>
-          <div id="ligaClasifSel" style="display:none; background:rgba(0,0,0,.25); border-radius:9px; padding:3px; margin-bottom:10px;"><button type="button" id="ligaClasifBtnPts" onclick="ligaClasifModo('pts')" class="elo-evo-btn on">🏆 Clasificación</button><button type="button" id="ligaClasifBtnElo" onclick="ligaClasifModo('elo')" class="elo-evo-btn">📊 Ranking</button></div>
+          <div id="ligaClasifSel" style="display:none; background:rgba(0,0,0,.25); border-radius:9px; padding:3px; margin-bottom:10px;"><button type="button" id="ligaClasifBtnPts" onclick="ligaClasifModo('pts')" class="elo-evo-btn on">🏆 Clasificación</button><button type="button" id="ligaClasifBtnElo" onclick="ligaClasifModo('elo')" class="elo-evo-btn">📊 Ranking Elo</button></div>
           <div id="ligaClasifElo" style="display:none;"></div>
           <div id="ligaClasifPuntos" style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
             <table class="liga-clasif">
@@ -1356,7 +1356,8 @@
   @media (prefers-reduced-motion: reduce) { #ddAviso.on, #ddAviso .dd-in { animation:none; } }
 </style>
 <script type="module">
-  // v251 (visor, sin cambios en la app) · 📊 El «Elo» pasa a llamarse «Ranking» en todo el visor (selector «🏆 Clasificación / 📊 Ranking», «Ranking tipo FIFA», «puntos de ranking»); la palabra Elo queda solo en «ℹ️ Cómo se calcula».
+  // v252 (visor; app v253) · 📊 Al final se llama «Ranking Elo» (botón «📊 Ranking Elo», «puntos Elo»).
+  // v251 (visor, sin cambios en la app) · 📊 El «Elo» pasa a llamarse «Ranking» en todo el visor (selector «🏆 Clasificación / 📊 Ranking», «Ranking tipo FIFA», «puntos Elo»); la palabra Elo queda solo en «ℹ️ Cómo se calcula».
   // v250 (visor, sin cambios en la app) · 📈 Liga → Clasif.: tocando un equipo en la tabla se abre su ficha (Elo, goles por partido, casa/fuera, últimos 5, contra el Hergar, goles entre los dos y rivales en común, y su campo).
   // v249 (visor, sin cambios en la app) · 📈 Liga → Clasif.: selector «🏆 Puntos / 📊 Elo» arriba de la tabla (el ranking Elo y su gráfico ya no van escondidos en un desplegable) y fuera 🧭 Dificultad del calendario (salía que el líder había tenido el calendario más fácil).
   // v248 (visor, sin cambios en la app) · 📊 Ranking Elo: evolución jornada a jornada de todos los equipos (Hergar en rojo; tocando un equipo del ranking se destaca su línea y la pantalla baja al gráfico; Puntos Elo / Puesto).
@@ -2786,7 +2787,7 @@
       if (!E || !E.jugados) return '';
       const esc = momEsc;
       const fila = (k, nombre, me, sub, valor, color, peque, attrs) => `<div ${attrs || ''} style="display:grid; grid-template-columns:22px 1fr auto; gap:8px; align-items:center; padding:7px ${me ? '4px' : '0'}; border-top:1px solid rgba(255,255,255,.05); font-size:12.5px;${me ? ' background:rgba(180,20,56,.18); border-radius:8px;' : ''}"><div style="font-family:'Montserrat',sans-serif; font-weight:800; color:#94a3b8; text-align:center;">${k}</div><div style="min-width:0; color:#e2e8f0;">${esc(nombre)}<div style="font-size:10.5px; color:#94a3b8;">${sub}</div></div><div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:15px; text-align:right; color:${color};">${valor}<div style="font-size:9.5px; font-weight:600; color:#94a3b8; font-family:Inter,sans-serif;">${peque}</div></div></div>`;
-      const eloFilas = E.equipos.map((x, k) => fila(k + 1, x.e.nombre, !!x.e.esHergar, `última jornada: <span style="color:${x.ult >= 0 ? '#2ed573' : '#ff6b7a'};">${proFmt(x.ult, 0)}</span>`, Math.round(x.elo), '#e2e8f0', 'puntos de ranking', x.e.esHergar ? '' : `id="eloFila_${x.i}" onclick="eloEvoSel(${x.i})" class="elo-fila-tap"`)).join('');
+      const eloFilas = E.equipos.map((x, k) => fila(k + 1, x.e.nombre, !!x.e.esHergar, `última jornada: <span style="color:${x.ult >= 0 ? '#2ed573' : '#ff6b7a'};">${proFmt(x.ult, 0)}</span>`, Math.round(x.elo), '#e2e8f0', 'puntos Elo', x.e.esHergar ? '' : `id="eloFila_${x.i}" onclick="eloEvoSel(${x.i})" class="elo-fila-tap"`)).join('');
       // v248: evolución de todos los equipos (toca un equipo del ranking para destacarlo)
       let graf = '';
       if (parte === 'elo' && E.histT.length > 2 && E.H >= 0) {
@@ -11488,7 +11489,7 @@
 
   // 🆚 Según el rival: los rivales de la Liga en tres grupos por su Elo actual comparado con el nuestro
   const SR_UMBRAL = 50;
-  const SR_GRUPOS = [['arriba', 'De los de arriba', `${SR_UMBRAL}+ puntos de ranking por encima del nuestro`], ['parecido', 'De nuestro nivel', `a menos de ${SR_UMBRAL} puntos de ranking`], ['abajo', 'De los de abajo', `${SR_UMBRAL}+ puntos de ranking por debajo`]];
+  const SR_GRUPOS = [['arriba', 'De los de arriba', `${SR_UMBRAL}+ puntos Elo por encima del nuestro`], ['parecido', 'De nuestro nivel', `a menos de ${SR_UMBRAL} puntos Elo`], ['abajo', 'De los de abajo', `${SR_UMBRAL}+ puntos Elo por debajo`]];
   function srNiveles(liga) {
     const E = eloLiga(liga);
     if (!E || !E.jugados) return null;
@@ -11511,7 +11512,7 @@
     const ps = (t && t.partidos) || [], niv = ps.map(p => { try { return N.nivel(proRivalLiga(liga, p).i); } catch (e) { return null; } });
     if (!niv.some(Boolean)) return '';
     const G = mgGoles(t)[eq];
-    let h = gzTit(eq === 'F' ? '🆚 CÓMO MARCAMOS SEGÚN EL RIVAL' : '🆚 CÓMO NOS MARCAN SEGÚN EL RIVAL') + `<div style="font-size:10.5px; color:#94a3b8; margin-bottom:2px;">Rivales de la Liga agrupados por sus puntos de ranking de ahora, comparados con los nuestros (${Math.round(N.eloH)}).</div>`;
+    let h = gzTit(eq === 'F' ? '🆚 CÓMO MARCAMOS SEGÚN EL RIVAL' : '🆚 CÓMO NOS MARCAN SEGÚN EL RIVAL') + `<div style="font-size:10.5px; color:#94a3b8; margin-bottom:2px;">Rivales de la Liga agrupados por sus puntos Elo de ahora, comparados con los nuestros (${Math.round(N.eloH)}).</div>`;
     const usados = new Set();
     SR_GRUPOS.forEach(([k, nom, sub]) => {
       const idx = new Set(ps.map((p, i) => niv[i] === k ? i : -1).filter(i => i >= 0));
@@ -13493,8 +13494,8 @@
     const casa = gep(jugados.filter(p => p.l === i)), fuera = gep(jugados.filter(p => p.v === i));
     const fmt = v => v.toFixed(1).replace('.', ',');
     // Elo
-    let eloTxt = '—', eloSub = 'Puntos de ranking', eloUlt = '';
-    try { const El = eloLiga(liga); if (El) { const k = El.equipos.findIndex(x => x.i === i); if (k >= 0) { const x = El.equipos[k]; eloTxt = Math.round(x.elo); eloSub = `Puntos de ranking · ${k + 1}.º`; if (x.ult) eloUlt = ` <span style="font-size:12px; color:${x.ult >= 0 ? '#2ed573' : '#ff6b7a'};">${proFmt(x.ult, 0)}</span>`; } } } catch (e) {}
+    let eloTxt = '—', eloSub = 'Ranking Elo', eloUlt = '';
+    try { const El = eloLiga(liga); if (El) { const k = El.equipos.findIndex(x => x.i === i); if (k >= 0) { const x = El.equipos[k]; eloTxt = Math.round(x.elo); eloSub = `Ranking Elo · ${k + 1}.º`; if (x.ult) eloUlt = ` <span style="font-size:12px; color:${x.ult >= 0 ? '#2ed573' : '#ff6b7a'};">${proFmt(x.ult, 0)}</span>`; } } } catch (e) {}
     const caja = (v, l) => `<div style="background:rgba(255,255,255,.04); border-radius:10px; padding:9px 10px;"><div style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:17px; color:#e2e8f0;">${v}</div><div style="font-size:10.5px; color:#94a3b8; margin-top:1px;">${l}</div></div>`;
     const tit = t => `<div style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:11px; color:#cbd5e1; letter-spacing:.6px; margin:14px 0 6px;">${t}</div>`;
     const nom = k => k === H ? 'Hergar' : E(liga.equipos[k].nombre);

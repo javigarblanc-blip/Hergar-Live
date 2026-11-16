@@ -1351,6 +1351,7 @@
   @media (prefers-reduced-motion: reduce) { #ddAviso.on, #ddAviso .dd-in { animation:none; } }
 </style>
 <script type="module">
+  // v246 (visor, sin cambios en la app) · 🎬 «Tu vuelta»: resumen de cada niño en seis pantallas (lo jugado, su mejor día, estilo, socio por química y su premio o récord); sale en la ficha y en «Mi hijo» cuando la app publica los premios de esa vuelta.
   // v245 (visor, sin cambios en la app) · 🔗 Química: tocando la barra de un partido se ven sus enlaces en el campo (como en Temporada → Partidos).
   // v244 (visor; app v247) · ⚽ Posesión en el acta PDF (barra del partido y por tramos), solo si el partido la tiene publicada.
   // v243 (visor; app v246) · ⚽ Posesión por muestreo: barra en Estadísticas del partido (con tramos) y en Último partido; solo los partidos que en la app se marcaron «Mostrar en el visor».
@@ -5913,6 +5914,7 @@
     const v = snap.val();
     pmLista = Array.isArray(v) ? v.filter(Boolean) : (v && typeof v === 'object' ? Object.values(v).filter(Boolean) : []);
     try { pmPintarEntradas(); } catch (e) { console.error('Premios:', e); }
+    try { mhPintarPagina(); } catch (e) {} // v246: el botón «Tu vuelta» de «Mi hijo»
     if (pmAbrirAlCargar && pmUltimo()) { pmAbrirAlCargar = false; setTimeout(() => { try { pmAbrir(); } catch (e) {} }, 600); }
   });
 
@@ -5995,6 +5997,177 @@
     box.querySelector('.pm-sl-box').innerHTML = ''; document.body.style.overflow = '';
   };
   window.pmToque = function (d) { pmIr(pmPos + d); };
+
+  // ── v246 · 🎬 «TU VUELTA»: el resumen de cada niño al publicarse los premios de una vuelta ──
+  // Seis pantallas como las historias de los premios (mismo visor de historias). Solo cosas suyas y en positivo,
+  // sin compararlo con nadie. Sale del mismo paquete que los premios: sin premios publicados de esa vuelta no existe.
+  const TV_ROJO = 'rgb(180,20,56)', TV_OSC = 'linear-gradient(170deg,#141b2b 0%,#0a0e14 60%,#000 100%)';
+  function tvRango(t, u) {
+    const n = ((t && t.partidos) || []).length;
+    const desde = Math.max(0, Math.min(n, Number(u.desde) || 0)), hasta = Math.max(desde, Math.min(n, u.hasta != null ? Number(u.hasta) : n));
+    return { desde, hasta };
+  }
+  function tvFilas(t, u, j) { // sus partidos jugados en la vuelta
+    const R = tvRango(t, u), out = [];
+    for (let i = R.desde; i < R.hasta; i++) { const p = t.partidos[i], h = p ? evoHistDe(j, p) : null; if (h && (Number(h.mins) || 0) > 0) out.push({ i, p, h }); }
+    return out;
+  }
+  function tvPuede(t, u, j) { return !!(t && u && j && !j.invitado && tvFilas(t, u, j).length > 0); }
+  function tvSocio(t, u, j) { // con quien más minutos ha jugado al lado en la pizarra (los de campo, sin contar al portero)
+    try {
+      const R = qmTemporada(t); if (!R) return null;
+      const rg = tvRango(t, u), id = String(j.id), vv = {};
+      for (let k = rg.desde; k < rg.hasta; k++) Object.entries((R.porVecinos && R.porVecinos[k]) || {}).forEach(([c, m]) => { vv[c] = (vv[c] || 0) + m; });
+      const yoPortero = posicionTemporada(j) === 'portero';
+      let mejor = null;
+      Object.entries(vv).forEach(([c, m]) => {
+        const [a, b] = c.split('|'); if (a !== id && b !== id) return;
+        const o = (t.jugadores || {})[a === id ? b : a]; if (!o) return;
+        if (!yoPortero && posicionTemporada(o) === 'portero') return;
+        if (!mejor || m > mejor.m) mejor = { o, m };
+      });
+      if (!mejor || mejor.m < 35) return null;
+      let rodada = false;
+      try { rodada = (pgParejas(R, rg.desde, rg.hasta).socios[id] || []).some(x => String(x.id) === String(mejor.o.id)); } catch (e) {}
+      return { o: mejor.o, m: Math.round(mejor.m), rodada };
+    } catch (e) { console.error('Tu vuelta · socio:', e); return null; }
+  }
+  function tvSlides(t, u, j) {
+    const id = String(j.id), nom = escHtml(estNom(j)), F = tvFilas(t, u, j), S = [];
+    const vuelta = escHtml(u.vuelta === 'T' ? 'temporada' : (u.nombre || 'vuelta')), VUELTA = vuelta.toUpperCase();
+    const kick = (txt, col) => `<div class="pm-kick" style="color:${col || '#ff8fa3'};">${txt}</div>`;
+    const sigue = `<div style="margin-top:auto; text-align:center; font-size:12px; color:#cbd5e1;">Toca para seguir</div>`;
+    const caja = (h, st) => `<div style="background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.1); border-radius:14px; padding:14px; ${st || ''}">${h}</div>`;
+    const foto = (jid, dor, px, borde) => `<div class="pm-foto" style="width:${px}px; height:${px}px; border-color:${borde || '#fff'}; font-size:${Math.round(px / 3.2)}px;">${pmFoto(jid, dor)}</div>`;
+    // 1 · Portada
+    const rg = tvRango(t, u);
+    S.push({ dur: 6000, fondo: TV_ROJO, html: `<div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; text-align:center;">
+        ${foto(id, j.dorsal ?? '', 180)}
+        <div class="m" style="font-weight:900; font-size:19px; letter-spacing:2px; color:#ffd0d9;">#${escHtml(j.dorsal ?? '')}</div>
+        <div class="m" style="font-weight:900; font-size:${nom.length > 9 ? 38 : 50}px; line-height:1; color:#fff;">${nom.toUpperCase()}</div>
+        <div class="m" style="font-weight:800; font-size:21px; letter-spacing:1px; color:#fff;">TU ${VUELTA}</div>
+        <div style="font-size:13.5px; color:#ffe3e8;">C.D. Hergar · J${rg.desde + 1}–J${rg.hasta}</div></div>${sigue}` });
+    // 2 · Lo que has jugado
+    const mins = F.reduce((s, x) => s + (Number(x.h.mins) || 0), 0);
+    const conTit = F.filter(x => Array.isArray(x.p.titulares) && x.p.titulares.length), tit = conTit.filter(x => x.p.titulares.map(String).includes(id)).length;
+    const mpu = {}, mli = {};
+    F.forEach(x => { Object.entries(x.h.puestos || {}).forEach(([k, m]) => { mpu[k] = (mpu[k] || 0) + (Number(m) || 0); }); Object.entries(x.h.lineas || {}).forEach(([k, m]) => { if (k !== 'suplente') mli[k] = (mli[k] || 0) + (Number(m) || 0); }); });
+    const pus = PUESTOS_ORDEN_V.filter(k => (mpu[k] || 0) > 0).sort((a, b) => mpu[b] - mpu[a]);
+    const goles = F.reduce((s, x) => s + (Number(x.h.goles) || 0), 0), asis = F.reduce((s, x) => s + (Number(x.h.asistencias) || 0), 0);
+    const tiles = [[F.length, F.length === 1 ? 'partido jugado' : 'partidos jugados']];
+    if (tit > 0) tiles.push([tit, tit === 1 ? 'vez titular' : 'veces titular']);
+    if (pus.length > 1) tiles.push([pus.length, 'puestos distintos']);
+    if (pus.length) tiles.push([pus[0], 'donde más has jugado']);
+    else { const li = Object.keys(mli).sort((a, b) => mli[b] - mli[a])[0]; if (li) tiles.push([LINEA_CORTA_V[li] || li, 'donde más has jugado']); }
+    if (tiles.length < 4 && goles > 0) tiles.push([goles, goles === 1 ? 'gol' : 'goles']);
+    if (tiles.length < 4 && asis > 0) tiles.push([asis, asis === 1 ? 'asistencia' : 'asistencias']);
+    const horas = mins >= 90 ? `Son <b>${estDec(mins / 60, 1)} horas</b> de fútbol.` : '';
+    S.push({ dur: 9000, fondo: TV_OSC, html: `<div style="flex:1; display:flex; flex-direction:column; justify-content:center; gap:14px;">
+        ${kick('LO QUE HAS JUGADO')}
+        <div class="m" style="font-weight:900; font-size:88px; line-height:1; color:#fff;">${mins}</div>
+        <div style="font-size:18px; line-height:1.45; color:#e8ecf5;">minutos en el campo. ${horas}</div>
+        <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px;">${tiles.slice(0, 4).map(([v, l]) => caja(`<div class="m" style="font-weight:900; font-size:32px; line-height:1; color:#fff;">${escHtml(v)}</div><div style="font-size:12.5px; color:#cbd5e1; margin-top:4px;">${l}</div>`)).join('')}</div></div>${sigue}` });
+    // 3 · Tu mejor día (por sus acciones, como el MVP)
+    let mejor = null;
+    F.forEach(x => { let a = null; try { a = evoSusAcciones(x.p, j, x.h); } catch (e) {} if (a && a.v > 0 && (!mejor || a.v > mejor.v)) mejor = { x, v: a.v }; });
+    if (mejor) {
+      const { p, h, i } = mejor.x, a = h.acc || {}, n = k => Number(a[k]) || 0;
+      const filas = [[Number(h.goles) || 0, 'Gol', 'Goles', .75], [Number(h.asistencias) || 0, 'Asistencia', 'Asistencias', .4], [n('parD'), 'Parada difícil', 'Paradas difíciles', 1], [n('par'), 'Parada', 'Paradas', .3],
+        [n('defC'), 'Acción defensiva clave', 'Acciones defensivas clave', 1], [n('def'), 'Acción defensiva', 'Acciones defensivas', .3], [n('pc'), 'Pase clave', 'Pases clave', .25], [n('reg'), 'Regate', 'Regates', .1],
+        [n('pa'), 'Pase al área', 'Pases al área', .15], [n('dp'), 'Disparo a puerta', 'Disparos a puerta', .3]]
+        .filter(f => f[0] > 0).sort((x, y) => y[0] * y[3] - x[0] * x[3]).slice(0, 4);
+      const gl = Number(p.golesLocal) || 0, gr = Number(p.golesRival) || 0;
+      const res = gl > gr ? `Ganasteis ${gl}-${gr} y fue tu partido más completo.` : gl === gr ? `Empatasteis ${gl}-${gr} y fue tu partido más completo.` : `Acabó ${gl}-${gr}, y aun así fue tu partido más completo.`;
+      S.push({ dur: 9000, fondo: TV_OSC, html: `<div style="flex:1; display:flex; flex-direction:column; justify-content:center; gap:14px;">
+          ${kick('TU MEJOR DÍA')}
+          <div class="m" style="font-weight:900; font-size:34px; line-height:1.08; color:#fff;">Jornada ${i + 1}<br>contra ${escHtml(p.rival || '')}</div>
+          <div style="font-size:16px; line-height:1.45; color:#e8ecf5;">${res}</div>
+          ${filas.length ? caja(filas.map(f => `<div style="display:flex; justify-content:space-between; font-size:15.5px; padding:4px 0;"><span style="color:#cbd5e1;">${f[0] === 1 ? f[1] : f[2]}</span><b style="color:#fff;">${f[0]}</b></div>`).join('')) : ''}
+          <button type="button" class="pm-btn" style="position:relative; z-index:3; background:transparent; border:1px solid #fff; color:#fff;" onclick="event.stopPropagation(); pmCerrar(); abrirFichaPartido(${i}, '${escHtml(id)}');">Ver ese partido</button></div>${sigue}` });
+    }
+    // 4 · Tu estilo
+    try {
+      const x = estilosTemporada(t)[j.id], E = x && ESTILOS[x.estilo];
+      if (E) {
+        const jc = juegaComo(x), sp = (x.sp || [])[0];
+        const col = x.portero ? '#e2e8f0' : E.col;
+        S.push({ dur: 10000, fondo: TV_OSC, html: `<div style="flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:8px; text-align:center; min-height:0;">
+            ${kick('TU ESTILO')}
+            ${x.portero ? '' : `<div style="width:100%; max-width:290px;">${estHexSVG(x.pct, col, estNom(j))}</div>`}
+            <div class="m" style="font-weight:900; font-size:${x.portero ? 40 : (String(E.art || '').length > 12 ? 27 : 36)}px; line-height:1.05; color:${col};">${x.portero ? 'EL GUARDIÁN' : escHtml(E.art)}</div>
+            ${!x.portero && x.cola ? `<div style="font-size:14px; color:#e8ecf5;">${x.cola}</div>` : ''}
+            <div style="font-size:13.5px; line-height:1.4; color:#cbd5e1;">${sp && sp.txt ? `Tu superpoder: <b style="color:#fff;">${escHtml(sp.txt)}</b>` : escHtml(E.frase || '')}</div>
+            ${jc ? caja(`<div style="font-size:12.5px; color:#cbd5e1;">Juegas como…</div><div class="m" style="font-weight:900; font-size:21px; color:#fff; margin-top:2px;">${escHtml(jc[0])}</div>`, 'padding:10px 18px; margin-top:4px;') : ''}</div>${sigue}` });
+      }
+    } catch (e) { console.error('Tu vuelta · estilo:', e); }
+    // 5 · Tu socio (química)
+    const so = tvSocio(t, u, j);
+    if (so) {
+      const on = escHtml(estNom(so.o));
+      S.push({ dur: 9000, fondo: TV_OSC, html: `<div style="flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:14px; text-align:center;">
+          ${kick('TU SOCIO')}
+          <div style="display:flex; align-items:center; gap:12px;">${foto(id, j.dorsal ?? '', 112, '#ff8fa3')}<span class="m" style="font-weight:900; font-size:32px; color:#ff8fa3;">+</span>${foto(so.o.id, so.o.dorsal ?? '', 112, '#ff8fa3')}</div>
+          <div class="m" style="font-weight:900; font-size:30px; line-height:1.1; color:#fff;">${nom} y ${on}</div>
+          <div class="m" style="font-weight:800; font-size:12px; letter-spacing:1.5px; color:#ff8fa3;">CON QUIEN MÁS QUÍMICA TIENES</div>
+          <div class="m" style="font-weight:900; font-size:76px; line-height:1; color:#fff;">${so.m}</div>
+          <div style="font-size:16px; line-height:1.45; color:#e8ecf5;">minutos jugando <b>uno al lado del otro</b>.</div>
+          ${so.rodada ? caja(`<div style="display:flex; justify-content:space-between; font-size:13px; color:#cbd5e1;"><span>Química de la pareja</span><b style="color:#2ed573;">Rodada</b></div>`, 'width:100%; box-sizing:border-box; padding:11px 14px;') : ''}</div>${sigue}` });
+    }
+    // 6 · Tu momento: su premio (si tiene) y su récord personal
+    const mios = (u.premios || []).filter(p => (p.ids || []).map(String).includes(id));
+    const miGol = u.gol && String(u.gol.id) === id;
+    let rec = null;
+    try {
+      const R = recordsJugador(t, j).recs, peso = { goles: .75, asis: .4, pc: .25, reg: .1, def: .3, par: .3, pa: .15, tiros: .2 };
+      Object.keys(peso).forEach(k => { const r = R[k]; if (r && r.best && r.best.v >= 2 && (!rec || r.best.v * peso[k] > rec.w)) rec = { r, w: r.best.v * peso[k] }; });
+    } catch (e) { console.error('Tu vuelta · récords:', e); }
+    const recTxt = rec ? `${rec.r.best.v} ${escHtml(rec.r.d.n.toLowerCase())} en un partido` : '';
+    const recDet = rec && t.partidos[rec.r.best.i] ? `J${rec.r.best.i + 1} · contra ${escHtml(t.partidos[rec.r.best.i].rival || '')}` : '';
+    const fin = `<button type="button" class="pm-btn" style="position:relative; z-index:3; background:#fff; color:#7a0d26;" onclick="event.stopPropagation(); pmCerrar(); abrirPerfilJugadorTemporada('${escHtml(id)}');">Ver su ficha completa</button>
+      <button type="button" class="pm-btn" style="position:relative; z-index:3; background:transparent; color:#fff; margin-top:6px;" onclick="event.stopPropagation(); pmIr(0);">Ver otra vez</button>`;
+    let cuerpo;
+    if (mios.length || miGol) {
+      const p0 = mios[0], tit0 = p0 ? p0.t : `El gol de la ${vuelta}`, txt0 = p0 ? (p0.txt || '') : `Tu gol contra ${u.gol.rival || ''} fue el elegido.`;
+      const mas = mios.slice(1).map(p => p.t).concat(p0 && miGol ? [`El gol de la ${vuelta}`] : []);
+      cuerpo = `<div class="m" style="font-weight:800; font-size:13px; letter-spacing:1px; padding:6px 14px; border-radius:999px; background:#fff; color:#7a0d26;">${mios.length + (miGol ? 1 : 0) > 1 ? 'PREMIOS' : 'PREMIO'} DE LA ${VUELTA}</div>
+        <div class="m" style="font-weight:900; font-size:38px; line-height:1.05; color:#fff;">${escHtml(tit0)}</div>
+        <div style="font-size:15.5px; line-height:1.45; color:#fff;">${escHtml(txt0)}</div>
+        ${mas.length ? `<div style="font-size:13.5px; color:#ffe3e8;">Y también: <b style="color:#fff;">${mas.map(escHtml).join(' · ')}</b></div>` : ''}
+        ${rec ? `<div style="width:100%; box-sizing:border-box; background:rgba(0,0,0,.22); border:1px solid rgba(255,255,255,.35); border-radius:14px; padding:13px;"><div style="font-size:12.5px; color:#ffe3e8;">Y tu récord personal</div><div class="m" style="font-weight:900; font-size:20px; color:#fff; margin-top:2px;">${recTxt}</div><div style="font-size:11.5px; color:#ffe3e8; margin-top:2px;">${recDet}</div></div>` : ''}`;
+    } else if (rec) {
+      cuerpo = `<div class="m" style="font-weight:800; font-size:13px; letter-spacing:1px; padding:6px 14px; border-radius:999px; background:#fff; color:#7a0d26;">TU RÉCORD PERSONAL</div>
+        <div class="m" style="font-weight:900; font-size:76px; line-height:1; color:#fff;">${rec.r.best.v}</div>
+        <div class="m" style="font-weight:900; font-size:26px; line-height:1.1; color:#fff;">${escHtml(rec.r.d.n.toLowerCase())} en un partido</div>
+        <div style="font-size:14px; color:#ffe3e8;">${recDet}</div>`;
+    } else {
+      cuerpo = `<div class="m" style="font-weight:900; font-size:76px; line-height:1; color:#fff;">${F.length}</div>
+        <div class="m" style="font-weight:900; font-size:24px; line-height:1.15; color:#fff;">${F.length === 1 ? 'partido' : 'partidos'} con la camiseta del Hergar</div>
+        <div style="font-size:15px; line-height:1.45; color:#ffe3e8;">Cada minuto tuyo cuenta para el equipo.</div>`;
+    }
+    S.push({ dur: 0, fondo: TV_ROJO, html: `<div style="flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:14px; text-align:center;">
+        ${kick('TU MOMENTO', '#ffd0d9')}${cuerpo}</div>${fin}` });
+    return S;
+  }
+  // Botón de entrada (ficha y «Mi hijo»): uno por cada vuelta con premios publicados en la que jugó
+  function tvBotonesHTML(t, j, solo1) {
+    try {
+      if (!t || !j) return '';
+      const L = pmLista.slice().sort((a, b) => (b.ts || 0) - (a.ts || 0)).filter(u => tvPuede(t, u, j));
+      return (solo1 ? L.slice(0, 1) : L).map(u => `<button type="button" onclick="tvAbrir('${escHtml(j.id)}', '${escHtml(u.vuelta || '')}')" style="width:100%; min-height:48px; margin:8px 0; border-radius:12px; border:none; background:${TV_ROJO}; color:#fff; font-family:'Montserrat',sans-serif; font-weight:900; font-size:13.5px; letter-spacing:.5px; cursor:pointer;">▶ Tu ${escHtml(u.vuelta === 'T' ? 'temporada' : (u.nombre || 'vuelta'))}</button>`).join('');
+    } catch (e) { console.error('Tu vuelta:', e); return ''; }
+  }
+  window.tvAbrir = function (id, vuelta) {
+    try {
+      const t = ultimaTemporada, j = t && t.jugadores && t.jugadores[id];
+      const u = pmLista.find(x => String(x.vuelta || '') === String(vuelta || '')) || pmUltimo();
+      if (!tvPuede(t, u, j)) return;
+      const pf = document.getElementById('perfilModal'); if (pf) pf.style.display = 'none';
+      pmSl = tvSlides(t, u, j);
+      const box = document.getElementById('pmStory');
+      box.classList.add('on'); document.body.style.overflow = 'hidden';
+      pmIr(0);
+    } catch (e) { console.error('Tu vuelta:', e); }
+  };
 
   // ── v230 · CABECERA FINA: el marcador grande y el próximo partido solo en la pestaña Partido ──
   // En el resto de pestañas, una cabecera fina; con el partido en juego, un marcador pequeño con el minuto (tocándolo, a Partido).
@@ -6524,6 +6697,7 @@
     document.getElementById('perfilDatosContenido').innerHTML = renderFichaDatosHTML(statsDatos) + pesoHtml + mgHtml + sociosJugadorHTML(ultimaTemporada, j.name) + lineasJugadorHTMLV(j, ultimaTemporada) + (() => { try { return hitosFichaHTML(ultimaTemporada, j); } catch (e) { console.error('Hitos:', e); return ''; } })(); // v95 · v231: hitos · v222: impacto y sus acciones por puesto
     try { document.getElementById('perfilEvoContenido').innerHTML = evolucionJugadorHTML(ultimaTemporada, j) + recordsJugadorHTML(ultimaTemporada, j, '#f5a623'); mostrarBotonEvo(true); } catch (e) { console.error('Evolución:', e); mostrarBotonEvo(false); }
     try { document.getElementById('perfilEstiloContenido').innerHTML = estiloJugadorHTML(ultimaTemporada, j) + (() => { try { return primeJugadorHTML(ultimaTemporada, j); } catch (e) { console.error('Prime:', e); return ''; } })(); mostrarBotonEstilo(true); } catch (e) { console.error('Estilo:', e); mostrarBotonEstilo(false); } // v150
+    try { const tvB = tvBotonesHTML(ultimaTemporada, j, false); if (tvB) cont.insertAdjacentHTML('beforeend', tvB); } catch (e) { console.error('Tu vuelta:', e); } // v246
     mostrarPestanaPerfil('cromo');
     document.getElementById('perfilModal').style.display = 'flex';
   };
@@ -11641,6 +11815,7 @@
     try { h += hitosMiHijoHTML(t, j); } catch (e) { console.error('Mi hijo · hitos:', e); } // v231
     // Botones
     const btn = 'width:100%; min-height:44px; border-radius:10px; font-weight:700; font-size:12.5px; cursor:pointer; margin-bottom:8px;';
+    h += tvBotonesHTML(t, j, true); // v246
     h += `<button type="button" onclick="abrirPerfilJugadorTemporada('${escHtml(j.id)}')" style="${btn} border:1px solid #f5a623; background:rgba(245,166,35,.1); color:#f5a623;">Ver su ficha completa (récords, evolución, estilo…) →</button>
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
         <button type="button" onclick="mhCambiar(true)" style="${btn} border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.04); color:#e2e8f0;">🔁 Cambiar favorito</button>

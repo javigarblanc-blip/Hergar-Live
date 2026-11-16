@@ -1226,7 +1226,9 @@
       <div id="subLigaClasif" class="sub-panel active">
         <div class="card">
           <div class="card-title">Clasificación</div>
-          <div style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
+          <div id="ligaClasifSel" style="display:none; background:rgba(0,0,0,.25); border-radius:9px; padding:3px; margin-bottom:10px;"><button type="button" id="ligaClasifBtnPts" onclick="ligaClasifModo('pts')" class="elo-evo-btn on">🏆 Puntos</button><button type="button" id="ligaClasifBtnElo" onclick="ligaClasifModo('elo')" class="elo-evo-btn">📊 Elo</button></div>
+          <div id="ligaClasifElo" style="display:none;"></div>
+          <div id="ligaClasifPuntos" style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
             <table class="liga-clasif">
               <thead>
                 <tr><th>#</th><th>Equipo</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th><th>DG</th><th>Pts</th></tr>
@@ -1354,6 +1356,7 @@
   @media (prefers-reduced-motion: reduce) { #ddAviso.on, #ddAviso .dd-in { animation:none; } }
 </style>
 <script type="module">
+  // v249 (visor, sin cambios en la app) · 📈 Liga → Clasif.: selector «🏆 Puntos / 📊 Elo» arriba de la tabla (el ranking Elo y su gráfico ya no van escondidos en un desplegable) y fuera 🧭 Dificultad del calendario (salía que el líder había tenido el calendario más fácil).
   // v248 (visor, sin cambios en la app) · 📊 Ranking Elo: evolución jornada a jornada de todos los equipos (Hergar en rojo; tocando un equipo del ranking se destaca su línea y la pantalla baja al gráfico; Puntos Elo / Puesto).
   // v247 (visor, sin cambios en la app) · 🎬 «Tu vuelta»: botón «▶ Ahora, tu 1.ª vuelta» al final de los premios (si hay niño en «Mi hijo») y marca «NUEVO» en «Mi hijo» hasta abrirlo en ese móvil.
   // v246 (visor, sin cambios en la app) · 🎬 «Tu vuelta»: resumen de cada niño en seis pantallas (lo jugado, su mejor día, estilo, socio por química y su premio o récord); sale en la ficha y en «Mi hijo» cuando la app publica los premios de esa vuelta.
@@ -2665,7 +2668,16 @@
       return { equipos: liga.equipos.map((e, i) => ({ e, i, elo: elo[i], ult: ult[i] })).sort((a, b) => b.elo - a.elo), histH, histT, H: D.H, jugados: jug.length, casa };
   }
   // ── v248 · Evolución Elo de toda la Liga ──
-  const EVO = { hist: [], H: -1, nombres: [], sel: -1, modo: 'elo', jx: -1 };
+  const EVO = { hist: [], H: -1, nombres: [], sel: -1, modo: 'elo', jx: -1, vista: 'pts' };
+  window.ligaClasifModo = function (m) {
+      EVO.vista = m;
+      const pts = document.getElementById('ligaClasifPuntos'), elo = document.getElementById('ligaClasifElo');
+      if (pts) pts.style.display = m === 'pts' ? '' : 'none';
+      if (elo) elo.style.display = m === 'elo' ? '' : 'none';
+      const bP = document.getElementById('ligaClasifBtnPts'), bE = document.getElementById('ligaClasifBtnElo');
+      if (bP) bP.classList.toggle('on', m === 'pts'); if (bE) bE.classList.toggle('on', m === 'elo');
+      if (m === 'elo') eloEvoPintar();
+  };
   const EVO_ROJO = 'rgb(200,24,62)', EVO_AMB = '#f5a623';
   function eloEvoCorto(e) {
       if (e.esHergar) return 'Hergar';
@@ -2731,7 +2743,7 @@
       if (EVO.sel >= 0) { const b = document.getElementById('eloEvoBox'); if (b) b.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
   };
   window.eloEvoModo = function (m) { EVO.modo = m; if (m === 'pos' && EVO.jx === 0) EVO.jx = -1; eloEvoPintar(); };
-  window.eloEvoArriba = function () { const f = document.querySelector('.elo-fila-tap'); if (f) f.parentElement.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+  window.eloEvoArriba = function () { const c = document.getElementById('ligaClasifSel') || document.querySelector('.elo-fila-tap'); if (c) c.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
   window.eloEvoToque = function (ev) {
       const svg = ev.currentTarget, r = svg.getBoundingClientRect(), x = (ev.clientX - r.left) * 340 / r.width;
       const n = EVO.hist.length, a = EVO.modo === 'pos' ? 1 : 0, L = 34, R = 72;
@@ -2760,7 +2772,13 @@
       });
       return { equipos: T.filter(x => x.pj > 0).sort((a, b) => a.dif - b.dif), maxPj: Math.max(...T.map(x => x.pj)) };
   }
-  function ligaEloSuerteHTML(liga, acento) {
+  // v249: el Elo sale arriba, como otra cara de la Clasificación (selector Puntos / Elo)
+  function ligaEloHTML(liga) {
+      const E = eloLiga(liga);
+      if (!E || !E.jugados) return '';
+      return ligaEloSuerteHTML(liga, '#f5a623', 'elo');
+  }
+  function ligaEloSuerteHTML(liga, acento, parte) {
       acento = acento || '#f5a623';
       const E = eloLiga(liga), S = suerteLiga(liga);
       if (!E || !E.jugados) return '';
@@ -2769,7 +2787,7 @@
       const eloFilas = E.equipos.map((x, k) => fila(k + 1, x.e.nombre, !!x.e.esHergar, `última jornada: <span style="color:${x.ult >= 0 ? '#2ed573' : '#ff6b7a'};">${proFmt(x.ult, 0)}</span>`, Math.round(x.elo), '#e2e8f0', 'puntos Elo', x.e.esHergar ? '' : `id="eloFila_${x.i}" onclick="eloEvoSel(${x.i})" class="elo-fila-tap"`)).join('');
       // v248: evolución de todos los equipos (toca un equipo del ranking para destacarlo)
       let graf = '';
-      if (E.histT.length > 2 && E.H >= 0) {
+      if (parte === 'elo' && E.histT.length > 2 && E.H >= 0) {
           EVO.hist = E.histT; EVO.H = E.H;
           EVO.nombres = liga.equipos.map(e => eloEvoCorto(e));
           if (EVO.sel >= EVO.nombres.length || EVO.sel === EVO.H) EVO.sel = -1;
@@ -2786,8 +2804,9 @@
           suerte = `<details style="margin-top:12px;"><summary style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:12.5px; color:${acento}; cursor:pointer;">🍀 Tabla de la suerte</summary>
               <div style="font-size:11.5px; color:#94a3b8; line-height:1.45; margin:6px 0;">Puntos que "debería" tener cada equipo por sus goles a favor y en contra, frente a los que tiene. Verde: le ha faltado suerte; rojo: le ha sobrado.${S.maxPj < PITA_FIABLE_PJ ? ` <b style="color:#f5a623;">Aún van pocas jornadas: tómalo como una pista.</b>` : ''}</div>${sf}</details>`;
       }
-      return `<details style="margin-top:12px;"><summary style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:12.5px; color:${acento}; cursor:pointer;">📊 Ranking Elo</summary>
-          <div style="font-size:11.5px; color:#94a3b8; line-height:1.45; margin:6px 0;">Todos empiezan con ${ELO_BASE}, como en el ranking FIFA. Cada partido suben o bajan según lo esperado: ganar al de arriba da mucho y ganar al de abajo, poco. Las goleadas cuentan algo más y se tiene en cuenta jugar en casa (con la ventaja medida en esta Liga: ${E.casa} puntos).${E.jugados < 20 ? ' Las primeras jornadas se mueve mucho.' : ''}</div>${eloFilas}${graf}</details>${suerte}${dificultadHTML(liga, acento)}${casaHTML(liga, acento)}`;
+      if (parte === 'elo') return `<div style="font-size:11.5px; color:#94a3b8; line-height:1.45; margin:0 0 6px;">Todos empiezan con ${ELO_BASE}: ganar al de arriba da mucho y ganar al de abajo, poco.</div>
+          <details style="margin-bottom:6px;"><summary style="font-size:11.5px; font-weight:700; color:${acento}; cursor:pointer;">ℹ️ Cómo se calcula</summary><div style="font-size:11.5px; color:#94a3b8; line-height:1.45; margin:6px 0;">Todos empiezan con ${ELO_BASE}, como en el ranking FIFA. Cada partido suben o bajan según lo esperado: ganar al de arriba da mucho y ganar al de abajo, poco. Las goleadas cuentan algo más y se tiene en cuenta jugar en casa (con la ventaja medida en esta Liga: ${E.casa} puntos).${E.jugados < 20 ? ' Las primeras jornadas se mueve mucho.' : ''}</div></details>${eloFilas}${graf}`;
+      return `${suerte}${casaHTML(liga, acento)}`; // v249: sin 🧭 Dificultad del calendario
   }
     // ── v153 · 🍀 SUERTE Y NIVEL (misma función en la app y en el visor) ──
     //  · Termómetro de la suerte (PDO del hockey): % de tiros a puerta del Hergar que son gol + % de tiros a puerta del
@@ -13460,6 +13479,7 @@
         <td>${f.pp}</td><td>${f.gf}</td><td>${f.gc}</td><td>${f.dg>0?'+':''}${f.dg}</td><td>${f.pts}</td>
       </tr>`).join('');
     try { const c = document.getElementById('ligaEloSuerteVisor'); if (c) { const h = ligaEloSuerteHTML(liga, '#f5a623'); c.innerHTML = h; c.style.display = h ? '' : 'none'; } } catch (e) { console.error('Elo/suerte:', e); } // v135
+    try { const c = document.getElementById('ligaClasifElo'), sel = document.getElementById('ligaClasifSel'); if (c) { const h = ligaEloHTML(liga); c.innerHTML = h; if (sel) sel.style.display = h ? 'flex' : 'none'; if (!h) ligaClasifModo('pts'); else if (EVO.vista === 'elo') ligaClasifModo('elo'); } } catch (e) { console.error('Elo:', e); } // v249
     try { pintarLigaPuestos(); } catch (e) { console.error('Jornadas en cada puesto:', e); } // v236
   }
 

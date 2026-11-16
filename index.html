@@ -1351,6 +1351,7 @@
   @media (prefers-reduced-motion: reduce) { #ddAviso.on, #ddAviso .dd-in { animation:none; } }
 </style>
 <script type="module">
+  // v247 (visor, sin cambios en la app) · 🎬 «Tu vuelta»: botón «▶ Ahora, tu 1.ª vuelta» al final de los premios (si hay niño en «Mi hijo») y marca «NUEVO» en «Mi hijo» hasta abrirlo en ese móvil.
   // v246 (visor, sin cambios en la app) · 🎬 «Tu vuelta»: resumen de cada niño en seis pantallas (lo jugado, su mejor día, estilo, socio por química y su premio o récord); sale en la ficha y en «Mi hijo» cuando la app publica los premios de esa vuelta.
   // v245 (visor, sin cambios en la app) · 🔗 Química: tocando la barra de un partido se ven sus enlaces en el campo (como en Temporada → Partidos).
   // v244 (visor; app v247) · ⚽ Posesión en el acta PDF (barra del partido y por tramos), solo si el partido la tiene publicada.
@@ -5969,7 +5970,8 @@
       <div class="pm-kick" style="text-align:center;">Y ESTOS FUERON</div>
       <div class="pm-tit" style="text-align:center;">🏆 Los premios de la ${escHtml(u.nombre || 'vuelta')}</div>
       <div style="margin-top:18px;">${(u.premios || []).map(p => `<div style="display:flex; gap:10px; padding:8px 0; border-top:1px solid rgba(255,255,255,.08); font-size:13px;"><span>${escHtml(p.e || '')}</span><span style="flex:1; color:#cbd5e1;">${escHtml(p.t || '')}</span><b style="color:#fff; text-align:right;">${escHtml(p.nombre || '')}</b></div>`).join('')}${u.gol ? `<div style="display:flex; gap:10px; padding:8px 0; border-top:1px solid rgba(255,255,255,.08); font-size:13px;"><span>⚽</span><span style="flex:1; color:#cbd5e1;">El gol de la ${escHtml(u.nombre || 'vuelta')}</span><b style="color:#fff;">${escHtml(u.gol.nombre || '')}</b></div>` : ''}</div>
-      <div style="margin-top:auto; display:flex; gap:8px;"><button type="button" class="pm-btn" style="flex:1; background:rgba(255,255,255,.1); color:#fff;" onclick="event.stopPropagation(); pmIr(0);">↻ Ver otra vez</button><button type="button" class="pm-btn" style="flex:1; background:#f5a623; color:#111;" onclick="event.stopPropagation(); pmCerrar();">Cerrar</button></div>` });
+      <div style="margin-top:auto;">${(() => { try { const mid = mhIdElegido(), t = ultimaTemporada, j = mid && t && t.jugadores ? t.jugadores[mid] : null; return j && tvPuede(t, u, j) ? `<button type="button" class="pm-btn" style="margin-bottom:8px; width:100%; background:${TV_ROJO}; color:#fff; font-size:14.5px;" onclick="event.stopPropagation(); tvAbrir('${escHtml(j.id)}', '${escHtml(u.vuelta || '')}');">▶ Ahora, tu ${escHtml(u.vuelta === 'T' ? 'temporada' : (u.nombre || 'vuelta'))}: ${escHtml(estNom(j))}</button>` : ''; } catch (e) { return ''; } })()}
+      <div style="display:flex; gap:8px;"><button type="button" class="pm-btn" style="flex:1; background:rgba(255,255,255,.1); color:#fff;" onclick="event.stopPropagation(); pmIr(0);">↻ Ver otra vez</button><button type="button" class="pm-btn" style="flex:1; background:#f5a623; color:#111;" onclick="event.stopPropagation(); pmCerrar();">Cerrar</button></div></div>` });
     return S;
   }
   function pmIr(k) {
@@ -6148,12 +6150,19 @@
         ${kick('TU MOMENTO', '#ffd0d9')}${cuerpo}</div>${fin}` });
     return S;
   }
+  // «NUEVO» en «Mi hijo» hasta que se abre por primera vez en este móvil
+  const TV_VISTO_KEY = 'hergarLive_tuVueltaVisto';
+  function tvClave(u, id) { return `${u.vuelta || ''}|${u.ts || 0}|${id}`; }
+  function tvVistos() { try { return JSON.parse(localStorage.getItem(TV_VISTO_KEY) || '[]') || []; } catch (e) { return []; } }
+  function tvMarcarVisto(u, id) { try { const L = tvVistos(), k = tvClave(u, id); if (!L.includes(k)) { L.push(k); localStorage.setItem(TV_VISTO_KEY, JSON.stringify(L.slice(-60))); } } catch (e) {} }
   // Botón de entrada (ficha y «Mi hijo»): uno por cada vuelta con premios publicados en la que jugó
   function tvBotonesHTML(t, j, solo1) {
     try {
       if (!t || !j) return '';
       const L = pmLista.slice().sort((a, b) => (b.ts || 0) - (a.ts || 0)).filter(u => tvPuede(t, u, j));
-      return (solo1 ? L.slice(0, 1) : L).map(u => `<button type="button" onclick="tvAbrir('${escHtml(j.id)}', '${escHtml(u.vuelta || '')}')" style="width:100%; min-height:48px; margin:8px 0; border-radius:12px; border:none; background:${TV_ROJO}; color:#fff; font-family:'Montserrat',sans-serif; font-weight:900; font-size:13.5px; letter-spacing:.5px; cursor:pointer;">▶ Tu ${escHtml(u.vuelta === 'T' ? 'temporada' : (u.nombre || 'vuelta'))}</button>`).join('');
+      const vistos = solo1 ? tvVistos() : [];
+      return (solo1 ? L.slice(0, 1) : L).map(u => { const nuevo = solo1 && !vistos.includes(tvClave(u, j.id));
+        return `<button type="button" onclick="tvAbrir('${escHtml(j.id)}', '${escHtml(u.vuelta || '')}')" style="width:100%; min-height:48px; margin:8px 0; border-radius:12px; border:none; background:${TV_ROJO}; color:#fff; font-family:'Montserrat',sans-serif; font-weight:900; font-size:13.5px; letter-spacing:.5px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">▶ Tu ${escHtml(u.vuelta === 'T' ? 'temporada' : (u.nombre || 'vuelta'))}${nuevo ? `<span style="font-size:10px; letter-spacing:1px; padding:3px 7px; border-radius:6px; background:#fff; color:#7a0d26;">NUEVO</span>` : ''}</button>`; }).join('');
     } catch (e) { console.error('Tu vuelta:', e); return ''; }
   }
   window.tvAbrir = function (id, vuelta) {
@@ -6163,6 +6172,7 @@
       if (!tvPuede(t, u, j)) return;
       const pf = document.getElementById('perfilModal'); if (pf) pf.style.display = 'none';
       pmSl = tvSlides(t, u, j);
+      tvMarcarVisto(u, j.id); try { mhPintarPagina(); } catch (e) {}
       const box = document.getElementById('pmStory');
       box.classList.add('on'); document.body.style.overflow = 'hidden';
       pmIr(0);

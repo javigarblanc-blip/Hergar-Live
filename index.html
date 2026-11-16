@@ -1359,6 +1359,7 @@
   @media (prefers-reduced-motion: reduce) { #ddAviso.on, #ddAviso .dd-in { animation:none; } }
 </style>
 <script type="module">
+  // v256 (visor) · Mientras el último partido sale arriba en Partido (3 primeros días) y ya está publicado el próximo, la cabecera grande del próximo partido se cambia por la fina (escudo, HERGAR LIVE y 📺 TV); cuando el próximo sube, vuelve la grande.
   // v255 (visor) · 👕 La Alineación va siempre pegada al resumen y los récords del último partido: arriba los 3 primeros días y luego, con ellos, debajo de Próximo partido.
   // v254 (visor) · 👕 La tarjeta Alineación va justo después de lo del partido anterior, antes de Próximo partido.
   // v253 (visor, sin cambios en la app) · ⚽ Partido terminado: fuera el campo grande y los últimos eventos; tarjeta «👕 Alineación» que abre el once inicial y el final (fotos, goles con número, cambios). Con la convocatoria del siguiente vuelve el campo.
@@ -6379,7 +6380,8 @@
   function cabFinaPintar() {
     const el = document.getElementById('miniCab'); if (!el) return;
     const m = (typeof ultimoMatchData !== 'undefined') ? ultimoMatchData : null;
-    document.body.classList.toggle('cab-fina', cabTabActual !== 'partido');
+    // v256: en Partido también va la cabecera fina mientras el último partido está arriba (3 primeros días) y ya hay próximo partido publicado
+    document.body.classList.toggle('cab-fina', cabTabActual !== 'partido' || cabUltimoArriba(m));
     if (m && m.matchRunning && !m.matchFinished) {
       el.className = 'mini-cab vivo';
       let min = '';
@@ -6389,6 +6391,13 @@
       el.className = 'mini-cab';
       el.innerHTML = `<span class="esc"><img src="${ESCUDO_HERGAR_SRC}" alt=""></span><span class="tit">HERGAR LIVE</span><button type="button" class="tv" onclick="event.stopPropagation(); abrirModoTV();">📺 TV</button>`;
     }
+  }
+  function cabUltimoArriba(m) {
+    try {
+      if (!m || !m.matchFinished || m.matchRunning || !proximoPartidoActual()) return false;
+      const fin = m.finalizadoEn || m.actualizado || null;
+      return !fin || (Date.now() - fin) < DIAS_RESUMEN_ARRIBA * 86400000;
+    } catch (e) { return false; }
   }
   window.cabFinaIrPartido = function () { showTab('partido'); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {} };
 

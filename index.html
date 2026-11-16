@@ -1356,6 +1356,7 @@
   @media (prefers-reduced-motion: reduce) { #ddAviso.on, #ddAviso .dd-in { animation:none; } }
 </style>
 <script type="module">
+  // v250 (visor, sin cambios en la app) · 📈 Liga → Clasif.: tocando un equipo en la tabla se abre su ficha (Elo, goles por partido, casa/fuera, últimos 5, contra el Hergar, goles entre los dos y rivales en común, y su campo).
   // v249 (visor, sin cambios en la app) · 📈 Liga → Clasif.: selector «🏆 Puntos / 📊 Elo» arriba de la tabla (el ranking Elo y su gráfico ya no van escondidos en un desplegable) y fuera 🧭 Dificultad del calendario (salía que el líder había tenido el calendario más fácil).
   // v248 (visor, sin cambios en la app) · 📊 Ranking Elo: evolución jornada a jornada de todos los equipos (Hergar en rojo; tocando un equipo del ranking se destaca su línea y la pantalla baja al gráfico; Puntos Elo / Puesto).
   // v247 (visor, sin cambios en la app) · 🎬 «Tu vuelta»: botón «▶ Ahora, tu 1.ª vuelta» al final de los premios (si hay niño en «Mi hijo») y marca «NUEVO» en «Mi hijo» hasta abrirlo en ese móvil.
@@ -13455,6 +13456,84 @@
     }).join('');
   }
 
+  // ── v250 · Ficha de cada equipo: se abre tocándolo en la Clasificación (Puntos) ──
+  function feModal() {
+    let m = document.getElementById('fichaEquipoModal');
+    if (!m) {
+      document.body.insertAdjacentHTML('beforeend', `<div id="fichaEquipoModal" role="dialog" aria-modal="true" aria-label="Ficha del equipo" onclick="if(event.target===this)cerrarFichaEquipo()" style="display:none; position:fixed; inset:0; z-index:960; background:rgba(0,0,0,.8); align-items:flex-end; justify-content:center; overflow-y:auto; overscroll-behavior:contain;">
+        <div id="fichaEquipoCaja" style="background:linear-gradient(145deg,#111827,#0f172a); border-radius:20px 20px 0 0; padding:16px 16px calc(20px + env(safe-area-inset-bottom)); max-width:480px; width:100%; border:1px solid rgba(255,255,255,.08); border-bottom:none; margin-top:auto; max-height:88vh; max-height:88dvh; overflow-y:auto; overscroll-behavior:contain;"></div></div>`);
+      m = document.getElementById('fichaEquipoModal');
+    }
+    return m;
+  }
+  window.cerrarFichaEquipo = () => { const m = document.getElementById('fichaEquipoModal'); if (m) m.style.display = 'none'; document.body.style.overflow = ''; };
+  window.abrirFichaEquipo = (id) => {
+    const liga = ultimaLiga; if (!liga || !liga.equipos) return;
+    const i = liga.equipos.findIndex(e => String(e.id) === String(id));
+    if (i < 0 || liga.equipos[i].esHergar) return;
+    let h = '';
+    try { h = fichaEquipoHTML(liga, i); } catch (e) { console.error('Ficha del equipo:', e); return; }
+    const m = feModal(), caja = document.getElementById('fichaEquipoCaja');
+    caja.innerHTML = h; m.style.display = 'flex'; caja.scrollTop = 0; document.body.style.overflow = 'hidden';
+  };
+  function fichaEquipoHTML(liga, i) {
+    const eq = liga.equipos[i], E = escHtml;
+    const D = pronPreparar(liga), H = D.H;
+    const jg = {}; D.P.forEach(p => { jg[p.id] = p.jg; });
+    const jugados = D.P.filter(p => p.jugado && (p.l === i || p.v === i)).sort((a, b) => a.jg - b.jg);
+    // tabla (mismo criterio que la Clasificación)
+    const T = liga.equipos.map((e, k) => ({ k, pts: 0, gf: 0, gc: 0, pj: 0 }));
+    D.P.filter(p => p.jugado).forEach(p => { const L = T[p.l], V = T[p.v]; L.pj++; V.pj++; L.gf += p.gl; L.gc += p.gv; V.gf += p.gv; V.gc += p.gl;
+      if (p.gl > p.gv) L.pts += 3; else if (p.gl < p.gv) V.pts += 3; else { L.pts++; V.pts++; } });
+    const ord = T.slice().sort((a, b) => b.pts - a.pts || (b.gf - b.gc) - (a.gf - a.gc) || b.gf - a.gf);
+    const yo = T[i], puesto = ord.findIndex(x => x.k === i) + 1;
+    // casa / fuera
+    const gep = arr => { let g = 0, e = 0, pp = 0; arr.forEach(p => { const a = p.l === i ? p.gl : p.gv, b = p.l === i ? p.gv : p.gl; if (a > b) g++; else if (a === b) e++; else pp++; }); return `${g}-${e}-${pp}`; };
+    const casa = gep(jugados.filter(p => p.l === i)), fuera = gep(jugados.filter(p => p.v === i));
+    const fmt = v => v.toFixed(1).replace('.', ',');
+    // Elo
+    let eloTxt = '—', eloSub = 'Elo', eloUlt = '';
+    try { const El = eloLiga(liga); if (El) { const k = El.equipos.findIndex(x => x.i === i); if (k >= 0) { const x = El.equipos[k]; eloTxt = Math.round(x.elo); eloSub = `Elo · ${k + 1}.º de la liga`; if (x.ult) eloUlt = ` <span style="font-size:12px; color:${x.ult >= 0 ? '#2ed573' : '#ff6b7a'};">${proFmt(x.ult, 0)}</span>`; } } } catch (e) {}
+    const caja = (v, l) => `<div style="background:rgba(255,255,255,.04); border-radius:10px; padding:9px 10px;"><div style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:17px; color:#e2e8f0;">${v}</div><div style="font-size:10.5px; color:#94a3b8; margin-top:1px;">${l}</div></div>`;
+    const tit = t => `<div style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:11px; color:#cbd5e1; letter-spacing:.6px; margin:14px 0 6px;">${t}</div>`;
+    const nom = k => k === H ? 'Hergar' : E(liga.equipos[k].nombre);
+    // últimos 5
+    const ult5 = jugados.slice(-5).map(p => { const a = p.l === i ? p.gl : p.gv, b = p.l === i ? p.gv : p.gl, r = a > b ? ['G', '#2ed573'] : a === b ? ['E', '#f5c542'] : ['P', '#ff6b7a'];
+      const riv = p.l === i ? p.v : p.l;
+      return `<div style="display:flex; align-items:center; gap:8px; font-size:11.5px; color:#cbd5e1; padding:3px 0;"><span style="width:22px; height:22px; border-radius:6px; background:${r[1]}; color:#0f172a; font-weight:800; display:inline-flex; align-items:center; justify-content:center; font-size:11px; flex-shrink:0;">${r[0]}</span><span style="flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">J${p.jg} · ${p.l === i ? 'vs' : 'en casa de'} ${nom(riv)}</span><b style="font-family:'Montserrat',sans-serif;">${a}-${b}</b></div>`; }).join('');
+    // contra el Hergar
+    let vsH = '';
+    if (H >= 0) {
+      const ps = (liga.partidos || []).filter(p => (p.local === liga.equipos[H].id && p.visitante === eq.id) || (p.local === eq.id && p.visitante === liga.equipos[H].id))
+        .sort((a, b) => (jg[a.id] || 0) - (jg[b.id] || 0));
+      vsH = ps.map(p => {
+        const jug = p.golesLocal != null && p.golesVisitante != null && p.golesLocal !== '' && p.golesVisitante !== '';
+        const hLocal = p.local === liga.equipos[H].id;
+        const txt = `J${jg[p.id] || '?'} · ${hLocal ? 'Hergar' : E(eq.nombre)} ${jug ? `${p.golesLocal} – ${p.golesVisitante}` : '–'} ${hLocal ? E(eq.nombre) : 'Hergar'}`;
+        let der;
+        if (jug) { const a = hLocal ? +p.golesLocal : +p.golesVisitante, b = hLocal ? +p.golesVisitante : +p.golesLocal; der = a > b ? ['Ganamos', '#2ed573'] : a === b ? ['Empate', '#f5c542'] : ['Perdimos', '#ff6b7a']; }
+        else der = [[p.fechaPartido || p.fecha, p.hora].filter(Boolean).join(' · ') || 'Pendiente', '#94a3b8'];
+        return `<div style="display:flex; justify-content:space-between; gap:8px; font-size:12px; color:#e2e8f0; padding:6px 0; border-top:1px solid rgba(255,255,255,.06);"><span style="min-width:0;">${txt}</span><span style="color:${der[1]}; white-space:nowrap; font-weight:700;">${E(der[0])}</span></div>`;
+      }).join('');
+    }
+    let extra = '';
+    try { extra = ccGolesHTML(ultimaTemporada, liga, i, true) || ''; } catch (e) { console.error('Cara a cara:', e); }
+    try { if (H >= 0) extra += rcHTML(liga, H, i, false) || ''; } catch (e) { console.error('Rivales en común:', e); }
+    let campo = '';
+    try { if (eq.campo) { const url = ctxMapsUrl(eq.campo); campo = tit('SU CAMPO') + `<div style="display:flex; justify-content:space-between; gap:8px; font-size:12px; color:#e2e8f0;"><span>🏟️ ${ctxEsc([eq.campo.nombre, CTX_CESPED[eq.campo.cesped]].filter(Boolean).join(' · ') || eq.campo.lugar || 'Campo')}</span>${url ? `<a href="${ctxEsc(url)}" target="_blank" rel="noopener" style="color:#2ed573; font-weight:800; text-decoration:none; white-space:nowrap;">Cómo llegar ›</a>` : ''}</div>`; } } catch (e) {}
+    return `<div style="width:40px; height:4px; border-radius:2px; background:rgba(255,255,255,.18); margin:0 auto 12px;"></div>
+      <div style="display:flex; align-items:center; gap:10px;">${escudoEquipoVisorHTML(eq, 44)}
+        <div style="flex:1; min-width:0;"><div style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:15px; color:#e2e8f0;">${E(eq.nombre)}</div><div style="font-size:11.5px; color:#94a3b8;">${puesto}.º · ${yo.pts} pts · ${yo.pj} PJ</div></div>
+        <button type="button" onclick="cerrarFichaEquipo()" aria-label="Cerrar" style="background:rgba(255,255,255,.08); border:none; color:#e2e8f0; width:34px; height:34px; border-radius:50%; font-size:16px; cursor:pointer;">✕</button></div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px;">
+        ${caja(eloTxt + eloUlt, eloSub)}${caja(yo.pj ? `${fmt(yo.gf / yo.pj)} – ${fmt(yo.gc / yo.pj)}` : '—', 'Goles por partido (a favor – en contra)')}
+        ${caja(casa, 'En casa (G-E-P)')}${caja(fuera, 'Fuera (G-E-P)')}</div>
+      ${ult5 ? tit('ÚLTIMOS ' + Math.min(5, jugados.length)) + ult5 : ''}
+      ${vsH ? tit('CONTRA EL HERGAR') + vsH : ''}
+      ${extra ? `<details style="margin-top:10px;"><summary style="font-size:12px; font-weight:700; color:#f5a623; cursor:pointer;">Goles entre los dos y rivales en común</summary><div style="margin-top:8px;">${extra}</div></details>` : ''}
+      ${campo}`;
+  }
+
   function pintarLigaClasificacion(liga) {
     const tabla = {};
     liga.equipos.forEach(eq => tabla[eq.id] = { pj:0,pg:0,pe:0,pp:0,gf:0,gc:0,pts:0 });
@@ -13474,7 +13553,7 @@
     const body = document.getElementById('ligaViewerClasifBody');
     if (!body) return;
     body.innerHTML = filas.map((f,i) => `
-      <tr class="${f.esHergar?'liga-fila-hergar':''}">
+      <tr class="${f.esHergar?'liga-fila-hergar':''}"${f.esHergar ? '' : ` onclick="abrirFichaEquipo('${String(f.id).replace(/['"\\]/g, '')}')" style="cursor:pointer;"`}>
         <td>${i+1}</td><td style="text-align:left;"><span style="display:inline-flex; align-items:center; gap:6px;">${escudoLigaVisorPorId(liga, f.id, 18)}<span>${f.nombre}</span></span></td><td>${f.pj}</td><td>${f.pg}</td><td>${f.pe}</td>
         <td>${f.pp}</td><td>${f.gf}</td><td>${f.gc}</td><td>${f.dg>0?'+':''}${f.dg}</td><td>${f.pts}</td>
       </tr>`).join('');

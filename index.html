@@ -1348,9 +1348,13 @@
   #ddCard .dd-x { font-size:13px; line-height:1.35; margin-top:2px; }
   #ddCard .dd-x b { color:#fff; }
   #ddCard .dd-fl { color:#f5a623; font-weight:900; font-size:18px; }
+  .elo-fila-tap { cursor:pointer; -webkit-tap-highlight-color:transparent; transition:background .15s; }
+  .elo-evo-btn { flex:1; border:none; background:transparent; color:#94a3b8; font-size:12px; font-weight:700; padding:6px 0; border-radius:7px; font-family:inherit; }
+  .elo-evo-btn.on { background:rgba(255,255,255,.12); color:#fff; }
   @media (prefers-reduced-motion: reduce) { #ddAviso.on, #ddAviso .dd-in { animation:none; } }
 </style>
 <script type="module">
+  // v248 (visor, sin cambios en la app) · 📊 Ranking Elo: evolución jornada a jornada de todos los equipos (Hergar en rojo; tocando un equipo del ranking se destaca su línea y la pantalla baja al gráfico; Puntos Elo / Puesto).
   // v247 (visor, sin cambios en la app) · 🎬 «Tu vuelta»: botón «▶ Ahora, tu 1.ª vuelta» al final de los premios (si hay niño en «Mi hijo») y marca «NUEVO» en «Mi hijo» hasta abrirlo en ese móvil.
   // v246 (visor, sin cambios en la app) · 🎬 «Tu vuelta»: resumen de cada niño en seis pantallas (lo jugado, su mejor día, estilo, socio por química y su premio o récord); sale en la ficha y en «Mi hijo» cuando la app publica los premios de esa vuelta.
   // v245 (visor, sin cambios en la app) · 🔗 Química: tocando la barra de un partido se ven sus enlaces en el campo (como en Temporada → Partidos).
@@ -2645,6 +2649,7 @@
       const maxJ = jug.length ? jug[jug.length - 1].jg : 0;
       const casa = eloCasaUsada(liga);
       const histH = [{ jg: 0, elo: ELO_BASE }];
+      const histT = [{ jg: 0, elo: elo.slice() }]; // v248: Elo de todos al final de cada jornada
       jug.forEach(p => {
           const dr = elo[p.l] + casa - elo[p.v];
           const we = 1 / (1 + Math.pow(10, -dr / 400));
@@ -2654,9 +2659,86 @@
           elo[p.l] += d; elo[p.v] -= d;
           if (p.jg === maxJ) { ult[p.l] += d; ult[p.v] -= d; }
           if (p.l === D.H || p.v === D.H) histH.push({ jg: p.jg, elo: elo[D.H] });
+          const u = histT[histT.length - 1];
+          if (u.jg === p.jg) u.elo = elo.slice(); else histT.push({ jg: p.jg, elo: elo.slice() });
       });
-      return { equipos: liga.equipos.map((e, i) => ({ e, i, elo: elo[i], ult: ult[i] })).sort((a, b) => b.elo - a.elo), histH, jugados: jug.length, casa };
+      return { equipos: liga.equipos.map((e, i) => ({ e, i, elo: elo[i], ult: ult[i] })).sort((a, b) => b.elo - a.elo), histH, histT, H: D.H, jugados: jug.length, casa };
   }
+  // ── v248 · Evolución Elo de toda la Liga ──
+  const EVO = { hist: [], H: -1, nombres: [], sel: -1, modo: 'elo', jx: -1 };
+  const EVO_ROJO = 'rgb(200,24,62)', EVO_AMB = '#f5a623';
+  function eloEvoCorto(e) {
+      if (e.esHergar) return 'Hergar';
+      let n = String(e.abrev || e.nombre || '¿?').replace(/['"‘’]/g, '');
+      n = n.replace(/^(C\.?\s?D\.?\s?F\.?|C\.?\s?D\.?|C\.?\s?F\.?|U\.?\s?D\.?|A\.?\s?D\.?|S\.?\s?D\.?|Sporting|Deportivo|Club|Atlético)\s+/i, '');
+      n = n.replace(/\s+(C\.?\s?F\.?|C\.?\s?D\.?|U\.?\s?D\.?|F\.?\s?C\.?)(?=\s|$)/gi, '').replace(/\s+/g, ' ').trim();
+      return n.length > 13 ? n.slice(0, 12) + '…' : n;
+  }
+  function eloEvoRangos(j) {
+      const el = EVO.hist[j].elo, o = el.map((v, i) => [v, i]).sort((a, b) => b[0] - a[0]), r = [];
+      o.forEach((p, k) => { r[p[1]] = k + 1; }); return r;
+  }
+  function eloEvoPintar() {
+      const svg = document.getElementById('eloEvoSvg'); if (!svg || !EVO.hist.length) return;
+      const W = 340, Ht = 240, L = 34, R = 72, Tp = 10, B = 22, n = EVO.hist.length, NT = EVO.nombres.length;
+      const pos = EVO.modo === 'pos', a = pos ? 1 : 0;
+      const RK = EVO.hist.map((x, j) => eloEvoRangos(j));
+      const val = (i, j) => pos ? RK[j][i] : EVO.hist[j].elo[i];
+      let lo = ELO_BASE, hi = ELO_BASE; EVO.hist.forEach(x => x.elo.forEach(v => { lo = Math.min(lo, v); hi = Math.max(hi, v); }));
+      lo -= 15; hi += 15;
+      const X = j => L + (j - a) * (W - L - R) / Math.max(1, n - 1 - a);
+      const Y = v => pos ? Tp + (v - 1) * (Ht - Tp - B) / Math.max(1, NT - 1) : Tp + (hi - v) * (Ht - Tp - B) / (hi - lo);
+      let g = '';
+      if (pos) [1, Math.ceil(NT / 2), NT].forEach(v => { g += `<text x="${L - 5}" y="${Y(v) + 3}" font-size="9" fill="#94a3b8" text-anchor="end">${v}.º</text>`; });
+      else {
+          const paso = hi - lo > 500 ? 200 : 100;
+          for (let v = Math.ceil(lo / paso) * paso; v <= hi; v += paso) g += `<line x1="${L}" x2="${W - R}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" stroke="${v === ELO_BASE ? 'rgba(255,255,255,.22)' : 'rgba(255,255,255,.07)'}"${v === ELO_BASE ? ' stroke-dasharray="3 3"' : ''}/><text x="${L - 5}" y="${Y(v) + 3}" font-size="9" fill="#94a3b8" text-anchor="end">${v}</text>`;
+      }
+      const cada = n - a > 12 ? 2 : 1;
+      for (let j = a; j < n; j++) if ((j - a) % cada === 0 || j === n - 1) g += `<text x="${X(j).toFixed(1)}" y="${Ht - 6}" font-size="9" fill="#94a3b8" text-anchor="middle">${j === 0 ? 'Inicio' : 'J' + EVO.hist[j].jg}</text>`;
+      if (EVO.jx >= a) g += `<line x1="${X(EVO.jx).toFixed(1)}" x2="${X(EVO.jx).toFixed(1)}" y1="${Tp}" y2="${Ht - B}" stroke="rgba(255,255,255,.3)"/>`;
+      const orden = EVO.nombres.map((x, i) => i).sort((p, q) => (p === EVO.H) - (q === EVO.H) || (p === EVO.sel) - (q === EVO.sel));
+      const labs = [];
+      orden.forEach(i => {
+          const me = i === EVO.H, se = i === EVO.sel, c = me ? EVO_ROJO : se ? EVO_AMB : 'rgba(148,163,184,.35)';
+          let d = ''; for (let j = a; j < n; j++) d += (j === a ? 'M' : 'L') + X(j).toFixed(1) + ' ' + Y(val(i, j)).toFixed(1);
+          g += `<path d="${d}" fill="none" stroke="${c}" stroke-width="${me || se ? 2.8 : 1.3}" stroke-linejoin="round" stroke-linecap="round"/>`;
+          if (me || se) {
+              g += `<circle cx="${X(n - 1).toFixed(1)}" cy="${Y(val(i, n - 1)).toFixed(1)}" r="3.5" fill="${c}"/>`;
+              labs.push([Y(val(i, n - 1)), c, EVO.nombres[i], val(i, n - 1)]);
+              if (EVO.jx >= a) g += `<circle cx="${X(EVO.jx).toFixed(1)}" cy="${Y(val(i, EVO.jx)).toFixed(1)}" r="3.5" fill="${c}" stroke="#0f172a" stroke-width="1.5"/>`;
+          }
+      });
+      labs.sort((p, q) => p[0] - q[0]);
+      for (let k = 1; k < labs.length; k++) if (labs[k][0] - labs[k - 1][0] < 22) labs[k][0] = labs[k - 1][0] + 22;
+      labs.forEach(l => { const y = Math.min(l[0], Ht - B - 10); g += `<text x="${W - R + 7}" y="${(y + 1).toFixed(1)}" font-size="9.5" font-weight="800" fill="${l[1]}">${momEsc(l[2])}</text><text x="${W - R + 7}" y="${(y + 12).toFixed(1)}" font-size="9" fill="#94a3b8">${pos ? l[3] + '.º' : Math.round(l[3])}</text>`; });
+      svg.innerHTML = g;
+      const bE = document.getElementById('eloEvoBtnElo'), bP = document.getElementById('eloEvoBtnPos');
+      if (bE) bE.classList.toggle('on', !pos); if (bP) bP.classList.toggle('on', pos);
+      document.querySelectorAll('.elo-fila-tap').forEach(f => { const on = f.id === 'eloFila_' + EVO.sel; f.style.background = on ? 'rgba(245,166,35,.12)' : ''; f.style.boxShadow = on ? 'inset 3px 0 0 #f5a623' : ''; f.style.borderRadius = on ? '8px' : ''; });
+      const tip = document.getElementById('eloEvoTip'); if (!tip) return;
+      const nom = i => `<b style="color:${i === EVO.H ? '#ff6b7a' : EVO_AMB};">${momEsc(EVO.nombres[i])}</b>`;
+      let t = '';
+      if (EVO.jx >= a) {
+          const jx = EVO.jx, f = i => `${nom(i)} ${Math.round(EVO.hist[jx].elo[i])} (${RK[jx][i]}.º)`;
+          t = `<span style="color:#94a3b8;">${jx === 0 ? 'Inicio' : 'Jornada ' + EVO.hist[jx].jg}</span> · ${f(EVO.H)}${EVO.sel >= 0 ? ' · ' + f(EVO.sel) : ''}`;
+      } else t = `<span style="color:#94a3b8;">Toca el gráfico para ver una jornada.</span>`;
+      t += `<div style="margin-top:4px; display:flex; flex-wrap:wrap; gap:6px 12px; align-items:center;">${EVO.sel >= 0 ? `<span onclick="eloEvoSel(${EVO.sel})" style="cursor:pointer; color:${EVO_AMB};">✕ Quitar ${momEsc(EVO.nombres[EVO.sel])}</span>` : ''}<span onclick="eloEvoArriba()" style="cursor:pointer; color:#94a3b8;">↑ ${EVO.sel >= 0 ? 'Cambiar de equipo' : 'Elige un equipo en el ranking'}</span></div>`;
+      tip.innerHTML = t;
+  }
+  window.eloEvoSel = function (i) {
+      EVO.sel = EVO.sel === i ? -1 : i; eloEvoPintar();
+      if (EVO.sel >= 0) { const b = document.getElementById('eloEvoBox'); if (b) b.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+  };
+  window.eloEvoModo = function (m) { EVO.modo = m; if (m === 'pos' && EVO.jx === 0) EVO.jx = -1; eloEvoPintar(); };
+  window.eloEvoArriba = function () { const f = document.querySelector('.elo-fila-tap'); if (f) f.parentElement.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+  window.eloEvoToque = function (ev) {
+      const svg = ev.currentTarget, r = svg.getBoundingClientRect(), x = (ev.clientX - r.left) * 340 / r.width;
+      const n = EVO.hist.length, a = EVO.modo === 'pos' ? 1 : 0, L = 34, R = 72;
+      let mej = a, md = 1e9;
+      for (let j = a; j < n; j++) { const d = Math.abs(L + (j - a) * (340 - L - R) / Math.max(1, n - 1 - a) - x); if (d < md) { md = d; mej = j; } }
+      EVO.jx = mej; eloEvoPintar();
+  };
   function suerteLiga(liga) {
       if (!liga || !liga.equipos || !liga.partidos || typeof pronPreparar !== 'function') return null;
       const D = pronPreparar(liga);
@@ -2683,18 +2765,20 @@
       const E = eloLiga(liga), S = suerteLiga(liga);
       if (!E || !E.jugados) return '';
       const esc = momEsc;
-      const fila = (k, nombre, me, sub, valor, color, peque) => `<div style="display:grid; grid-template-columns:22px 1fr auto; gap:8px; align-items:center; padding:7px ${me ? '4px' : '0'}; border-top:1px solid rgba(255,255,255,.05); font-size:12.5px;${me ? ' background:rgba(180,20,56,.18); border-radius:8px;' : ''}"><div style="font-family:'Montserrat',sans-serif; font-weight:800; color:#94a3b8; text-align:center;">${k}</div><div style="min-width:0; color:#e2e8f0;">${esc(nombre)}<div style="font-size:10.5px; color:#94a3b8;">${sub}</div></div><div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:15px; text-align:right; color:${color};">${valor}<div style="font-size:9.5px; font-weight:600; color:#94a3b8; font-family:Inter,sans-serif;">${peque}</div></div></div>`;
-      const eloFilas = E.equipos.map((x, k) => fila(k + 1, x.e.nombre, !!x.e.esHergar, `última jornada: <span style="color:${x.ult >= 0 ? '#2ed573' : '#ff6b7a'};">${proFmt(x.ult, 0)}</span>`, Math.round(x.elo), '#e2e8f0', 'puntos Elo')).join('');
-      // gráfica del Hergar
+      const fila = (k, nombre, me, sub, valor, color, peque, attrs) => `<div ${attrs || ''} style="display:grid; grid-template-columns:22px 1fr auto; gap:8px; align-items:center; padding:7px ${me ? '4px' : '0'}; border-top:1px solid rgba(255,255,255,.05); font-size:12.5px;${me ? ' background:rgba(180,20,56,.18); border-radius:8px;' : ''}"><div style="font-family:'Montserrat',sans-serif; font-weight:800; color:#94a3b8; text-align:center;">${k}</div><div style="min-width:0; color:#e2e8f0;">${esc(nombre)}<div style="font-size:10.5px; color:#94a3b8;">${sub}</div></div><div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:15px; text-align:right; color:${color};">${valor}<div style="font-size:9.5px; font-weight:600; color:#94a3b8; font-family:Inter,sans-serif;">${peque}</div></div></div>`;
+      const eloFilas = E.equipos.map((x, k) => fila(k + 1, x.e.nombre, !!x.e.esHergar, `última jornada: <span style="color:${x.ult >= 0 ? '#2ed573' : '#ff6b7a'};">${proFmt(x.ult, 0)}</span>`, Math.round(x.elo), '#e2e8f0', 'puntos Elo', x.e.esHergar ? '' : `id="eloFila_${x.i}" onclick="eloEvoSel(${x.i})" class="elo-fila-tap"`)).join('');
+      // v248: evolución de todos los equipos (toca un equipo del ranking para destacarlo)
       let graf = '';
-      if (E.histH.length > 2) {
-          const W = 320, H = 110, L = 34, Rr = 10, Tp = 8, B = 18, vals = E.histH.map(x => x.elo);
-          const mn = Math.min(...vals, ELO_BASE) - 10, mx = Math.max(...vals, ELO_BASE) + 10;
-          const X = k => L + k * (W - L - Rr) / (E.histH.length - 1), Y = v => Tp + (1 - (v - mn) / (mx - mn)) * (H - Tp - B);
-          let g = `<line x1="${L}" x2="${W - Rr}" y1="${Y(ELO_BASE)}" y2="${Y(ELO_BASE)}" stroke="rgba(255,255,255,.2)" stroke-dasharray="3 3"/><text x="${L - 4}" y="${Y(ELO_BASE) + 4}" font-size="9" fill="#94a3b8" text-anchor="end">${ELO_BASE}</text>`;
-          g += `<polyline fill="none" stroke="rgb(180,20,56)" stroke-width="2.5" points="${E.histH.map((x, k) => X(k).toFixed(1) + ',' + Y(x.elo).toFixed(1)).join(' ')}"/>`;
-          E.histH.forEach((x, k) => { g += `<circle cx="${X(k).toFixed(1)}" cy="${Y(x.elo).toFixed(1)}" r="3" fill="rgb(180,20,56)"/>`; if (k && (E.histH.length < 12 || k % 2 === 0)) g += `<text x="${X(k).toFixed(1)}" y="${H - 5}" font-size="9" fill="#94a3b8" text-anchor="middle">J${x.jg}</text>`; });
-          graf = `<div style="font-size:11px; font-weight:800; color:#cbd5e1; margin:10px 0 2px;">EL HERGAR JORNADA A JORNADA</div><svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Elo del Hergar jornada a jornada">${g}</svg>`;
+      if (E.histT.length > 2 && E.H >= 0) {
+          EVO.hist = E.histT; EVO.H = E.H;
+          EVO.nombres = liga.equipos.map(e => eloEvoCorto(e));
+          if (EVO.sel >= EVO.nombres.length || EVO.sel === EVO.H) EVO.sel = -1;
+          if (EVO.jx >= EVO.hist.length) EVO.jx = -1;
+          graf = `<div id="eloEvoBox" style="margin-top:12px; scroll-margin-top:70px;"><div style="font-size:11px; font-weight:800; color:#cbd5e1; margin-bottom:6px;">LA LIGA JORNADA A JORNADA</div>
+              <div style="display:flex; background:rgba(0,0,0,.25); border-radius:9px; padding:3px; margin-bottom:6px;"><button type="button" id="eloEvoBtnElo" onclick="eloEvoModo('elo')" class="elo-evo-btn">Puntos Elo</button><button type="button" id="eloEvoBtnPos" onclick="eloEvoModo('pos')" class="elo-evo-btn">Puesto</button></div>
+              <svg id="eloEvoSvg" viewBox="0 0 340 240" width="100%" role="img" aria-label="Evolución del Elo de los equipos de la Liga jornada a jornada" onclick="eloEvoToque(event)" style="display:block;"></svg>
+              <div id="eloEvoTip" style="font-size:11.5px; color:#cbd5e1; background:rgba(0,0,0,.25); border-radius:8px; padding:7px 10px; margin-top:6px; line-height:1.5;"></div></div>`;
+          setTimeout(eloEvoPintar, 0);
       }
       let suerte = '';
       if (S) {

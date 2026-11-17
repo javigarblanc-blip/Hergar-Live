@@ -7817,7 +7817,27 @@
     return '#' + ((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1);
   }
   function colorSobreV(hex) { return colorLumV(hex) > .32 ? '#0a0e14' : '#fff'; } // texto encima de una barra de ese color
-  function rvVars(eqONombre) { const c = colorEquipoV(eqONombre); return c ? `--rv:${c}; --rvt:${colorTextoV(c)};` : ''; }
+  // v262 · colores combinados (rojo y blanco, rojo y negro…): eq.color es el color "liso" (texto, gráficos) y eq.color2 el segundo color de las rayas
+  function colorEquipo2V(eqONombre) {
+    const eq = (eqONombre && typeof eqONombre === 'object') ? eqONombre : equipoLigaPorNombre(eqONombre);
+    const c = eq && !eq.esHergar && colorEquipoV(eq) ? String(eq.color2 || '') : '';
+    return /^#[0-9a-f]{6}$/i.test(c) ? c : null;
+  }
+  // Fondo de sus barras: liso, o rayas en diagonal si el equipo tiene dos colores
+  function rvFondoV(eqONombre, ancho) {
+    const c = colorEquipoV(eqONombre); if (!c) return null;
+    const c2 = colorEquipo2V(eqONombre), w = ancho || 5;
+    return c2 ? `repeating-linear-gradient(135deg, ${c2} 0 ${w}px, ${c} ${w}px ${2 * w}px)` : c;
+  }
+  function rvVars(eqONombre) { const c = colorEquipoV(eqONombre); return c ? `--rv:${rvFondoV(eqONombre)}; --rvt:${colorTextoV(c)};` : ''; }
+  // Rayas en diagonal para los vídeos/resúmenes en canvas (v262)
+  function exRayasR(c, A) {
+    if (!A || !A.colR || !A.colR2) return null;
+    try { const k = document.createElement('canvas'); k.width = k.height = 24; const x = k.getContext('2d');
+      x.fillStyle = A.colR; x.fillRect(0, 0, 24, 24); x.strokeStyle = A.colR2; x.lineWidth = 8.5; x.lineCap = 'square';
+      [-24, 0, 24].forEach(o => { x.beginPath(); x.moveTo(o, 24); x.lineTo(o + 24, 0); x.stroke(); });
+      return c.createPattern(k, 'repeat'); } catch (e) { return null; }
+  }
   // Escudo redondo: imagen si la hay, si no las iniciales como hasta ahora
   function escudoEquipoVisorHTML(eq, px, nombreAlt) {
     const src = escudoSrcVisor(eq);
@@ -8477,7 +8497,7 @@
       c.fillStyle = 'rgba(255,255,255,.07)'; c.fillRect(bx, y, bw, bh);
       if (tot > 0) {
         c.fillStyle = 'rgb(180,20,56)'; c.fillRect(bx, y, bw * fr * pb, bh);
-        c.fillStyle = A.colR || '#475569'; c.fillRect(bx + bw - bw * (1 - fr) * pb, y, bw * (1 - fr) * pb, bh);
+        c.fillStyle = exRayasR(c, A) || A.colR || '#475569'; c.fillRect(bx + bw - bw * (1 - fr) * pb, y, bw * (1 - fr) * pb, bh);
       }
       c.restore();
       exFont(c, 900, 20); exLS(c, 4); c.fillStyle = '#fff'; c.textAlign = 'center';
@@ -8765,7 +8785,7 @@
     document.getElementById('resumenTV').classList.add('on');
     document.body.style.overflow = 'hidden';
     rsEscala();
-    { const ast = rs.ast, eqR = equipoLigaPorNombre(p.rival); ast.escH = { img: null, ini: 'HE' }; ast.escR = { img: null, ini: inicialesEquipoViewer(eqR ? eqR.nombre : p.rival) }; ast.colR = colorEquipoV(eqR || p.rival);
+    { const ast = rs.ast, eqR = equipoLigaPorNombre(p.rival); ast.escH = { img: null, ini: 'HE' }; ast.escR = { img: null, ini: inicialesEquipoViewer(eqR ? eqR.nombre : p.rival) }; ast.colR = colorEquipoV(eqR || p.rival); ast.colR2 = colorEquipo2V(eqR || p.rival);
       exImg(ESCUDO_HERGAR_SRC).then(im => { ast.escH.img = im; }); exImg(escudoSrcVisor(eqR)).then(im => { ast.escR.img = im; }); }
     // la entrada dura 5 s más cuando se pone en pantalla completa, para que el aviso del móvil no tape el once
     if (pedirFs && rs.pasos[0] && rs.pasos[0].tipo === 'intro') rs.pasos[0].dur += 5000;
@@ -9074,7 +9094,7 @@
     const eqR = equipoLigaPorNombre(p.rival);
     ex.escH = { img: await exImg(ESCUDO_HERGAR_SRC), ini: 'HE' };
     ex.escR = { img: await exImg(escudoSrcVisor(eqR)), ini: inicialesEquipoViewer(eqR ? eqR.nombre : p.rival) };
-    ex.ast = rsdAssets(ex.extra); ex.ast.escH = ex.escH; ex.ast.escR = ex.escR; ex.ast.colR = colorEquipoV(p.rival);
+    ex.ast = rsdAssets(ex.extra); ex.ast.escH = ex.escH; ex.ast.escR = ex.escR; ex.ast.colR = colorEquipoV(p.rival); ex.ast.colR2 = colorEquipo2V(p.rival);
     if (ex.pasos.some(s => rsdEsTipo(s.tipo))) { exEstado('Preparando los rótulos…'); await ex.ast.listo; }
     const conVideo = [];
     ex.pasos.forEach(s => { if (s.tipo === 'video') conVideo.push(s.gol); });
@@ -9672,7 +9692,7 @@
     else html = tvPantallaPartido(m, estado);
     base.innerHTML = html;
     { const st = document.getElementById('tvStage'), c = m ? colorEquipoV(m.rival) : null; // v231
-      if (st) { if (c) { st.style.setProperty('--rv', c); st.style.setProperty('--rvt', colorTextoV(c)); } else { st.style.removeProperty('--rv'); st.style.removeProperty('--rvt'); } } }
+      if (st) { if (c) { st.style.setProperty('--rv', rvFondoV(m.rival)); st.style.setProperty('--rvt', colorTextoV(c)); } else { st.style.removeProperty('--rv'); st.style.removeProperty('--rvt'); } } }
     if (estado === 'final') { // 🎬 resumen del partido en la pantalla de Final
       const pi = indicePartidoDeMatch(m);
       if (pi >= 0 && rsTieneVideos(ultimaTemporada.partidos[pi])) base.insertAdjacentHTML('beforeend', `<button type="button" class="tv-btn-resumen" onclick="event.stopPropagation(); abrirResumenPartido(${pi})">🎬 Ver resumen</button>`);

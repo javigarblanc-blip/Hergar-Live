@@ -1568,6 +1568,7 @@
   }
 </style>
 <script type="module">
+  // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
   // v265 (visor) · Fuera lo de inclinar el móvil (cartel y ficha).
   // v264 (visor) · ✨ El tiempo del partido en el cartel y detrás del marcador del directo (10 efectos + focos), campos en 3D con botón 3D / plano y rótulos de tele en «Último partido» y en las tarjetas de cifras.
   // v261 (visor) · La pantalla de entrada se queda hasta que la cabecera tiene el partido (o el próximo partido), no solo la temporada: ya no se ve «Cargando…» con el marcador vacío. Como mucho 8 s.
@@ -7964,7 +7965,8 @@
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(fechaISO || ''), h = /^(\d{1,2}):(\d{2})/.exec(hora || '');
     return m && h ? new Date(+m[1], +m[2] - 1, +m[3], +h[1], +h[2] + (mas || 0)) : null;
   }
-  // Qué efecto toca, por este orden: tormenta, nieve, lluvia, niebla, viento, calor, frío, atardecer, soleado / nublado
+  // Qué efecto toca, por este orden: tormenta, nieve, lluvia, niebla (si no hace frío), viento (30 km/h o rachas de 50),
+  // calor (25 °C), frío (6 °C), atardecer, soleado / nublado — umbrales de la v266
   function c264Tipo(d, campo, fechaISO, hora) {
     if (!d) return null;
     const c = d.code == null ? 3 : Number(d.code), v = Number(d.viento) || 0, r = Number(d.racha) || 0, t = Number(d.t);
@@ -7974,10 +7976,10 @@
     if (c >= 95) k = 'tormenta';
     else if ((c >= 71 && c <= 77) || (c >= 85 && c <= 86)) k = 'nieve';
     else if ((c >= 51 && c <= 67) || (c >= 80 && c <= 82)) k = 'lluvia';
-    else if (c === 45 || c === 48) k = 'niebla';
-    else if (v >= 35 || r >= 50) k = 'viento';
-    else if (t >= 28) k = 'calor';
-    else if (t <= 4) k = 'frio';
+    else if ((c === 45 || c === 48) && !(t <= 6)) k = 'niebla'; // v266: con 6 °C o menos, manda el frío
+    else if (v >= 30 || r >= 50) k = 'viento';
+    else if (t >= 25) k = 'calor';
+    else if (t <= 6) k = 'frio';
     else if (e0 <= 0) k = c >= 3 ? 'nublado' : null;
     else if (e0 < 15 && c <= 2) k = 'atardecer';
     else k = c <= 2 ? 'soleado' : 'nublado';

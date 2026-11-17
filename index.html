@@ -921,7 +921,7 @@
         <div class="sub-caption" style="text-align:left; margin-top:2px;">👆 Toca un jugador para ver su Perfil</div>
       </div>
 
-      <div class="card">
+      <div class="card" id="rotacionCard">
         <div class="card-title">💤 Rotación — tiempo en banquillo</div>
         <div id="rotacionLista"><div class="loader">Sin suplentes en banquillo</div></div>
       </div>
@@ -1269,7 +1269,7 @@
 <div class="bottom-tabbar">
   <div class="bottom-tab active" data-t="partido" onclick="showTab('partido')"><span class="ic">⚽</span>Partido</div>
   <div class="bottom-tab" id="tabMiHijo" data-t="mihijo" onclick="showTab('mihijo')" style="display:none;"><span class="ic">⭐</span><span id="tabMiHijoNom" style="max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Favorito</span></div>
-  <div class="bottom-tab" data-t="envivo" onclick="showTab('envivo')"><span class="ic">📊</span>En vivo</div>
+  <div class="bottom-tab" id="tabEnVivo" data-t="envivo" onclick="showTab('envivo')" style="display:none;"><span class="ic">📊</span><span class="ev270"><i class="live-dot"></i>En vivo</span></div>
   <div class="bottom-tab" data-t="temporada" onclick="showTab('temporada')"><span class="ic">🏆</span>Temporada</div>
   <div class="bottom-tab" data-t="liga" onclick="showTab('liga')"><span class="ic">📋</span>Liga</div>
 </div>
@@ -1560,6 +1560,11 @@
   #perfilHero .ph-n { position:relative; overflow:hidden; border-radius:9px; text-align:left; padding:7px 6px 6px 13px; background:linear-gradient(90deg,rgba(17,24,39,.92),rgba(255,255,255,.05)); }
   #perfilHero .ph-n::before { content:''; position:absolute; left:0; top:0; bottom:0; width:5px; background:#b41438; }
   #perfilHero .ph-n span { text-transform:uppercase; letter-spacing:.5px; font-weight:800; font-size:9px; }
+  /* v271 · pestaña En vivo solo con el partido en juego, en rojo con el punto parpadeante */
+  #tabEnVivo { color:#ff4757; }
+  #tabEnVivo .ev270 { display:flex; align-items:center; gap:4px; }
+  #tabEnVivo .ev270 .live-dot { width:6px; height:6px; flex:none; }
+  #tabEnVivo.active { color:#ff4757; background:rgba(255,71,87,.1); }
   .num-k.in264 { animation:r264Tarj .5s cubic-bezier(.2,1,.3,1) both; }
   @keyframes r264Tarj { from { clip-path:inset(0 100% 0 0); } to { clip-path:inset(0 0 0 0); } }
   @media (prefers-reduced-motion: reduce) {
@@ -1627,6 +1632,7 @@
   @media (prefers-reduced-motion: reduce) { .tl269 .ahora { animation:none; } .cab269 { transition:none; } }
 </style>
 <script type="module">
+  // v271 (visor) · La pestaña «En vivo» solo sale con el partido en juego (en rojo, con el punto parpadeante); la rotación solo durante el partido; «Ver todas las estadísticas del partido» abre ese partido en Temporada → Partidos.
   // v270 (visor) · Fuera la línea de tiempo del partido (se veía mal con muchos goles y cambios).
   // v269 (visor) · ✨ Más pro: números con letra de tele (Barlow Condensed, cifras del mismo ancho), línea de tiempo del partido (Hergar arriba, rival abajo; en directo avanza), cabecera que se encoge en una barra fija al bajar, cabecera del directo a dos colores (Hergar y el rival en diagonal) y títulos de tarjeta todos iguales.
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
@@ -7939,6 +7945,7 @@
     pintarEventos(matchData);
     try { pintarAlineacionFinal(matchData, previa); } catch (e) { console.error('Alineación del partido:', e); } // v253
     try { dc269Cabecera(matchData, previa); } catch (e) { console.error('Cabecera a dos colores:', e); } // v269
+    try { envivo271(matchData, previa); } catch (e) { console.error('Pestaña En vivo:', e); } // v271
     try { pintarNarracion(matchData); } catch (e) { console.error('Minuto a minuto:', e); } // v193
     try { v260Descanso(matchData); } catch (e) { console.error('Descanso:', e); } // v260
     pintarStatsGrid(matchData);
@@ -10800,7 +10807,7 @@
       </div>` : ''}
       ${topHTML}
       ${ia}
-      <button onclick="showTab('envivo'); window.scrollTo(0,0);" style="width:100%; margin-top:12px; padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.04); color:#e2e8f0; font-weight:700; font-size:12px; cursor:pointer;">Ver todas las estadísticas del partido →</button>`;
+      <button onclick="irAPartidoTemporada()" style="width:100%; margin-top:12px; padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.04); color:#e2e8f0; font-weight:700; font-size:12px; cursor:pointer;">Ver todas las estadísticas del partido →</button>`;
     card.style.display = 'block';
     try { r264Iniciar(document.getElementById('rot264Ult'), r264ItemsUltimo(m, rsP, goles, gl, gr), `${gl}-${gr}|${m.rival || ''}|${fin || ''}`); } catch (e) { console.error('Rótulos:', e); } // v264
     // colocación: arriba los primeros días; luego debajo del próximo partido
@@ -15231,6 +15238,35 @@
   }
   setTimeout(ddIntentar, 6300);
 
+
+
+  // ══ v271 · La pestaña «En vivo» solo existe con el partido en juego (también en el descanso) ══
+  function envivo271(m, previa) {
+    const tab = document.getElementById('tabEnVivo'); if (!tab) return;
+    const enJuego = !!(m && !previa && !m.matchFinished && (m.matchRunning || Number(m.minuto) > 0));
+    const antes = tab.style.display !== 'none';
+    tab.style.display = enJuego ? '' : 'none';
+    const rot = document.getElementById('rotacionCard'); if (rot) rot.style.display = enJuego ? '' : 'none'; // la rotación, solo durante el partido
+    if (!enJuego && document.getElementById('envivo').classList.contains('active')) showTab('partido');
+    if (antes !== enJuego) { try { v260TabInd(); } catch (e) {} }
+  }
+  // «Ver todas las estadísticas del partido» → abre ese partido en Temporada → Partidos
+  window.irAPartidoTemporada = function () {
+    const t = ultimaTemporada, m = ultimoMatchData;
+    let p = null;
+    try { const i = indicePartidoDeMatch(m); p = i >= 0 ? t.partidos[i] : null; } catch (e) {}
+    const clave = p ? `${p.fecha || ''}|${p.rival || ''}` : null;
+    if (clave) partidosAbiertos.add(clave);
+    showTab('temporada');
+    try { const b = document.querySelector(`#temporada .subtab-btn[onclick*="'subPartidos'"]`); if (b && !b.classList.contains('active')) b.click(); } catch (e) {}
+    try { if (t) pintarPartidos(t); } catch (e) {}
+    setTimeout(() => {
+      let el = null;
+      try { if (clave) el = [...document.querySelectorAll('#subPartidos details.hp-det')].find(d => d.dataset.k === clave); } catch (e) {}
+      if (el) { el.open = true; el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+      else { const sp = document.getElementById('subPartidos'); if (sp) sp.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    }, 120);
+  };
 
   // ══ v269 · VISOR MÁS PRO ══════════════════════════════════════════════════════════════════
 

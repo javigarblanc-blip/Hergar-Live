@@ -1473,8 +1473,107 @@
     #celAviso .cel-cf { display:none; }
     .tab-ind { transition:none; }
   }
+  /* ══ v264 · ✨ tiempo del partido, campo 3D, inclinar el móvil y rótulos de tele ══ */
+  /* 1 · tiempo: capa por debajo del contenido (z-index:-1 dentro de un contexto aislado) */
+  .cartel, .match-header { isolation:isolate; }
+  .c264 { position:absolute; inset:0; overflow:hidden; z-index:-1; pointer-events:none; border-radius:inherit; }
+  .match-header > .c264 { position:absolute; z-index:-1; opacity:.75; }
+  .c264 canvas { position:absolute; inset:0; width:100%; height:100%; }
+  .c264 .cp { position:absolute; inset:0; }
+  .c264 .k-sol { background:radial-gradient(circle at 84% 9%,rgba(255,255,235,.95) 0,rgba(255,236,150,.55) 9%,rgba(255,220,120,.18) 30%,transparent 55%),linear-gradient(180deg,rgba(125,200,255,.18),transparent 60%); }
+  .c264 .k-sol::after, .c264 .k-atar::after { content:''; position:absolute; inset:-40%; background:repeating-conic-gradient(from 0deg at 84% 9%,rgba(255,250,210,.15) 0 3deg,transparent 3deg 11deg); animation:c264Gira 50s linear infinite; transform-origin:84% 9%; }
+  .c264 .k-sol i { position:absolute; border-radius:50%; background:rgba(255,245,200,.22); animation:c264Dest 5s ease-in-out infinite; }
+  .c264 .k-sol i:nth-child(1) { left:58%; top:30%; width:22px; height:22px; } .c264 .k-sol i:nth-child(2) { left:40%; top:52%; width:12px; height:12px; animation-delay:.6s; }
+  .c264 .k-sol i:nth-child(3) { left:22%; top:72%; width:34px; height:34px; background:rgba(160,220,255,.14); animation-delay:1.2s; }
+  .c264 .k-atar { background:radial-gradient(circle at 88% 10%,rgba(255,214,130,.85) 0,rgba(255,150,60,.4) 20%,transparent 52%),linear-gradient(0deg,rgba(255,120,60,.25),transparent 60%); }
+  .c264 .k-atar::after { background:repeating-conic-gradient(from 0deg at 88% 10%,rgba(255,200,130,.13) 0 4deg,transparent 4deg 14deg); transform-origin:88% 10%; }
+  .c264 .k-nube { background:linear-gradient(180deg,rgba(100,116,139,.45),rgba(30,41,59,.12)); }
+  .c264 .k-nube i { position:absolute; left:-200px; height:60px; border-radius:40px; background:rgba(203,213,225,.42); filter:blur(10px); animation:c264Nube 26s linear infinite; }
+  .c264 .k-nube i::before, .c264 .k-nube i::after { content:''; position:absolute; border-radius:50%; background:inherit; }
+  .c264 .k-nube i::before { width:60%; height:120%; left:15%; top:-55%; } .c264 .k-nube i::after { width:40%; height:90%; left:50%; top:-35%; }
+  .c264 .k-nube i:nth-child(1) { top:22px; width:170px; } .c264 .k-nube i:nth-child(2) { top:70px; width:130px; animation-duration:34s; animation-delay:-14s; opacity:.8; }
+  .c264 .k-nube i:nth-child(3) { top:8px; width:120px; animation-duration:30s; animation-delay:-24s; opacity:.7; }
+  .c264 .k-torm { background:linear-gradient(180deg,rgba(15,23,42,.65),rgba(15,23,42,.25)); }
+  .c264 .k-rayo { background:rgba(235,240,255,.85); opacity:0; animation:c264Rayo 7s infinite; }
+  .c264 .k-calor { background:radial-gradient(circle at 80% 0%,rgba(255,200,80,.6),transparent 50%),linear-gradient(0deg,rgba(255,110,30,.4),rgba(255,160,50,.08) 55%,transparent); }
+  .c264 .k-frio { background:linear-gradient(180deg,rgba(150,200,255,.28),rgba(80,140,220,.12)); box-shadow:inset 0 0 50px 14px rgba(220,240,255,.5); }
+  .c264 .k-frio::before, .c264 .k-frio::after { content:''; position:absolute; width:140px; height:140px; background:repeating-conic-gradient(from 10deg,rgba(255,255,255,.55) 0 2deg,transparent 2deg 22deg); -webkit-mask:radial-gradient(circle,#000 0,transparent 70%); mask:radial-gradient(circle,#000 0,transparent 70%); }
+  .c264 .k-frio::before { left:-50px; top:-50px; } .c264 .k-frio::after { right:-50px; bottom:-50px; }
+  .c264 .k-niebla { background:linear-gradient(180deg,rgba(200,210,220,.05),rgba(200,210,220,.35)); }
+  .c264 .k-niebla i { position:absolute; left:-50%; width:200%; height:70px; border-radius:50%; background:rgba(220,228,235,.28); filter:blur(18px); animation:c264Deriva 14s ease-in-out infinite alternate; }
+  .c264 .k-niebla i:nth-child(1) { top:20%; } .c264 .k-niebla i:nth-child(2) { top:50%; animation-duration:19s; animation-direction:alternate-reverse; } .c264 .k-niebla i:nth-child(3) { top:76%; animation-duration:11s; }
+  .c264 .k-focos { background:linear-gradient(180deg,rgba(2,6,23,.55),rgba(2,6,23,.12)); }
+  .c264 .k-focos b { position:absolute; top:-30px; width:150px; height:330px; background:linear-gradient(180deg,rgba(255,255,240,.5),rgba(255,255,240,0) 85%); filter:blur(6px); clip-path:polygon(42% 0,58% 0,100% 100%,0 100%); animation:c264Foco 4s ease-in-out infinite; transform-origin:50% 0; }
+  .c264 .k-focos b:nth-child(1) { left:-30px; transform:rotate(-24deg); } .c264 .k-focos b:nth-child(2) { right:-30px; transform:rotate(24deg); animation-delay:1.3s; }
+  .c264 .k-focos u { position:absolute; top:4px; width:26px; height:8px; border-radius:3px; background:#fffbe6; box-shadow:0 0 18px 6px rgba(255,251,230,.9); }
+  .c264 .k-focos u:nth-child(3) { left:14px; } .c264 .k-focos u:nth-child(4) { right:14px; }
+  .match-header > .c264 .k-focos u { display:none; }
+  .c264-chip { position:absolute; bottom:9px; left:50%; transform:translateX(-50%); z-index:2; background:rgba(10,14,20,.68); border:1px solid rgba(255,255,255,.15); border-radius:20px; padding:3px 10px; font-size:10.5px; font-weight:800; color:#e2e8f0; white-space:nowrap; }
+  @keyframes c264Gira { to { transform:rotate(360deg); } }
+  @keyframes c264Dest { 50% { opacity:.35; transform:scale(1.2); } }
+  @keyframes c264Nube { to { transform:translateX(780px); } }
+  @keyframes c264Deriva { from { transform:translateX(-12%); } to { transform:translateX(12%); } }
+  @keyframes c264Foco { 50% { opacity:.75; } }
+  @keyframes c264Rayo { 0%, 30%, 100% { opacity:0; } 31% { opacity:.85; } 32.5% { opacity:.1; } 34% { opacity:.6; } 38% { opacity:0; } 71% { opacity:0; } 72% { opacity:.7; } 75% { opacity:0; } }
+  /* 2 · campo en perspectiva (botón 3D / plano, se recuerda en el móvil) */
+  .c3d { position:relative; perspective:1100px; perspective-origin:50% 0; padding-top:26px; }
+  .c3d > .campo { width:76%; margin-left:auto; margin-right:auto; transform:rotateX(38deg); transform-origin:50% 0; transform-style:preserve-3d; overflow:visible; transition:transform .7s cubic-bezier(.2,.8,.2,1), width .7s cubic-bezier(.2,.8,.2,1); box-shadow:0 26px 40px rgba(0,0,0,.55), inset 0 0 50px rgba(0,0,0,.55); }
+  .c3d > .campo .jf-wrap { transform:translate(-50%,-72%) rotateX(-38deg); transform-origin:50% 100%; transition:transform .35s cubic-bezier(.2,1.4,.4,1); }
+  .c3d > .campo .jf-wrap:active { transform:translate(-50%,-72%) rotateX(-38deg) translateY(-14px) scale(1.15); }
+  .c3d > .campo .jf-wrap.v260-sale { animation-name:c264Sale; }
+  @keyframes c264Sale { 0% { opacity:0; transform:translate(-50%,-72%) rotateX(-38deg) translateY(-150px) scale(.7); } 100% { opacity:1; transform:translate(-50%,-72%) rotateX(-38deg); } }
+  .c3d.mg > svg { width:84% !important; margin-left:auto !important; margin-right:auto !important; transform:rotateX(34deg); transform-origin:50% 0; box-shadow:0 22px 34px rgba(0,0,0,.5); transition:transform .7s cubic-bezier(.2,.8,.2,1), width .7s; }
+  .c3d-btn { position:absolute; top:0; right:0; z-index:5; border:1px solid rgba(255,255,255,.18); background:rgba(10,14,20,.7); color:#e2e8f0; border-radius:8px; padding:4px 8px; font-size:10.5px; font-weight:800; font-family:inherit; cursor:pointer; }
+  .c3d-btn::after { content:'⬜ Plano'; }
+  body.plano264 .c3d-btn::after { content:'🧊 3D'; }
+  body.plano264 .c3d > .campo { width:100%; transform:none; }
+  body.plano264 .c3d > .campo .jf-wrap { transform:translate(-50%,-50%); }
+  body.plano264 .c3d > .campo .jf-wrap.v260-sale { animation-name:v260Sale; }
+  body.plano264 .c3d.mg > svg { width:100% !important; transform:none; }
+  /* 3 · inclinar el móvil */
+  .cartel.t264, #perfilHero.t264 { will-change:transform; }
+  .t264 .ca-eqs, .t264 .ca-top, .t264 .ph-dorsal, .t264 .ph-foto, .t264 .ph-info, .t264 .ph-nums { transition:translate .15s linear; }
+  .brillo264 { position:absolute; inset:0; z-index:3; pointer-events:none; opacity:0; transition:opacity .4s; background:radial-gradient(circle at var(--bx,50%) var(--by,30%),rgba(255,255,255,.22),transparent 45%); mix-blend-mode:overlay; }
+  .t264 .brillo264 { opacity:1; }
+  /* 4 · rótulos de tele */
+  .rot264 { position:relative; display:flex; align-items:stretch; height:58px; overflow:hidden; border-radius:4px; margin:4px 0 12px; }
+  .rot264 .rb { width:9px; flex-shrink:0; background:var(--rc,#b41438); transform:scaleY(0); transform-origin:bottom; }
+  .rot264 .rc { flex:1; min-width:0; position:relative; background:linear-gradient(90deg,rgba(10,14,20,.96),rgba(17,24,39,.92)); clip-path:inset(0 100% 0 0); display:flex; align-items:center; gap:11px; padding:0 64px 0 11px; }
+  .rot264 .rc::after { content:''; position:absolute; left:0; top:0; bottom:0; width:60px; background:linear-gradient(90deg,transparent,rgba(255,255,255,.3),transparent); transform:translateX(-80px); }
+  .rot264 .rn { font-family:'Montserrat',sans-serif; font-weight:900; font-size:30px; color:#fff; min-width:40px; text-align:center; opacity:0; transform:translateY(18px); white-space:nowrap; }
+  .rot264 .rt { min-width:0; opacity:0; transform:translateX(-12px); }
+  .rot264 .rt b { display:block; font-family:'Montserrat',sans-serif; font-weight:900; font-size:14px; letter-spacing:1.3px; color:#fff; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .rot264 .rt span { display:block; font-size:10.5px; font-weight:700; color:#94a3b8; letter-spacing:.4px; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .rot264 .rg { position:absolute; right:0; top:0; bottom:0; width:56px; background:var(--rc,#b41438); color:var(--rct,#fff); display:flex; align-items:center; justify-content:center; font-family:'Montserrat',sans-serif; font-weight:900; font-size:9.5px; letter-spacing:1px; transform:translateX(100%); }
+  .rot264.on .rb { animation:r264Sube .25s ease-out forwards; }
+  .rot264.on .rc { animation:r264Barre .45s cubic-bezier(.6,0,.2,1) .2s forwards; }
+  .rot264.on .rc::after { animation:r264Luz .9s ease .55s forwards; }
+  .rot264.on .rn { animation:r264In .4s cubic-bezier(.2,1.4,.4,1) .55s forwards; }
+  .rot264.on .rt { animation:r264In .4s ease .7s forwards; }
+  .rot264.on .rg { animation:r264In .35s cubic-bezier(.2,1.2,.4,1) .85s forwards; }
+  .rot264.sal .rb { transform:scaleY(1); animation:r264Baja .25s ease .3s forwards; }
+  .rot264.sal .rc { clip-path:inset(0 0 0 0); animation:r264Sale .35s ease-in forwards; }
+  .rot264.sal .rn, .rot264.sal .rt { opacity:1; transform:none; } .rot264.sal .rg { transform:none; }
+  .rot264.fijo .rb { transform:none; } .rot264.fijo .rc { clip-path:none; } .rot264.fijo .rn, .rot264.fijo .rt { opacity:1; transform:none; } .rot264.fijo .rg { transform:none; }
+  @keyframes r264Sube { to { transform:scaleY(1); } } @keyframes r264Baja { to { transform:scaleY(0); } }
+  @keyframes r264Barre { to { clip-path:inset(0 0 0 0); } } @keyframes r264Sale { to { clip-path:inset(0 0 0 100%); } }
+  @keyframes r264Luz { to { transform:translateX(520px); } } @keyframes r264In { to { opacity:1; transform:none; } }
+  .num-k { position:relative; overflow:hidden; border-radius:9px; padding-left:15px; background:linear-gradient(90deg,rgba(17,24,39,.95),rgba(255,255,255,.04)); }
+  .num-k::before { content:''; position:absolute; left:0; top:0; bottom:0; width:5px; background:#b41438; }
+  .num-k .l { text-transform:uppercase; letter-spacing:.6px; font-weight:800; font-size:9.5px; }
+  #perfilHero .ph-n { position:relative; overflow:hidden; border-radius:9px; text-align:left; padding:7px 6px 6px 13px; background:linear-gradient(90deg,rgba(17,24,39,.92),rgba(255,255,255,.05)); }
+  #perfilHero .ph-n::before { content:''; position:absolute; left:0; top:0; bottom:0; width:5px; background:#b41438; }
+  #perfilHero .ph-n span { text-transform:uppercase; letter-spacing:.5px; font-weight:800; font-size:9px; }
+  .num-k.in264 { animation:r264Tarj .5s cubic-bezier(.2,1,.3,1) both; }
+  @keyframes r264Tarj { from { clip-path:inset(0 100% 0 0); } to { clip-path:inset(0 0 0 0); } }
+  @media (prefers-reduced-motion: reduce) {
+    .c264 *, .c264 *::before, .c264 *::after { animation:none !important; }
+    .c3d > .campo, .c3d > .campo .jf-wrap, .c3d.mg > svg { transition:none; }
+    .num-k.in264 { animation:none; }
+  }
 </style>
 <script type="module">
+  // v264 (visor) · ✨ El tiempo del partido en el cartel y detrás del marcador del directo (10 efectos + focos), campos en 3D con botón 3D / plano, cartel y ficha del niño que se mueven al inclinar el móvil, y rótulos de tele en «Último partido» y en las tarjetas de cifras.
   // v261 (visor) · La pantalla de entrada se queda hasta que la cabecera tiene el partido (o el próximo partido), no solo la temporada: ya no se ve «Cargando…» con el marcador vacío. Como mucho 8 s.
   // v260 (visor) · ✨ Visor más chulo: pestañas con movimiento (también deslizando) y marca que se desliza, gráficos que se dibujan al aparecer, directo con marcador que gira, destello del color de quien marca, barra de la parte y tarjeta del descanso, campo con césped y salida al campo, celebración tras ganar (con «¡Ha marcado…!» y el MVP), cartel del próximo partido, clasificación que se mueve, cabecera de estrella en la ficha, pantalla de entrada, balón en las cargas y respuesta al tocar.
   // v259 (visor) · 💡 Dato del día mucho más variado: ~35 familias nuevas de datos (goleadas, remontadas, hat-tricks, líderes de la plantilla, orígenes de gol, Liga, Elo…) y rotación por familias para que no se repita ninguna hasta haber salido todas.
@@ -1775,6 +1874,7 @@
   // ── 3 · directo: el marcador gira, destello con el color de quien marca y barra de la parte ──
   let v260Score = null, v260FlipN = 0;
   function v260Marcador(m) {
+    try { c264Cabecera(m); } catch (e) {} // v264 · el tiempo del partido detrás del marcador
     if (!m) { v260Score = null; v260ParteBarra(null); return; }
     const h = Number(m.golesLocal) || 0, r = Number(m.golesRival) || 0, k = String(m.rival || '') + '|' + (codigoPartidoActual || '');
     const prev = v260Score; v260Score = { h, r, k };
@@ -1936,7 +2036,7 @@
       <div style="position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,.05), rgba(0,0,0,.35));"></div>
       <div class="ca-top">📣 PRÓXIMO PARTIDO${jor} · ${esCasa ? 'EN CASA' : 'FUERA'}</div>
       ${hoy ? '<div class="ca-hoy">HOY</div>' : ''}
-      <div class="ca-eqs">${eqH(L, 'i')}<div class="ca-vs">VS</div>${eqH(V, 'd')}</div></div>`;
+      <div class="ca-eqs">${eqH(L, 'i')}<div class="ca-vs">VS</div>${eqH(V, 'd')}</div><div class="brillo264"></div></div>`;
   }
 
   // ── 7 · clasificación que se mueve: de la jornada anterior a la de ahora, con su flecha ──
@@ -1973,7 +2073,7 @@
     meta += ` · dorsal ${j.dorsal ?? '–'} · ${j.partidos || 0} ${j.partidos === 1 ? 'partido' : 'partidos'}`;
     const N = esPortero ? [[j.paradas || 0, '🧤 paradas'], [j.partidos || 0, '📋 partidos'], [j.minutos || 0, '⏱ minutos', "'"]]
       : [[j.goles || 0, '⚽ goles'], [j.asistencias || 0, '🅰️ asistencias'], [j.minutos || 0, '⏱ minutos', "'"]];
-    h.innerHTML = `<div class="ph-dorsal" aria-hidden="true">${escHtml(j.dorsal ?? '')}</div><div class="ph-sombra"></div>
+    h.innerHTML = `<div class="brillo264"></div><div class="ph-dorsal" aria-hidden="true">${escHtml(j.dorsal ?? '')}</div><div class="ph-sombra"></div>
       <div class="ph-foto">${foto ? `<img src="${foto}" alt="">` : escHtml(j.dorsal ?? '')}</div>
       <div class="ph-info"><div class="ph-nom">${escHtml(j.name || '')}</div><div class="ph-meta">${escHtml(meta)}</div></div>
       <div class="ph-nums">${N.map(([v, l, s]) => `<div class="ph-n"><b data-v="${Number(v) || 0}" data-s="${s || ''}">${hitoNum(Number(v) || 0)}${s || ''}</b><span>${l}</span></div>`).join('')}</div>`;
@@ -2147,11 +2247,11 @@
         ${foto ? `<span class="jf-dor">${escHtml(j.dorsal ?? '')}</span>` : ''}
         <div class="jf-nom">${escHtml(j.nom)}</div></div>`;
     }).join('');
-    return `<div class="campo v211" style="margin-top:6px;"><svg class="campo-lineas" viewBox="0 0 300 400" preserveAspectRatio="none" aria-hidden="true">
+    return `<div class="c3d" style="margin-top:6px;">${c3dBtn()}<div class="campo v211"><svg class="campo-lineas" viewBox="0 0 300 400" preserveAspectRatio="none" aria-hidden="true">
         <g fill="none" stroke="rgba(255,255,255,.26)" stroke-width="1.5" vector-effect="non-scaling-stroke">
           <rect x="8" y="8" width="284" height="384" rx="3"/><line x1="8" y1="200" x2="292" y2="200"/><circle cx="150" cy="200" r="34"/>
           <rect x="80" y="8" width="140" height="56"/><rect x="118" y="8" width="64" height="20"/><path d="M122 64a34 34 0 0 0 56 0"/>
-          <rect x="80" y="336" width="140" height="56"/><rect x="118" y="372" width="64" height="20"/><path d="M122 336a34 34 0 0 1 56 0"/></g></svg>${js}</div>`;
+          <rect x="80" y="336" width="140" height="56"/><rect x="118" y="372" width="64" height="20"/><path d="M122 336a34 34 0 0 1 56 0"/></g></svg>${js}</div></div>`;
   }
   function alinPintarHoja() {
     const D = alinDatos, caja = document.getElementById('alinCaja'); if (!D || !caja) return;
@@ -6982,7 +7082,7 @@
     const d = Math.floor(h / 24), hr = h % 24;
     return `= ${h.toLocaleString('es-ES')} h · ${d} ${d === 1 ? 'día' : 'días'}${hr ? ' y ' + hr + ' h' : ''}`;
   }
-  let numItems = [];
+  let numItems = [], numIn264 = false;
   window.numIr = function (k) { const x = numItems[k]; if (!x) return; try { buscaIr(Object.assign({ tipo: 'tarjeta' }, x.ir)); if (x.ir && x.ir.sel === 'regates') { const se = document.getElementById('comparativaStatSelect'); if (se) { se.value = 'regates'; try { rerenderComparativa(); } catch (e) {} } } } catch (e) { console.error('Números:', e); } };
   function numPintar() {
     const box = document.getElementById('numTira'); if (!box) return;
@@ -6994,6 +7094,9 @@
     box.style.display = '';
     box.innerHTML = `<div class="num-cab"><b>📊 La temporada en números</b><span>${R.n} ${R.n === 1 ? 'partido' : 'partidos'} · desliza →</span></div>
       <div class="num-tira">${R.it.map((x, k) => `<button type="button" class="num-k" onclick="numIr(${k})"><b data-v="${x.v}"${x.signo ? ' data-s="1"' : ''}${x.signo && x.v < 0 ? ' style="color:#ff6b7a;"' : ''}>${fmt(x.v, x.signo)}</b><span class="l">${x.e} ${escHtml(x.l)}</span>${x.extra ? `<span class="x">${escHtml(x.extra)}</span>` : ''}<span class="n${x.u > 0 ? '' : ' gris'}"${x.signo && x.u < 0 ? ' style="color:#ff6b7a;"' : ''}>${escHtml(x.txt)}</span></button>`).join('')}</div>`;
+    if (!V264_RM && !numIn264 && document.getElementById('temporada') && document.getElementById('temporada').classList.contains('active')) { // v264 · entran como rótulos, una vez por visita
+      numIn264 = true; box.querySelectorAll('.num-k').forEach((x, i) => { x.style.animationDelay = Math.min(i, 8) * 90 + 'ms'; x.classList.add('in264'); });
+    }
     // la primera vez tras cada partido, los números cuentan desde 0 y después sale lo que sumó el último
     let visto = null; try { visto = localStorage.getItem(NUM_VISTO_KEY); } catch (e) {}
     const panel = document.getElementById('temporada');
@@ -7247,6 +7350,7 @@
         }
         el.innerHTML = caja(cab(dias > 3, '') + '<div style="font-size:12px; color:#94a3b8; text-align:center; padding:6px;">Cargando el tiempo…</div>', lineaCampo);
         const d = await ctxTiempoFranja(campo.lat, campo.lon, fechaISO, hora);
+        try { if (d && el.id === 'proxTiempoVisor') c264Cartel(d, campo, fechaISO, hora); } catch (e) { console.error('Tiempo en el cartel:', e); } // v264
         if (!d) { el.innerHTML = caja(cab(false, '') + '<div style="font-size:12px; color:#94a3b8; text-align:center; padding:6px;">No se ha podido cargar el tiempo ahora mismo.</div>', lineaCampo); return; }
         const [ico, cielo] = ctxIcono(d.code);
         const dato = (v, l) => `<div style="background:rgba(0,0,0,.25); border-radius:9px; padding:7px 4px; text-align:center;"><b style="display:block; font-family:'Montserrat',sans-serif; font-size:14px; color:#e2e8f0;">${v}</b><span style="font-size:9.5px; color:#94a3b8; font-weight:700;">${l}</span></div>`;
@@ -7843,6 +7947,240 @@
       [-24, 0, 24].forEach(o => { x.beginPath(); x.moveTo(o, 24); x.lineTo(o + 24, 0); x.stroke(); });
       return c.createPattern(k, 'repeat'); } catch (e) { return null; }
   }
+  // ══ v264 · ✨ TIEMPO DEL PARTIDO, CAMPO 3D, INCLINAR EL MÓVIL Y RÓTULOS DE TELE ═══════════════════
+  // 1 · El cartel del próximo partido y la cabecera del directo llevan el tiempo de la hora del partido
+  //     (la misma previsión de Open-Meteo); si acaba sin luz, focos encima. 2 · Campos en perspectiva con
+  //     botón 3D / plano. 3 · Cartel y ficha del niño con profundidad al inclinar el móvil. 4 · Rótulos de
+  //     tele en «Último partido» y tarjetas de cifras con su estilo. Con «reducir movimiento», todo quieto.
+  const V264_RM = (() => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } })();
+
+  // ── 1 · tiempo ──
+  // Altura del sol (grados) en un sitio y momento: para el atardecer y los focos
+  function c264Elev(lat, lon, fecha) {
+    const rad = Math.PI / 180, d = (fecha.getTime() - Date.UTC(2000, 0, 1, 12)) / 864e5;
+    const g = (357.529 + 0.98560028 * d) * rad, q = 280.459 + 0.98564736 * d;
+    const L = (q + 1.915 * Math.sin(g) + 0.020 * Math.sin(2 * g)) * rad, e = (23.439 - 0.00000036 * d) * rad;
+    const dec = Math.asin(Math.sin(e) * Math.sin(L)), ra = Math.atan2(Math.cos(e) * Math.sin(L), Math.cos(L));
+    const gmst = ((18.697374558 + 24.06570982441908 * d) % 24 + 24) % 24, H = (gmst * 15 + lon) * rad - ra;
+    return Math.asin(Math.sin(lat * rad) * Math.sin(dec) + Math.cos(lat * rad) * Math.cos(dec) * Math.cos(H)) / rad;
+  }
+  function c264FechaHora(fechaISO, hora, mas) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(fechaISO || ''), h = /^(\d{1,2}):(\d{2})/.exec(hora || '');
+    return m && h ? new Date(+m[1], +m[2] - 1, +m[3], +h[1], +h[2] + (mas || 0)) : null;
+  }
+  // Qué efecto toca, por este orden: tormenta, nieve, lluvia, niebla, viento, calor, frío, atardecer, soleado / nublado
+  function c264Tipo(d, campo, fechaISO, hora) {
+    if (!d) return null;
+    const c = d.code == null ? 3 : Number(d.code), v = Number(d.viento) || 0, r = Number(d.racha) || 0, t = Number(d.t);
+    let e0 = 40, e1 = 40;
+    try { const a = c264FechaHora(fechaISO, hora, 0), b = c264FechaHora(fechaISO, hora, 80); if (a && campo && campo.lat != null) { e0 = c264Elev(+campo.lat, +campo.lon, a); e1 = c264Elev(+campo.lat, +campo.lon, b); } } catch (e) {}
+    let k;
+    if (c >= 95) k = 'tormenta';
+    else if ((c >= 71 && c <= 77) || (c >= 85 && c <= 86)) k = 'nieve';
+    else if ((c >= 51 && c <= 67) || (c >= 80 && c <= 82)) k = 'lluvia';
+    else if (c === 45 || c === 48) k = 'niebla';
+    else if (v >= 35 || r >= 50) k = 'viento';
+    else if (t >= 28) k = 'calor';
+    else if (t <= 4) k = 'frio';
+    else if (e0 <= 0) k = c >= 3 ? 'nublado' : null;
+    else if (e0 < 15 && c <= 2) k = 'atardecer';
+    else k = c <= 2 ? 'soleado' : 'nublado';
+    return { k, luz: e1 < 4 };
+  }
+  const C264_TXT = { soleado: ['☀️', 'soleado'], nublado: ['☁️', 'nublado'], lluvia: ['🌧️', 'lluvia'], tormenta: ['⛈️', 'tormenta'], viento: ['💨', 'viento'], calor: ['🥵', 'calor'], frio: ['🥶', 'frío'], nieve: ['❄️', 'nieve'], niebla: ['🌫️', 'niebla'], atardecer: ['🌇', 'atardecer'] };
+  const C264_CAPAS = { soleado: '<div class="cp k-sol"><i></i><i></i><i></i></div>', atardecer: '<div class="cp k-atar"></div>', nublado: '<div class="cp k-nube"><i></i><i></i><i></i></div>',
+    tormenta: '<div class="cp k-nube"><i></i><i></i><i></i></div><div class="cp k-torm"></div><div class="cp k-rayo"></div>', calor: '<div class="cp k-calor"></div>', frio: '<div class="cp k-frio"></div>',
+    niebla: '<div class="cp k-niebla"><i></i><i></i><i></i></div>' };
+  const C264_PART = { lluvia: [60, 130], tormenta: [90, 190], nieve: [40, 90], viento: [16, 32], frio: [16, 30], calor: [14, 26] };
+  function c264Poner(cont, T, suave) {
+    if (!cont) return;
+    let L = cont.querySelector(':scope > .c264');
+    if (!T || (!T.k && !T.luz)) { if (L) L.remove(); return; }
+    const clave = T.k + '|' + T.luz;
+    if (L && L.dataset.k === clave) return;
+    if (L) L.remove();
+    L = document.createElement('div'); L.className = 'c264'; L.dataset.k = clave; L.setAttribute('aria-hidden', 'true');
+    L.innerHTML = (C264_CAPAS[T.k] || '') + (T.luz ? '<div class="cp k-focos"><b></b><b></b><u></u><u></u></div>' : '') + (C264_PART[T.k] ? '<canvas></canvas>' : '');
+    cont.insertBefore(L, cont.firstChild);
+    const cv = L.querySelector('canvas'); if (cv) c264Registrar(cv, T.k, suave);
+  }
+  // Partículas (lluvia, tormenta, nieve, viento, escarcha y aire caliente): un solo bucle para todas
+  const c264Sis = new Set(); let c264Loop = 0;
+  function c264Registrar(cv, k, suave) {
+    c264Sis.add({ cv, k, n: C264_PART[k][suave ? 0 : 1], P: [], S: [], W: 0, H: 0, suave });
+    if (!c264Loop) c264Loop = requestAnimationFrame(c264Paso);
+  }
+  function c264Paso(now) {
+    c264Loop = 0;
+    c264Sis.forEach(S => {
+      if (!S.cv.isConnected) { c264Sis.delete(S); return; }
+      if (document.hidden || !S.cv.offsetParent) return;
+      try { c264Dibujar(S, now); } catch (e) { c264Sis.delete(S); }
+    });
+    if (c264Sis.size && !V264_RM) c264Loop = requestAnimationFrame(c264Paso);
+  }
+  function c264Dibujar(S, now) {
+    const cv = S.cv, k = Math.min(2, window.devicePixelRatio || 1), r = cv.getBoundingClientRect();
+    if (!r.width) return;
+    if (Math.round(r.width * k) !== S.W || Math.round(r.height * k) !== S.H) { S.W = cv.width = Math.round(r.width * k); S.H = cv.height = Math.round(r.height * k); S.P = []; }
+    const c = cv.getContext('2d'), W = S.W, H = S.H, tipo = S.k;
+    const nuevo = (ini) => ({ x: Math.random() * W * 1.2, y: ini ? Math.random() * H : -20 * k, r: Math.random() });
+    while (S.P.length < S.n) S.P.push(nuevo(true));
+    c.clearRect(0, 0, W, H);
+    S.P.forEach(p => {
+      if (tipo === 'lluvia' || tipo === 'tormenta') {
+        const sp = (9 + p.r * 7) * k * (tipo === 'tormenta' ? 1.4 : 1); p.y += sp; p.x -= sp * (tipo === 'tormenta' ? .45 : .25);
+        c.strokeStyle = `rgba(190,215,255,${.25 + p.r * .35})`; c.lineWidth = (1 + p.r * .6) * k;
+        c.beginPath(); c.moveTo(p.x, p.y); c.lineTo(p.x + 3 * k, p.y - (10 + p.r * 10) * k); c.stroke();
+        if (p.y > H) { if (!S.suave && Math.random() < .4) S.S.push({ x: p.x, y: H - 2, t: 0 }); Object.assign(p, nuevo(false)); }
+      } else if (tipo === 'nieve') {
+        p.y += (.6 + p.r * 1.1) * k; p.x += Math.sin((p.y / k + p.r * 300) / 30) * .5 * k;
+        c.fillStyle = `rgba(255,255,255,${.5 + p.r * .4})`; c.beginPath(); c.arc(p.x, p.y, (1.2 + p.r * 2.2) * k, 0, 7); c.fill();
+        if (p.y > H) Object.assign(p, nuevo(false));
+      } else if (tipo === 'viento') {
+        p.x -= (7 + p.r * 9) * k; p.y += Math.sin((p.x / k + p.r * 500) / 25) * .8 * k;
+        if (p.r < .35) { c.save(); c.translate(p.x, p.y); c.rotate(p.x / k / 20); c.font = `${Math.round((10 + p.r * 14) * k)}px sans-serif`; c.fillText(p.r < .18 ? '🍂' : '🍃', 0, 0); c.restore(); }
+        else { c.strokeStyle = `rgba(255,255,255,${.12 + p.r * .2})`; c.lineWidth = k; c.beginPath(); c.moveTo(p.x, p.y); c.quadraticCurveTo(p.x + 30 * k, p.y - 4 * k, p.x + (50 + p.r * 40) * k, p.y); c.stroke(); }
+        if (p.x < -100 * k) { p.x = W + Math.random() * 60 * k; p.y = Math.random() * H; }
+      } else if (tipo === 'frio') {
+        p.y += .25 * k; const a = .3 + .5 * Math.abs(Math.sin(now / 600 + p.r * 9)), z = (1 + p.r * 1.5) * k;
+        c.fillStyle = `rgba(225,240,255,${a})`; c.fillRect(p.x - z, p.y - .3 * k, z * 2, .6 * k); c.fillRect(p.x - .3 * k, p.y - z, .6 * k, z * 2);
+        if (p.y > H) Object.assign(p, nuevo(false));
+      } else if (tipo === 'calor') {
+        p.y -= (.5 + p.r * .8) * k; p.x += Math.sin((p.y / k) / 18 + p.r * 6) * .6 * k;
+        c.strokeStyle = `rgba(255,200,120,${.08 + p.r * .12})`; c.lineWidth = 2 * k; c.beginPath(); c.moveTo(p.x, p.y);
+        for (let q = 1; q < 6; q++) c.lineTo(p.x + Math.sin(q + p.y / k / 10) * 4 * k, p.y - q * 8 * k);
+        c.stroke();
+        if (p.y < -50 * k) { p.y = H + 10 * k; p.x = Math.random() * W; }
+      }
+    });
+    S.S.forEach(s => { s.t++; c.strokeStyle = `rgba(200,220,255,${.5 - s.t / 24})`; c.lineWidth = k; c.beginPath(); c.ellipse(s.x, s.y, s.t * 1.2 * k, s.t * .35 * k, 0, 0, 7); c.stroke(); });
+    S.S = S.S.filter(s => s.t < 12);
+  }
+  // Cartel del próximo partido (se llama cuando llega la previsión) y cabecera del directo
+  function c264Cartel(d, campo, fechaISO, hora) {
+    const ca = document.querySelector('#proximoPartidoCard .cartel'); if (!ca) return;
+    const T = c264Tipo(d, campo, fechaISO, hora);
+    c264Poner(ca, T, false);
+    const old = ca.querySelector(':scope > .c264-chip'); if (old) old.remove();
+    if (!T || (!T.k && !T.luz)) return;
+    const [ico, txt] = T.k ? C264_TXT[T.k] : ['🌙', 'de noche'];
+    ca.insertAdjacentHTML('beforeend', `<div class="c264-chip">${ico} ${d.t} °C · ${txt}${T.luz ? ' · 💡 focos' : ''}</div>`);
+  }
+  let c264CabClave = null;
+  async function c264Cabecera(m) {
+    const hd = document.querySelector('.match-header'); if (!hd) return;
+    let p = null, campo = null;
+    try {
+      const liga = ultimaLiga;
+      if (m && liga) {
+        const eq = equipoLigaPorNombre(m.rival), H = (liga.equipos || []).find(e => e.esHergar);
+        if (eq && H) p = (liga.partidos || []).find(x => x && [x.local, x.visitante].includes(eq.id) && [x.local, x.visitante].includes(H.id) && ctxDiasHasta(ctxDMYaISO(x.fechaPartido || '')) === 0);
+        if (p) campo = (window.campoPartidoLiga || ((l, x) => ctxCampoDe(l, x.local)))(liga, p);
+      }
+    } catch (e) {}
+    if (!p || !campo || campo.lat == null || !/^\d{1,2}:\d{2}/.test(p.hora || '')) { c264CabClave = null; c264Poner(hd, null); return; }
+    const fe = ctxDMYaISO(p.fechaPartido), clave = [campo.lat, campo.lon, fe, p.hora].join('|');
+    if (clave === c264CabClave) return;
+    c264CabClave = clave;
+    const d = await ctxTiempoFranja(campo.lat, campo.lon, fe, p.hora);
+    if (c264CabClave !== clave) return;
+    c264Poner(hd, c264Tipo(d, campo, fe, p.hora), true);
+  }
+
+  // ── 2 · campo en perspectiva ──
+  function c3dBtn() { return '<button type="button" class="c3d-btn" aria-label="Ver el campo en 3D o plano" onclick="event.stopPropagation(); c264Plano()"></button>'; }
+  window.c264Plano = function () {
+    const on = !document.body.classList.contains('plano264');
+    document.body.classList.toggle('plano264', on);
+    try { localStorage.setItem('hergarLive_plano', on ? '1' : '0'); } catch (e) {}
+  };
+  try { if (localStorage.getItem('hergarLive_plano') === '1') document.body.classList.add('plano264'); } catch (e) {}
+  (function () {
+    const c = document.getElementById('campoContainer');
+    if (!c || c.parentNode.classList.contains('c3d')) return;
+    const w = document.createElement('div'); w.className = 'c3d';
+    c.parentNode.insertBefore(w, c); w.appendChild(c); w.insertAdjacentHTML('afterbegin', c3dBtn());
+  })();
+
+  // ── 3 · inclinar el móvil ──
+  const t264 = { b0: null, g0: null, nx: 0, ny: 0, tx: 0, ty: 0, raf: 0, pedido: false };
+  function t264Orient(e) {
+    if (e.beta == null || e.gamma == null) return;
+    let b = e.beta, g = e.gamma;
+    const ang = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
+    if (ang === 90) { const x = b; b = -g; g = x; } else if (ang === -90 || ang === 270) { const x = b; b = g; g = -x; }
+    if (t264.b0 == null) { t264.b0 = b; t264.g0 = g; }
+    t264.b0 += (b - t264.b0) * .015; t264.g0 += (g - t264.g0) * .015; // se recentra solo, como lo tengas
+    t264.tx = Math.max(-1, Math.min(1, (g - t264.g0) / 18)); t264.ty = Math.max(-1, Math.min(1, (b - t264.b0) / 18));
+    if (!t264.raf) t264.raf = requestAnimationFrame(t264Paso);
+  }
+  function t264Paso() {
+    t264.raf = 0;
+    t264.nx += (t264.tx - t264.nx) * .18; t264.ny += (t264.ty - t264.ny) * .18;
+    const nx = t264.nx, ny = t264.ny;
+    document.querySelectorAll('#proximoPartidoCard .cartel, #perfilModal.con-hero #perfilHero').forEach(el => {
+      if (!el.offsetParent) return;
+      const r = el.getBoundingClientRect(); if (r.bottom < 0 || r.top > innerHeight) return;
+      el.classList.add('t264');
+      el.style.transform = `perspective(800px) rotateY(${(nx * 6).toFixed(2)}deg) rotateX(${(-ny * 6).toFixed(2)}deg)`;
+      el.style.setProperty('--bx', (50 + nx * 40).toFixed(1) + '%'); el.style.setProperty('--by', (30 + ny * 40).toFixed(1) + '%');
+      const mv = (sel, f) => el.querySelectorAll(sel).forEach(x => { x.style.translate = `${(nx * f).toFixed(1)}px ${(ny * f).toFixed(1)}px`; });
+      if (el.id === 'perfilHero') { mv('.ph-dorsal', -12); mv('.ph-foto', 8); mv('.ph-info', 12); mv('.ph-nums', 4); }
+      else { el.style.backgroundSize = '114% 114%'; el.style.backgroundPosition = `${(50 - nx * 40).toFixed(1)}% ${(50 - ny * 40).toFixed(1)}%`; mv('.ca-top', 3); mv('.ca-eq', 8); mv('.ca-vs', 14); }
+    });
+    if (Math.abs(t264.tx - nx) > .002 || Math.abs(t264.ty - ny) > .002) t264.raf = requestAnimationFrame(t264Paso);
+  }
+  if (!V264_RM && 'DeviceOrientationEvent' in window) {
+    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+      // iPhone: pide permiso la primera vez que se toca el cartel o la ficha
+      document.addEventListener('click', ev => {
+        if (t264.pedido || !ev.target.closest || !ev.target.closest('.cartel, #perfilHero')) return;
+        t264.pedido = true;
+        DeviceOrientationEvent.requestPermission().then(r => { if (r === 'granted') addEventListener('deviceorientation', t264Orient); }).catch(() => {});
+      }, true);
+    } else addEventListener('deviceorientation', t264Orient);
+  }
+
+  // ── 4 · rótulos de tele ──
+  let r264Est = { clave: null, i: 0, visto: false }, r264T = 0, r264IO = null;
+  function r264Pintar(el, it) {
+    el.style.setProperty('--rc', it.c); el.style.setProperty('--rct', it.ct || '#fff');
+    el.innerHTML = `<div class="rb"></div><div class="rc"><div class="rn">${escHtml(it.n)}</div><div class="rt"><b>${escHtml(it.t)}</b><span>${escHtml(it.s)}</span></div><div class="rg">${escHtml(it.g)}</div></div>`;
+  }
+  function r264Entra(el) { el.classList.remove('sal', 'fijo'); void el.offsetWidth; el.classList.add('on'); }
+  function r264Iniciar(el, items, clave) {
+    if (!el || !items.length) return;
+    el._items = items;
+    if (r264Est.clave !== clave) r264Est = { clave, i: 0, visto: false };
+    if (r264Est.i >= items.length) r264Est.i = 0;
+    r264Pintar(el, items[r264Est.i]);
+    if (V264_RM || r264Est.visto) { el.classList.add('fijo'); if (V264_RM) return; }
+    if (!r264T) r264T = setInterval(r264Tick, 5500);
+    if (!r264Est.visto && 'IntersectionObserver' in window) {
+      if (r264IO) r264IO.disconnect();
+      r264IO = new IntersectionObserver(es => { es.forEach(e => { if (e.isIntersecting && !r264Est.visto) { r264Est.visto = true; r264Entra(e.target); r264IO.disconnect(); } }); }, { threshold: .6 });
+      r264IO.observe(el);
+    } else if (!r264Est.visto) { r264Est.visto = true; r264Entra(el); }
+  }
+  function r264Tick() {
+    const el = document.getElementById('rot264Ult'); if (!el || !el._items || !r264Est.visto || el._items.length < 2) return;
+    const r = el.getBoundingClientRect(); if (document.hidden || !r.height || r.bottom < 0 || r.top > innerHeight) return;
+    el.classList.remove('on', 'fijo'); el.classList.add('sal');
+    setTimeout(() => { if (!el.isConnected) return; r264Est.i = (r264Est.i + 1) % el._items.length; r264Pintar(el, el._items[r264Est.i]); r264Entra(el); }, 600);
+  }
+  // Los rótulos del último partido: final, MVP, goleadores y posesión
+  function r264ItemsUltimo(m, rsP, goles, gl, gr) {
+    const its = [], rival = String(m.rival || 'Rival');
+    its.push({ n: `${gl}-${gr}`, t: gl > gr ? 'Victoria' : gl < gr ? 'Derrota' : 'Empate', s: `Hergar ${gl} · ${rival} ${gr}`, g: 'FINAL', c: gl > gr ? '#2ed573' : gl < gr ? '#ff4757' : '#f5a623', ct: '#0a0e14' });
+    if (rsP && rsP.mvp && rsP.mvp !== '-') its.push({ n: String((rsP.mvpStats && rsP.mvpStats.dorsal) ?? '⭐'), t: String(rsP.mvp), s: 'MVP del partido', g: 'MVP', c: '#eab308', ct: '#0a0e14' });
+    const cuenta = {}; goles.filter(g => g.equipo !== 'rival' && g.nombre).forEach(g => { cuenta[g.nombre] = (cuenta[g.nombre] || 0) + 1; });
+    const ks = Object.keys(cuenta);
+    if (ks.length) its.push({ n: String(gl), t: ks.map(k => k + (cuenta[k] > 1 ? ' ×' + cuenta[k] : '')).join(' · '), s: gl === 1 ? 'Gol del Hergar' : 'Goles del Hergar', g: 'GOLES', c: '#b41438' });
+    try { const z = rsP && rsP.posesion; if (z && z.v != null) its.push({ n: Math.round(Number(z.v)) + '%', t: 'Posesión', s: 'Del Hergar en el partido', g: 'DATO', c: '#38bdf8', ct: '#0a0e14' }); } catch (e) {}
+    return its;
+  }
+
   // Escudo redondo: imagen si la hay, si no las iniciales como hasta ahora
   function escudoEquipoVisorHTML(eq, px, nombreAlt) {
     const src = escudoSrcVisor(eq);
@@ -10422,7 +10760,7 @@
         <span style="font-family:'Montserrat',sans-serif; font-size:34px; font-weight:900; color:#fff; white-space:nowrap;">${gl} – ${gr}</span>
         <div style="display:flex; flex-direction:column; align-items:center; gap:6px; min-width:0;">${(() => { try { return escudoEquipoVisorHTML(equipoLigaPorNombre(m.rival), 52, m.rival); } catch (e) { return ''; } })()}<span style="font-size:12px; font-weight:800; color:#94a3b8; letter-spacing:.5px; max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${rival}</span></div>
       </div>
-      <div style="text-align:center; font-size:11px; font-weight:800; letter-spacing:1px; color:${res[1]}; margin-bottom:10px;">${res[0]}</div>
+      <div class="rot264" id="rot264Ult" aria-label="${res[0]}"></div>
       ${gH ? `<div style="font-size:12px; color:#cbd5e1; line-height:1.5; margin-bottom:4px;">⚽ ${gH}</div>` : ''}
       ${gR ? `<div style="font-size:12px; color:#94a3b8; line-height:1.5; margin-bottom:4px;">🥅 ${rival}: ${gR}</div>` : ''}
       ${rsPi >= 0 ? (() => { try { return hitosHoyHTML(ultimaTemporada, rsPi); } catch (e) { console.error('Hitos de hoy:', e); return ''; } })() : ''}
@@ -10440,6 +10778,7 @@
       ${ia}
       <button onclick="showTab('envivo'); window.scrollTo(0,0);" style="width:100%; margin-top:12px; padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.04); color:#e2e8f0; font-weight:700; font-size:12px; cursor:pointer;">Ver todas las estadísticas del partido →</button>`;
     card.style.display = 'block';
+    try { r264Iniciar(document.getElementById('rot264Ult'), r264ItemsUltimo(m, rsP, goles, gl, gr), `${gl}-${gr}|${m.rival || ''}|${fin || ''}`); } catch (e) { console.error('Rótulos:', e); } // v264
     // colocación: arriba los primeros días; luego debajo del próximo partido
     const prox = document.getElementById('proximoPartidoCard');
     const reciente = !fin || (Date.now() - fin) < DIAS_RESUMEN_ARRIBA * 86400000;
@@ -11887,7 +12226,7 @@
       g += `<circle cx="${(x.pos.x * s).toFixed(1)}" cy="${(x.pos.y * s).toFixed(1)}" r="8" fill="${c}" fill-opacity=".9" stroke="#0a0e14" stroke-width="1.5"/>`;
     });
     if (pens.length) g += `<circle cx="${34 * s}" cy="${11 * s}" r="10" fill="${MG_ORIG.penalti[1]}" stroke="#0a0e14" stroke-width="1.5"/>${pens.length > 1 ? `<text x="${34 * s}" y="${11 * s + 4}" text-anchor="middle" font-size="11" font-weight="800" fill="#0a0e14">${pens.length}</text>` : ''}`;
-    return `<svg viewBox="0 0 340 250" style="width:100%; ${alto ? 'max-width:' + alto + 'px; margin:0 auto;' : ''} display:block; border-radius:12px; background:radial-gradient(ellipse at center,#1a6e3a,#0f4a25);">${g}</svg>`;
+    return `<div class="c3d mg">${c3dBtn()}<svg viewBox="0 0 340 250" style="width:100%; ${alto ? 'max-width:' + alto + 'px; margin:0 auto;' : ''} display:block; border-radius:12px; background:radial-gradient(ellipse at center,#1a6e3a,#0f4a25);">${g}</svg></div>`;
   }
   function mgBarras(lista, claves, color) {
     const con = lista.filter(x => x.origen);

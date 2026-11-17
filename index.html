@@ -1359,6 +1359,7 @@
   @media (prefers-reduced-motion: reduce) { #ddAviso.on, #ddAviso .dd-in { animation:none; } }
 </style>
 <script type="module">
+  // v259 (visor) · 💡 Dato del día mucho más variado: ~35 familias nuevas de datos (goleadas, remontadas, hat-tricks, líderes de la plantilla, orígenes de gol, Liga, Elo…) y rotación por familias para que no se repita ninguna hasta haber salido todas.
   // v258 (visor) · 📊 Último partido con los escudos de los dos equipos encima de los nombres y el marcador más grande.
   // v257 (visor) · 👕 Alineación (once inicial y final, goles y cambios) también en cada partido de Temporada → Partidos.
   // v256 (visor) · Mientras el último partido sale arriba en Partido (3 primeros días) y ya está publicado el próximo, la cabecera grande del próximo partido se cambia por la fina (escudo, HERGAR LIVE y 📺 TV); cuando el próximo sube, vuelve la grande.
@@ -14136,21 +14137,140 @@
     // 🏠 jugar en casa
     try { const C = casaLiga(liga); if (C && C.N >= 10) { const pc = Math.round(C.V / C.N * 100), pf = Math.round(C.D / C.N * 100);
       add({ id: 'casa|' + C.N, e: '🏠', big: `${pc} %`, txt: `En la Liga, el equipo de casa gana el <b>${pc} %</b> de los partidos (el de fuera, el ${pf} %).`, ctx: `En ${C.N} partidos jugados.`, ir: { tipo: 'tarjeta', sub: 'subLigaClasif', dentro: 'Lo que vale jugar en casa' } }); } } catch (e) {}
+    try { ddExtra(t, liga, add); } catch (e) {} // v259
     return B;
   }
-  // El de hoy: el mismo para todos; no se repite ninguno de los últimos días mientras queden otros
+  // v259 · 💡 muchos más datos para el dato del día (cada familia sale una vez por vuelta; nunca dejan mal a un niño)
+  function ddExtra(t, liga, add) {
+    const ps = (t && t.partidos) || [], N = ps.length;
+    const js = Object.values((t && t.jugadores) || {}).filter(j => j && j.id != null);
+    const num = v => Number(v) || 0, fmt = v => Number(v).toLocaleString('es-ES');
+    const riv = p => escHtml(String((p && p.rival) || '').toLowerCase().replace(/(^|\s)\S/g, c => c.toUpperCase()));
+    const fec = p => p && p.fecha ? escHtml(fechaCortaRec(p.fecha)) : '';
+    const nomJ = j => escHtml(ddNom(t, j.id));
+    const dur = p => { const m = /^(\d+):/.exec(String(p.duracion || '')); const d = m ? parseInt(m[1]) : 0; return d >= 40 ? d : 70; };
+    const gols = p => (Array.isArray(p.goles) ? p.goles : []).filter(Boolean);
+    const nuestros = p => gols(p).filter(g => g.equipo !== 'rival');
+    const minDe = g => g.min != null ? Number(g.min) : (g.minuto != null ? Number(g.minuto) : null);
+    const GF = ps.reduce((s, p) => s + num(p.golesLocal), 0), GC = ps.reduce((s, p) => s + num(p.golesRival), 0);
+    const top = (f, min) => { const L = js.map(j => ({ j, v: num(f(j)) })).filter(x => x.v >= min).sort((a, b) => b.v - a.v); return L.length && (L.length === 1 || L[0].v > L[1].v) ? L[0] : null; };
+    const T = (f) => { try { f(); } catch (e) {} };
+
+    // 💥 la mayor goleada
+    T(() => { const p = ps.slice().sort((a, b) => (num(b.golesLocal) - num(b.golesRival)) - (num(a.golesLocal) - num(a.golesRival)))[0];
+      if (p && num(p.golesLocal) - num(p.golesRival) >= 3) add({ id: 'goleada|' + p.fecha + '|' + p.rival, e: '💥', big: `${num(p.golesLocal)}–${num(p.golesRival)}`, txt: `La mayor goleada de la temporada: <b>${num(p.golesLocal)}-${num(p.golesRival)} contra ${riv(p)}</b>.`, ctx: fec(p), ir: { tipo: 'tarjeta', sub: 'subPartidos' } }); });
+    // 📈 goles por partido
+    T(() => { if (N >= 3 && GF / N >= 1) add({ id: 'media|' + N, e: '📈', big: `${(GF / N).toLocaleString('es-ES', { maximumFractionDigits: 1 })} por partido`, txt: `El Hergar marca <b>${(GF / N).toLocaleString('es-ES', { maximumFractionDigits: 1 })} goles por partido</b> de media.`, ctx: `${fmt(GF)} goles en ${N} partidos.`, ir: { tipo: 'tarjeta', sub: 'subMedias' } }); });
+    // ⏲️ un gol cada X minutos
+    T(() => { const M = ps.reduce((s, p) => s + dur(p), 0); if (GF >= 6) { const c = Math.round(M / GF);
+      add({ id: 'cadaMin|' + N, e: '⏲️', big: `Cada ${c}'`, txt: `El Hergar marca <b>un gol cada ${c} minutos</b> esta temporada.`, ctx: GC > 0 && M / GC > M / GF * 1.5 ? `Y encaja uno cada ${Math.round(M / GC)} minutos.` : '', ir: { tipo: 'tarjeta', sub: 'subMinutos' } }); } });
+    // 📋 balance
+    T(() => { const V = ps.filter(p => p.resultado === 'V').length, E = ps.filter(p => p.resultado === 'E').length, D = ps.filter(p => p.resultado === 'D').length;
+      if (N >= 3 && V > D) add({ id: 'balance|' + N, e: '📋', big: `${V}V · ${E}E · ${D}D`, txt: `Balance del Hergar: <b>${V} ${V === 1 ? 'victoria' : 'victorias'}, ${E} ${E === 1 ? 'empate' : 'empates'} y ${D} ${D === 1 ? 'derrota' : 'derrotas'}</b>.`, ctx: `Ha sacado el ${Math.round((V * 3 + E) / (N * 3) * 100)} % de los puntos en juego.`, ir: { tipo: 'tarjeta', sub: 'subRachas' } }); });
+    // 🕐 1.ª o 2.ª parte
+    T(() => { let a = 0, b = 0; ps.forEach(p => nuestros(p).forEach(g => { const m = minDe(g); if (m == null) return; if (m <= dur(p) / 2) a++; else b++; }));
+      if (a + b >= 8 && a !== b) { const seg = b > a; add({ id: 'partes|' + seg + '|' + (a + b), e: '🕐', big: seg ? '2.ª parte' : '1.ª parte', txt: `El Hergar marca más en la <b>${seg ? 'segunda' : 'primera'} parte</b>: ${Math.max(a, b)} de sus ${a + b} goles con minuto.`, ctx: `${a} en la primera y ${b} en la segunda.`, ir: { tipo: 'tarjeta', sub: 'subMinutos' } }); } });
+    // ⌛ goles en los 10 últimos minutos
+    T(() => { let n = 0; ps.forEach(p => nuestros(p).forEach(g => { const m = minDe(g); if (m != null && m > dur(p) - 10) n++; }));
+      if (n >= 3) add({ id: 'final|' + n, e: '⌛', big: `${n} goles`, txt: `<b>${n} goles</b> del Hergar han llegado en los <b>últimos 10 minutos</b> de los partidos.`, ctx: 'Hasta el final, siempre.', ir: { tipo: 'tarjeta', sub: 'subMinutos' } }); });
+    // 🥇 marcar primero / 🔁 remontadas
+    T(() => { let m1 = 0, w1 = 0, rem = 0, remE = 0; const L = [];
+      ps.forEach(p => { const gs = gols(p).filter(g => minDe(g) != null).sort((x, y) => minDe(x) - minDe(y)); if (!gs.length) return;
+        if (gs[0].equipo !== 'rival') { m1++; if (p.resultado === 'V') w1++; }
+        else if (p.resultado === 'V') { rem++; L.push(riv(p)); } else if (p.resultado === 'E') remE++; });
+      if (m1 >= 3 && w1 / m1 >= 0.6) add({ id: 'primero|' + m1 + '|' + w1, e: '🥇', big: `${w1} de ${m1}`, txt: `Cuando el Hergar marca primero, gana <b>${w1} de ${m1}</b> partidos.`, ctx: '', ir: { tipo: 'tarjeta', sub: 'subMinutos' } });
+      if (rem >= 1) add({ id: 'remontada|' + rem, e: '🔁', big: rem === 1 ? '1 remontada' : `${rem} remontadas`, txt: rem === 1 ? `El Hergar ya sabe remontar: le dio la vuelta al partido contra <b>${L[0]}</b>.` : `El Hergar ha remontado <b>${rem} partidos</b> esta temporada en los que empezó perdiendo.`, ctx: remE ? `Y en ${remE} más rescató el empate.` : '', ir: { tipo: 'tarjeta', sub: 'subRachas' } }); });
+    // 🎩 hat-tricks
+    T(() => { const H = {}; let n = 0; js.forEach(j => (j.historial || []).forEach(h => { if (num(h.goles) >= 3) { n++; H[j.id] = (H[j.id] || 0) + 1; } }));
+      if (n >= 1) { const ks = Object.keys(H).sort((a, b) => H[b] - H[a]); const nm = ks.map(k => { const j = js.find(x => String(x.id) === String(k)); return j ? `${nomJ(j)}${H[k] > 1 ? ' (' + H[k] + ')' : ''}` : ''; }).filter(Boolean);
+        add({ id: 'hattrick|' + n, e: '🎩', big: n === 1 ? '1 hat-trick' : `${n} hat-tricks`, txt: n === 1 ? `<b>${nm[0]}</b> tiene el único hat-trick de la temporada.` : `Ya van <b>${n} hat-tricks</b> esta temporada.`, ctx: n > 1 ? nm.join(', ') + '.' : '', ir: { tipo: 'tarjeta', sub: 'subRecords' } }); } });
+    // 👑 líderes de la plantilla (solo en positivo y sin empates)
+    const LID = [
+      ['pichichi', '👟', j => j.goles, 3, (j, v) => `<b>${nomJ(j)}</b> es el máximo goleador del Hergar con <b>${v} goles</b>.`],
+      ['asistente', '🅰️', j => j.asistencias, 3, (j, v) => `<b>${nomJ(j)}</b> es el que más asistencias ha dado: <b>${v}</b>.`],
+      ['pclave', '🔑', j => j.pasesClave, 4, (j, v) => `<b>${nomJ(j)}</b> es el rey de los pases clave: <b>${v}</b> esta temporada.`],
+      ['recup', '🛡️', j => num(j.accionesDef) + num(j.accionesDefClave), 6, (j, v) => `<b>${nomJ(j)}</b> es el que más balones recupera: <b>${v}</b> acciones defensivas.`],
+      ['regates', '🌀', j => j.regates, 4, (j, v) => `<b>${nomJ(j)}</b> es el gran regateador del equipo: <b>${v} regates</b>.`],
+      ['parea', '📦', j => j.pasesArea, 4, (j, v) => `<b>${nomJ(j)}</b> es el que más balones mete al área: <b>${v} pases</b>.`],
+      ['frecibe', '💪', j => j.faltasRecibidas, 3, (j, v) => `<b>${nomJ(j)}</b> es el que más faltas provoca: <b>${v}</b>. ¡No hay quien le pare!`],
+      ['incansable', '🔋', j => j.minutos, 60, (j, v) => `<b>${nomJ(j)}</b> es el que más minutos lleva esta temporada: <b>${fmt(v)}'</b>.`]
+    ];
+    LID.forEach(([k, e, f, min, tx]) => T(() => { const x = top(f, min); if (x) add({ id: k + '|' + x.j.id + '|' + x.v, e, big: k === 'incansable' ? `${fmt(x.v)}'` : String(x.v), txt: tx(x.j, x.v), ctx: '', ir: { tipo: 'nino', id: x.j.id } }); }));
+    // 🧤 el portero
+    T(() => { const x = top(j => j.paradas, 5); if (x) add({ id: 'paradas|' + x.j.id + '|' + x.v, e: '🧤', big: `${x.v} paradas`, txt: `<b>${nomJ(x.j)}</b> lleva <b>${x.v} paradas</b> esta temporada.`, ctx: num(x.j.paradasDificiles) >= 2 ? `${num(x.j.paradasDificiles)} de ellas, difíciles.` : '', ir: { tipo: 'nino', id: x.j.id } }); });
+    // 🌟 el mejor día de un niño (asistencias en un partido)
+    T(() => { let b = null; js.forEach(j => (j.historial || []).forEach(h => { const v = num(h.asistencias); if (v >= 3 && (!b || v > b.v)) b = { j, h, v }; }));
+      if (b) add({ id: 'asisDia|' + b.j.id + '|' + b.v, e: '🌟', big: `${b.v} asistencias`, txt: `<b>${nomJ(b.j)}</b> dio <b>${b.v} asistencias</b> en un solo partido, contra ${riv(b.h)}.`, ctx: b.h.fecha ? escHtml(fechaCortaRec(b.h.fecha)) : '', ir: { tipo: 'nino', id: b.j.id } }); });
+    // 👥 niños que han jugado / asistentes distintos
+    T(() => { const n = js.filter(j => num(j.minutos) > 0).length; if (n >= 10) add({ id: 'usados|' + n, e: '👥', big: `${n} niños`, txt: `Esta temporada han jugado <b>${n} niños distintos</b> con el Hergar.`, ctx: 'Aquí suman todos.', ir: { tipo: 'tarjeta', sub: 'subPlantilla' } }); });
+    T(() => { const s = new Set(); ps.forEach(p => nuestros(p).forEach(g => { if (g.asistenteId != null) s.add(String(g.asistenteId)); else if (g.asistente) s.add(String(g.asistente)); }));
+      if (s.size >= 4) add({ id: 'asistentes|' + s.size, e: '🤲', big: `${s.size} asistentes`, txt: `<b>${s.size} niños distintos</b> han dado alguna asistencia de gol esta temporada.`, ctx: 'El gol es cosa de todos.', ir: { tipo: 'tarjeta', sub: 'subSinergias' } }); });
+    // 🎉 el partido con más goleadores
+    T(() => { let b = null; ps.forEach(p => { const s = new Set(nuestros(p).filter(g => !g.propia && g.origen !== 'propia' && g.jugadorId != null).map(g => String(g.jugadorId))); if (s.size >= 4 && (!b || s.size > b.n)) b = { p, n: s.size }; });
+      if (b) add({ id: 'repartido|' + b.p.fecha + '|' + b.n, e: '🎊', big: `${b.n} goleadores`, txt: `Contra ${riv(b.p)} marcaron <b>${b.n} niños distintos</b>: el partido más repartido de la temporada.`, ctx: fec(b.p), ir: { tipo: 'tarjeta', sub: 'subPartidos' } }); });
+    // 🎯 de dónde nacen los goles (uno por origen)
+    T(() => { const c = {}; ps.forEach(p => nuestros(p).forEach(g => { const o = g.penalti ? 'penalti' : g.origen; if (o) c[o] = (c[o] || 0) + 1; }));
+      const TX = { robo: [2, '🏃', 'tras robo y contraataque'], corner: [2, '⛳', 'a la salida de un córner'], falta: [2, '🎯', 'de falta'], penalti: [2, '⚪', 'de penalti'], rechace: [3, '🧲', 'cazando un rechace'], jugada: [4, '🧩', 'de jugada elaborada'], error: [3, '🦅', 'aprovechando un error del rival'] };
+      Object.keys(TX).forEach(o => { const [min, e, l] = TX[o]; if ((c[o] || 0) >= min) add({ id: 'origen|' + o + '|' + c[o], e, big: `${c[o]} goles`, txt: `El Hergar lleva <b>${c[o]} goles ${l}</b> esta temporada.`, ctx: '', ir: { tipo: 'tarjeta', sub: 'subMapaGoles' } }); }); });
+    // 🔫 puntería del equipo
+    T(() => { let g = 0, tp = 0; ps.forEach(p => { if (p.manual || p.tirosNuestrosPuerta == null) return; g += num(p.golesLocal); tp += num(p.tirosNuestrosPuerta); });
+      if (tp >= 20 && g > 0) { const r = Math.round(g / tp * 10); if (r >= 2) add({ id: 'punteria|' + r, e: '🔫', big: `${Math.min(10, r)} de 10`, txt: `De cada 10 tiros a puerta del Hergar, <b>${Math.min(10, r)} acaban en gol</b>.`, ctx: `${g} goles en ${tp} tiros a puerta.`, ir: { tipo: 'tarjeta', sub: 'subMedias' } }); } });
+    // 🕰️ el gol más tardío
+    T(() => { let b = null; ps.forEach(p => nuestros(p).forEach(g => { const m = minDe(g); if (m != null && m >= dur(p) - 3 && (!b || m > b.m)) b = { p, g, m }; }));
+      if (b) { const j = b.g.jugadorId != null ? js.find(x => String(x.id) === String(b.g.jugadorId)) : null;
+        add({ id: 'tardio|' + b.m, e: '🕰️', big: `Minuto ${b.m}`, txt: `El gol más tardío de la temporada llegó en el <b>minuto ${b.m}</b>${j ? `, de <b>${nomJ(j)}</b>` : ''}, contra ${riv(b.p)}.`, ctx: fec(b.p), ir: { tipo: 'tarjeta', sub: 'subMinutos' } }); } });
+    // ⚽ posesión
+    T(() => { const L = ps.map(p => p.posesion).filter(z => z && z.v != null).map(z => Number(z.aj != null ? z.aj : z.v)).filter(v => !isNaN(v));
+      if (L.length) { const m = Math.round(L.reduce((s, v) => s + v, 0) / L.length); if (m >= 50) add({ id: 'posesion|' + L.length, e: '⚽', big: `${m} %`, txt: L.length === 1 ? `El Hergar tuvo el balón el <b>${m} %</b> del tiempo en el partido en que se midió la posesión.` : `De media, el Hergar tiene el balón el <b>${m} %</b> del tiempo.`, ctx: L.length > 1 ? `En ${L.length} partidos medidos.` : '', ir: { tipo: 'tarjeta', sub: 'subMedias' } }); } });
+    // ⛳ córners por partido
+    T(() => { const L = ps.filter(p => !p.manual && p.cornersFavor != null); const c = L.reduce((s, p) => s + num(p.cornersFavor), 0);
+      if (L.length >= 3 && c / L.length >= 3) add({ id: 'corners|' + L.length, e: '⛳', big: `${(c / L.length).toLocaleString('es-ES', { maximumFractionDigits: 1 })} por partido`, txt: `El Hergar saca <b>${(c / L.length).toLocaleString('es-ES', { maximumFractionDigits: 1 })} córners por partido</b> de media.`, ctx: `${c} en ${L.length} partidos.`, ir: { tipo: 'tarjeta', sub: 'subMedias' } }); });
+    // 🧱 sin encajar
+    T(() => { const c = ps.filter(p => num(p.golesRival) === 0).length; if (N >= 4 && c >= 2) add({ id: 'cero|' + c + '|' + N, e: '🔒', big: `${c} de ${N}`, txt: `El Hergar se ha ido sin encajar en <b>${c} de sus ${N} partidos</b>.`, ctx: '', ir: { tipo: 'tarjeta', sub: 'subRecords' } }); });
+    // 🆕 estrenó su cuenta goleadora en el último partido
+    T(() => { const ult = ps[N - 1]; if (!ult || N < 2) return;
+      js.forEach(j => { const H = j.historial || [], hu = H.find(h => h.fecha === ult.fecha && h.rival === ult.rival); if (!hu || num(hu.goles) < 1) return;
+        const antes = H.filter(h => h !== hu).reduce((s, h) => s + num(h.goles), 0); if (antes > 0) return;
+        add({ id: 'estreno|' + j.id + '|' + ult.fecha, e: '🆕', big: '¡Primer gol!', txt: `<b>${nomJ(j)}</b> estrenó su cuenta goleadora de la temporada contra ${riv(ult)}.`, ctx: fec(ult), ir: { tipo: 'nino', id: j.id } }); }); });
+    // 🔥 en racha: goles en los 3 últimos partidos
+    T(() => { if (N < 3) return; const U = ps.slice(-3);
+      js.forEach(j => { const g = U.reduce((s, p) => { const h = ptsHistDe(j, p); return s + (h ? num(h.goles) : 0); }, 0);
+        if (g >= 4) add({ id: 'enRacha|' + j.id + '|' + g + '|' + N, e: '🔥', big: `${g} goles`, txt: `<b>${nomJ(j)}</b> está on fire: <b>${g} goles</b> en los 3 últimos partidos.`, ctx: '', ir: { tipo: 'nino', id: j.id } }); }); });
+    // 🏆 la Liga
+    T(() => { if (!liga || !liga.equipos || !liga.partidos) return;
+      const F = ligaClasifViewer(liga), Hq = liga.equipos.find(e => e.esHergar); if (!Hq) return; const H = F.find(f => f.id === Hq.id); if (!H || H.pj < 2) return;
+      const ir = { tipo: 'tarjeta', sub: 'subLigaClasif' };
+      const mg = F.slice().sort((a, b) => b.gf - a.gf), md = F.filter(f => f.pj > 0).sort((a, b) => a.gc - b.gc);
+      if (mg[0] && mg[0].id === H.id && (!mg[1] || mg[1].gf < H.gf)) add({ id: 'ligaGol|' + H.gf, e: '⚽', big: `${H.gf} goles`, txt: `El Hergar es el <b>equipo más goleador de la Liga</b>.`, ctx: mg[1] ? `El siguiente lleva ${mg[1].gf}.` : '', ir });
+      if (md[0] && md[0].id === H.id && (!md[1] || md[1].gc > H.gc)) add({ id: 'ligaDef|' + H.gc, e: '🧱', big: `${H.gc} encajados`, txt: `El Hergar es el <b>equipo menos goleado de la Liga</b>.`, ctx: md[1] ? `El siguiente ha encajado ${md[1].gc}.` : '', ir });
+      if (H.pos === 1 && F[1]) { const d = H.pts - F[1].pts; if (d > 0) add({ id: 'ligaVent|' + d + '|' + H.pj, e: '🥇', big: `+${d} puntos`, txt: `El Hergar es líder con <b>${d} ${d === 1 ? 'punto' : 'puntos'} de ventaja</b> sobre el segundo.`, ctx: `${H.pts} puntos en ${H.pj} partidos.`, ir }); }
+      else if (H.pos <= 3) add({ id: 'ligaPos|' + H.pos + '|' + H.pj, e: '📍', big: `${H.pos}.º`, txt: `El Hergar es <b>${H.pos}.º</b> en la Liga, a ${F[0].pts - H.pts} ${F[0].pts - H.pts === 1 ? 'punto' : 'puntos'} del líder.`, ctx: `${H.pts} puntos en ${H.pj} partidos.`, ir });
+      const quedan = liga.partidos.filter(p => (p.local === Hq.id || p.visitante === Hq.id) && (p.golesLocal == null || p.golesVisitante == null)).length;
+      if (quedan > 0) add({ id: 'quedan|' + quedan, e: '🗓️', big: `${quedan} partidos`, txt: `Al Hergar le quedan <b>${quedan} partidos de Liga</b> por jugar.`, ctx: `${quedan * 3} puntos en juego.`, ir: { tipo: 'tarjeta', sub: 'subLigaPartidos' } });
+    });
+    T(() => { const E = eloLiga(liga); if (!E || E.jugados < 6) return; const k = E.equipos.findIndex(x => x.e && x.e.esHergar); if (k < 0 || k > 2) return;
+      add({ id: 'elo|' + (k + 1) + '|' + Math.round(E.equipos[k].elo), e: '📊', big: `${Math.round(E.equipos[k].elo)} Elo`, txt: `En el <b>Ranking Elo</b> de la Liga el Hergar es <b>${k + 1}.º</b>, con ${fmt(Math.round(E.equipos[k].elo))} puntos.`, ctx: 'El Elo mide la fuerza de cada equipo según a quién gana y por cuánto.', ir: { tipo: 'tarjeta', sub: 'subLigaClasif' } }); });
+  }
+  // El de hoy: el mismo para todos. v259: se elige por familias (minutos, goleadas, rachas, Liga…), y una familia no
+  // vuelve a salir hasta que han salido casi todas las demás; dentro de cada familia se alterna entre sus datos.
+  function ddFam(o) { return o.f || String(o.id).split('|')[0]; }
   function ddElegir(B, hoy) {
     if (!B.length) return null;
-    const ids = B.map(x => x.id), mem = Math.min(B.length - 1, 10), usados = [];
+    const fams = [...new Set(B.map(ddFam))].sort(), F = fams.length, mem = Math.max(0, F - 3);
+    const porFam = {}; B.forEach(x => { (porFam[ddFam(x)] = porFam[ddFam(x)] || []).push(x); });
+    // se recorre desde una fecha fija, así la vuelta es la misma día tras día (y para todos)
+    const base = new Date(hoy + 'T12:00:00'), ancla = new Date('2026-07-01T12:00:00'), usados = [], ultimo = {};
     let elegido = null;
-    const base = new Date(hoy + 'T12:00:00');
-    for (let k = 14; k >= 0; k--) {
+    for (let k = Math.max(0, Math.min(2000, Math.round((base - ancla) / 864e5))); k >= 0; k--) {
       const d = ddHoy(new Date(base.getTime() - k * 864e5));
-      const libres = ids.filter(id => !usados.slice(-mem).includes(id));
-      elegido = (libres.length ? libres : ids).slice().sort((a, b) => ddHash(a + '|' + d) - ddHash(b + '|' + d))[0];
-      usados.push(elegido);
+      const rec = mem > 0 ? usados.slice(-mem) : [];
+      const libres = fams.filter(f => !rec.includes(f));
+      const fam = (libres.length ? libres : fams).slice().sort((a, b) => ddHash(a + '|' + d) - ddHash(b + '|' + d))[0];
+      const L = porFam[fam], cand = L.length > 1 ? L.filter(x => x.id !== ultimo[fam]) : L;
+      elegido = cand.slice().sort((a, b) => ddHash(a.id + '|' + d) - ddHash(b.id + '|' + d))[0];
+      usados.push(fam); ultimo[fam] = elegido.id;
     }
-    return B.find(x => x.id === elegido) || null;
+    return elegido;
   }
   function ddDeHoy() {
     if (!ultimaTemporada) return null;

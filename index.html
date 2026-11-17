@@ -1568,6 +1568,7 @@
   }
 </style>
 <script type="module">
+  // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
   // v265 (visor) · Fuera lo de inclinar el móvil (cartel y ficha).
@@ -1596,7 +1597,7 @@
   // v240 (visor; app v241) · 🔄 Polivalencia: un puesto o una línea cuenta con 35' o más en la temporada; polivalente = 3 puestos en 2 líneas, o 3 líneas. Etiqueta en «Dónde ha jugado» de la ficha y apartado «🔄 Los comodines» en Más análisis → Jugadores (ranking por líneas y luego puestos). En la app, premio «🔄 El comodín» de la vuelta.
   // v239 (visor; app v240) · 🧤 Jugador de campo que hace de portero un partido: en las estadísticas de campo (peso en el equipo y cuota de acciones, mapa de calor, evolución «Su nivel» y «Sus acciones», su prime y las medias de su estilo) ese partido no cuenta, como si no hubiera jugado; en lo de portero, minutos, impacto y MVP cuenta normal. Regla: la mitad o más de sus minutos de ese partido en la portería y no ser el portero de la temporada.
   // v238 (visor; app v239) · 🦶 Pie de cada niño (diestro / zurdo / las dos, lo marca la app en la convocatoria y llega con la plantilla): la etiqueta de «con qué marca» respeta el pie marcado, y se cuentan los goles con su pierna buena y con la otra (por niño en su ficha y en el Mapa de goles, y del equipo).
-  // v237 (visor; app v238) · 👥 Visitas al visor: contador propio y anónimo. Cada móvil apunta en visitas/dias/<día>/<id al azar> que ha entrado, a qué horas y qué pestañas y apartados abre (una vez por móvil y día), y durante el directo deja su presencia en visitas/vivo. No guarda nombres ni de qué niño es la ficha. Con ?nocontar=1 ese móvil deja de contar. Para las familias no cambia nada.
+  // v237 (visor; app v238) · 👥 Visitas al visor: contador propio y anónimo. Cada móvil apunta en visitas/dias/<día>/<id al azar> que ha entrado, a qué horas y qué pestañas y apartados abre (una vez por móvil y día), y durante el directo deja su presencia en visitas/vivo. No guarda nombres (desde la v268 sí qué niño tiene en «Mi hijo» y de qué niño son las fichas que abre, solo con su número interno). Con ?nocontar=1 ese móvil deja de contar. Para las familias no cambia nada.
   // v236 (visor; app v236 + delegado) · 💡 Dato del día (aviso una vez al día al abrir, nunca en directo ni en el Modo TV, y tarjeta bajo «La temporada en números»), 🦶 con qué marcó (Mapa de goles: reparto, cruces, filtro y cada niño con su etiqueta; ficha → Datos; hitos de cabeza y pierna mala; récord de cabeza), 📊 jornadas en cada puesto (Liga → Clasificación), rojos del Hergar unificados y medias sin los fueras de juego y faltas en contra que el delegado no apuntaba.
   // v235 (visor) · 🧩 El pegamento por zona: cada pareja de vecinos, sobre los minutos que jugó cada uno en los puestos donde fue vecino del otro (quien juega de lateral y de MCD sale rodado con las dos zonas) · «Ver minutos a su lado» en la ficha.
   // v234 (visor) · 🧩 El pegamento: solo cuentan las parejas que juegan como vecinos en la pizarra (enlaces de la química); el portero ya no sale rodado con los delanteros.
@@ -12724,7 +12725,7 @@
   const MH_KEY = 'hergarLive_miHijo';
   let mhCambiando = false; // se está eligiendo otro niño desde su página
   function mhLeer() { try { return localStorage.getItem(MH_KEY); } catch (e) { return null; } }
-  function mhGuardar(v) { try { if (v == null) localStorage.removeItem(MH_KEY); else localStorage.setItem(MH_KEY, String(v)); } catch (e) {} }
+  function mhGuardar(v) { try { if (v == null) localStorage.removeItem(MH_KEY); else localStorage.setItem(MH_KEY, String(v)); } catch (e) {} try { visMhCambio(v); } catch (e) {} } // v268
   function mhIdElegido() { const v = mhLeer(); return v && v !== 'equipo' ? v : null; }
   function mhNombre(n) { return String(n || '').split(' ')[0]; }
   function mhPlantilla() {
@@ -15213,10 +15214,18 @@
     try { inst = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; } catch (e) {}
     try { mh = !!mhIdElegido(); } catch (e) {}
     try { av = ('Notification' in window) && Notification.permission === 'granted'; } catch (e) {}
-    const o = { t: Date.now(), a: inst ? 1 : 0, mh: mh ? 1 : 0, n: av ? 1 : 0 };
+    const o = { t: Date.now(), a: inst ? 1 : 0, mh: mh ? 1 : 0, n: av ? 1 : 0, os: visSO(), v: VIS_VERSION }; // v268: + sistema y versión
+    try { const mi = mhIdElegido(); if (mi) o.mhi = visClave(mi); } catch (e) {} // v268: qué niño tiene en «Mi hijo»
     o[h] = 1;
     visEscribir(o);
     try { const act = document.querySelector('.panel.active'); if (act) visApuntarTab(act.id); } catch (e) {}
+  }
+  const VIS_VERSION = 268;
+  function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
+  function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
+    if (!visActivo() || !visDia) return;
+    const si = v != null && v !== 'equipo';
+    visEscribir({ mh: si ? 1 : 0, mhi: si ? visClave(v) : null });
   }
   function visMarca(tipo, clave) {
     if (!visActivo()) return;
@@ -15247,6 +15256,11 @@
       onDisconnect(r).remove().catch(() => {});
       set(r, { t: serverTimestamp(), c: visClave(codigoPartidoActual || '') }).catch(() => {});
     } catch (e) {}
+    try { // v268: qué minuto del partido tiene a la vista (para «Cuánto ven del directo»)
+      const m = ultimoMatchData; let min = Math.floor(Number(m && m.minuto) || 0);
+      if (m && m.matchRunning && m.actualizado) { const x = Math.floor((Date.now() - m.actualizado) / 60000); if (x > 0 && x < 60) min += x; }
+      if (codigoPartidoActual && min >= 0 && min <= 90) visMarca('dm/' + visClave(codigoPartidoActual), 'm' + min);
+    } catch (e) {}
   }
   function visVivo() {
     if (!visActivo()) return;
@@ -15270,7 +15284,7 @@
       abrirResumenPartido: 'resumen', descargarActaVisor: 'acta', abrirModoTV: 'tv', pmAbrir: 'premios', semAbrir: 'semana', informeUltimoToggle: 'informe' };
     Object.keys(ENV).forEach(k => {
       const f = window[k]; if (typeof f !== 'function') return;
-      window[k] = function () { try { visMarca('s', ENV[k]); } catch (e) {} return f.apply(this, arguments); };
+      window[k] = function () { try { visMarca('s', ENV[k]); if (ENV[k] === 'ficha' && arguments[0] != null) visMarca('f', arguments[0]); } catch (e) {} return f.apply(this, arguments); }; // v268: + de qué niño
     });
     const fp = window.mostrarPestanaPerfil;
     if (typeof fp === 'function') window.mostrarPestanaPerfil = function (cual) { try { if (cual && cual !== 'cromo') visMarca('s', 'ficha_' + cual); } catch (e) {} return fp.apply(this, arguments); };

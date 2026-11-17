@@ -1568,6 +1568,7 @@
   }
 </style>
 <script type="module">
+  // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
   // v265 (visor) · Fuera lo de inclinar el móvil (cartel y ficha).
   // v264 (visor) · ✨ El tiempo del partido en el cartel y detrás del marcador del directo (10 efectos + focos), campos en 3D con botón 3D / plano y rótulos de tele en «Último partido» y en las tarjetas de cifras.
@@ -8395,9 +8396,9 @@
       if (C) { const jj = jugs.find(x => String(x.id) === String(C.id)), nm = jj ? (jj.name || '').split(' ')[0] : '¿?'; R.jugadores.push({ ico: '🗣️', dorsal: jj ? jj.dorsal : null, t: 'Más goles de cabeza', v: `${escHtml(nm)} · ${C.c.cab} goles`, det: 'Esta temporada' }); }
     } catch (e) {}
     // Titular seguido
-    let jt = null;
-    jugs.forEach(j => { const mx = j.rachaMaxTitular || 0; if (mx >= 2 && (!jt || mx > (jt.rachaMaxTitular || 0))) jt = j; });
-    if (jt) R.jugadores.push({ ico: '🧱', dorsal: jt.dorsal, t: 'Más partidos seguidos de titular', v: `${escHtml((jt.name || '').split(' ')[0])} · ${jt.rachaMaxTitular} partidos`, det: 'Esta temporada', vivo: (jt.rachaActualTitular || 0) === jt.rachaMaxTitular });
+    let jt = null; const RT = rachasTitular(t); // v267
+    jugs.forEach(j => { const mx = (RT[j.id] || {}).max || 0; if (mx >= 2 && (!jt || mx > RT[jt.id].max)) jt = j; });
+    if (jt) R.jugadores.push({ ico: '🧱', dorsal: jt.dorsal, t: 'Más partidos seguidos de titular', v: `${escHtml((jt.name || '').split(' ')[0])} · ${RT[jt.id].max} partidos`, det: 'Esta temporada', vivo: RT[jt.id].act === RT[jt.id].max });
     return R;
   }
 
@@ -11922,6 +11923,19 @@
     cont.innerHTML = html;
   }
 
+  // v267: racha de titularidad sacada de los partidos (en orden): se corta en cuanto no sale de titular,
+  // esté en el banquillo o no convocado. Los partidos sin titulares apuntados no cuentan. Sin datos → lo guardado.
+  function rachasTitular(t) {
+    const conTit = (t.partidos || []).filter(p => Array.isArray(p.titulares) && p.titulares.length);
+    const out = {};
+    Object.values(t.jugadores || {}).forEach(j => {
+      if (!conTit.length) { out[j.id] = { act: j.rachaActualTitular || 0, max: j.rachaMaxTitular || 0 }; return; }
+      let act = 0, max = 0;
+      conTit.forEach(p => { if (p.titulares.map(String).includes(String(j.id))) { act++; if (act > max) max = act; } else act = 0; });
+      out[j.id] = { act, max };
+    });
+    return out;
+  }
   function pintarRachas(t) {
     const cont = document.getElementById('rachasLista');
     if (!cont) return;
@@ -11933,12 +11947,13 @@
     const GF = partidos.reduce((s,p)=>s+p.golesLocal,0);
     const GC = partidos.reduce((s,p)=>s+p.golesRival,0);
     const efEq = eficaciaTiroEquipo(t);
-    let jugadores = Object.values(t.jugadores || {}).filter(j => j.partidos > 0);
-    jugadores.sort((a,b) => (b.rachaActualTitular||0) - (a.rachaActualTitular||0));
+    const RT = rachasTitular(t); // v267
+    let jugadores = Object.values(t.jugadores || {}).filter(j => j.partidos > 0 && (RT[j.id] || {}).act > 0);
+    jugadores.sort((a,b) => RT[b.id].act - RT[a.id].act);
     const filasJugadores = jugadores.slice(0, 10).map(j => `
       <div class="rank-row">
         <div class="rank-name">${(j.name||'').split(' ')[0]}</div>
-        <div class="rank-val">${j.rachaActualTitular||0} 🔥</div>
+        <div class="rank-val">${RT[j.id].act} 🔥</div>
       </div>`).join('');
     cont.innerHTML = `
       <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-bottom:12px;">
@@ -11949,7 +11964,7 @@
       <div style="font-size:11.5px; color:#cbd5e1; margin-bottom:10px;">${partidos.length} partidos · GF: <strong style="color:#2ed573;">${GF}</strong> · GC: <strong style="color:#ff4757;">${GC}</strong></div>
       ${efEq ? `<div style="font-size:11.5px; color:#cbd5e1; margin-bottom:10px;">Eficacia de tiro: <strong style="color:#2ed573;">${efEq.pct}%</strong> <span style="color:#64748b;">(${efEq.goles} goles de ${efEq.tiros} tiros)</span></div>` : ''}
       <div class="card-title" style="margin-top:6px;">🔥 Racha de titularidad por jugador</div>
-      ${filasJugadores || '<div class="loader">Sin datos</div>'}`;
+      ${filasJugadores || '<div class="loader">Ahora mismo nadie lleva racha</div>'}`;
   }
 
   const COMPARATIVA_STATS = { goles: 'Goles', asistencias: 'Asistencias', minutos: 'Minutos', impactoAcum: 'Impacto', impactoPorPartido: 'Imp. x 70 min', pasesArea: 'Pases al área', pasesClave: 'Pases clave', accionesDef: 'Acc. defensivas', regates: 'Regates', fuerasJuego: 'Fueras de juego', accionesDefClave: 'Acc. def. clave', partidos: 'Partidos', amarillas: 'Amarillas', rojas: 'Rojas' };

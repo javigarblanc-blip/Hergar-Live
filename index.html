@@ -876,6 +876,7 @@
       </div>
       <div class="card" id="narracionCard" style="display:none;"></div>
       <div class="card" id="campoCard">
+        <button type="button" id="al272Btn" onclick="al272VerVivo()" style="display:none;">🎬 Presentación</button>
         <div class="card-title" id="formacionTitulo">Formación en el campo</div>
         <div class="campo v211" id="campoContainer">
           <svg class="campo-lineas" viewBox="0 0 300 400" preserveAspectRatio="none" aria-hidden="true">
@@ -1315,7 +1316,7 @@
     <div id="perfilDatosContenido" style="display:none;"></div>
     <div id="perfilEstiloContenido" style="display:none;"></div>
     <div id="perfilEvoContenido" style="display:none;"></div>
-    <button onclick="document.getElementById('perfilModal').style.display='none';" style="margin-top:14px; width:100%; padding:11px; background:rgba(255,255,255,.06); color:#e2e8f0; border:none; border-radius:10px; font-weight:700; font-family:'Montserrat',sans-serif;">CERRAR</button>
+    <button onclick="fi272Cerrar()" style="margin-top:14px; width:100%; padding:11px; background:rgba(255,255,255,.06); color:#e2e8f0; border:none; border-radius:10px; font-weight:700; font-family:'Montserrat',sans-serif;">CERRAR</button>
   </div>
 </div>
 
@@ -1630,8 +1631,121 @@
   .card { border-radius:14px; padding:12px; margin-bottom:10px; }
   .rank-row { align-items:baseline; }
   @media (prefers-reduced-motion: reduce) { .tl269 .ahora { animation:none; } .cab269 { transition:none; } }
+
+  /* ══ v272 · iconos de eventos animados ══ */
+  .ev272 { gap:10px; }
+  .ev272-min { width:30px; flex:none; text-align:right; font-family:'Barlow Condensed','Montserrat',sans-serif; font-variant-numeric:tabular-nums; font-weight:800; font-size:16px; color:#94a3b8; }
+  .ev272-ic { position:relative; flex:none; width:32px; height:32px; border-radius:9px; background:#0c131e; border:1px solid rgba(255,255,255,.05); display:flex; align-items:center; justify-content:center; overflow:hidden; font-size:16px; }
+  .ev272.golh { background:linear-gradient(90deg,rgba(180,20,56,.22),transparent 75%); border-radius:8px; }
+  .ev272.golh .timeline-text { color:#fff; font-weight:700; }
+  .ev272.riv .timeline-text { color:#94a3b8; }
+  .ev272.nuevo { animation:e272In .35s ease both; animation-delay:var(--d,0ms); }
+  @keyframes e272In { from { opacity:0; transform:translateX(-14px); } to { opacity:1; transform:none; } }
+  .e272-tj { display:block; width:13px; height:18px; border-radius:2.5px; transform:rotate(-6deg); }
+  .e272-tj.am { background:linear-gradient(135deg,#ffe066,#f5c400); box-shadow:0 0 10px rgba(245,196,0,.45); }
+  .e272-tj.ro { background:linear-gradient(135deg,#ff6b6b,#d90429); box-shadow:0 0 10px rgba(217,4,41,.5); }
+  .e272-tj.d1 { position:absolute; left:7px; top:6px; transform:rotate(-12deg); }
+  .e272-tj.d2 { position:absolute; left:12px; top:8px; transform:rotate(8deg); }
+  .ev272.nuevo .e272-tj { animation:e272Flip .7s cubic-bezier(.3,1.5,.5,1) both; animation-delay:calc(var(--d,0ms) + 120ms); }
+  .ev272.nuevo .e272-tj.d2 { animation-delay:calc(var(--d,0ms) + 420ms); }
+  @keyframes e272Flip { 0% { transform:rotateY(90deg) rotate(-25deg) translateY(10px); opacity:0; } 60% { transform:rotateY(0) rotate(8deg); opacity:1; } 100% { transform:rotate(-6deg); } }
+  .e272-fl { position:absolute; font-size:13px; line-height:1; font-family:Inter,sans-serif; }
+  .e272-fl.up { color:#2ed573; left:5px; top:8px; } .e272-fl.dn { color:#ff5577; right:5px; top:10px; }
+  .ev272.nuevo .e272-fl.up { animation:e272Up .9s ease both; animation-delay:calc(var(--d,0ms) + 100ms); }
+  .ev272.nuevo .e272-fl.dn { animation:e272Dn .9s ease both; animation-delay:calc(var(--d,0ms) + 100ms); }
+  @keyframes e272Up { 0% { transform:translateY(20px); opacity:0; } 60% { opacity:1; } 100% { transform:none; } }
+  @keyframes e272Dn { 0% { transform:translateY(-20px); opacity:0; } 60% { opacity:1; } 100% { transform:none; } }
+  .e272-net { transform-origin:16px 26px; } .e272-bal { transform:translate(2px,-3px); }
+  .ev272.nuevo .e272-bal { animation:e272Bal .8s cubic-bezier(.4,0,.6,1) both; animation-delay:calc(var(--d,0ms) + 100ms); }
+  .ev272.nuevo .e272-net { animation:e272Net .5s ease; animation-delay:calc(var(--d,0ms) + 650ms); }
+  @keyframes e272Bal { 0% { transform:translate(-14px,14px) scale(.6); } 70% { transform:translate(3px,-2px); } 100% { transform:translate(2px,-3px); } }
+  @keyframes e272Net { 40% { transform:translateY(-3px) scaleY(1.15); } }
+  .ev272.t-golr svg { opacity:.6; }
+  .e272-band { transform-origin:9px 8px; }
+  .ev272.nuevo .e272-band { animation:e272Band 1.1s ease-in-out 2; animation-delay:calc(var(--d,0ms) + 100ms); }
+  @keyframes e272Band { 25% { transform:skewY(-12deg) scaleX(.85); } 75% { transform:skewY(10deg) scaleX(1.05); } }
+  .e272-lin { transform-origin:15px 28px; }
+  .ev272.nuevo .e272-lin { animation:e272Lin .6s cubic-bezier(.3,1.6,.5,1) both; animation-delay:calc(var(--d,0ms) + 100ms); }
+  @keyframes e272Lin { from { transform:rotate(-80deg); } to { transform:none; } }
+  .e272-gu { font-size:17px; display:block; }
+  .e272-bal2 { position:absolute; left:3px; top:16px; width:8px; height:8px; border-radius:50%; background:#fff; border:1px solid #111; opacity:0; }
+  .ev272.nuevo .e272-gu { animation:e272Gu .6s cubic-bezier(.3,1.8,.5,1) both; animation-delay:calc(var(--d,0ms) + 100ms); }
+  .ev272.nuevo .e272-bal2 { animation:e272Bal2 .7s ease-out both; animation-delay:calc(var(--d,0ms) + 100ms); }
+  @keyframes e272Gu { from { transform:scale(.3) rotate(-30deg); } to { transform:none; } }
+  @keyframes e272Bal2 { 0% { transform:translate(12px,4px); opacity:1; } 45% { transform:translate(0,0); opacity:1; } 100% { transform:translate(14px,-14px); opacity:0; } }
+  .e272-emo { display:block; }
+  .ev272.nuevo .e272-emo { animation:e272Gu .5s cubic-bezier(.3,1.8,.5,1) both; animation-delay:calc(var(--d,0ms) + 100ms); }
+  .tv272 { display:inline-block; vertical-align:middle; margin-right:8px; font-style:normal; }
+  .tv272 .ev272-ic { width:30px; height:30px; background:rgba(255,255,255,.06); }
+
+  /* ══ v272 · foto → ficha ══ */
+  .fi272-clon { position:fixed; z-index:2500; border-radius:50%; object-fit:cover; pointer-events:none; margin:0; }
+
+  /* ══ v272 · deslizar entre partidos ══ */
+  .hp-det { scroll-margin-top:84px; }
+  .sw272 { display:flex; align-items:center; gap:6px; margin:2px 0 8px; padding:6px; border-radius:10px; background:rgba(255,255,255,.03); }
+  .sw272 button { flex:1; min-width:0; display:flex; align-items:center; gap:4px; min-height:36px; padding:0 8px; border-radius:8px; border:1px solid rgba(255,255,255,.07); background:#141d2b; color:#cbd5e1; font:700 11px Inter,sans-serif; cursor:pointer; }
+  .sw272 button:last-child { justify-content:flex-end; text-align:right; }
+  .sw272 button span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .sw272 button i { font-style:normal; font-size:18px; color:#f5a623; line-height:1; }
+  .sw272 button:disabled { opacity:.3; }
+  .sw272-c { flex:none; text-align:center; line-height:1.15; }
+  .sw272-c b { display:block; font-family:'Barlow Condensed','Montserrat',sans-serif; font-weight:800; font-size:14px; color:#e2e8f0; }
+  .sw272-c small { font-size:9.5px; color:#64748b; }
+
+  /* ══ v272 · presentación de alineaciones ══ */
+  #al272 { position:fixed; inset:0; z-index:3000; overflow:hidden; background:radial-gradient(ellipse at 50% 8%,#1a2a3e,#070b12 70%); color:#fff; font-family:Inter,sans-serif; animation:e272Fade .3s ease both; }
+  @keyframes e272Fade { from { opacity:0; } }
+  #al272 .al272-x { position:absolute; right:12px; top:calc(10px + env(safe-area-inset-top)); z-index:20; border:0; border-radius:999px; padding:8px 13px; background:rgba(255,255,255,.1); color:#e2e8f0; font:700 12px Inter,sans-serif; cursor:pointer; }
+  .al272-wipe { position:absolute; inset:0; z-index:15; background:linear-gradient(100deg,#b41438 0 48%,#fff 48% 50%,#b41438 50%); transform:translateX(-110%); pointer-events:none; }
+  .al272-intro { position:absolute; inset:0; z-index:12; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; pointer-events:none; }
+  .al272-intro img { width:92px; height:92px; border-radius:50%; background:#fff; object-fit:cover; opacity:0; }
+  .al272-intro .t1 { font:900 30px Montserrat,sans-serif; letter-spacing:6px; opacity:0; }
+  .al272-intro .t2 { font:700 13px Inter,sans-serif; color:#94a3b8; opacity:0; display:flex; align-items:center; gap:8px; }
+  .al272-intro .t2 span { color:#e2e8f0; letter-spacing:1px; }
+  .al272-form { position:absolute; top:calc(16px + env(safe-area-inset-top)); left:0; right:0; text-align:center; font:800 12px Inter,sans-serif; letter-spacing:3px; color:#94a3b8; opacity:0; transition:opacity .5s; }
+  .al272-form.on { opacity:1; }
+  .al272-form b { color:#fff; font-family:'Barlow Condensed','Montserrat',sans-serif; font-size:22px; letter-spacing:2px; margin-left:6px; }
+  .al272-pw { position:absolute; left:50%; transform:translateX(-50%); width:min(100%,480px); top:calc(60px + env(safe-area-inset-top)); bottom:calc(92px + env(safe-area-inset-bottom)); perspective:760px; opacity:0; transition:opacity .6s; }
+  .al272-pw.on { opacity:1; }
+  .al272-campo { position:absolute; left:9%; right:9%; top:-12%; bottom:0; transform:rotateX(24deg); transform-origin:50% 100%; transform-style:preserve-3d; border-radius:6px;
+    background:repeating-linear-gradient(0deg,#1f7a3d 0 6.25%,#1b6e37 6.25% 12.5%); box-shadow:0 30px 60px rgba(0,0,0,.6),inset 0 0 0 2px rgba(255,255,255,.5); }
+  .al272-campo::before { content:''; position:absolute; left:0; right:0; top:50%; border-top:2px solid rgba(255,255,255,.5); }
+  .al272-campo::after { content:''; position:absolute; left:50%; top:50%; width:70px; height:70px; margin:-35px; border:2px solid rgba(255,255,255,.5); border-radius:50%; }
+  .al272-campo .ar { position:absolute; left:26%; right:26%; height:14%; border:2px solid rgba(255,255,255,.5); }
+  .al272-campo .ar.t { top:-2px; border-top:0; } .al272-campo .ar.b { bottom:-2px; border-bottom:0; }
+  .al272-p { position:absolute; width:0; height:0; transform-style:preserve-3d; z-index:2; }
+  .al272-chip { position:absolute; left:-26px; top:-52px; width:52px; text-align:center; transform:rotateX(-24deg) scale(0); transform-origin:50% 100%; transition:transform .45s cubic-bezier(.3,1.6,.5,1); }
+  .al272-p.on .al272-chip { transform:rotateX(-24deg) scale(1); }
+  .al272-chip img, .al272-chip .al272-sinf { width:42px; height:42px; border-radius:50%; border:2px solid #fff; box-shadow:0 4px 10px rgba(0,0,0,.5); display:block; margin:0 auto; object-fit:cover; background:#b41438; }
+  .al272-sinf { display:flex !important; align-items:center; justify-content:center; font:800 17px 'Barlow Condensed',Montserrat,sans-serif; color:#fff; }
+  .al272-chip .d { position:absolute; top:-4px; right:0; background:#b41438; color:#fff; font:800 11px 'Barlow Condensed',Montserrat,sans-serif; border-radius:6px; padding:0 4px; border:1px solid #fff; }
+  .al272-chip .nm { font:800 10px Inter,sans-serif; color:#fff; text-shadow:0 1px 3px #000; margin:2px -14px 0; white-space:nowrap; }
+  .al272-card { position:absolute; left:50%; top:44%; width:200px; height:262px; margin:-131px 0 0 -100px; z-index:10; border-radius:16px; opacity:0; pointer-events:none; overflow:hidden;
+    background:linear-gradient(160deg,#2a0a14,#120509 60%); border:1px solid rgba(255,255,255,.18); box-shadow:0 20px 60px rgba(0,0,0,.7); }
+  .al272-card .big { position:absolute; right:10px; top:2px; font:800 70px 'Barlow Condensed',Montserrat,sans-serif; color:rgba(255,255,255,.14); line-height:1; }
+  .al272-card .ph { position:absolute; left:0; right:0; top:0; bottom:72px; display:flex; align-items:flex-end; justify-content:center; }
+  .al272-card .ph img, .al272-card .ph .al272-sinf { width:158px; height:158px; border-radius:50%; border:3px solid #fff; object-fit:cover; background:#b41438; font-size:60px; }
+  .al272-card .nf { position:absolute; left:0; right:0; bottom:0; height:72px; background:#b41438; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0 8px; text-align:center; }
+  .al272-card .nf b { font:900 21px Montserrat,sans-serif; letter-spacing:1px; text-transform:uppercase; }
+  .al272-card .nf span { font:700 10.5px Inter,sans-serif; opacity:.85; letter-spacing:2px; }
+  .al272-banq { position:absolute; left:0; right:0; bottom:0; padding:10px 12px calc(10px + env(safe-area-inset-bottom)); background:rgba(6,9,14,.88); border-top:1px solid rgba(255,255,255,.07); display:flex; align-items:center; gap:10px; transform:translateY(100%); transition:transform .6s cubic-bezier(.2,.9,.3,1); }
+  .al272-banq.on { transform:none; }
+  .al272-banq .lb { font:800 9.5px Inter,sans-serif; letter-spacing:2px; color:#94a3b8; writing-mode:vertical-rl; transform:rotate(180deg); }
+  .al272-bl { display:flex; gap:9px; overflow-x:auto; scrollbar-width:none; }
+  .al272-bl .s { flex:none; text-align:center; font:700 9.5px Inter,sans-serif; color:#cbd5e1; opacity:0; transform:translateY(10px); transition:.4s; }
+  .al272-banq.on .s { opacity:1; transform:none; }
+  .al272-bl .s img, .al272-bl .s .al272-sinf { width:36px; height:36px; border-radius:50%; display:block; margin:0 auto 2px; border:1.5px solid #64748b; object-fit:cover; font-size:14px; background:#1e293b; }
+  #al272.fin::after { content:'Toca para cerrar'; position:absolute; left:0; right:0; top:calc(48px + env(safe-area-inset-top)); text-align:center; font:600 11px Inter,sans-serif; color:#94a3b8; animation:e272Fade .6s ease 1s both; }
+  #campoCard { position:relative; }
+  #al272Btn { position:absolute; right:12px; top:10px; z-index:3; border:1px solid rgba(245,166,35,.45); background:rgba(245,166,35,.1); color:#f5a623; border-radius:999px; padding:4px 10px; font:700 11px Inter,sans-serif; cursor:pointer; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ev272.nuevo, .ev272.nuevo * { animation:none !important; }
+  }
 </style>
 <script type="module">
+  // v272 (visor) · 🎬 Presentación de alineaciones de tele (sale sola una vez al empezar el partido; se repite con «🎬 Presentación» en el campo y en la hoja «👕 Alineación»), 📸 la foto del niño vuela a la cabecera de su ficha (y vuelve al cerrar), ↔️ deslizar entre partidos abiertos en Temporada → Partidos (con barra ‹ anterior · siguiente ›) y 🟨 iconos animados en «Últimos eventos» y en la cinta del Modo TV (solo se anima lo nuevo).
   // v271 (visor) · La pestaña «En vivo» solo sale con el partido en juego (en rojo, con el punto parpadeante); la rotación solo durante el partido; «Ver todas las estadísticas del partido» abre ese partido en Temporada → Partidos.
   // v270 (visor) · Fuera la línea de tiempo del partido (se veía mal con muchos goles y cambios).
   // v269 (visor) · ✨ Más pro: números con letra de tele (Barlow Condensed, cifras del mismo ancho), línea de tiempo del partido (Hergar arriba, rival abajo; en directo avanza), cabecera que se encoge en una barra fija al bajar, cabecera del directo a dos colores (Hergar y el rival en diagonal) y títulos de tarjeta todos iguales.
@@ -1825,7 +1939,7 @@
     const cont = document.querySelector('.content'); if (!cont) return;
     const noVale = (t) => {
       for (let el = t; el && el !== cont; el = el.parentElement) {
-        if (el.matches && el.matches('input, select, textarea, video, canvas, iframe, .num-tira')) return true;
+        if (el.matches && el.matches('input, select, textarea, video, canvas, iframe, .num-tira, .hp-det[open]')) return true; // v272: dentro de un partido abierto se pasa de partido
         const cs = getComputedStyle(el);
         if ((cs.overflowX === 'auto' || cs.overflowX === 'scroll') && el.scrollWidth > el.clientWidth + 4) return true;
       }
@@ -2144,6 +2258,7 @@
       <div class="ph-info"><div class="ph-nom">${escHtml(j.name || '')}</div><div class="ph-meta">${escHtml(meta)}</div></div>
       <div class="ph-nums">${N.map(([v, l, s]) => `<div class="ph-n"><b data-v="${Number(v) || 0}" data-s="${s || ''}">${hitoNum(Number(v) || 0)}${s || ''}</b><span>${l}</span></div>`).join('')}</div>`;
     m.classList.add('con-hero');
+    try { fi272Volar(h, foto); } catch (e) { console.error('Foto → ficha:', e); } // v272
     if (V260_RM) return;
     const bs = [...h.querySelectorAll('.ph-n b')], t0 = performance.now() + 250, dur = 1100;
     bs.forEach(b => { b.textContent = '0' + b.dataset.s; });
@@ -2153,6 +2268,279 @@
       if (f < 1 && h.isConnected) requestAnimationFrame(paso);
     };
     requestAnimationFrame(paso);
+  }
+
+
+  // ══ v272 (visor) · 🎬 alineación de tele · 📸 foto → ficha · ↔️ deslizar entre partidos · 🟨 iconos de eventos animados ══
+
+  // ── 🟨 Iconos de eventos animados («Últimos eventos» y cinta del Modo TV) ──
+  const EV272_IC = {
+    gol: `<svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true"><g class="e272-net"><path d="M4 26V8h24v18" fill="rgba(255,255,255,.06)" stroke="#fff" stroke-width="1.6"/><path d="M8 8v18M12 8v18M16 8v18M20 8v18M24 8v18M4 13h24M4 18h24M4 22h24" stroke="rgba(255,255,255,.28)" stroke-width=".7"/></g><g class="e272-bal"><circle cx="16" cy="18" r="5" fill="#fff" stroke="#111" stroke-width=".8"/><path d="M16 15.5l2 1.5-.8 2.3h-2.4l-.8-2.3z" fill="#111"/></g></svg>`,
+    am: `<i class="e272-tj am"></i>`,
+    doble: `<i class="e272-tj am d1"></i><i class="e272-tj ro d2"></i>`,
+    ro: `<i class="e272-tj ro"></i>`,
+    cam: `<b class="e272-fl up">▲</b><b class="e272-fl dn">▼</b>`,
+    cor: `<svg viewBox="0 0 30 30" width="24" height="24" aria-hidden="true"><line x1="9" y1="4" x2="9" y2="28" stroke="#e2e8f0" stroke-width="1.8"/><path class="e272-band" d="M9 4L24 8 9 13z" fill="#b41438"/><path d="M4 28a8 8 0 0 1 8-8" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="1.2"/></svg>`,
+    fdj: `<svg viewBox="0 0 30 30" width="24" height="24" aria-hidden="true"><g class="e272-lin"><line x1="15" y1="28" x2="15" y2="6" stroke="#cbd5e1" stroke-width="1.8"/><rect x="15" y="5" width="11" height="9" fill="#facc15"/><rect x="15" y="5" width="5.5" height="4.5" fill="#ef4444"/><rect x="20.5" y="9.5" width="5.5" height="4.5" fill="#ef4444"/></g></svg>`,
+    par: `<i class="e272-bal2"></i><span class="e272-gu">🧤</span>`
+  };
+  const EV272_EMO = /^((?:\p{Extended_Pictographic}|[☀-➿])️?(?:‍(?:\p{Extended_Pictographic})️?)*)\s*/u;
+  function ev272Tipo(t) {
+    if (/^⚽/.test(t)) return 'gol';
+    if (/^🥅 Gol rival/.test(t)) return 'golr';
+    if (/^🟨/.test(t)) return /ROJA/.test(t) ? 'doble' : 'am';
+    if (/^🟥/.test(t)) return 'ro';
+    if (/^🔄/.test(t)) return 'cam';
+    if (/^⛳/.test(t)) return 'cor';
+    if (/^🚩/.test(t)) return 'fdj';
+    if (/^🧤/.test(t) && !/^🧤 Portería a cero/.test(t)) return 'par';
+    return 'emo';
+  }
+  function ev272IconoHTML(tipo, emo) {
+    if (tipo === 'golr') return EV272_IC.gol;
+    return EV272_IC[tipo] || `<span class="e272-emo">${escHtml(emo || '•')}</span>`;
+  }
+  const ev272Vistos = new Set(); let ev272Cod = null;
+  function ev272Fila(s, retraso) {
+    const m = /^\[(\d+)'\]\s*([\s\S]*)$/.exec(s);
+    if (!m) return `<div class="timeline-item"><span class="timeline-text">${escHtml(s)}</span></div>`;
+    let texto = m[2];
+    const tipo = ev272Tipo(texto);
+    const em = EV272_EMO.exec(texto); let emo = '';
+    if (em) { emo = em[1]; texto = texto.slice(em[0].length); }
+    const riv = tipo === 'golr' || /rival/i.test(texto);
+    const cls = ['timeline-item', 'ev272', 't-' + tipo, riv ? 'riv' : '', tipo === 'gol' ? 'golh' : '', retraso >= 0 ? 'nuevo' : ''].filter(Boolean).join(' ');
+    return `<div class="${cls}"${retraso >= 0 ? ` style="--d:${retraso}ms"` : ''}><span class="ev272-min">${m[1]}'</span><span class="ev272-ic">${ev272IconoHTML(tipo, emo)}</span><span class="timeline-text">${escHtml(texto)}</span></div>`;
+  }
+  function ev272Lista(eventos) {
+    if (ev272Cod !== codigoPartidoActual) { ev272Cod = codigoPartidoActual; ev272Vistos.clear(); }
+    const primera = ev272Vistos.size === 0; let k = 0;
+    const html = eventos.map(ev => { const s = String(ev); const nuevo = !ev272Vistos.has(s); return ev272Fila(s, nuevo ? (primera ? Math.min(k++, 10) * 80 : 0) : -1); }).join('');
+    eventos.forEach(ev => ev272Vistos.add(String(ev)));
+    return html;
+  }
+  // Modo TV: icono pequeño en la cinta «ÚLTIMO» (solo se anima la primera vez que sale)
+  const ev272TvVistos = new Set();
+  function ev272TvIcono(e) {
+    let tipo = null;
+    if (e.tipo === 'gol' || e.tipo === 'golRival') tipo = 'gol';
+    else if (e.tipo === 'cambio') tipo = 'cam';
+    else if (e.tipo === 'tarjeta') tipo = /Doble/.test(e.texto) ? 'doble' : (/^Roja/.test(e.texto) ? 'ro' : 'am');
+    else if (/^Parad|^Penalti .*parado/.test(e.texto)) tipo = 'par';
+    if (!tipo) return '';
+    const k = e.min + '|' + e.texto, nuevo = !ev272TvVistos.has(k); ev272TvVistos.add(k);
+    return `<i class="ev272 tv272 t-${tipo}${nuevo ? ' nuevo' : ''}" style="--d:0ms"><span class="ev272-ic">${EV272_IC[tipo]}</span></i>`;
+  }
+
+  // ── 📸 La foto que se abre en ficha ──
+  let fi272Toque = null, fi272Ult = null;
+  try { document.addEventListener('pointerdown', (e) => { fi272Toque = { el: e.target, t: Date.now() }; }, { capture: true, passive: true }); } catch (e) {}
+  function fi272Origen(foto) {
+    if (!foto || !fi272Toque || Date.now() - fi272Toque.t > 1500) return null;
+    const el = fi272Toque.el; if (!el || !el.isConnected || !el.closest) return null;
+    const mismo = (im) => im && im.tagName === 'IMG' && (im.getAttribute('src') === foto || im.src === foto);
+    if (mismo(el)) return el;
+    const caja = el.closest('[onclick], button, tr, li, a, .jf-wrap'); if (!caja) return null;
+    return [...caja.querySelectorAll('img')].find(mismo) || null;
+  }
+  function fi272Visible(r) { return r && r.width > 6 && r.height > 6 && r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth; }
+  function fi272Clon(src, r) {
+    const c = document.createElement('img'); c.src = src; c.alt = ''; c.className = 'fi272-clon';
+    Object.assign(c.style, { left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px' });
+    document.body.appendChild(c); return c;
+  }
+  function fi272Tr(a, b) { const s = b.width / a.width; return `translate(${b.left - a.left + (b.width - a.width) / 2}px, ${b.top - a.top + (b.height - a.height) / 2}px) scale(${s})`; }
+  function fi272Volar(h, foto) {
+    fi272Ult = null;
+    if (V260_RM || !foto) return;
+    const org = fi272Origen(foto); fi272Toque = null; if (!org) return;
+    const r1 = org.getBoundingClientRect(); if (!fi272Visible(r1)) return;
+    const caja = h.parentElement; try { if (caja) caja.scrollTop = 0; } catch (e) {}
+    const pf = h.querySelector('.ph-foto'); if (!pf) return;
+    pf.style.animation = 'none'; pf.style.opacity = '0';
+    fi272Ult = { org, foto };
+    requestAnimationFrame(() => {
+      const im = pf.querySelector('img'); const r2 = (im || pf).getBoundingClientRect();
+      if (!fi272Visible(r2)) { pf.style.opacity = ''; return; }
+      const c = fi272Clon(foto, r1);
+      const a = c.animate([{ transform: 'none', boxShadow: '0 0 0 0 rgba(224,64,94,0)' }, { transform: fi272Tr(r1, r2), boxShadow: '0 0 0 0 rgba(224,64,94,0)' }], { duration: 430, easing: 'cubic-bezier(.2,.9,.25,1)', fill: 'forwards' });
+      a.onfinish = () => {
+        pf.style.opacity = '';
+        try { pf.animate([{ boxShadow: '0 0 0 0 rgba(224,64,94,.9)' }, { boxShadow: '0 0 30px rgba(224,64,94,.45)' }], { duration: 450 }); } catch (e) {}
+        c.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120, fill: 'forwards' }).onfinish = () => c.remove();
+      };
+      try { h.parentElement.animate([{ transform: 'translateY(14px)', opacity: .6 }, { transform: 'none', opacity: 1 }], { duration: 380, easing: 'cubic-bezier(.2,.9,.25,1)' }); } catch (e) {}
+    });
+  }
+  window.fi272Cerrar = () => {
+    const M = document.getElementById('perfilModal'); if (!M) return;
+    const U = fi272Ult; fi272Ult = null;
+    const fin = () => { M.style.display = 'none'; M.style.opacity = ''; };
+    if (!U || V260_RM || !M.classList.contains('con-hero') || !U.org.isConnected) return fin();
+    const pf = M.querySelector('#perfilHero .ph-foto'), im = pf && pf.querySelector('img');
+    const r1 = im && im.getBoundingClientRect(), r2 = U.org.getBoundingClientRect();
+    if (!fi272Visible(r1) || !fi272Visible(r2)) return fin();
+    const c = fi272Clon(U.foto, r1); pf.style.opacity = '0';
+    M.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260, fill: 'forwards' });
+    c.animate([{ transform: 'none' }, { transform: fi272Tr(r1, r2) }], { duration: 360, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards' }).onfinish = () => {
+      c.remove(); pf.style.opacity = ''; M.getAnimations().forEach(a => a.cancel()); fin();
+    };
+  };
+
+  // ── ↔️ Deslizar entre partidos (Temporada → Partidos, con un partido abierto) ──
+  function sw272Barra(partidos, i, jornadaDe) {
+    const n = partidos.length; if (n < 2) return '';
+    const lab = (p) => { if (!p) return ''; let j = null; try { j = jornadaDe(p); } catch (e) {} return escHtml((j ? 'J' + j + ' · ' : '') + nombreCortoCabecera(p.rival || '')); };
+    const viejo = partidos[i + 1], nuevo = partidos[i - 1];
+    return `<div class="sw272">
+      <button type="button" onclick="sw272Ir(this,1)"${viejo ? '' : ' disabled'} aria-label="Partido anterior"><i>‹</i><span>${viejo ? lab(viejo) : ''}</span></button>
+      <div class="sw272-c"><b>${n - i} de ${n}</b><small>desliza ↔</small></div>
+      <button type="button" onclick="sw272Ir(this,-1)"${nuevo ? '' : ' disabled'} aria-label="Partido siguiente"><span>${nuevo ? lab(nuevo) : ''}</span><i>›</i></button></div>`;
+  }
+  let sw272Ocupado = false;
+  window.sw272Ir = (el, paso) => {
+    const det = el && el.closest && el.closest('details.hp-det'); if (!det || sw272Ocupado) return;
+    const lista = [...document.querySelectorAll('#partidosLista details.hp-det')], dst = lista[lista.indexOf(det) + paso];
+    const dx = paso > 0 ? 1 : -1; // al anterior (más antiguo): lo de ahora sale por la derecha y el otro entra por la izquierda
+    if (!dst) { try { det.animate([{ transform: 'none' }, { transform: `translateX(${dx * 18}px)` }, { transform: 'none' }], { duration: 320, easing: 'ease-out' }); } catch (e) {} return; }
+    sw272Ocupado = true;
+    const seguir = () => {
+      det.open = false; dst.open = true;
+      try { dst.scrollIntoView({ block: 'start' }); } catch (e) {}
+      if (!V260_RM) { try { dst.animate([{ transform: `translateX(${-dx * 40}%)`, opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 260, easing: 'cubic-bezier(.2,.9,.3,1)' }); } catch (e) {} }
+      sw272Ocupado = false;
+    };
+    if (V260_RM) return seguir();
+    try { det.animate([{ transform: 'none', opacity: 1 }, { transform: `translateX(${dx * 40}%)`, opacity: 0 }], { duration: 170, easing: 'ease-in' }).onfinish = seguir; } catch (e) { seguir(); }
+  };
+  (function () {
+    const noVale = (t, det) => {
+      for (let el = t; el && el !== det; el = el.parentElement) {
+        if (el.matches && el.matches('input, select, textarea, video, canvas, iframe, button')) return true;
+        const cs = getComputedStyle(el);
+        if ((cs.overflowX === 'auto' || cs.overflowX === 'scroll') && el.scrollWidth > el.clientWidth + 4) return true;
+      }
+      return false;
+    };
+    let det = null, x0 = 0, y0 = 0, t0 = 0;
+    document.addEventListener('touchstart', (e) => {
+      det = null; if (e.touches.length !== 1) return;
+      const d = e.target && e.target.closest && e.target.closest('#partidosLista details.hp-det[open]');
+      if (!d || noVale(e.target, d)) return;
+      det = d; x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; t0 = Date.now();
+    }, { passive: true });
+    document.addEventListener('touchend', (e) => {
+      if (!det) return; const d = det; det = null;
+      const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0;
+      if (Date.now() - t0 > 700 || Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 2) return;
+      const b = d.querySelector('.sw272 button'); if (b) sw272Ir(b, dx > 0 ? 1 : -1);
+    }, { passive: true });
+  })();
+
+  // ── 🎬 Presentación de alineaciones de tele ──
+  const AL272_PUESTOS = {
+    "4-3-3": ['POR', 'LI', 'DFC', 'DFC', 'LD', 'MCD', 'MC', 'MC', 'EI', 'DC', 'ED'],
+    "4-4-2": ['POR', 'LI', 'DFC', 'DFC', 'LD', 'MI', 'MC', 'MC', 'MD', 'DC', 'DC'],
+    "4-2-3-1": ['POR', 'LI', 'DFC', 'DFC', 'LD', 'MCD', 'MCD', 'MI', 'MP', 'MD', 'DC'],
+    "3-5-2": ['POR', 'DFC', 'DFC', 'DFC', 'MI', 'MC', 'MP', 'MC', 'MD', 'DC', 'DC'],
+    "3-4-3": ['POR', 'DFC', 'DFC', 'DFC', 'MI', 'MC', 'MC', 'MD', 'EI', 'DC', 'ED']
+  };
+  let al272Inicial = null, al272Run = 0;
+  function al272DatosVivo(m) {
+    const ids = (m.onFieldIds || []).map(v => v == null ? null : String(v));
+    if (ids.filter(Boolean).length < 7) return null;
+    const jug = {}; Object.entries(m.jugadores || {}).forEach(([id, j]) => { if (j) jug[String(id)] = { nom: String(j.name || '').split(' ')[0], dorsal: j.dorsal }; });
+    return { ids, form: m.formacion || '4-3-3', jug, banq: (m.benchIds || []).map(String).filter(id => jug[id]), banqLb: 'BANQUILLO', rival: m.rival || '' };
+  }
+  function al272Clave(m) { return 'al272_' + (codigoPartidoActual || '') + '_' + String((m && m.rival) || ''); }
+  function al272Vigilar(m) {
+    const b = document.getElementById('al272Btn');
+    if (!m || m.matchFinished || !m.matchRunning) { if (b) b.style.display = 'none'; if (!m || m.matchFinished) al272Inicial = null; return; }
+    const k = al272Clave(m);
+    if (!al272Inicial || al272Inicial.k !== k) {
+      al272Inicial = null;
+      if ((Number(m.minuto) || 0) <= 8) { const D = al272DatosVivo(m); if (D) al272Inicial = { k, D }; }
+      if (!al272Inicial) { try { const g = JSON.parse(localStorage.getItem(k) || 'null'); if (g && g.ids) al272Inicial = { k, D: g }; } catch (e) {} }
+    }
+    if (b) b.style.display = al272Inicial ? '' : 'none';
+    if (!al272Inicial) return;
+    let visto = false; try { visto = !!localStorage.getItem(k); } catch (e) {}
+    if (visto) return;
+    try { localStorage.setItem(k, JSON.stringify(al272Inicial.D)); } catch (e) {}
+    if (V260_RM) return;
+    let n = 0; const D = al272Inicial.D;
+    const intentar = () => {
+      const sp = document.getElementById('splashV260');
+      const libre = document.visibilityState === 'visible' && !(typeof tvActivo !== 'undefined' && tvActivo) && !(sp && !sp.classList.contains('fuera'));
+      if (libre) al272Reproducir(D); else if (++n < 40) setTimeout(intentar, 1500);
+    };
+    setTimeout(intentar, 900);
+  }
+  window.al272VerVivo = () => { if (al272Inicial) al272Reproducir(al272Inicial.D); };
+  window.al272VerHoja = () => {
+    const D = alinDatos; if (!D || !D.ini) return;
+    const banq = []; (D.cambios || []).forEach(c => { if (c.entra && !banq.includes(c.entra) && !D.ini.includes(c.entra)) banq.push(c.entra); });
+    al272Reproducir({ ids: D.ini, form: D.formIni || '4-3-3', jug: D.jug, banq, banqLb: 'ENTRARON', rival: D.rival || '' });
+  };
+  function al272Cerrar() {
+    al272Run++; const o = document.getElementById('al272'); if (!o) return;
+    o.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300, fill: 'forwards' }).onfinish = () => { o.remove(); document.body.style.overflow = ''; };
+  }
+  window.al272Cerrar = al272Cerrar;
+  async function al272Reproducir(D) {
+    const espera = (ms) => new Promise(r => setTimeout(r, ms));
+    const viejo = document.getElementById('al272'); if (viejo) viejo.remove();
+    const id = ++al272Run, ok = () => id === al272Run && document.getElementById('al272');
+    const co = COORDENADAS_FORMACIONES[D.form] || COORDENADAS_FORMACIONES['4-3-3'];
+    const pu = AL272_PUESTOS[D.form] || AL272_PUESTOS['4-3-3'];
+    const jg = (i) => D.jug[i] || { nom: '¿?', dorsal: '' };
+    let escR = ''; try { escR = escudoEquipoVisorHTML(equipoLigaPorNombre(D.rival), 22, D.rival); } catch (e) {}
+    const jugs = D.ids.map((i, k) => (i && co[k]) ? { i, k, c: co[k], j: jg(i), f: fotoNinoV(i), p: pu[k] || '' } : null).filter(Boolean);
+    const avatar = (f, d) => f ? `<img src="${f}" alt="">` : `<span class="al272-sinf">${escHtml(d ?? '')}</span>`;
+    document.body.insertAdjacentHTML('beforeend', `<div id="al272" role="dialog" aria-label="Presentación de la alineación">
+      <button type="button" class="al272-x" onclick="al272Cerrar()">Saltar ✕</button>
+      <div class="al272-wipe"></div>
+      <div class="al272-intro"><img src="${ESCUDO_HERGAR_SRC}" alt=""><div class="t1">ALINEACIÓN</div><div class="t2">vs ${escR}<span>${escHtml(nombreCortoCabecera(D.rival))}</span></div></div>
+      <div class="al272-form">FORMACIÓN <b>${escHtml(D.form)}</b></div>
+      <div class="al272-pw"><div class="al272-campo"><i class="ar t"></i><i class="ar b"></i>
+        ${jugs.map(x => `<div class="al272-p" data-i="${escHtml(x.i)}" style="left:${x.c.x}%; top:${x.c.y}%;"><div class="al272-chip">${avatar(x.f, x.j.dorsal)}<span class="d">${escHtml(x.j.dorsal ?? '')}</span><div class="nm">${escHtml(x.j.nom)}</div></div></div>`).join('')}
+      </div></div>
+      <div class="al272-card"><div class="big"></div><div class="ph"></div><div class="nf"><b></b><span></span></div></div>
+      <div class="al272-banq"><div class="lb">${escHtml(D.banqLb || 'BANQUILLO')}</div><div class="al272-bl">${(D.banq || []).map((i, k) => { const j = jg(i); return `<div class="s" style="transition-delay:${(.15 + k * .07).toFixed(2)}s">${avatar(fotoNinoV(i), j.dorsal)}${escHtml(j.nom)}</div>`; }).join('') || '<div class="s" style="opacity:.6;">—</div>'}</div></div>
+    </div>`);
+    const O = document.getElementById('al272'); document.body.style.overflow = 'hidden';
+    O.addEventListener('click', (e) => { if (O.classList.contains('fin') && !e.target.closest('.al272-x')) al272Cerrar(); });
+    const q = (s) => O.querySelector(s);
+    const intro = q('.al272-intro'), card = q('.al272-card');
+    try {
+      q('.al272-wipe').animate([{ transform: 'translateX(-110%)' }, { transform: 'translateX(0)' }, { transform: 'translateX(110%)' }], { duration: 900, easing: 'cubic-bezier(.7,0,.3,1)' });
+      await espera(450); if (!ok()) return;
+      intro.querySelector('img').animate([{ opacity: 0, transform: 'scale(.4) rotate(-20deg)' }, { opacity: 1, transform: 'scale(1.1)' }, { opacity: 1, transform: 'none' }], { duration: 600, fill: 'forwards', easing: 'ease-out' });
+      intro.querySelector('.t1').animate([{ opacity: 0, letterSpacing: '22px' }, { opacity: 1, letterSpacing: '6px' }], { duration: 700, delay: 150, fill: 'forwards', easing: 'ease-out' });
+      intro.querySelector('.t2').animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 500, delay: 450, fill: 'forwards' });
+      await espera(1700); if (!ok()) return;
+      intro.animate([{ opacity: 1 }, { opacity: 0, transform: 'translateY(-20px)' }], { duration: 350, fill: 'forwards' });
+      q('.al272-pw').classList.add('on'); await espera(350); q('.al272-form').classList.add('on'); await espera(300);
+      for (const x of jugs) {
+        if (!ok()) return;
+        q('.al272-card .big').textContent = x.j.dorsal ?? '';
+        q('.al272-card .ph').innerHTML = avatar(x.f, x.j.dorsal);
+        q('.al272-card .nf b').textContent = x.j.nom; q('.al272-card .nf span').textContent = (PUESTO_LARGO_V[x.p] || '').toUpperCase();
+        card.getAnimations().forEach(a => a.cancel());
+        card.animate([{ opacity: 0, transform: 'translateX(80px) scale(.85)' }, { opacity: 1, transform: 'none' }], { duration: 280, fill: 'forwards', easing: 'cubic-bezier(.2,.9,.3,1.2)' });
+        await espera(520); if (!ok()) return;
+        const el = O.querySelector(`.al272-p[data-i="${CSS.escape(x.i)}"]`), dst = el && el.querySelector('.al272-chip');
+        if (dst) {
+          const cr = card.getBoundingClientRect(), tr = el.getBoundingClientRect();
+          const dX = tr.left - (cr.left + cr.width / 2), dY = (tr.top - 26) - (cr.top + cr.height / 2);
+          card.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: `translate(${dX}px,${dY}px) scale(.18)` }], { duration: 300, fill: 'forwards', easing: 'ease-in' });
+          await espera(240); el.classList.add('on');
+        }
+      }
+      await espera(400); if (!ok()) return;
+      if ((D.banq || []).length) q('.al272-banq').classList.add('on'); O.classList.add('fin');
+      await espera(3500); if (ok()) al272Cerrar();
+    } catch (e) { console.error('Presentación de la alineación:', e); al272Cerrar(); }
   }
 
   const firebaseConfig = {
@@ -2261,7 +2649,7 @@
     let p = null;
     try { const i = indicePartidoDeMatch(m); p = i >= 0 ? t.partidos[i] : null; } catch (e) {}
     if (p) alinDesdeTemporada(t, p, out);
-    out.marcador = `${Number(m.golesLocal) || 0}–${Number(m.golesRival) || 0}`;
+    out.marcador = `${Number(m.golesLocal) || 0}–${Number(m.golesRival) || 0}`; out.rival = m.rival || ''; // v272
     if (!out.fin || !out.fin.filter(Boolean).length) return null;
     return out;
   }
@@ -2283,7 +2671,7 @@
     if (!p) return;
     const out = { ini: null, fin: null, formIni: p.formacion || '4-3-3', formFin: p.formacion || '4-3-3', cambios: [], goles: {}, jug: {} };
     try { if (!alinDesdeTemporada(t, p, out)) return; } catch (e) { console.error('Alineación del partido:', e); return; }
-    out.marcador = `${Number(p.golesLocal) || 0}–${Number(p.golesRival) || 0} ${String(p.rival || '')}`;
+    out.marcador = `${Number(p.golesLocal) || 0}–${Number(p.golesRival) || 0} ${String(p.rival || '')}`; out.rival = p.rival || ''; // v272
     alinDatos = out; alinAbrirHoja();
   };
   function pintarAlineacionFinal(m, previa) {
@@ -2331,7 +2719,7 @@
       <div style="display:flex; align-items:center; gap:10px;"><div style="flex:1; min-width:0; font-family:'Montserrat',sans-serif; font-weight:800; font-size:15px; color:#e2e8f0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">👕 Alineación · Hergar ${escHtml(D.marcador || `${Number(m.golesLocal) || 0}–${Number(m.golesRival) || 0}`)}</div>
         <button type="button" onclick="cerrarAlineacionFinal()" aria-label="Cerrar" style="background:rgba(255,255,255,.08); border:none; color:#e2e8f0; width:34px; height:34px; border-radius:50%; font-size:16px; cursor:pointer;">✕</button></div>
       ${sel}${alinCampoHTML(D, modo === 'ini' ? D.ini : D.fin, modo === 'ini' ? D.formIni : D.formFin, modo)}
-      <div style="font-size:10.5px; color:#94a3b8; margin-top:6px;">${ley}</div>${camb}`;
+      <div style="font-size:10.5px; color:#94a3b8; margin-top:6px;">${ley}</div>${D.ini ? `<button type="button" onclick="al272VerHoja()" style="margin-top:10px; width:100%; min-height:42px; border-radius:10px; background:rgba(180,20,56,.15); border:1px solid rgba(224,64,94,.5); color:#fff; font-weight:800; font-size:13px; cursor:pointer;">🎬 Ver presentación del once</button>` : ''}${camb}`;
   }
   window.alinVer = (m) => { alinModo = m; alinPintarHoja(); };
   window.abrirAlineacionFinal = () => { alinDatos = alinLive; alinAbrirHoja(); };
@@ -2352,7 +2740,7 @@
     const cont = document.getElementById('eventosLista');
     const eventos = (matchData.eventos || []).slice().reverse();
     if (eventos.length === 0) { cont.innerHTML = '<div class="loader">Sin eventos todavía</div>'; return; }
-    cont.innerHTML = eventos.map(ev => `<div class="timeline-item"><span class="timeline-text">${ev}</span></div>`).join('');
+    cont.innerHTML = ev272Lista(eventos); // v272: iconos animados (solo los eventos nuevos)
   }
 
   function escHtml(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -7943,6 +8331,7 @@
     pintarCampo(matchData);
     pintarBanquilloPrevia(matchData, previa);
     pintarEventos(matchData);
+    try { al272Vigilar(matchData); } catch (e) { console.error('Presentación de la alineación:', e); } // v272
     try { pintarAlineacionFinal(matchData, previa); } catch (e) { console.error('Alineación del partido:', e); } // v253
     try { dc269Cabecera(matchData, previa); } catch (e) { console.error('Cabecera a dos colores:', e); } // v269
     try { envivo271(matchData, previa); } catch (e) { console.error('Pestaña En vivo:', e); } // v271
@@ -9983,7 +10372,7 @@
         </div>`;
     }
     const ultimos = tvEventos(m).slice(-6).reverse();
-    const cinta = ultimos.length ? ultimos.map(e => `<span><b>${e.min}'</b> ${escHtml(e.texto)}</span>`).join('')
+    const cinta = ultimos.length ? ultimos.map(e => `<span>${ev272TvIcono(e)}<b>${e.min}'</b> ${escHtml(e.texto)}</span>`).join('')
       : `<span style="color:#94a3b8;">${estado === 'alineacion' ? 'El partido aún no ha empezado' : 'Sin eventos todavía'}</span>`;
     return `${tvCabecera(m, estado)}
       <div class="tv-medio">${tvCampo(m)}<div class="tv-lado">${lado}</div></div>
@@ -11122,6 +11511,7 @@
           </div>
         </summary>
         <div class="hp-cuerpo">
+          ${sw272Barra(partidos, i, jornadaDe)}
           ${ctxTiempoChip(p.contexto) ? `<div style="margin-top:2px;">${ctxTiempoChip(p.contexto)}</div>` : ''}
           ${golesMin}
           ${resumenFilaHTML(p)}
@@ -15356,7 +15746,7 @@
     visEscribir(o);
     try { const act = document.querySelector('.panel.active'); if (act) visApuntarTab(act.id); } catch (e) {}
   }
-  const VIS_VERSION = 268;
+  const VIS_VERSION = 272;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

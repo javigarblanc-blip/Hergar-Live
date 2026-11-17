@@ -1927,7 +1927,12 @@
     let jor = ''; try { jor = ` · JORNADA ${numJornadaGlobalViewer(liga, p)}`; } catch (e) {}
     const anima = !V260_RM && !v260CartelVisto.has(p.id); v260CartelVisto.add(p.id);
     const cL = col(L), cV = col(V);
-    return `<div class="cartel${anima ? ' anima' : ''}" style="background:linear-gradient(118deg, ${cL} 0%, ${cL} 49.6%, #0a0e14 49.6%, #0a0e14 50.4%, ${cV} 50.4%, ${cV} 100%);">
+    // v263 · rival de dos colores: su mitad del cartel con rayas en diagonal (capa de abajo), la otra mitad lisa encima
+    const rayas = (eq) => !eq.esHergar && colorEquipo2V(eq) ? rvFondoV(eq, 16) : null, rL = rayas(L), rV = rayas(V);
+    const fondo = rL ? `linear-gradient(118deg, transparent 0%, transparent 49.6%, #0a0e14 49.6%, #0a0e14 50.4%, ${cV} 50.4%, ${cV} 100%), ${rL}`
+      : rV ? `linear-gradient(118deg, ${cL} 0%, ${cL} 49.6%, #0a0e14 49.6%, #0a0e14 50.4%, transparent 50.4%, transparent 100%), ${rV}`
+      : `linear-gradient(118deg, ${cL} 0%, ${cL} 49.6%, #0a0e14 49.6%, #0a0e14 50.4%, ${cV} 50.4%, ${cV} 100%)`;
+    return `<div class="cartel${anima ? ' anima' : ''}" style="background:${fondo};">
       <div style="position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,.05), rgba(0,0,0,.35));"></div>
       <div class="ca-top">📣 PRÓXIMO PARTIDO${jor} · ${esCasa ? 'EN CASA' : 'FUERA'}</div>
       ${hoy ? '<div class="ca-hoy">HOY</div>' : ''}

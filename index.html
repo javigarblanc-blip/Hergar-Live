@@ -866,7 +866,6 @@
       <div class="card" id="resumenUltimoCard" style="display:none;"></div>
       <div id="semanaFranja" style="display:none; margin-bottom:10px;"></div>
       <div class="card" id="recordsHoyCard" style="display:none;"></div>
-      <div class="card" id="tl269Card" style="display:none;"></div>
       <div class="card" id="alineacionFinCard" style="display:none; cursor:pointer;" onclick="abrirAlineacionFinal()" role="button" aria-label="Ver la alineación del partido"></div>
       <div class="card" id="proximoPartidoCard" style="display:none;"></div>
       <div class="card" id="informeIACard" style="display:none;">
@@ -1628,6 +1627,7 @@
   @media (prefers-reduced-motion: reduce) { .tl269 .ahora { animation:none; } .cab269 { transition:none; } }
 </style>
 <script type="module">
+  // v270 (visor) · Fuera la línea de tiempo del partido (se veía mal con muchos goles y cambios).
   // v269 (visor) · ✨ Más pro: números con letra de tele (Barlow Condensed, cifras del mismo ancho), línea de tiempo del partido (Hergar arriba, rival abajo; en directo avanza), cabecera que se encoge en una barra fija al bajar, cabecera del directo a dos colores (Hergar y el rival en diagonal) y títulos de tarjeta todos iguales.
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
@@ -7938,7 +7938,6 @@
     pintarBanquilloPrevia(matchData, previa);
     pintarEventos(matchData);
     try { pintarAlineacionFinal(matchData, previa); } catch (e) { console.error('Alineación del partido:', e); } // v253
-    try { tl269Pintar(matchData, previa); } catch (e) { console.error('Línea de tiempo:', e); } // v269
     try { dc269Cabecera(matchData, previa); } catch (e) { console.error('Cabecera a dos colores:', e); } // v269
     try { pintarNarracion(matchData); } catch (e) { console.error('Minuto a minuto:', e); } // v193
     try { v260Descanso(matchData); } catch (e) { console.error('Descanso:', e); } // v260
@@ -10824,8 +10823,6 @@
     // v255 · la tarjeta 👕 Alineación va pegada detrás de los récords (sube y baja con el resumen del partido)
     const al = document.getElementById('alineacionFinCard');
     if (al && al.parentNode === rec.parentNode && rec.nextSibling !== al) rec.parentNode.insertBefore(al, rec.nextSibling);
-    const tl = document.getElementById('tl269Card'); // v269 · la línea de tiempo justo antes de la alineación
-    if (al && tl && al.parentNode === tl.parentNode && al.previousSibling !== tl) al.parentNode.insertBefore(tl, al);
   }
 
   function pintarInformeIA(matchData) { pintarInformeIABase(matchData); try { colocarRecordsHoy(); } catch (e) {} } // v162
@@ -15236,81 +15233,6 @@
 
 
   // ══ v269 · VISOR MÁS PRO ══════════════════════════════════════════════════════════════════
-  // 3 · Línea de tiempo del partido: Hergar arriba, rival abajo; goles, tarjetas y cambios en su minuto.
-  let tl269Ult = null, tl269Sel = -1, tl269Timer = null, tl269Cache = { k: null, D: null };
-  function tl269Min(m) {
-    let min = Number(m && m.minuto) || 0;
-    if (m && m.matchRunning && m.actualizado) { const x = Math.floor((Date.now() - m.actualizado) / 60000); if (x > 0 && x < 60) min += x; }
-    return min;
-  }
-  function tl269Datos(m) {
-    const ev = [];
-    const t = ultimaTemporada; let D = null;
-    if (m.matchFinished && !m.matchRunning) {
-      try {
-        const i = indicePartidoDeMatch(m);
-        if (i >= 0) {
-          const k = i + '|' + t.partidos.length + '|' + (t.partidos[i].rival || '');
-          if (tl269Cache.k === k) D = tl269Cache.D; else { D = actaDatos(t, i); tl269Cache = { k, D }; }
-        }
-      } catch (e) { D = null; }
-    }
-    if (D) {
-      (D.goles || []).forEach(g => { if (g.min == null) return; const nuestro = g.equipo === 'hergar';
-        ev.push({ m: Number(g.min), ar: nuestro, i: '⚽', t: nuestro ? `Gol de <b>${escHtml(g.nombre || 'Hergar')}</b>${g.penalti ? ' (penalti)' : ''}${g.asist ? ' · asistencia de ' + escHtml(g.asist) : ''}${g.marcador ? ' · ' + escHtml(g.marcador) : ''}` : `Gol de ${escHtml(D.p.rival || 'el rival')}${g.penalti ? ' (penalti)' : ''}${g.marcador ? ' · ' + escHtml(g.marcador) : ''}` }); });
-      (D.cambios || []).forEach(c => { if (c && c.min != null) ev.push({ m: Number(c.min), ar: true, i: '🔄', t: `Entra <b>${escHtml(c.entra || '')}</b>${c.sale ? ' por ' + escHtml(c.sale) : ''}` }); });
-      (D.tarjetas || []).forEach(c => { if (c && c.min != null) ev.push({ m: Number(c.min), ar: !c.rival, i: c.tipo === 'R' ? '🟥' : '🟨', t: `${c.tipo === 'R' ? 'Roja' : 'Amarilla'} ${c.rival ? 'al rival' : 'a <b>' + escHtml(c.nombre || '') + '</b>'}` }); });
-      return { ev, dur: Math.max(70, D.dur || 70), ahora: null, gl: D.gl, gr: D.gr };
-    }
-    // en directo: goles con minuto + cambios y tarjetas de la lista de eventos
-    let h = 0, r = 0;
-    (Array.isArray(m.golesMin) ? m.golesMin : Object.values(m.golesMin || {})).filter(g => g && g.min != null).sort((a, b) => a.min - b.min).forEach(g => {
-      const nuestro = g.equipo === 'hergar'; if (nuestro) h++; else r++;
-      ev.push({ m: Number(g.min), ar: nuestro, i: '⚽', t: nuestro ? `Gol de <b>${escHtml(g.nombre || 'Hergar')}</b>${g.penalti ? ' (penalti)' : ''}${g.propia ? ' (en propia)' : ''} · ${h}–${r}` : `Gol de ${escHtml(m.rival || 'el rival')}${g.penalti ? ' (penalti)' : ''} · ${h}–${r}` });
-    });
-    (m.eventos || []).forEach(x => {
-      const s = String(x || ''), mm = /^\[(\d+)'\]\s*(.*)$/.exec(s); if (!mm) return;
-      const min = Number(mm[1]), txt = mm[2];
-      let k = /🔄\s*Sale\s*#?\d*\s*(\S+).*?Entra\s*#?\d*\s*(\S+)/.exec(txt);
-      if (k) { ev.push({ m: min, ar: true, i: '🔄', t: `Entra <b>${escHtml(k[2])}</b> por ${escHtml(k[1])}` }); return; }
-      k = /🟨\s*Amarilla\s*#?\d*\s*(\S+)/.exec(txt); if (k) { ev.push({ m: min, ar: true, i: '🟨', t: `Amarilla a <b>${escHtml(k[1])}</b>` }); return; }
-      k = /🟥\s*Roja[^#]*#?\d*\s*(\S+)/.exec(txt); if (k) { ev.push({ m: min, ar: true, i: '🟥', t: `Roja a <b>${escHtml(k[1])}</b>` }); return; }
-    });
-    (Array.isArray(m.tarjetasRival) ? m.tarjetasRival : Object.values(m.tarjetasRival || {})).forEach(x => { if (x && x.min != null && x.min !== '') ev.push({ m: Number(x.min), ar: false, i: x.tipo === 'R' ? '🟥' : '🟨', t: `${x.tipo === 'R' ? 'Roja' : 'Amarilla'} al rival` }); });
-    const ahora = m.matchFinished ? null : tl269Min(m);
-    return { ev, dur: Math.max(70, ahora || 0, ...ev.map(e => e.m)), ahora, gl: Number(m.golesLocal) || 0, gr: Number(m.golesRival) || 0 };
-  }
-  function tl269Pintar(m, previa) {
-    const card = document.getElementById('tl269Card'); if (!card) return;
-    const enJuego = m && !previa && !m.matchFinished && (m.matchRunning || Number(m.minuto) > 0);
-    const acabado = m && !previa && m.matchFinished && !m.matchRunning;
-    if (!enJuego && !acabado) { card.style.display = 'none'; tl269Ult = null; clearInterval(tl269Timer); tl269Timer = null; return; }
-    tl269Ult = m;
-    const T = tl269Datos(m);
-    if (!T.ev.length && !enJuego) { card.style.display = 'none'; return; }
-    T.ev.sort((a, b) => a.m - b.m);
-    const X = (v) => (Math.max(0, Math.min(v, T.dur)) / T.dur * 100).toFixed(2) + '%';
-    // dos iconos muy juntos en la misma fila: el segundo un poco más arriba/abajo
-    const ult = { true: -99, false: -99 }, alt = { true: 0, false: 0 };
-    const evs = T.ev.map((e, k) => { const lado = !!e.ar; const cerca = (e.m - ult[lado]) / T.dur * 100 < 7; alt[lado] = cerca ? (alt[lado] + 1) % 2 : 0; ult[lado] = e.m; return Object.assign({ k, d: alt[lado] * 30 }, e); });
-    if (tl269Sel >= evs.length) tl269Sel = -1;
-    const hasta = T.ahora != null ? T.ahora : T.dur;
-    const exA = evs.some(e => e.ar && e.d) ? 30 : 0, exB = evs.some(e => !e.ar && e.d) ? 30 : 0;
-    const Y = 57 + exA, alto = 118 + exA + exB; // Y = altura de la barra
-    let h = `<div class="eje" style="top:${Y}px"></div><div class="prog" style="top:${Y}px; width:${X(hasta)}"></div><div class="desc" style="top:${Y - 11}px; left:${X(35)}"></div>`;
-    h += evs.map(e => `<button type="button" class="ev ${e.ar ? 'ar' : 'ab'}${e.k === tl269Sel ? ' on' : ''}" style="left:${X(e.m)}; ${e.ar ? `bottom:${alto - Y + 3}px` : `top:${Y + 7}px`};" onclick="tl269Toca(${e.k})" aria-label="Minuto ${e.m}: ${e.t.replace(/<[^>]+>/g, '').replace(/"/g, '')}"><span>${e.i}</span><i>${e.m}'</i><span class="pt" style="height:${6 + e.d}px;"></span></button>`).join('');
-    if (T.ahora != null) h += `<div class="ahora" style="top:${Y - 6}px; left:${X(T.ahora)}"></div>`;
-    const sel = evs[tl269Sel];
-    card.innerHTML = `<div class="card-title" style="justify-content:space-between;"><span>Línea de tiempo</span><span class="t269" style="margin-left:auto; text-transform:none; letter-spacing:.3px; font-size:13px; color:#64748b;">Hergar ${T.gl}–${T.gr} ${escHtml(m.rival || 'Rival')}</span></div>
-      <div class="tl269" style="height:${alto}px;">${h}</div>
-      <div class="tl269-pie"><span>0'</span><span>35'</span><span>${T.dur}'</span></div>
-      <div class="tl269-ley"><span>▲ Hergar</span><span>▼ ${escHtml(m.rival || 'Rival')}</span></div>
-      ${sel ? `<div class="tl269-sel"><span style="font-size:16px;">${sel.i}</span><span><b class="t269" style="font-size:15px;">${sel.m}'</b> · ${sel.t}</span></div>` : (evs.length ? '<div class="tl269-ley" style="justify-content:center; margin-top:8px;">Toca un icono para ver qué pasó</div>' : '<div class="tl269-ley" style="justify-content:center; margin-top:8px;">Aún no ha pasado nada</div>')}`;
-    card.style.display = '';
-    if (enJuego && !tl269Timer) tl269Timer = setInterval(() => { try { if (tl269Ult) tl269Pintar(tl269Ult, false); } catch (e) {} }, 30000);
-    if (!enJuego && tl269Timer) { clearInterval(tl269Timer); tl269Timer = null; }
-  }
-  window.tl269Toca = (k) => { tl269Sel = tl269Sel === k ? -1 : k; try { if (tl269Ult) tl269Pintar(tl269Ult, false); } catch (e) {} };
 
   // 4 · Cabecera que se encoge: al bajar, barra fina fija con escudos, resultado y minuto.
   let cab269Raf = 0;

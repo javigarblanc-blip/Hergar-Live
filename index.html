@@ -1530,11 +1530,6 @@
   body.plano264 .c3d > .campo .jf-wrap { transform:translate(-50%,-50%); }
   body.plano264 .c3d > .campo .jf-wrap.v260-sale { animation-name:v260Sale; }
   body.plano264 .c3d.mg > svg { width:100% !important; transform:none; }
-  /* 3 · inclinar el móvil */
-  .cartel.t264, #perfilHero.t264 { will-change:transform; }
-  .t264 .ca-eqs, .t264 .ca-top, .t264 .ph-dorsal, .t264 .ph-foto, .t264 .ph-info, .t264 .ph-nums { transition:translate .15s linear; }
-  .brillo264 { position:absolute; inset:0; z-index:3; pointer-events:none; opacity:0; transition:opacity .4s; background:radial-gradient(circle at var(--bx,50%) var(--by,30%),rgba(255,255,255,.22),transparent 45%); mix-blend-mode:overlay; }
-  .t264 .brillo264 { opacity:1; }
   /* 4 · rótulos de tele */
   .rot264 { position:relative; display:flex; align-items:stretch; height:58px; overflow:hidden; border-radius:4px; margin:4px 0 12px; }
   .rot264 .rb { width:9px; flex-shrink:0; background:var(--rc,#b41438); transform:scaleY(0); transform-origin:bottom; }
@@ -1573,7 +1568,8 @@
   }
 </style>
 <script type="module">
-  // v264 (visor) · ✨ El tiempo del partido en el cartel y detrás del marcador del directo (10 efectos + focos), campos en 3D con botón 3D / plano, cartel y ficha del niño que se mueven al inclinar el móvil, y rótulos de tele en «Último partido» y en las tarjetas de cifras.
+  // v265 (visor) · Fuera lo de inclinar el móvil (cartel y ficha).
+  // v264 (visor) · ✨ El tiempo del partido en el cartel y detrás del marcador del directo (10 efectos + focos), campos en 3D con botón 3D / plano y rótulos de tele en «Último partido» y en las tarjetas de cifras.
   // v261 (visor) · La pantalla de entrada se queda hasta que la cabecera tiene el partido (o el próximo partido), no solo la temporada: ya no se ve «Cargando…» con el marcador vacío. Como mucho 8 s.
   // v260 (visor) · ✨ Visor más chulo: pestañas con movimiento (también deslizando) y marca que se desliza, gráficos que se dibujan al aparecer, directo con marcador que gira, destello del color de quien marca, barra de la parte y tarjeta del descanso, campo con césped y salida al campo, celebración tras ganar (con «¡Ha marcado…!» y el MVP), cartel del próximo partido, clasificación que se mueve, cabecera de estrella en la ficha, pantalla de entrada, balón en las cargas y respuesta al tocar.
   // v259 (visor) · 💡 Dato del día mucho más variado: ~35 familias nuevas de datos (goleadas, remontadas, hat-tricks, líderes de la plantilla, orígenes de gol, Liga, Elo…) y rotación por familias para que no se repita ninguna hasta haber salido todas.
@@ -2036,7 +2032,7 @@
       <div style="position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,.05), rgba(0,0,0,.35));"></div>
       <div class="ca-top">📣 PRÓXIMO PARTIDO${jor} · ${esCasa ? 'EN CASA' : 'FUERA'}</div>
       ${hoy ? '<div class="ca-hoy">HOY</div>' : ''}
-      <div class="ca-eqs">${eqH(L, 'i')}<div class="ca-vs">VS</div>${eqH(V, 'd')}</div><div class="brillo264"></div></div>`;
+      <div class="ca-eqs">${eqH(L, 'i')}<div class="ca-vs">VS</div>${eqH(V, 'd')}</div></div>`;
   }
 
   // ── 7 · clasificación que se mueve: de la jornada anterior a la de ahora, con su flecha ──
@@ -2073,7 +2069,7 @@
     meta += ` · dorsal ${j.dorsal ?? '–'} · ${j.partidos || 0} ${j.partidos === 1 ? 'partido' : 'partidos'}`;
     const N = esPortero ? [[j.paradas || 0, '🧤 paradas'], [j.partidos || 0, '📋 partidos'], [j.minutos || 0, '⏱ minutos', "'"]]
       : [[j.goles || 0, '⚽ goles'], [j.asistencias || 0, '🅰️ asistencias'], [j.minutos || 0, '⏱ minutos', "'"]];
-    h.innerHTML = `<div class="brillo264"></div><div class="ph-dorsal" aria-hidden="true">${escHtml(j.dorsal ?? '')}</div><div class="ph-sombra"></div>
+    h.innerHTML = `<div class="ph-dorsal" aria-hidden="true">${escHtml(j.dorsal ?? '')}</div><div class="ph-sombra"></div>
       <div class="ph-foto">${foto ? `<img src="${foto}" alt="">` : escHtml(j.dorsal ?? '')}</div>
       <div class="ph-info"><div class="ph-nom">${escHtml(j.name || '')}</div><div class="ph-meta">${escHtml(meta)}</div></div>
       <div class="ph-nums">${N.map(([v, l, s]) => `<div class="ph-n"><b data-v="${Number(v) || 0}" data-s="${s || ''}">${hitoNum(Number(v) || 0)}${s || ''}</b><span>${l}</span></div>`).join('')}</div>`;
@@ -7950,8 +7946,8 @@
   // ══ v264 · ✨ TIEMPO DEL PARTIDO, CAMPO 3D, INCLINAR EL MÓVIL Y RÓTULOS DE TELE ═══════════════════
   // 1 · El cartel del próximo partido y la cabecera del directo llevan el tiempo de la hora del partido
   //     (la misma previsión de Open-Meteo); si acaba sin luz, focos encima. 2 · Campos en perspectiva con
-  //     botón 3D / plano. 3 · Cartel y ficha del niño con profundidad al inclinar el móvil. 4 · Rótulos de
-  //     tele en «Último partido» y tarjetas de cifras con su estilo. Con «reducir movimiento», todo quieto.
+  //     botón 3D / plano. (3 · inclinar el móvil: quitado en la v265.) 4 · Rótulos de tele en «Último
+  //     partido» y tarjetas de cifras con su estilo. Con «reducir movimiento», todo quieto.
   const V264_RM = (() => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } })();
 
   // ── 1 · tiempo ──
@@ -8102,45 +8098,6 @@
     const w = document.createElement('div'); w.className = 'c3d';
     c.parentNode.insertBefore(w, c); w.appendChild(c); w.insertAdjacentHTML('afterbegin', c3dBtn());
   })();
-
-  // ── 3 · inclinar el móvil ──
-  const t264 = { b0: null, g0: null, nx: 0, ny: 0, tx: 0, ty: 0, raf: 0, pedido: false };
-  function t264Orient(e) {
-    if (e.beta == null || e.gamma == null) return;
-    let b = e.beta, g = e.gamma;
-    const ang = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
-    if (ang === 90) { const x = b; b = -g; g = x; } else if (ang === -90 || ang === 270) { const x = b; b = g; g = -x; }
-    if (t264.b0 == null) { t264.b0 = b; t264.g0 = g; }
-    t264.b0 += (b - t264.b0) * .015; t264.g0 += (g - t264.g0) * .015; // se recentra solo, como lo tengas
-    t264.tx = Math.max(-1, Math.min(1, (g - t264.g0) / 18)); t264.ty = Math.max(-1, Math.min(1, (b - t264.b0) / 18));
-    if (!t264.raf) t264.raf = requestAnimationFrame(t264Paso);
-  }
-  function t264Paso() {
-    t264.raf = 0;
-    t264.nx += (t264.tx - t264.nx) * .18; t264.ny += (t264.ty - t264.ny) * .18;
-    const nx = t264.nx, ny = t264.ny;
-    document.querySelectorAll('#proximoPartidoCard .cartel, #perfilModal.con-hero #perfilHero').forEach(el => {
-      if (!el.offsetParent) return;
-      const r = el.getBoundingClientRect(); if (r.bottom < 0 || r.top > innerHeight) return;
-      el.classList.add('t264');
-      el.style.transform = `perspective(800px) rotateY(${(nx * 6).toFixed(2)}deg) rotateX(${(-ny * 6).toFixed(2)}deg)`;
-      el.style.setProperty('--bx', (50 + nx * 40).toFixed(1) + '%'); el.style.setProperty('--by', (30 + ny * 40).toFixed(1) + '%');
-      const mv = (sel, f) => el.querySelectorAll(sel).forEach(x => { x.style.translate = `${(nx * f).toFixed(1)}px ${(ny * f).toFixed(1)}px`; });
-      if (el.id === 'perfilHero') { mv('.ph-dorsal', -12); mv('.ph-foto', 8); mv('.ph-info', 12); mv('.ph-nums', 4); }
-      else { el.style.backgroundSize = '114% 114%'; el.style.backgroundPosition = `${(50 - nx * 40).toFixed(1)}% ${(50 - ny * 40).toFixed(1)}%`; mv('.ca-top', 3); mv('.ca-eq', 8); mv('.ca-vs', 14); }
-    });
-    if (Math.abs(t264.tx - nx) > .002 || Math.abs(t264.ty - ny) > .002) t264.raf = requestAnimationFrame(t264Paso);
-  }
-  if (!V264_RM && 'DeviceOrientationEvent' in window) {
-    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-      // iPhone: pide permiso la primera vez que se toca el cartel o la ficha
-      document.addEventListener('click', ev => {
-        if (t264.pedido || !ev.target.closest || !ev.target.closest('.cartel, #perfilHero')) return;
-        t264.pedido = true;
-        DeviceOrientationEvent.requestPermission().then(r => { if (r === 'granted') addEventListener('deviceorientation', t264Orient); }).catch(() => {});
-      }, true);
-    } else addEventListener('deviceorientation', t264Orient);
-  }
 
   // ── 4 · rótulos de tele ──
   let r264Est = { clave: null, i: 0, visto: false }, r264T = 0, r264IO = null;

@@ -1475,6 +1475,7 @@
   }
 </style>
 <script type="module">
+  // v261 (visor) · La pantalla de entrada se queda hasta que la cabecera tiene el partido (o el próximo partido), no solo la temporada: ya no se ve «Cargando…» con el marcador vacío. Como mucho 8 s.
   // v260 (visor) · ✨ Visor más chulo: pestañas con movimiento (también deslizando) y marca que se desliza, gráficos que se dibujan al aparecer, directo con marcador que gira, destello del color de quien marca, barra de la parte y tarjeta del descanso, campo con césped y salida al campo, celebración tras ganar (con «¡Ha marcado…!» y el MVP), cartel del próximo partido, clasificación que se mueve, cabecera de estrella en la ficha, pantalla de entrada, balón en las cargas y respuesta al tocar.
   // v259 (visor) · 💡 Dato del día mucho más variado: ~35 familias nuevas de datos (goleadas, remontadas, hat-tricks, líderes de la plantilla, orígenes de gol, Liga, Elo…) y rotación por familias para que no se repita ninguna hasta haber salido todas.
   // v258 (visor) · 📊 Último partido con los escudos de los dos equipos encima de los nombres y el marcador más grande.
@@ -1623,7 +1624,7 @@
     const s = document.getElementById('splashV260'); if (!s) return;
     setTimeout(() => { s.classList.add('fuera'); setTimeout(() => { try { s.remove(); } catch (e) {} v260Programar(); }, 500); }, Math.max(0, 700 - (Date.now() - v260T0)));
   }
-  setTimeout(v260SplashFuera, 4500);
+  setTimeout(v260SplashFuera, 8000); // v261: con muy poca cobertura, como mucho 8 s
 
   // ── 1 · pestañas ──
   function v260Tabs() { return [...document.querySelectorAll('.bottom-tabbar .bottom-tab')].filter(b => getComputedStyle(b).display !== 'none'); }
@@ -7723,10 +7724,12 @@
       set('timerDisplay', `📅 ${fechaHoraProximoViewer(d.p)}`);
       try { cabFinaPintar(); } catch (e) {} // v230
       try { v260Marcador(null); } catch (e) {} // v260
+      try { v260SplashFuera(); } catch (e) {} // v261: la cabecera ya tiene el próximo partido
       return;
     }
     try { cabFinaPintar(); } catch (e) {} // v230
     if (!matchData) return;
+    try { v260SplashFuera(); } catch (e) {} // v261: la cabecera ya tiene el partido
     const previa = matchData.previa === true && !matchData.matchFinished && !matchData.matchRunning;
     set('scoreLocal', previa ? '-' : (matchData.golesLocal ?? 0));
     set('scoreRival', previa ? '-' : (matchData.golesRival ?? 0));
@@ -7739,7 +7742,6 @@
   function actualizarVistaPartido(matchData) {
     if (!matchData) return;
     ultimoMatchData = matchData;
-    try { v260SplashFuera(); } catch (e) {} // v260
     try { avisarGolSiProcede(matchData); } catch (e) { console.error('Aviso de gol:', e); }
     try { avisarGolLejanoSiProcede(matchData); } catch (e) { console.error('Gol más lejano:', e); } // v174
     // v3: PREVIA = alineación publicada antes de empezar el partido
@@ -11803,6 +11805,7 @@
         if (data.code !== codigoPartidoActual) suscribirPartido(data.code);
       } else if (!codigoPartidoActual) {
         document.getElementById('matchMeta').textContent = 'Sin partidos registrados todavía';
+        try { v260SplashFuera(); } catch (e) {} // v261
       }
     });
   }
@@ -12368,7 +12371,6 @@
     const temporada = snap.val();
     if (!temporada) return;
     ultimaTemporada = temporada;
-    try { v260SplashFuera(); } catch (e) {} // v260
     pintarPartidos(temporada);
     try { if (ultimoMatchData) { pintarResumenUltimo(ultimoMatchData); pintarRecordsHoy(ultimoMatchData); tvRecordsPersonales(ultimoMatchData); } if (tvActivo) tvRender(); } catch (e) { console.error('Resumen:', e); } // 🎬 el botón del resumen necesita la temporada
     tmpCambio(); // v175: el resto, al abrirlo

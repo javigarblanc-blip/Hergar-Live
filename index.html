@@ -1088,6 +1088,11 @@
             <option value="goles">⚽ Goles</option>
             <option value="asistencias">👟 Asistencias</option>
             </optgroup>
+            <optgroup label="Lo que juega">
+            <option value="minutos">⏱ Minutos</option>
+            <option value="partidos">📋 Partidos</option>
+            <option value="notaIA">🤖 Nota IA</option>
+            </optgroup>
             <optgroup label="Los que deciden partidos">
             <option value="puntosGol">💎 Puntos de sus goles</option>
             <option value="clave">⏱ Momento clave</option>
@@ -1101,11 +1106,6 @@
             <option value="companeros">🧲 Efecto en los demás</option>
             <option value="echa">🫂 Se le echa de menos</option>
             <option value="b2b">📦 Box-to-box</option>
-            </optgroup>
-            <optgroup label="Lo que juega">
-            <option value="minutos">⏱ Minutos</option>
-            <option value="partidos">📋 Partidos</option>
-            <option value="notaIA">🤖 Nota IA</option>
             </optgroup>
           </select>
           <button onclick="abrirComoSeCalcula()" style="width:100%; margin:0 0 8px; padding:10px 12px; border-radius:10px; border:1px solid rgba(245,166,35,.4); background:rgba(245,166,35,.08); color:#f5a623; font-family:'Montserrat',sans-serif; font-weight:800; font-size:12px; text-align:left; cursor:pointer;">❔ ¿Cómo se calcula el impacto?</button>
@@ -1910,6 +1910,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v287 (visor) · Ranking: «Lo que juega» justo después de «Lo principal».
   // v286 (visor) · Ranking: el MVP sale primero y el desplegable va ordenado en 4 grupos.
   // v285 (visor) · 🏅 Ranking MVP en bruto (sin x70 ni mínimo) y con el valor del rival: J1-3 ×1, J4-8 clasificación (6 %/puesto), J9+ Elo (60 pts = 10 %), tope ×0,5-×1,5; detalle partido a partido.
   // v284 (visor) · 🏅 Ranking MVP: solo sus acciones individuales por 70' (con las veces MVP al lado).
@@ -16455,7 +16456,7 @@
     visEscribir(o);
     try { const act = document.querySelector('.panel.active'); if (act) visApuntarTab(act.id); } catch (e) {}
   }
-  const VIS_VERSION = 286;
+  const VIS_VERSION = 287;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

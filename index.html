@@ -1752,6 +1752,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v275 (visor) · 📊 «Más análisis» se cierra al cambiar a otra pestaña (y al abrir el visor).
   // v274 (visor) · 🌬️ Tiempo del partido: viento medio y rachas por separado; el efecto de viento sale ya con rachas de 40 km/h (antes 50).
   // v273 (visor; app v258) · 💥 El golazo de la vuelta con su vídeo en las historias de premios.
   // v265 (visor) · Fuera lo de inclinar el móvil (cartel y ficha).
@@ -12548,6 +12549,11 @@
     document.getElementById(id).classList.add('active');
     document.querySelectorAll('.bottom-tab').forEach(b=>b.classList.toggle('active', b.dataset.t===id)); // v176: por nombre (hay una 5.ª pestaña opcional)
     if (id === 'mihijo') { try { mhPintarPagina(); } catch (e) { console.error('Mi hijo:', e); } }
+    if (v260Prev === 'temporada' && id !== 'temporada') { // v275: al salir de Temporada, «Más análisis» se cierra
+      const pm = document.getElementById('tmpMasPanel'); if (pm) pm.classList.remove('abierto');
+      try { localStorage.setItem('hergarLive_masAnalisis', '0'); } catch (e) {}
+      try { actualizarMasTemp(); } catch (e) {}
+    }
     if (id === 'temporada') tmpPintarVisible(); // v175
     cabTabActual = id; try { cabFinaPintar(); } catch (e) { console.error('Cabecera fina:', e); } // v230
     if (id === 'temporada') { try { numPintar(); } catch (e) { console.error('Números:', e); } try { ddPintar(); } catch (e) { console.error('Dato del día:', e); } }
@@ -12585,7 +12591,7 @@
     actualizarMasTemp();
   }
   window.toggleMasTemp = toggleMasTemp;
-  if (masTempAbierto()) { const pm = document.getElementById('tmpMasPanel'); if (pm) pm.classList.add('abierto'); }
+  // v275: el visor abre siempre con «Más análisis» cerrado (antes recordaba si lo dejaste abierto)
   actualizarMasTemp();
   window.showTab = showTab;
   window.showSub = showSub;
@@ -15757,7 +15763,7 @@
     visEscribir(o);
     try { const act = document.querySelector('.panel.active'); if (act) visApuntarTab(act.id); } catch (e) {}
   }
-  const VIS_VERSION = 274;
+  const VIS_VERSION = 275;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

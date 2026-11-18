@@ -1101,7 +1101,7 @@
             <optgroup label="Con el equipo">
             <option value="peso">⚖️ Peso en el equipo</option>
             <option value="cuota">🎯 Cuota de acciones</option>
-            <option value="masmenos">➕➖ Más/menos en el campo</option>
+            <option value="masmenos">➕➖ Con él y sin él</option>
             <option value="tirosCampo">🎯 Tiros con él en el campo</option>
             <option value="companeros">🧲 Efecto en los demás</option>
             <option value="echa">🫂 Se le echa de menos</option>
@@ -1910,6 +1910,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v288 (visor) · ➕➖ «Con él y sin él» (antes Más/menos): solo cuenta los partidos que juega, comparando sus minutos en el campo con los del banquillo (mínimo 70' de banquillo).
   // v287 (visor) · Ranking: «Lo que juega» justo después de «Lo principal».
   // v286 (visor) · Ranking: el MVP sale primero y el desplegable va ordenado en 4 grupos.
   // v285 (visor) · 🏅 Ranking MVP en bruto (sin x70 ni mínimo) y con el valor del rival: J1-3 ×1, J4-8 clasificación (6 %/puesto), J9+ Elo (60 pts = 10 %), tope ×0,5-×1,5; detalle partido a partido.
@@ -3381,6 +3382,7 @@
       filas.forEach(f => { if (f.mins > d) d = f.mins; });
       return d || 70;
   }
+  const MM_MIN_OFF = 70; // v288: minutos en el banquillo (sumando sus partidos) para poder comparar con él / sin él
   function masMenosTemporada(t) {
       const ps = (t && t.partidos) || [];
       const js = Object.values((t && t.jugadores) || {});
@@ -3433,16 +3435,17 @@
           js.forEach(j => {
               const r = res[j.id], e = enCampo[j.id];
               if (e && !e.dato) { r.pendientes++; r.partidos.push({ i, p, mins: e.mins, pendiente: true }); return; }
-              const on = e ? e.dato : { gf: 0, gc: 0 }, minOn = e ? e.mins : 0;
+              if (!e) return; // v288: los partidos en los que no juega ya no cuentan (antes entraban en su «sin él» y premiaban no jugar contra los grandes)
+              const on = e.dato, minOn = e.mins;
               r.gfOn += on.gf; r.gcOn += on.gc; r.minOn += minOn;
-              r.gfOff += gf - on.gf; r.gcOff += gc - on.gc; r.minOff += Math.max(0, dur - minOn);
-              if (e) r.partidos.push({ i, p, mins: minOn, gf: on.gf, gc: on.gc });
+              r.gfOff += gf - on.gf; r.gcOff += gc - on.gc; r.minOff += Math.max(0, dur - minOn); // «sin él» = sus ratos en el banquillo de esos mismos partidos
+              r.partidos.push({ i, p, mins: minOn, gf: on.gf, gc: on.gc });
           });
       });
       Object.values(res).forEach(r => {
           r.on = r.minOn > 0 ? (r.gfOn - r.gcOn) / r.minOn * 70 : null;
           r.off = r.minOff > 0 ? (r.gfOff - r.gcOff) / r.minOff * 70 : null;
-          r.dif = (r.on !== null && r.off !== null) ? r.on - r.off : null;
+          r.dif = (r.on !== null && r.off !== null && r.minOff >= MM_MIN_OFF) ? r.on - r.off : null; // v288: hace falta un mínimo de banquillo para comparar
       });
       return res;
   }
@@ -3486,7 +3489,7 @@
           <p style="margin:0 0 8px;"><strong>💎 Puntos que valen sus goles.</strong> Se mira el orden de los goles. El <strong>gol de la victoria</strong> (+2) es el que supera lo que acabó marcando el rival: desde ese gol, el rival ya no alcanzó. El <strong>gol del empate</strong> (+1) es el que iguala lo que acabó marcando el rival.</p>
           <div style="font-size:12px; margin:0 0 8px;">${ej('11-0', '1.º gol +2 · el resto 0')}${ej('2-1', '1.º +1 · 2.º +2')}${ej('3-2', '2.º +1 · 3.º +2')}${ej('1-1', 'el gol +1')}${ej('Derrota', 'ningún gol suma')}</div>
           <p style="margin:0 0 8px;">Cuando no encajamos, el punto del 0-0 no es de ningún goleador: es de la defensa. Las asistencias de esos goles se cuentan aparte.</p>
-          <p style="margin:0;"><strong>➕➖ Más/menos.</strong> Diferencia de goles del equipo por cada 70 minutos con él en el campo, menos la de cuando no juega (banquillo o partidos en los que no estuvo). Mide cuánto mejora el equipo cuando él está, aunque no marque. Mínimo ${minMinutos} minutos.</p>
+          <p style="margin:0;"><strong>➕➖ Con él y sin él.</strong> Solo en los partidos que juega: diferencia de goles del equipo por cada 70 minutos con él en el campo, menos la de mientras está en el banquillo esos mismos partidos (hace falta un mínimo de 70' de banquillo). Los partidos en los que no estuvo no cuentan, para que no influya contra quién jugó. Mide cuánto mejora el equipo cuando él está, aunque no marque. Mínimo ${minMinutos} minutos.</p>
       </div>`;
   }
 
@@ -11986,7 +11989,7 @@
     } else if (esPuntos) {
       cont.innerHTML = `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin:0 0 8px;">Gol de la victoria +2, gol del empate +1. Las asistencias de esos goles se cuentan aparte.</div>` + (lista.length ? cont.innerHTML : '<div class="loader">Aún no hay goles</div>');
     } else if (esMM) {
-      cont.innerHTML = `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin:0 0 8px;">Cuánto mejora la diferencia de goles del equipo, por 70', cuando juega frente a cuando no juega.${sinMM.length ? ' Sin dato (lo jugó casi todo o faltan datos): ' + sinMM.map(j => escHtml((j.name || '').split(' ')[0])).join(', ') + '.' : ''}</div>` + cont.innerHTML;
+      cont.innerHTML = `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin:0 0 8px;">Solo en los partidos que juega: cuántos goles de diferencia más (por cada 70') hace el equipo con él en el campo que mientras está en el banquillo. Así el rival es el mismo en los dos casos. Hace falta haber estado al menos ${MM_MIN_OFF} minutos en el banquillo para comparar.${sinMM.length ? ' Sin dato (lo jugó casi todo o faltan datos): ' + sinMM.map(j => escHtml((j.name || '').split(' ')[0])).join(', ') + '.' : ''}</div>` + cont.innerHTML;
     } else if (criterio === 'peso') {
       cont.innerHTML = `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin:0 0 8px;">Cuánto está cada jugador por encima o por debajo de sus compañeros del mismo partido (por 70'). No depende del resultado ni del rival.</div>` + cont.innerHTML;
     } else if (criterio === 'cuota') {
@@ -16456,7 +16459,7 @@
     visEscribir(o);
     try { const act = document.querySelector('.panel.active'); if (act) visApuntarTab(act.id); } catch (e) {}
   }
-  const VIS_VERSION = 287;
+  const VIS_VERSION = 288;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

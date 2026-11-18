@@ -800,6 +800,39 @@
   .hp-mes { font-family:'Montserrat',sans-serif; font-weight:800; font-size:11px; letter-spacing:1.4px; color:#e2e8f0; margin:12px 2px 2px; padding-bottom:5px; border-bottom:1px solid rgba(255,255,255,.1); display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
   .hp-mes small { font-family:'Inter',sans-serif; font-weight:700; font-size:11px; letter-spacing:0; color:#94a3b8; }
   /* v276 · filtros del historial de partidos */
+  /* v281 · póster de la vuelta */
+  /* v281 · el Hergar de ahora */
+  .vt-seg { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:10px; }
+  .vt-seg button { min-height:42px; border-radius:10px; border:1px solid rgba(255,255,255,.15); background:transparent; color:#cbd5e1; font-family:'Montserrat',sans-serif; font-weight:800; font-size:12px; cursor:pointer; }
+  .vt-seg button.on { background:rgba(180,20,56,.5); border-color:#e11d48; color:#fff; }
+  .vt-cab { display:grid; grid-template-columns:1fr 58px 58px 26px; gap:4px; font-size:10.5px; font-weight:800; letter-spacing:1px; color:#94a3b8; padding:0 10px 4px; }
+  .vt-cab span { text-align:center; } .vt-cab span:first-child { text-align:left; }
+  .vt-g { font-family:'Montserrat',sans-serif; font-weight:900; font-size:11px; letter-spacing:1.5px; color:#f5a623; margin:12px 4px 6px; }
+  .vt-f { background:rgba(255,255,255,.035); border:1px solid rgba(255,255,255,.07); border-radius:12px; padding:8px 10px; margin-bottom:6px; }
+  .vt-fr { display:grid; grid-template-columns:1fr 58px 58px 26px; gap:4px; align-items:center; }
+  .vt-fr > span:first-child { font-size:12.5px; color:#e2e8f0; }
+  .vt-fr b { text-align:center; font-family:'Barlow Condensed','Montserrat',sans-serif; font-weight:800; font-size:19px; color:#fff; }
+  .vt-fr b.a { color:#94a3b8; }
+  .vt-fr i { font-style:normal; text-align:center; font-weight:900; font-size:14px; }
+  .vt-bar { height:5px; border-radius:3px; background:rgba(255,255,255,.06); margin-top:4px; } .vt-bar > i { display:block; height:5px; border-radius:3px; }
+  .vt-res { background:linear-gradient(135deg,rgba(46,213,115,.16),rgba(255,255,255,.03) 70%); border:1px solid rgba(46,213,115,.35); border-radius:14px; padding:12px 14px; margin-bottom:10px; }
+  .vt-res.mal { background:linear-gradient(135deg,rgba(255,85,119,.16),rgba(255,255,255,.03) 70%); border-color:rgba(255,85,119,.35); }
+  .vt-x { display:grid; grid-template-columns:1fr 54px 54px 56px; gap:4px; align-items:center; background:rgba(255,255,255,.035); border:1px solid rgba(255,255,255,.07); border-radius:12px; padding:9px 10px; margin-bottom:6px; }
+  .vt-x > span:first-child { font-size:12.5px; font-weight:700; color:#fff; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .vt-x b { text-align:center; font-family:'Barlow Condensed','Montserrat',sans-serif; font-weight:800; font-size:20px; }
+  .vt-x i { font-style:normal; text-align:center; font-size:11.5px; font-weight:900; }
+  .hp-poster { width:100%; min-height:42px; margin:0 0 8px; border-radius:10px; border:1px solid rgba(245,166,35,.45); background:rgba(245,166,35,.1); color:#f5a623; font-family:'Montserrat',sans-serif; font-weight:800; font-size:12.5px; cursor:pointer; }
+  .pst-modal { display:none; position:fixed; inset:0; z-index:9700; background:rgba(5,7,11,.94); overflow-y:auto; overscroll-behavior:contain; }
+  .pst-modal.on { display:block; }
+  .pst-in { max-width:480px; margin:0 auto; padding:14px 14px 30px; display:flex; flex-direction:column; gap:12px; }
+  .pst-sel { display:flex; gap:6px; flex-wrap:wrap; }
+  .pst-sel button { min-height:38px; padding:0 12px; border-radius:999px; border:1px solid rgba(255,255,255,.15); background:transparent; color:#cbd5e1; font-family:'Montserrat',sans-serif; font-weight:800; font-size:12px; cursor:pointer; }
+  .pst-sel button.on { background:rgba(180,20,56,.5); border-color:#e11d48; color:#fff; }
+  .pst-img img { width:100%; display:block; border-radius:12px; box-shadow:0 20px 50px rgba(0,0,0,.6); }
+  .pst-btns { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+  .pst-btns button { min-height:46px; border-radius:12px; border:1px solid rgba(255,255,255,.18); background:rgba(255,255,255,.08); color:#fff; font-family:'Montserrat',sans-serif; font-weight:800; font-size:12.5px; cursor:pointer; }
+  .pst-btns button:first-child { background:#f5a623; border-color:#f5a623; color:#111; }
+  .pst-btns .x { background:transparent; }
   .hp-fil { display:flex; flex-wrap:wrap; gap:6px; margin:0 0 6px; }
   .hp-fil button { min-height:38px; padding:0 12px; border-radius:999px; border:1px solid rgba(255,255,255,.14); background:transparent; color:#cbd5e1; font-family:'Montserrat',sans-serif; font-weight:800; font-size:11.5px; cursor:pointer; }
   .hp-fil button.on { background:rgba(180,20,56,.45); border-color:#e11d48; color:#fff; }
@@ -1035,11 +1068,13 @@
         <button type="button" class="subtab-btn ma-tile" data-nom="🔄 Los comodines" onclick="showSub(event,'subComodines')"><span class="e" aria-hidden="true">🔄</span><b>Los comodines</b><small data-pv="comod"></small></button>
         <div class="tmp-blq"><b>🏟️ Equipo</b><span>Cómo es el equipo y cómo va</span></div>
         <button type="button" class="subtab-btn ma-tile" data-nom="📊 Medias" onclick="showSub(event,'subMedias')"><span class="e" aria-hidden="true">📊</span><b>Medias</b><small data-pv="medias"></small></button>
+        <button type="button" class="subtab-btn ma-tile" data-nom="🔁 El Hergar de ahora" id="vtBtn" style="display:none;" onclick="showSub(event,'subVueltas')"><span class="e" aria-hidden="true">🔁</span><b>El Hergar de ahora</b><small data-pv="vueltas"></small></button>
         <button type="button" class="subtab-btn ma-tile" data-nom="🔥 Rachas" onclick="showSub(event,'subRachas')"><span class="e" aria-hidden="true">🔥</span><b>Rachas</b><small data-pv="rachas"></small></button>
         <button type="button" class="subtab-btn ma-tile" data-nom="🧭 Contexto" onclick="showSub(event,'subContexto')"><span class="e" aria-hidden="true">🧭</span><b>Contexto</b><small data-pv="ctx"></small></button>
         <button type="button" class="subtab-btn ma-tile" data-nom="🍀 Suerte y nivel" onclick="showSub(event,'subSuerte')"><span class="e" aria-hidden="true">🍀</span><b>Suerte y nivel</b><small data-pv="suerte"></small></button>
         <button type="button" class="subtab-btn ma-tile" data-nom="🧬 ADN del equipo" onclick="showSub(event,'subAdn')"><span class="e" aria-hidden="true">🧬</span><b>ADN del equipo</b><small data-pv="adn"></small></button>
         <button type="button" class="subtab-btn ma-tile" data-nom="🔗 Química" onclick="showSub(event,'subQuimica')"><span class="e" aria-hidden="true">🔗</span><b>Química</b><small data-pv="quim"></small></button>
+        <button type="button" class="subtab-btn ma-tile" data-nom="🖼️ Pósteres" id="pstBtnEquipo" style="display:none;" onclick="pstAbrir()"><span class="e" aria-hidden="true">🖼️</span><b>Pósteres</b><small data-pv="poster"></small></button>
         <button type="button" class="subtab-btn ma-tile" data-nom="🏆 Premios" id="pmBtnEquipo" style="display:none;" onclick="pmAbrir()"><span class="e" aria-hidden="true">🏆</span><b>Premios</b><small data-pv="premios"></small></button>
       </div>
 
@@ -1202,6 +1237,12 @@
           <div id="mediasLista"><div class="loader">Cargando...</div></div>
         </div>
       </div>
+      <div id="subVueltas" class="sub-panel"><!-- v281 · el Hergar de ahora contra el de la 1.ª vuelta -->
+        <div class="card">
+          <div class="card-title">🔁 El Hergar de ahora</div>
+          <div id="vtLista"><div class="loader">Cargando...</div></div>
+        </div>
+      </div>
       <div id="subSuerte" class="sub-panel">
         <div class="card">
           <div class="card-title">🍀 Suerte y nivel</div>
@@ -1337,6 +1378,7 @@
       </div>
     </div>
   </div>
+  <div id="pstModal" class="pst-modal" role="dialog" aria-modal="true" aria-label="Póster de la vuelta"><div class="pst-in"><div class="pst-sel" id="pstSel"></div><div class="pst-img" id="pstImg"><div class="loader">Preparando el póster…</div></div><div class="pst-btns"><button type="button" onclick="pstDescargar('png')">⬇️ Imagen</button><button type="button" onclick="pstDescargar('pdf')">📄 PDF</button><button type="button" class="x" onclick="pstCerrar()">Cerrar</button></div></div></div>
   <div class="marca-pie" aria-hidden="true">— C.D. HERGAR · SALAMANCA —</div><!-- v276 · marca del club -->
 </div>
 
@@ -1500,6 +1542,32 @@
   .cartel .ca-nom { font-family:'Montserrat',sans-serif; font-weight:900; font-size:13px; color:#fff; text-align:center; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-shadow:0 2px 6px rgba(0,0,0,.6); }
   .cartel .ca-pos { font-size:10.5px; color:rgba(255,255,255,.8); }
   .cartel .ca-vs { text-align:center; font-family:'Montserrat',sans-serif; font-weight:900; font-style:italic; font-size:40px; color:#fff; text-shadow:0 4px 18px rgba(0,0,0,.7); }
+  /* v281 · 🏟️ Día de partido */
+  .cartel.dp { height:auto; min-height:calc(100svh - 190px); display:flex; flex-direction:column; align-items:center; gap:14px; padding:46px 14px 16px; box-sizing:border-box; }
+  .cartel.dp > * { position:relative; z-index:1; }
+  .cartel.dp .dp-velo { position:absolute; inset:0; z-index:0; background:linear-gradient(180deg, rgba(0,0,0,.05), rgba(0,0,0,.55)); }
+  .cartel.dp.noche .dp-velo { background:radial-gradient(ellipse at 50% 0%, rgba(20,6,10,.25), rgba(5,7,11,.82) 70%); }
+  .cartel.dp .dp-foco { position:absolute; z-index:0; top:-80px; width:240px; height:480px; background:radial-gradient(ellipse at 50% 0%, rgba(255,250,220,.5), rgba(255,250,220,0) 70%); animation:dpFoco 4s ease-in-out infinite; pointer-events:none; }
+  .cartel.dp .dp-foco.i { left:-70px; transform:rotate(-18deg); } .cartel.dp .dp-foco.d { right:-70px; transform:rotate(18deg); animation-delay:2s; }
+  @keyframes dpFoco { 0%,100% { opacity:.5; } 50% { opacity:.95; } }
+  .cartel.dp .ca-top { position:absolute; top:14px; color:#f5a623; font-size:11px; letter-spacing:2.5px; }
+  .cartel.dp .dp-tit { font-family:'Montserrat',sans-serif; font-weight:900; font-size:34px; line-height:1.02; text-align:center; color:#fff; text-shadow:0 4px 20px rgba(0,0,0,.6); animation:dpLatido 2.4s ease-in-out infinite; }
+  @keyframes dpLatido { 50% { transform:scale(1.05); text-shadow:0 0 24px rgba(255,85,119,.95); } }
+  .cartel.dp .ca-eqs { position:relative; top:auto; width:100%; }
+  .cartel.dp .dp-cuenta { display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .cartel.dp .dp-cuenta small { font-family:'Montserrat',sans-serif; font-weight:800; font-size:10.5px; letter-spacing:2px; color:#e2e8f0; }
+  .cartel.dp .dp-num { display:flex; gap:8px; }
+  .cartel.dp .dp-num > div { display:flex; flex-direction:column; align-items:center; }
+  .cartel.dp .dp-num b { min-width:70px; padding:5px 0; border-radius:12px; background:rgba(0,0,0,.45); border:1px solid rgba(255,255,255,.16); font-family:'Barlow Condensed','Montserrat',sans-serif; font-weight:800; font-size:46px; line-height:1; color:#fff; text-align:center; font-variant-numeric:tabular-nums; }
+  .cartel.dp .dp-num span { font-size:10.5px; color:#cbd5e1; margin-top:3px; }
+  .cartel.dp .dp-ya { font-family:'Montserrat',sans-serif; font-weight:900; font-size:30px; color:#fff; }
+  .cartel.dp .dp-chips { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; }
+  .cartel.dp .dp-chips span, .cartel.dp .c264-chip { position:static; transform:none; padding:6px 12px; border-radius:999px; background:rgba(0,0,0,.4); border:1px solid rgba(255,255,255,.16); font-size:12px; font-weight:700; color:#fff; }
+  .cartel.dp .dp-btns { display:grid; grid-template-columns:repeat(auto-fit,minmax(0,1fr)); gap:8px; width:100%; margin-top:auto; }
+  .cartel.dp .dp-btns a, .cartel.dp .dp-btns button { min-height:46px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-family:'Montserrat',sans-serif; font-weight:800; font-size:12px; text-decoration:none; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.22); color:#fff; cursor:pointer; }
+  .cartel.dp .dp-btns .ok { background:#2ed573; border-color:#2ed573; color:#0a0e14; }
+  .cartel.dp .dp-baja { font-size:11.5px; color:#cbd5e1; }
+  @media (prefers-reduced-motion: reduce) { .cartel.dp .dp-tit, .cartel.dp .dp-foco { animation:none; } }
   .cartel .ca-hoy { position:absolute; top:34px; left:50%; transform:translateX(-50%); z-index:2; background:#fff; color:#b41438; font-family:'Montserrat',sans-serif; font-weight:900; font-size:14px; letter-spacing:2px; padding:3px 11px; border-radius:8px; animation:v260Hoy 1.2s ease-in-out infinite; }
   @keyframes v260Hoy { 50% { transform:translateX(-50%) scale(1.08); box-shadow:0 0 24px rgba(255,255,255,.55); } }
   .cartel.anima .ca-eq.i { animation:v260DesdeIzq .8s cubic-bezier(.2,1.2,.4,1) both; }
@@ -1831,6 +1899,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v281 (visor) · 🏟️ Día de partido (cartel grande con cuenta atrás, focos por la tarde), 🖼️ póster de cada vuelta (imagen y PDF) y 🔁 El Hergar de ahora contra la 1.ª vuelta.
   // v280 (visor) · ☁️ Efecto nublado más visible: velo gris y 6 nubes grises con volumen a distintas alturas y velocidades.
   // v279 (visor) · Fuera el escudo de fondo. Con el próximo partido publicado y sin convocatoria, cabecera fina en vez del marcador «– –».
   // v278 (visor) · Escudo de fondo algo más suave (distorsionaba).
@@ -2300,6 +2369,21 @@
     const fondo = rL ? `linear-gradient(118deg, transparent 0%, transparent 49.6%, #0a0e14 49.6%, #0a0e14 50.4%, ${cV} 50.4%, ${cV} 100%), ${rL}`
       : rV ? `linear-gradient(118deg, ${cL} 0%, ${cL} 49.6%, #0a0e14 49.6%, #0a0e14 50.4%, transparent 50.4%, transparent 100%), ${rV}`
       : `linear-gradient(118deg, ${cL} 0%, ${cL} 49.6%, #0a0e14 49.6%, #0a0e14 50.4%, ${cV} 50.4%, ${cV} 100%)`;
+    if (hoy) { // v281 · 🏟️ DÍA DE PARTIDO: el cartel se hace grande, con cuenta atrás, hora, campo y botones; por la tarde, de noche y con focos
+      const tarde = /^(\d{1,2})/.test(p.hora || '') && Number(/^(\d{1,2})/.exec(p.hora)[1]) >= 16;
+      let campo = null; try { campo = (window.campoPartidoLiga || ((l, x) => ctxCampoDe(l, x.local)))(liga, p); } catch (e) {}
+      let mapa = ''; try { mapa = campo ? ctxMapsUrl(campo) : ''; } catch (e) {}
+      const dia = (() => { const d = v260Fecha(p.fechaPartido || ''); return d ? ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'][d.getDay()] : 'HOY'; })();
+      return `<div class="cartel dp${tarde ? ' noche' : ''}${anima ? ' anima' : ''}" style="background:${fondo};">
+      <div class="dp-velo"></div>${tarde ? '<div class="dp-foco i"></div><div class="dp-foco d"></div>' : ''}
+      <div class="ca-top">${dia}${jor} · ${esCasa ? 'EN CASA' : 'FUERA'}</div>
+      <div class="dp-tit">DÍA DE<br>PARTIDO</div>
+      <div class="ca-eqs">${eqH(L, 'i')}<div class="ca-vs">VS</div>${eqH(V, 'd')}</div>
+      <div class="dp-cuenta" id="dpCuenta" aria-live="off"></div>
+      <div class="dp-chips">${p.hora ? `<span>🕐 ${escHtml(p.hora)}</span>` : ''}${campo && campo.nombre ? `<span>📍 ${escHtml(campo.nombre)}</span>` : ''}</div>
+      <div class="dp-btns">${mapa ? `<a href="${escHtml(mapa)}" target="_blank" rel="noopener" class="ok">🗺️ Cómo llegar</a>` : ''}<button type="button" onclick="dpIr('previa')">🤖 Previa</button><button type="button" onclick="dpIr('conv')">📋 Convocados</button></div>
+      <div class="dp-baja">▼ Desliza para ver todo lo demás</div></div>`;
+    }
     return `<div class="cartel${anima ? ' anima' : ''}" style="background:${fondo};">
       <div style="position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,.05), rgba(0,0,0,.35));"></div>
       <div class="ca-top">📣 PRÓXIMO PARTIDO${jor} · ${esCasa ? 'EN CASA' : 'FUERA'}</div>
@@ -7309,6 +7393,7 @@
   function pmPintarEntradas() {
     const u = pmUltimo(), card = document.getElementById('pmCardTemp'), bt = document.getElementById('pmBtnEquipo');
     if (bt) bt.style.display = u ? '' : 'none';
+    try { const pb = document.getElementById('pstBtnEquipo'); if (pb) pb.style.display = u ? '' : 'none'; if (ultimaTemporada) pintarPartidos(ultimaTemporada); } catch (e) {} // v281
     if (!card) return;
     const reciente = u && (Date.now() - (u.ts || 0)) < PM_DIAS_ARRIBA * 864e5;
     if (!reciente) { card.style.display = 'none'; card.innerHTML = ''; return; }
@@ -7384,6 +7469,7 @@
       <div class="pm-tit" style="text-align:center;">🏆 Los premios de la ${escHtml(u.nombre || 'vuelta')}</div>
       <div style="margin-top:18px;">${(u.premios || []).map(p => `<div style="display:flex; gap:10px; padding:8px 0; border-top:1px solid rgba(255,255,255,.08); font-size:13px;"><span>${escHtml(p.e || '')}</span><span style="flex:1; color:#cbd5e1;">${escHtml(p.t || '')}</span><b style="color:#fff; text-align:right;">${escHtml(p.nombre || '')}</b></div>`).join('')}${u.gol ? `<div style="display:flex; gap:10px; padding:8px 0; border-top:1px solid rgba(255,255,255,.08); font-size:13px;"><span>⚽</span><span style="flex:1; color:#cbd5e1;">El gol de la ${escHtml(u.nombre || 'vuelta')}</span><b style="color:#fff;">${escHtml(u.gol.nombre || '')}</b></div>` : ''}</div>
       <div style="margin-top:auto;">${(() => { try { const mid = mhIdElegido(), t = ultimaTemporada, j = mid && t && t.jugadores ? t.jugadores[mid] : null; return j && tvPuede(t, u, j) ? `<button type="button" class="pm-btn" style="margin-bottom:8px; width:100%; background:${TV_ROJO}; color:#fff; font-size:14.5px;" onclick="event.stopPropagation(); tvAbrir('${escHtml(j.id)}', '${escHtml(u.vuelta || '')}');">▶ Ahora, tu ${escHtml(u.vuelta === 'T' ? 'temporada' : (u.nombre || 'vuelta'))}: ${escHtml(estNom(j))}</button>` : ''; } catch (e) { return ''; } })()}
+      <button type="button" class="pm-btn" style="margin-bottom:8px; width:100%; background:rgba(245,166,35,.16); border:1px solid #f5a623; color:#f5a623;" onclick="event.stopPropagation(); pmCerrar(); pstAbrir('${escHtml(u.vuelta || '')}');">🖼️ Ver el póster de la ${escHtml(u.vuelta === 'T' ? 'temporada' : (u.nombre || 'vuelta'))}</button>
       <div style="display:flex; gap:8px;"><button type="button" class="pm-btn" style="flex:1; background:rgba(255,255,255,.1); color:#fff;" onclick="event.stopPropagation(); pmIr(0);">↻ Ver otra vez</button><button type="button" class="pm-btn" style="flex:1; background:#f5a623; color:#111;" onclick="event.stopPropagation(); pmCerrar();">Cerrar</button></div></div>` });
     return S;
   }
@@ -7412,6 +7498,204 @@
     box.querySelector('.pm-sl-box').innerHTML = ''; document.body.style.overflow = '';
   };
   window.pmToque = function (d) { pmIr(pmPos + d); };
+
+  // ── v281 · 🔁 EL HERGAR DE AHORA contra el de la 1.ª vuelta: medias por partido e ida y vuelta contra el mismo rival ──
+  let vtModo = 'med';
+  function vtDatos(t) {
+    t = t || ultimaTemporada; const liga = ultimaLiga;
+    const ps = ((t && t.partidos) || []).map((p, i) => {
+      let v = null, rid = null;
+      try { const lp = p.contexto && p.contexto.ligaId != null && liga ? (liga.partidos || []).find(q => q.id === p.contexto.ligaId) : null; if (lp) v = lp.vuelta; const R = proRivalLiga(liga, p); if (R && R.i >= 0) rid = liga.equipos[R.i].id; } catch (e) {}
+      return { p, i, v: v || Math.floor(i / 9) + 1, rid: rid || String(p.rival || '') };
+    });
+    const vAct = Math.max(1, ...ps.map(x => x.v));
+    if (vAct < 2) return null;
+    const A = ps.filter(x => x.v === 1), B = ps.filter(x => x.v === vAct);
+    if (!A.length || !B.length) return null;
+    return { t, A, B, vAct };
+  }
+  function vtStats(t, L) {
+    const n = L.length, resDe = p => p.resultado === 'V' || p.resultado === 'E' || p.resultado === 'D' ? p.resultado : ((+p.golesLocal || 0) > (+p.golesRival || 0) ? 'V' : (+p.golesLocal || 0) < (+p.golesRival || 0) ? 'D' : 'E');
+    const hist = {}; Object.values(t.jugadores || {}).forEach(j => (j.historial || []).forEach(h => { (hist[h.fecha + '|' + h.rival] = hist[h.fecha + '|' + h.rival] || []).push(h); }));
+    const S = { n };
+    const pts = L.reduce((a, x) => a + ({ V: 3, E: 1, D: 0 })[resDe(x.p)], 0);
+    S.pts = pts / n; S.gf = L.reduce((a, x) => a + (+x.p.golesLocal || 0), 0) / n; S.gc = L.reduce((a, x) => a + (+x.p.golesRival || 0), 0) / n;
+    S.cero = L.filter(x => (+x.p.golesRival || 0) === 0).length / n * 100;
+    const conT = L.filter(x => !x.p.manual && ((+x.p.tirosNuestrosPuerta || 0) + (+x.p.tirosNuestrosFuera || 0) + (+x.p.tirosRivalesPuerta || 0) + (+x.p.tirosRivalesFuera || 0)) > 0);
+    if (conT.length) {
+      const tp = conT.reduce((a, x) => a + (+x.p.tirosNuestrosPuerta || 0), 0), tf = conT.reduce((a, x) => a + (+x.p.tirosNuestrosFuera || 0), 0), g = conT.reduce((a, x) => a + (+x.p.golesLocal || 0), 0);
+      S.tiros = (tp + tf) / conT.length; S.puerta = tp + tf ? tp / (tp + tf) * 100 : null; S.efic = tp + tf ? Math.min(g, tp + tf) / (tp + tf) * 100 : null;
+      S.tirosR = conT.reduce((a, x) => a + (+x.p.tirosRivalesPuerta || 0) + (+x.p.tirosRivalesFuera || 0), 0) / conT.length;
+    }
+    const pos = L.map(x => x.p.posesion).filter(z => z && z.v != null).map(z => Number(z.aj != null ? z.aj : z.v)).filter(v => !isNaN(v));
+    if (pos.length) S.pos = pos.reduce((a, v) => a + v, 0) / pos.length;
+    let dN = 0, dS = 0, pS = 0, iS = 0, mS = 0;
+    L.forEach(x => { const H = (hist[x.p.fecha + '|' + x.p.rival] || []).filter(h => h.acc); if (!H.length) return; dN++; H.forEach(h => { dS += (+h.acc.def || 0) + (+h.acc.defC || 0); pS += (+h.acc.par || 0) + (+h.acc.parD || 0); }); });
+    L.forEach(x => (hist[x.p.fecha + '|' + x.p.rival] || []).forEach(h => { if (h.imp != null && (+h.mins || 0) > 0) { iS += +h.imp || 0; mS += +h.mins; } }));
+    if (dN) { S.def = dS / dN; S.par = pS / dN; }
+    if (mS) S.imp = iS / mS * 70; // impacto medio de los niños, llevado a 70 minutos
+    const conMin = L.filter(x => Array.isArray(x.p.goles) && x.p.goles.length >= (+x.p.golesLocal || 0) + (+x.p.golesRival || 0) && x.p.goles.every(g => !g || g.min != null || g.minuto != null));
+    if (conMin.length) S.fin = conMin.reduce((a, x) => a + x.p.goles.filter(g => g && g.equipo !== 'rival' && Number(g.min != null ? g.min : g.minuto) >= 56).length, 0) / conMin.length;
+    return S;
+  }
+  window.vtModoSel = function (m) { vtModo = m; vtPintar(); };
+  function vtPintar() {
+    const box = document.getElementById('vtLista'); if (!box) return;
+    const V = vtDatos(); if (!V) { box.innerHTML = '<div class="loader">Saldrá cuando se juegue la 2.ª vuelta.</div>'; return; }
+    const nomAct = V.vAct === 2 ? '2.ª vuelta' : '3.ª vuelta';
+    let h = `<div style="font-size:12px; color:#cbd5e1; margin:-4px 0 10px;">1.ª vuelta (${V.A.length} ${V.A.length === 1 ? 'partido' : 'partidos'}) contra la ${nomAct} (${V.B.length} ${V.B.length === 1 ? 'partido' : 'partidos'})${V.B.length < 3 ? ' · <b style="color:#f5a623;">pocos partidos todavía</b>' : ''}</div>
+      <div class="vt-seg"><button type="button" class="${vtModo === 'med' ? 'on' : ''}" onclick="vtModoSel('med')">📊 Medias por partido</button><button type="button" class="${vtModo === 'ida' ? 'on' : ''}" onclick="vtModoSel('ida')">↔️ Ida y vuelta</button></div>`;
+    if (vtModo === 'med') {
+      const a = vtStats(V.t, V.A), b = vtStats(V.t, V.B);
+      const f1 = v => (Math.round(v * 10) / 10).toFixed(1).replace('.', ','), pc = v => Math.round(v) + ' %';
+      const fila = (tit, k, sube, fmt) => {
+        const x = a[k], y = b[k]; if (x == null || y == null) return '';
+        const fm = fmt || f1, mx = Math.max(Math.abs(x), Math.abs(y)) || 1, ig = fm(x) === fm(y), up = y > x, bien = ig ? null : up === sube;
+        const col = bien == null ? '#94a3b8' : bien ? '#2ed573' : '#ff5577';
+        return `<div class="vt-f"><div class="vt-fr"><span>${tit}</span><b class="a">${(fmt || f1)(x)}</b><b>${(fmt || f1)(y)}</b><i style="color:${col}">${ig ? '=' : up ? '▲' : '▼'}</i></div>
+          <div class="vt-bar"><i style="width:${Math.round(Math.abs(x) / mx * 100)}%; background:#64748b;"></i></div><div class="vt-bar" style="margin-top:3px;"><i style="width:${Math.round(Math.abs(y) / mx * 100)}%; background:#e11d48;"></i></div></div>`;
+      };
+      const g = (tit, filas) => { const f = filas.join(''); return f ? `<div class="vt-g">${tit}</div>${f}` : ''; };
+      h += `<div class="vt-cab"><span></span><span>1.ª</span><span>AHORA</span><span></span></div>`
+        + g('RESULTADOS', [fila('Puntos por partido', 'pts', true), fila('Goles a favor', 'gf', true), fila('Goles en contra', 'gc', false), fila('Porterías a cero', 'cero', true, pc)])
+        + g('ATAQUE', [fila('Tiros por partido', 'tiros', true), fila('% de tiros a puerta', 'puerta', true, pc), fila('Eficacia de tiro', 'efic', true, pc), fila('Posesión', 'pos', true, pc)])
+        + g('DEFENSA', [fila('Acciones defensivas', 'def', true), fila('Tiros del rival', 'tirosR', false), fila('Paradas del portero', 'par', true)])
+        + g('EQUIPO', [fila("Impacto medio por 70'", 'imp', true), fila("Goles en los últimos 15'", 'fin', true)])
+        + `<div style="font-size:10.5px; color:#94a3b8; line-height:1.45; margin-top:8px;">Medias por partido. Tiros, eficacia y defensa solo cuentan partidos en directo o del delegado (los cargados a mano no tienen esos datos). Las paradas se leen junto a los tiros del rival: más paradas puede ser que el portero está fino o que llegan más.</div>`;
+    } else {
+      const resDe = p => p.resultado === 'V' || p.resultado === 'E' || p.resultado === 'D' ? p.resultado : ((+p.golesLocal || 0) > (+p.golesRival || 0) ? 'V' : (+p.golesLocal || 0) < (+p.golesRival || 0) ? 'D' : 'E');
+      const PT = { V: 3, E: 1, D: 0 }, C = { V: '#2ed573', E: '#cbd5e1', D: '#ff5577' };
+      const cr = V.B.map(y => ({ y, x: V.A.find(x => x.rid === y.rid) })).filter(z => z.x);
+      if (!cr.length) h += '<div class="loader">Todavía no se ha repetido ningún rival.</div>';
+      else {
+        const dp = cr.reduce((a, z) => a + PT[resDe(z.y.p)] - PT[resDe(z.x.p)], 0);
+        const dg = cr.reduce((a, z) => a + ((+z.y.p.golesLocal || 0) - (+z.y.p.golesRival || 0)) - ((+z.x.p.golesLocal || 0) - (+z.x.p.golesRival || 0)), 0);
+        const pA = cr.reduce((a, z) => a + PT[resDe(z.x.p)], 0), pB = cr.reduce((a, z) => a + PT[resDe(z.y.p)], 0), sg = v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v);
+        h += `<div class="vt-res${dp < 0 ? ' mal' : ''}"><div style="font-size:12px; color:#cbd5e1;">Contra los mismos ${cr.length} ${cr.length === 1 ? 'rival' : 'rivales'}</div>
+          <div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:20px; color:#fff; margin-top:2px;">${sg(dp)} ${Math.abs(dp) === 1 ? 'punto' : 'puntos'} · ${sg(dg)} de diferencia de goles</div>
+          <div style="font-size:11.5px; color:#cbd5e1; margin-top:4px;">En la ida sacaste ${pA} de ${cr.length * 3} puntos; en la vuelta, ${pB} de ${cr.length * 3}.</div></div>
+          <div class="vt-cab" style="grid-template-columns:1fr 54px 54px 56px;"><span>RIVAL</span><span>IDA</span><span>VUELTA</span><span></span></div>`
+          + cr.map(z => { const d = PT[resDe(z.y.p)] - PT[resDe(z.x.p)]; return `<div class="vt-x"><span>${escHtml(z.y.p.rival || '')}</span><b style="color:${C[resDe(z.x.p)]}">${z.x.p.golesLocal}-${z.x.p.golesRival}</b><b style="color:${C[resDe(z.y.p)]}">${z.y.p.golesLocal}-${z.y.p.golesRival}</b><i style="color:${d > 0 ? '#2ed573' : d < 0 ? '#ff5577' : '#94a3b8'}">${d ? sg(d) + ' pts' : '='}</i></div>`; }).join('')
+          + `<div style="font-size:10.5px; color:#94a3b8; margin-top:6px;">Los rivales que aún no se han repetido van apareciendo según se juegan.</div>`;
+      }
+    }
+    box.innerHTML = h;
+  }
+
+  // ── v281 · 🖼️ PÓSTER DE LA VUELTA: una lámina con los partidos de la vuelta (de los premios publicados), en imagen y PDF ──
+  let pstVuelta = null, pstCanvasAct = null;
+  function pstEntradas() { return pmLista.slice().filter(x => x && x.vuelta).sort((a, b) => (a.vuelta === 'T' ? 9 : Number(a.vuelta)) - (b.vuelta === 'T' ? 9 : Number(b.vuelta))); }
+  window.pstAbrir = function (v) {
+    const L = pstEntradas(); if (!L.length) return;
+    const u = (v && L.find(x => x.vuelta === v)) || pmUltimo() || L[L.length - 1];
+    document.getElementById('pstModal').classList.add('on'); document.body.style.overflow = 'hidden';
+    try { visMarca('s', 'poster'); } catch (e) {}
+    pstPintar(u.vuelta);
+  };
+  window.pstCerrar = function () { document.getElementById('pstModal').classList.remove('on'); document.body.style.overflow = ''; };
+  async function pstPintar(v) {
+    pstVuelta = v;
+    const L = pstEntradas(), u = L.find(x => x.vuelta === v); if (!u) return;
+    const nomV = x => x.vuelta === 'T' ? 'Temporada' : (x.nombre || 'Vuelta').replace(/^./, c => c.toUpperCase());
+    document.getElementById('pstSel').innerHTML = L.length > 1 ? L.map(x => `<button type="button" class="${x.vuelta === v ? 'on' : ''}" onclick="pstPintarV('${escHtml(x.vuelta)}')">${escHtml(nomV(x))}</button>`).join('') : '';
+    const box = document.getElementById('pstImg'); box.innerHTML = '<div class="loader">Preparando el póster…</div>';
+    try {
+      const cv = await pstCanvas(u); pstCanvasAct = cv;
+      let src = ''; try { src = cv.toDataURL('image/png'); } catch (e) { src = ''; }
+      box.innerHTML = src ? `<img src="${src}" alt="Póster de la ${escHtml(u.nombre || 'vuelta')}">` : '';
+      if (!src) { box.appendChild(cv); cv.style.width = '100%'; cv.style.borderRadius = '12px'; }
+    } catch (e) { console.error('Póster:', e); box.innerHTML = '<div class="loader">No se ha podido preparar el póster.</div>'; }
+  }
+  window.pstPintarV = (v) => pstPintar(v);
+  function pstImg(src) { return new Promise(res => { if (!src) return res(null); const im = new Image(); if (/^https?:/.test(src)) im.crossOrigin = 'anonymous'; im.onload = () => res(im); im.onerror = () => res(null); im.src = src; setTimeout(() => res(null), 4000); }); }
+  function pstRR(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
+  function pstTxt(c, t, x, y, max) { let s2 = String(t || ''); while (s2.length > 2 && c.measureText(s2).width > max) s2 = s2.slice(0, -2) + '…'; c.fillText(s2, x, y); }
+  async function pstCanvas(u) {
+    const t = ultimaTemporada || {}, liga = ultimaLiga;
+    const ps = (t.partidos || []).slice(Number(u.desde) || 0, u.hasta != null ? Number(u.hasta) : undefined);
+    const W = 1080, H = 1528, c0 = document.createElement('canvas'); c0.width = W; c0.height = H;
+    const c = c0.getContext('2d');
+    try { await document.fonts.ready; } catch (e) {}
+    const F = (w, s2, f) => `${w} ${s2}px ${f || "'Montserrat', sans-serif"}`;
+    // fondo y franja
+    const g = c.createRadialGradient(W / 2, 0, 40, W / 2, 0, H); g.addColorStop(0, '#4a0e1f'); g.addColorStop(.55, '#16070c'); g.addColorStop(1, '#07090d');
+    c.fillStyle = g; c.fillRect(0, 0, W, H);
+    [['#b41438', 0], ['#f1f5f9', 1], ['#b41438', 2]].forEach(([col, k]) => { c.fillStyle = col; c.fillRect(k * W / 3, 0, W / 3 + 1, 10); });
+    // cabecera
+    const esc = await pstImg(ESCUDO_HERGAR_SRC);
+    c.save(); c.beginPath(); c.arc(130, 140, 74, 0, Math.PI * 2); c.fillStyle = '#fff'; c.fill(); c.lineWidth = 8; c.strokeStyle = '#b41438'; c.stroke(); c.clip(); if (esc) c.drawImage(esc, 56, 66, 148, 148); c.restore();
+    c.textBaseline = 'alphabetic'; c.textAlign = 'left';
+    c.fillStyle = '#f5a623'; c.font = F(900, 22); pstTxt(c, (liga && (liga.equipos || []).find(e => e.esHergar) || {}).nombre ? String(liga.equipos.find(e => e.esHergar).nombre).toUpperCase() : 'C.D. HERGAR', 236, 96, 800);
+    c.fillStyle = '#fff'; c.font = F(900, 72); pstTxt(c, u.vuelta === 'T' ? 'TEMPORADA' : String(u.nombre || 'VUELTA').toUpperCase(), 232, 170, 820);
+    c.fillStyle = '#ff5577'; c.font = F(800, 30); c.fillText('Temporada ' + marcaTemporada(), 236, 214);
+    // partidos
+    const n = ps.length, cols = n <= 9 ? 3 : n <= 16 ? 4 : n <= 25 ? 5 : 6, rows = Math.max(1, Math.ceil(n / cols));
+    const gx = 56, gy = 270, gw = W - 112, gap = 18, cw = (gw - gap * (cols - 1)) / cols, gh = 1000, ch = Math.min(320, (gh - gap * (rows - 1)) / rows);
+    const sc = Math.min(1, ch / 300);
+    const COL = { V: '#2ed573', E: '#94a3b8', D: '#ff5577' }, TXT = { V: 'VICTORIA', E: 'EMPATE', D: 'DERROTA' };
+    const resDe = p => p.resultado === 'V' || p.resultado === 'E' || p.resultado === 'D' ? p.resultado : ((+p.golesLocal || 0) > (+p.golesRival || 0) ? 'V' : (+p.golesLocal || 0) < (+p.golesRival || 0) ? 'D' : 'E');
+    for (let k = 0; k < n; k++) {
+      const p = ps[k], r = resDe(p), x = gx + (k % cols) * (cw + gap), y = gy + Math.floor(k / cols) * (ch + gap);
+      c.fillStyle = 'rgba(255,255,255,.05)'; pstRR(c, x, y, cw, ch, 20); c.fill();
+      c.strokeStyle = 'rgba(255,255,255,.1)'; c.lineWidth = 2; c.stroke();
+      c.fillStyle = COL[r]; c.save(); pstRR(c, x, y, cw, ch, 20); c.clip(); c.fillRect(x, y, cw, 8 * sc + 2); c.restore();
+      let rv = null, casa = null, jn = null;
+      try { const R = proRivalLiga(liga, p); rv = R.i >= 0 ? liga.equipos[R.i] : null; casa = R.casa; } catch (e) {}
+      try { const lp = p.contexto && p.contexto.ligaId != null && liga ? liga.partidos.find(q => q.id === p.contexto.ligaId) : null; if (lp) jn = numJornadaGlobalViewer(liga, lp); } catch (e) {}
+      if (casa == null) { try { casa = mdCasa(p, liga); } catch (e) {} }
+      const cx = x + cw / 2;
+      c.textAlign = 'center';
+      c.fillStyle = '#94a3b8'; c.font = F(800, Math.round(20 * sc)); c.fillText([jn ? 'J' + jn : '', casa === true ? 'CASA' : casa === false ? 'FUERA' : ''].filter(Boolean).join(' · ') || ' ', cx, y + 44 * sc);
+      const rad = 44 * sc, ey = y + 100 * sc;
+      const im = rv ? await pstImg(escudoSrcVisor(rv)) : null;
+      c.save(); c.beginPath(); c.arc(cx, ey, rad, 0, Math.PI * 2); c.fillStyle = im ? '#fff' : (rv ? (colorEquipoV(rv) || '#334155') : '#334155'); c.fill(); c.lineWidth = 4; c.strokeStyle = '#fff'; c.stroke(); c.clip();
+      if (im) c.drawImage(im, cx - rad, ey - rad, rad * 2, rad * 2);
+      c.restore();
+      if (!im) { c.fillStyle = '#fff'; c.font = F(900, Math.round(26 * sc)); c.fillText(inicialesEquipoViewer(rv ? rv.nombre : (p.rival || '')), cx, ey + 9 * sc); }
+      c.fillStyle = '#e2e8f0'; c.font = F(700, Math.round(21 * sc), "'Inter', sans-serif"); pstTxt(c, rv ? rv.nombre : (p.rival || ''), cx, y + 180 * sc, cw - 20);
+      c.fillStyle = '#fff'; c.font = F(800, Math.round(64 * sc), "'Barlow Condensed', 'Montserrat', sans-serif"); c.fillText(`${p.golesLocal ?? 0}-${p.golesRival ?? 0}`, cx, y + 252 * sc);
+      c.fillStyle = COL[r]; c.font = F(800, Math.round(18 * sc)); c.fillText(TXT[r], cx, y + 284 * sc);
+    }
+    // resumen
+    const B = u.balance || {};
+    let pos = null;
+    try {
+      const js = ps.map(p => { const lp = p.contexto && p.contexto.ligaId != null ? liga.partidos.find(q => q.id === p.contexto.ligaId) : null; return lp ? numJornadaGlobalViewer(liga, lp) : null; }).filter(Boolean);
+      if (js.length && liga) { const J = Math.max(...js); const f = ligaClasifViewer({ equipos: liga.equipos, partidos: liga.partidos.filter(q => q.golesLocal != null && q.golesVisitante != null && numJornadaGlobalViewer(liga, q) <= J) }).find(x => (liga.equipos.find(e => e.esHergar) || {}).id === x.id); if (f) pos = f.pos; }
+    } catch (e) {}
+    const caj = [[pos ? pos + '.º' : '—', 'en la Liga', true], [`${B.v || 0}-${B.e || 0}-${B.d || 0}`, 'V · E · D'], [`${B.gf || 0}-${B.gc || 0}`, 'goles'], [String(B.pts || 0), 'puntos']];
+    const by = 1300, bw = (W - 112 - 3 * 16) / 4;
+    caj.forEach(([v2, l, dest], k) => {
+      const x = 56 + k * (bw + 16);
+      c.fillStyle = dest ? 'rgba(180,20,56,.45)' : 'rgba(255,255,255,.06)'; pstRR(c, x, by, bw, 120, 18); c.fill();
+      c.textAlign = 'center'; c.fillStyle = '#fff'; c.font = F(800, 52, "'Barlow Condensed', 'Montserrat', sans-serif"); c.fillText(v2, x + bw / 2, by + 66);
+      c.fillStyle = '#e2e8f0'; c.font = F(600, 20, "'Inter', sans-serif"); c.fillText(l, x + bw / 2, by + 100);
+    });
+    const pr = k => ((u.premios || []).find(x => x.k === k) || {}).nombre;
+    const pie = [pr('mvp') ? '⭐ MVP: ' + pr('mvp') : '', pr('pichichi') ? '⚽ Pichichi: ' + pr('pichichi') : ''].filter(Boolean).join('   ·   ');
+    c.strokeStyle = 'rgba(255,255,255,.12)'; c.lineWidth = 2; c.beginPath(); c.moveTo(56, 1458); c.lineTo(W - 56, 1458); c.stroke();
+    c.textAlign = 'left'; c.fillStyle = '#cbd5e1'; c.font = F(600, 22, "'Inter', sans-serif"); pstTxt(c, pie, 56, 1496, 760);
+    c.textAlign = 'right'; c.fillStyle = '#94a3b8'; c.font = F(800, 20); c.fillText('HERGAR LIVE', W - 56, 1496);
+    return c0;
+  }
+  window.pstDescargar = async function (tipo) {
+    const cv = pstCanvasAct; if (!cv) return;
+    const u = pstEntradas().find(x => x.vuelta === pstVuelta) || {};
+    const nombre = 'poster-hergar-' + (u.vuelta === 'T' ? 'temporada' : (u.vuelta || '') + 'a-vuelta');
+    try {
+      if (tipo === 'pdf') {
+        if (!window.jspdf || !window.jspdf.jsPDF) { alert('No se ha podido cargar el generador de PDF (¿sin conexión?).'); return; }
+        const doc = new window.jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        doc.addImage(cv.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, 210, 297);
+        doc.save(nombre + '.pdf');
+        return;
+      }
+      const blob = await new Promise(r => cv.toBlob(r, 'image/png'));
+      const file = blob ? new File([blob], nombre + '.png', { type: 'image/png' }) : null;
+      if (file && navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], title: 'Póster del Hergar' }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+      const a = document.createElement('a'); a.href = blob ? URL.createObjectURL(blob) : cv.toDataURL('image/png'); a.download = nombre + '.png'; document.body.appendChild(a); a.click(); a.remove();
+    } catch (e) { console.error('Descargar póster:', e); alert('No se ha podido descargar el póster.'); }
+  };
 
   // ── v246 · 🎬 «TU VUELTA»: el resumen de cada niño al publicarse los premios de una vuelta ──
   // Seis pantallas como las historias de los premios (mismo visor de historias). Solo cosas suyas y en positivo,
@@ -8682,10 +8966,10 @@
     const ca = document.querySelector('#proximoPartidoCard .cartel'); if (!ca) return;
     const T = c264Tipo(d, campo, fechaISO, hora);
     c264Poner(ca, T, false);
-    const old = ca.querySelector(':scope > .c264-chip'); if (old) old.remove();
+    const old = ca.querySelector('.c264-chip'); if (old) old.remove(); // v281: en Día de partido va dentro de los chips
     if (!T || (!T.k && !T.luz)) return;
     const [ico, txt] = T.k ? C264_TXT[T.k] : ['🌙', 'de noche'];
-    ca.insertAdjacentHTML('beforeend', `<div class="c264-chip">${ico} ${d.t} °C · ${txt}${T.luz ? ' · 💡 focos' : ''}</div>`);
+    (ca.querySelector('.dp-chips') || ca).insertAdjacentHTML('beforeend', `<div class="c264-chip">${ico} ${d.t} °C · ${txt}${T.luz ? ' · 💡 focos' : ''}</div>`);
   }
   let c264CabClave = null;
   async function c264Cabecera(m) {
@@ -11236,8 +11520,35 @@
     try { pintarNarracion(ultimoMatchData); } catch (e) {} // v193
     colocarRecordsHoy(); // v162
     try { pxMontarChips(card); } catch (e) { console.error('Chips del próximo partido:', e); } // v276
+    try { dpArrancar(card, p); } catch (e) { console.error('Día de partido:', e); } // v281
     try { cabFinaPintar(); } catch (e) {} // v279
   }
+  // ── v281 · 🏟️ Día de partido: cuenta atrás en vivo y botones que bajan a la previa o a la convocatoria ──
+  let dpTimer = null;
+  function dpArrancar(card, p) {
+    clearInterval(dpTimer); dpTimer = null;
+    const ca = card.querySelector('.cartel.dp'); if (!ca) return;
+    const fe = card.querySelector('#proxCuentaAtras'); const linea = fe && fe.closest('div[style*="border-top"]'); if (linea) linea.style.display = 'none'; // la fecha y la cuenta atrás ya van en el cartel
+    const d = v260Fecha(p.fechaPartido || ''), m = /^(\d{1,2}):(\d{2})/.exec(p.hora || '');
+    const box = ca.querySelector('#dpCuenta'); if (!box) return;
+    if (!d || !m) { box.innerHTML = '<div class="dp-ya">¡HOY!</div>'; return; }
+    const ini = new Date(d.getFullYear(), d.getMonth(), d.getDate(), +m[1], +m[2]).getTime();
+    const dos = n => String(n).padStart(2, '0');
+    const tic = () => {
+      if (!box.isConnected) { clearInterval(dpTimer); return; }
+      const r = Math.floor((ini - Date.now()) / 1000);
+      if (r <= 0) { box.innerHTML = '<div class="dp-ya">¡A JUGAR!</div>'; clearInterval(dpTimer); return; }
+      const h = Math.floor(r / 3600), mi = Math.floor(r % 3600 / 60), se = r % 60;
+      box.innerHTML = `<small>EMPIEZA EN</small><div class="dp-num"><div><b>${dos(h)}</b><span>${h === 1 ? 'hora' : 'horas'}</span></div><div><b>${dos(mi)}</b><span>minutos</span></div><div><b>${dos(se)}</b><span>segundos</span></div></div>`;
+    };
+    tic(); dpTimer = setInterval(tic, 1000);
+  }
+  window.dpIr = function (k) {
+    const card = document.getElementById('proximoPartidoCard'); if (!card) return;
+    const el = k === 'previa' ? card.querySelector('.pv-caja') : card.querySelector('[data-px="📋 Convocados"]');
+    if (!el) return;
+    window.scrollTo({ top: Math.max(0, el.getBoundingClientRect().top + window.scrollY - pxAlto()), behavior: 'smooth' });
+  };
   // ── v276 · 🧭 Próximo partido: chips que bajan a cada bloque (se quedan pegados arriba al bajar y se marca el del bloque que ves) ──
   const PX_TIT = [['Pronóstico', '🔮 Pronóstico'], ['en juego', '🏆 En juego'], ['Cara a cara', '⚔️ Cara a cara'], ['A seguir', '👀 A seguir']];
   let pxObjetivos = [];
@@ -11701,7 +12012,8 @@
     const nV = { V: 0, E: 0, D: 0 }; vis.forEach(p => { nV[resDe(p)]++; });
     const filHTML = `<div class="hp-fil" role="group" aria-label="Filtrar partidos">${FIL.map(([k, t]) => `<button type="button" class="${hpFiltro === k ? 'on' : ''}" aria-pressed="${hpFiltro === k}" onclick="hpFiltrar('${k}')">${t}</button>`).join('')}</div>`
       + (hpFiltro !== 'todos' ? `<div class="hp-fil-res">${vis.length} ${vis.length === 1 ? 'partido' : 'partidos'} · ${nV.V}V · ${nV.E}E · ${nV.D}D</div>` : '');
-    cont.innerHTML = cabHist + filHTML + '<div class="hp-lista">' + (vis.length ? '' : '<div style="padding:18px; text-align:center; font-size:12.5px; color:#94a3b8;">Ningún partido con este filtro.</div>') + partidos.map((p, i) => {
+    let pstLink = ''; try { const u = pmUltimo(); if (u) pstLink = `<button type="button" class="hp-poster" onclick="pstAbrir('${escHtml(u.vuelta || '')}')">🖼️ Póster de la ${escHtml(u.vuelta === 'T' ? 'temporada' : (u.nombre || 'vuelta'))} ›</button>`; } catch (e) {} // v281
+    cont.innerHTML = cabHist + pstLink + filHTML + '<div class="hp-lista">' + (vis.length ? '' : '<div style="padding:18px; text-align:center; font-size:12.5px; color:#94a3b8;">Ningún partido con este filtro.</div>') + partidos.map((p, i) => {
       if (!pasa(p)) return '';
       const chipClass = p.resultado === 'V' ? 'streak-win' : p.resultado === 'D' ? 'streak-loss' : 'streak-draw';
       const icon = p.resultado === 'V' ? '✅' : p.resultado === 'D' ? '❌' : '➖';
@@ -12830,7 +13142,9 @@
       suerte: () => '¿Suerte o nivel?',
       adn: () => 'Los estilos de la plantilla',
       quim: () => 'Lo rodadas que están las parejas',
-      premios: () => 'Los premios de la vuelta'
+      premios: () => 'Los premios de la vuelta',
+      poster: () => 'La lámina de cada vuelta',
+      vueltas: () => { try { const V = vtDatos(t); return V ? `Contra la 1.ª vuelta · ${V.B.length} ${V.B.length === 1 ? 'partido' : 'partidos'}` : ''; } catch (e) { return ''; } }
     };
     document.querySelectorAll('#tmpMasPanel [data-pv]').forEach(el => { const f = PV[el.dataset.pv]; let h = ''; try { h = f ? f() : ''; } catch (e) {} el.innerHTML = h; });
   }
@@ -13381,6 +13695,7 @@
     subPlantilla: () => pintarPlantillaTabla(),
     subRecords: (t) => pintarRecords(t),
     subMedias: () => pintarSuerteNivel(),
+    subVueltas: () => vtPintar(), // v281
     subSuerte: () => pintarSuerteNivel(),
     subMapaGoles: () => pintarMapaGoles(),
     subVideos: () => pintarGaleriaVideos(),
@@ -13444,6 +13759,7 @@
     try { if (ultimoMatchData) { pintarResumenUltimo(ultimoMatchData); pintarRecordsHoy(ultimoMatchData); tvRecordsPersonales(ultimoMatchData); } if (tvActivo) tvRender(); } catch (e) { console.error('Resumen:', e); } // 🎬 el botón del resumen necesita la temporada
     tmpCambio(); // v175: el resto, al abrirlo
     try { const pm = document.getElementById('tmpMasPanel'); if (pm && pm.classList.contains('abierto')) maAdelantos(); } catch (e) {} // v276
+    try { const vb = document.getElementById('vtBtn'); if (vb) vb.style.display = vtDatos(temporada) ? '' : 'none'; } catch (e) {} // v281
     mhActualizar(); // v176
     semActualizar(); // v179
     try { numPintar(); } catch (e) { console.error('Números:', e); } // v230
@@ -16051,7 +16367,7 @@
     visEscribir(o);
     try { const act = document.querySelector('.panel.active'); if (act) visApuntarTab(act.id); } catch (e) {}
   }
-  const VIS_VERSION = 280;
+  const VIS_VERSION = 281;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

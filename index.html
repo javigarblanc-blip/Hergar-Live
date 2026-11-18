@@ -873,17 +873,17 @@
   #pmStory video { width:100%; border-radius:12px; margin-top:14px; background:#111; max-height:42vh; }
   #pmStory .pm-btn { margin-top:12px; min-height:44px; border-radius:12px; border:none; font-family:'Montserrat',sans-serif; font-weight:800; font-size:13px; cursor:pointer; position:relative; z-index:3; }
   /* v230 · cabecera fina fuera de Partido (y marcador pequeño con el partido en juego) + tira de números de Temporada */
-  .mini-cab { display:none; align-items:center; gap:9px; margin:0 0 2px; padding:9px 12px; border-radius:14px 14px 0 0; background:linear-gradient(90deg,rgba(180,20,56,.32),rgba(180,20,56,.06)); border-bottom:2px solid rgba(180,20,56,.75); cursor:pointer; }
+  .mini-cab { display:none; align-items:center; gap:9px; margin:0 0 2px; padding:9px 12px; border-radius:14px 14px 0 0; background:linear-gradient(90deg,rgb(200,24,62),rgb(150,16,46)); border-bottom:2px solid #ff5577; cursor:pointer; } /* v277: rojo del club, más vivo */
   /* v276 · marca del club: franja roja y blanca arriba, escudo muy suave de fondo y pie */
   .app-container { isolation:isolate; }
   .app-container::before { content:''; position:absolute; left:18px; right:18px; top:0; height:3px; border-radius:0 0 3px 3px; background:linear-gradient(90deg, rgb(180,20,56) 0 33.3%, #f1f5f9 33.3% 66.6%, rgb(180,20,56) 66.6%); opacity:.85; pointer-events:none; }
-  .marca-fondo { position:fixed; left:50%; top:52%; width:min(400px,86vw); aspect-ratio:1; transform:translate(-50%,-50%); border-radius:50%; background:center/cover no-repeat; opacity:.04; filter:grayscale(1) contrast(1.2); pointer-events:none; z-index:-1; }
+  .marca-fondo { position:fixed; left:50%; top:52%; width:min(400px,86vw); aspect-ratio:1; transform:translate(-50%,-50%); border-radius:50%; background:center/cover no-repeat; opacity:.09; filter:grayscale(.35) contrast(1.15); pointer-events:none; z-index:-1; } /* v277: más visible */
   .marca-pie { text-align:center; font-family:'Montserrat',sans-serif; font-weight:800; font-size:10.5px; letter-spacing:2px; color:#64748b; padding:16px 0 6px; }
-  .mini-cab .tit small { display:block; font-family:'Inter',sans-serif; font-weight:700; font-size:10.5px; letter-spacing:.3px; color:#cbd5e1; opacity:.85; }
+  .mini-cab .tit small { display:block; font-family:'Inter',sans-serif; font-weight:700; font-size:10.5px; letter-spacing:.3px; color:#ffe1e7; }
   .mini-cab .esc { width:26px; height:26px; border-radius:50%; background:#fff; overflow:hidden; flex:none; }
   .mini-cab .esc img { width:100%; height:100%; object-fit:cover; display:block; }
   .mini-cab .tit { flex:1; min-width:0; font-family:'Montserrat',sans-serif; font-weight:900; font-size:14px; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .mini-cab .tv { font-size:11px; font-weight:800; color:#cbd5e1; background:rgba(255,255,255,.08); border:none; border-radius:8px; padding:5px 9px; font-family:'Montserrat',sans-serif; cursor:pointer; }
+  .mini-cab .tv { font-size:11px; font-weight:800; color:#fff; background:rgba(0,0,0,.22); border:none; border-radius:8px; padding:5px 9px; font-family:'Montserrat',sans-serif; cursor:pointer; }
   .mini-cab.vivo { background:rgb(180,20,56); border-bottom-color:rgb(180,20,56); }
   .mini-cab.vivo .min { font-family:'Montserrat',sans-serif; font-weight:900; font-size:13px; color:#ffd6de; }
   .mini-cab.vivo .dot { width:8px; height:8px; border-radius:50%; background:#fff; animation:pulse 1.4s infinite; flex:none; }
@@ -1828,6 +1828,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v277 (visor) · Cabecera fina en rojo del club más vivo y escudo de fondo más visible.
   // v276 (visor) · ✨ Rediseño: marca del club (franja, escudo de fondo, temporada y pie), chips en Próximo partido, Partidos con filtros y balance por mes,
   //   Más análisis como galería con adelantos, Récords en vitrina, Liga → Partidos con tira de jornadas y deslizar, y ficha → Datos con 3 cifras y bloques plegables.
   // v275 (visor) · 📊 «Más análisis» se cierra al cambiar a otra pestaña (y al abrir el visor).
@@ -16033,7 +16034,7 @@
     visEscribir(o);
     try { const act = document.querySelector('.panel.active'); if (act) visApuntarTab(act.id); } catch (e) {}
   }
-  const VIS_VERSION = 276;
+  const VIS_VERSION = 277;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

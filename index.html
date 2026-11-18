@@ -1910,6 +1910,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v289 (visor) · 🌦️ El tiempo del próximo partido se refresca solo cada 30 minutos con el visor en pantalla, y al volver a él si ya han pasado.
   // v288 (visor) · ➕➖ «Con él y sin él» (antes Más/menos): solo cuenta los partidos que juega, comparando sus minutos en el campo con los del banquillo (mínimo 70' de banquillo).
   // v287 (visor) · Ranking: «Lo que juega» justo después de «Lo principal».
   // v286 (visor) · Ranking: el MVP sale primero y el desplegable va ordenado en 4 grupos.
@@ -11418,6 +11419,18 @@
     box.querySelector('.rc-g').style.display = m === 'g' ? 'block' : 'none'; box.querySelector('.rc-p').style.display = m === 'p' ? 'block' : 'none';
     box.querySelectorAll('button[data-m]').forEach(x => { const on = x.dataset.m === m; x.style.background = on ? '#f5a623' : 'transparent'; x.style.color = on ? '#0a0e14' : '#cbd5e1'; }); };
 
+  // ── v289 · 🌦️ El tiempo del próximo partido se refresca solo cada 30 min con el visor en pantalla (y al volver al visor si ya han pasado) ──
+  let tmpoUlt = null, tmpoTs = 0;
+  const TMPO_CADA = 30 * 60000;
+  function tmpoRefrescar() {
+    if (document.hidden || !tmpoUlt || Date.now() - tmpoTs < TMPO_CADA - 5000) return;
+    const el = document.getElementById('proxTiempoVisor'); if (!el || !el.isConnected) return;
+    const { liga, p } = tmpoUlt; tmpoTs = Date.now();
+    try { Object.keys(ctxCacheTiempo).forEach(k => delete ctxCacheTiempo[k]); } catch (e) {}
+    try { ctxPintarTiempoProximo(el, (window.campoPartidoLiga || ((l, x) => ctxCampoDe(l, x.local)))(liga, p), ctxDMYaISO(p.fechaPartido || ''), p.hora || ''); } catch (e) { console.error('Tiempo (refresco):', e); }
+  }
+  setInterval(tmpoRefrescar, 60000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) tmpoRefrescar(); });
   function pintarProximoPartido() {
     const card = document.getElementById('proximoPartidoCard');
     if (!card) return;
@@ -11533,6 +11546,7 @@
       ${ccProx || srProx ? `<div data-px="⚽ Goles">${ccProx}${srProx}</div>` : ''}
       ${convocatoriaHTML ? `<div data-px="📋 Convocados">${convocatoriaHTML}</div>` : ''}`;
     card.style.display = 'block';
+    tmpoUlt = { liga, p }; tmpoTs = Date.now(); // v289: para refrescarlo solo
     try { ctxPintarTiempoProximo(document.getElementById('proxTiempoVisor'), (window.campoPartidoLiga || ((l, x) => ctxCampoDe(l, x.local)))(liga, p), ctxDMYaISO(p.fechaPartido || ''), p.hora || ''); } catch (e) { console.error('Tiempo:', e); } // v97
     const informe = document.getElementById('informeIACard');
     if (informe) informe.style.display = 'none'; // la tarjeta sustituye al informe IA
@@ -16459,7 +16473,7 @@
     visEscribir(o);
     try { const act = document.querySelector('.panel.active'); if (act) visApuntarTab(act.id); } catch (e) {}
   }
-  const VIS_VERSION = 288;
+  const VIS_VERSION = 289;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

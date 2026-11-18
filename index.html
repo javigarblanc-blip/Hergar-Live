@@ -1484,6 +1484,8 @@
   .bottom-tab.active { background:transparent; }
   .tab-ind { position:absolute; top:6px; height:calc(100% - 12px - env(safe-area-inset-bottom,0px)); border-radius:10px; background:rgba(245,166,35,.1);
     border-top:2px solid #f5a623; transition:left .35s cubic-bezier(.2,.8,.2,1), width .35s cubic-bezier(.2,.8,.2,1); pointer-events:none; z-index:0; }
+  /* v283: lo que entra de lado al cambiar de pestaña no puede ensanchar la página (en el móvil la barra de abajo se iba hacia abajo un momento) */
+  html, body { overflow-x:clip; } .content, .panel { overflow-x:clip; }
   .panel.v260-der > *, .panel.v260-izq > * { animation:v260Entra .42s cubic-bezier(.2,.8,.2,1) both; }
   .panel.v260-der { --v260dx:42px; } .panel.v260-izq { --v260dx:-42px; }
   .panel.v260-der > :nth-child(2), .panel.v260-izq > :nth-child(2) { animation-delay:.05s; }
@@ -1899,6 +1901,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v283 (visor) · Arreglo: al cambiar de pestaña, la barra de abajo se escondía un momento (la animación ensanchaba la página).
   // v282 (visor) · Más análisis se recoge al elegir una tarjeta y baja a ese apartado; tarjetas y bordes más claros en todo el visor (se distinguían poco del fondo).
   // v281 (visor) · 🏟️ Día de partido (cartel grande con cuenta atrás, focos por la tarde), 🖼️ póster de cada vuelta (imagen y PDF) y 🔁 El Hergar de ahora contra la 1.ª vuelta.
   // v280 (visor) · ☁️ Efecto nublado más visible: velo gris y 6 nubes grises con volumen a distintas alturas y velocidades.
@@ -16378,7 +16381,7 @@
     visEscribir(o);
     try { const act = document.querySelector('.panel.active'); if (act) visApuntarTab(act.id); } catch (e) {}
   }
-  const VIS_VERSION = 282;
+  const VIS_VERSION = 283;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

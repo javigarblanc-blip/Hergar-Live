@@ -1083,7 +1083,7 @@
           <div class="card-title">Ranking de temporada</div>
           <select id="rankingCriterioSelect" onchange="rerenderRanking()" style="width:100%; padding:8px; border-radius:8px; background:#0f172a; color:#e2e8f0; border:1px solid rgba(255,255,255,.1); margin-bottom:10px; font-size:12px;">
             <option value="pond">⭐ Impacto (x70min)</option>
-            <option value="mvp">🏅 Ranking MVP (x70min)</option>
+            <option value="mvp">🏅 Ranking MVP</option>
             <option value="peso">⚖️ Peso en el equipo</option>
             <option value="cuota">🎯 Cuota de acciones</option>
             <option value="puntosGol">💎 Puntos de sus goles</option>
@@ -1902,6 +1902,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v285 (visor) · 🏅 Ranking MVP en bruto (sin x70 ni mínimo) y con el valor del rival: J1-3 ×1, J4-8 clasificación (6 %/puesto), J9+ Elo (60 pts = 10 %), tope ×0,5-×1,5; detalle partido a partido.
   // v284 (visor) · 🏅 Ranking MVP: solo sus acciones individuales por 70' (con las veces MVP al lado).
   // v283 (visor) · Arreglo: al cambiar de pestaña, la barra de abajo se escondía un momento (la animación ensanchaba la página).
   // v282 (visor) · Más análisis se recoge al elegir una tarjeta y baja a ese apartado; tarjetas y bordes más claros en todo el visor (se distinguían poco del fondo).
@@ -11801,6 +11802,21 @@
     }
   }
 
+  let rkMvpAbierto = null; // v285
+  window.rkMvpVer = (id) => { rkMvpAbierto = rkMvpAbierto === String(id) ? null : String(id); if (ultimaTemporada) pintarRanking(ultimaTemporada); };
+  function rkMvpDetalle(j, r) {
+    if (!r) return '';
+    const f1 = v => (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(1).replace('.', ',');
+    const L = r.det.slice().reverse();
+    return `<div style="margin:-2px 0 8px; padding:8px 10px; border-radius:10px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1);">
+      ${L.map(d => `<div style="display:grid; grid-template-columns:1fr 44px 50px 46px; gap:4px; align-items:center; font-size:11.5px; padding:4px 0; border-bottom:1px solid rgba(255,255,255,.06);">
+        <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#e2e8f0;">${escHtml(d.rival || '')}<br><small style="color:#94a3b8;">${escHtml(d.como)} · ${d.mins}'</small></span>
+        <b style="text-align:right; color:#cbd5e1;">${f1(d.v)}</b>
+        <b style="text-align:center; color:${d.f > 1.005 ? '#2ed573' : d.f < 0.995 ? '#ff6b7a' : '#94a3b8'};">×${d.f.toFixed(2).replace('.', ',')}</b>
+        <b style="text-align:right; color:#f5a623;">${f1(d.v * d.f)}</b></div>`).join('')}
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px; font-size:11px; color:#94a3b8;"><span>Acciones · valor del rival · cuenta</span><button type="button" onclick="event.stopPropagation(); abrirPerfilJugadorTemporada('${j.id}')" style="background:none; border:none; color:#f5a623; font-weight:800; font-size:11.5px; cursor:pointer;">Ver su ficha ›</button></div>
+    </div>`;
+  }
   function pintarRanking(temporada) {
     const jugadores = Object.values(temporada.jugadores || {});
     jugadores.forEach(j => {
@@ -11851,27 +11867,51 @@
     const esB2b = criterio === 'b2b', b2bT = esB2b ? b2bTemporada(temporada) : null;
     const valB2b = j => (b2bT && b2bT[j.id]) || null;
     valorPorCriterio.b2b = j => { const r = valB2b(j); return r ? r.n * 100 + r.nT : -1; };
-    // v284: 🏅 Ranking MVP — solo sus acciones individuales por 70' (lo mismo que decide el MVP de cada partido, sin la parte de equipo)
+    // v284 · v285: 🏅 Ranking MVP — sus acciones individuales EN BRUTO (juegue lo que juegue), cada partido multiplicado por lo bueno que era el rival:
+    //   jornadas 1-3 ×1 · 4-8 por la clasificación antes del partido (6 % por puesto de diferencia) · desde la 9 por el Elo antes del partido (60 puntos = 10 %) · tope ×0,5 a ×1,5
     const esMvp = criterio === 'mvp';
     const mvpT = {};
     if (esMvp) {
-      const ps = temporada.partidos || [];
+      const ps = temporada.partidos || [], liga = ultimaLiga;
+      let E = null; try { E = eloLiga(liga); } catch (e) {}
+      const facCache = new Map();
+      const factor = (pp) => {
+        if (facCache.has(pp)) return facCache.get(pp);
+        let f = 1, como = 'jornada 1-3';
+        try {
+          const lp = pp.contexto && pp.contexto.ligaId != null && liga ? (liga.partidos || []).find(q => q.id === pp.contexto.ligaId) : null;
+          const R = proRivalLiga(liga, pp), ri = R ? R.i : -1, hi = liga ? liga.equipos.findIndex(e => e.esHergar) : -1;
+          const J = lp ? numJornadaGlobalViewer(liga, lp) : null;
+          if (J == null || ri < 0 || hi < 0) { como = 'sin jornada'; }
+          else if (J >= 9 && E && E.histT) {
+            const h = E.histT.filter(x => x.jg < J).pop(), el = h ? h.elo : null;
+            if (el) { f = 1 + (el[ri] - el[hi]) / 600; como = `Elo ${Math.round(el[ri])} vs ${Math.round(el[hi])}`; }
+          } else if (J >= 4) {
+            const tab = ligaClasifViewer({ equipos: liga.equipos, partidos: liga.partidos.filter(q => q.golesLocal != null && q.golesVisitante != null && numJornadaGlobalViewer(liga, q) < J) });
+            const pr = tab.find(x => x.id === liga.equipos[ri].id), ph = tab.find(x => x.id === liga.equipos[hi].id);
+            if (pr && ph) { f = 1 + (ph.pos - pr.pos) * 0.06; como = `${pr.pos}.º vs ${ph.pos}.º`; }
+          }
+          f = Math.max(0.5, Math.min(1.5, f));
+        } catch (e) { f = 1; }
+        const r = { f, como }; facCache.set(pp, r); return r;
+      };
       jugadores.forEach(j => {
-        let v = 0, m = 0;
+        let tot = 0, bruto = 0, n = 0; const det = [];
         (j.historial || []).forEach(h => {
-          const pp = ps.find(x => x.fecha === h.fecha && x.rival === h.rival) || {};
-          if (pp.manual) return;
+          const pp = ps.find(x => x.fecha === h.fecha && x.rival === h.rival); if (!pp || pp.manual) return;
           const r = evoSusAcciones(pp, j, h); if (!r || !(Number(h.mins) > 0)) return;
-          v += r.v; m += Number(h.mins);
+          const F = factor(pp);
+          tot += r.v * F.f; bruto += r.v; n++;
+          det.push({ rival: pp.rival, fecha: pp.fecha, v: r.v, f: F.f, como: F.como, mins: Number(h.mins) });
         });
         const mvps = ps.filter(x => x.mvpId != null && String(x.mvpId) === String(j.id)).length;
-        mvpT[j.id] = { v70: m > 0 ? v / m * 70 : null, mins: m, mvps };
+        mvpT[j.id] = n ? { tot, bruto, n, mvps, det } : null;
       });
     }
-    valorPorCriterio.mvp = j => { const r = mvpT[j.id]; return r && r.v70 != null ? r.v70 : -99; };
+    valorPorCriterio.mvp = j => { const r = mvpT[j.id]; return r ? r.tot : -999; };
     const getVal = valorPorCriterio[criterio] || valorPorCriterio.pond;
     // v41: el ranking de impacto exige un mínimo de minutos; quien no llega aparece aparte, en observación
-    const esImpacto = criterio === 'pond' || esPesoCuota || esMM || esMvp;
+    const esImpacto = criterio === 'pond' || esPesoCuota || esMM; // v285: el Ranking MVP va en bruto, sin mínimo de minutos
     const minRanking = minMinutosRanking();
     let lista = esImpacto ? jugadores.filter(j => (j.minutos || 0) >= minRanking) : jugadores;
     const sinCuota = criterio === 'cuota' ? lista.filter(j => valPeso(j) === null) : []; // porteros o sin detalle de acciones
@@ -11886,7 +11926,7 @@
     if (esEcha) lista = lista.filter(j => valEcha(j) && valEcha(j).dif !== null);
     if (esComp) lista = lista.filter(j => valComp(j) && valComp(j).efecto != null && valComp(j).efecto > 0);
     if (esB2b) lista = lista.filter(j => valB2b(j) && valB2b(j).n > 0);
-    if (esMvp) lista = lista.filter(j => mvpT[j.id] && mvpT[j.id].v70 != null);
+    if (esMvp) lista = lista.filter(j => mvpT[j.id]);
     const enObservacion = esImpacto ? jugadores.filter(j => (j.minutos || 0) < minRanking).sort((a,b) => (b.minutos || 0) - (a.minutos || 0)) : [];
     lista.sort((a,b) => getVal(b) - getVal(a));
     const cont = document.getElementById('rankingLista');
@@ -11909,21 +11949,22 @@
     etiquetaVal.peso = j => { const v = valPeso(j); return v === null ? '—' : `<span style="color:${pesoColor(v)};">${pesoFmt(v)}</span>`; };
     etiquetaVal.b2b = j => { const r = valB2b(j); return `<span style="color:#f5a623;">📦 ${r.n}${r.nT ? ` · 📦📦 ${r.nT}` : ''}</span>`; };
     etiquetaVal.cuota = j => { const v = valPeso(j); return `<span style="color:${(v ?? 0) >= 1 ? '#2ed573' : '#ff6b7a'};">${pesoFmtCuota(v)}</span>`; };
-    etiquetaVal.mvp = j => { const r = mvpT[j.id]; return `<span style="color:${r.v70 >= 0 ? '#f5a623' : '#ff6b7a'};">${(r.v70 >= 0 ? '+' : '−') + Math.abs(r.v70).toFixed(2).replace('.', ',')}</span>${r.mvps ? `<span style="font-size:10.5px; color:#cbd5e1; margin-left:6px;">⭐${r.mvps}</span>` : ''}`; };
+    const f1m = v => (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(1).replace('.', ',');
+    etiquetaVal.mvp = j => { const r = mvpT[j.id]; return `<span style="color:${r.tot >= 0 ? '#f5a623' : '#ff6b7a'};">${f1m(r.tot)}</span>${r.mvps ? `<span style="font-size:10.5px; color:#cbd5e1; margin-left:6px;">⭐${r.mvps}</span>` : ''}<div style="font-size:9.5px; color:#94a3b8; text-align:right;">sin ajuste ${f1m(r.bruto)}</div>`; };
     const getEtiqueta = etiquetaVal[criterio] || etiquetaVal.pond;
     cont.innerHTML = lista.map((j, i) => `
-      <div class="rank-row" onclick="abrirPerfilJugadorTemporada('${j.id}')" style="cursor:pointer;">
+      <div class="rank-row" onclick="${esMvp ? `rkMvpVer('${j.id}')` : `abrirPerfilJugadorTemporada('${j.id}')`}" style="cursor:pointer;">
         <div class="rank-pos">${i+1}</div>
         <div class="rank-name">${(j.name||'').split(' ')[0]}</div>
         ${(criterio !== 'notaIA' && j._notaIA !== null) ? `<div class="rank-notaia" title="Nota IA media">🤖 ${j._notaIA.toFixed(1)}</div>` : ''}
         ${esImpacto ? `<div style="font-size:10px; color:#64748b; margin-right:6px;">${j.minutos || 0}'</div>` : ''}
         <div class="rank-val">${getEtiqueta(j)}</div>
-      </div>`).join('');
+      </div>${esMvp && rkMvpAbierto === String(j.id) ? rkMvpDetalle(j, mvpT[j.id]) : ''}`).join('');
     if (esImpacto && lista.length === 0) {
       cont.innerHTML = `<div class="loader">Aún nadie llega a ${minRanking} minutos acumulados</div>`;
     }
     if (esMvp) {
-      cont.innerHTML = `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin:0 0 8px;">Solo lo que hace cada niño, por 70 minutos: goles, asistencias, pases, regates, acciones defensivas y paradas, con los fallos restando. Sin la parte de equipo (goles a favor y en contra, portería a cero). Es lo mismo que decide el MVP de cada partido; ⭐ = veces que ha sido MVP. No cuentan los partidos cargados a mano.</div>` + (lista.length ? cont.innerHTML : `<div class="loader">Aún nadie llega a ${minRanking} minutos acumulados</div>`);
+      cont.innerHTML = `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin:0 0 8px;">Suma de todo lo que hace cada niño en la temporada, juegue lo que juegue: goles, asistencias, pases, regates, acciones defensivas y paradas, con los fallos restando. Sin la parte de equipo. Cada partido vale más cuanto mejor era el rival: <b style="color:#cbd5e1;">jornadas 1-3</b> igual, <b style="color:#cbd5e1;">4-8</b> por la clasificación de antes del partido (6 % por puesto), <b style="color:#cbd5e1;">desde la 9</b> por el Elo (60 puntos = 10 %), entre ×0,5 y ×1,5. ⭐ = veces MVP. Toca a un niño para ver partido a partido.</div>` + (lista.length ? cont.innerHTML : `<div class="loader">Aún no hay partidos con acciones</div>`);
     } else if (esWpa) {
       cont.innerHTML = `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin:0 0 8px;">Cuánto subieron sus goles y asistencias la probabilidad de ganar. +1,00 es una victoria entera; la asistencia se lleva la mitad.</div>` + (lista.length ? cont.innerHTML : '<div class="loader">Aún no hay goles con minuto</div>');
     } else if (esTC) {
@@ -16405,7 +16446,7 @@
     visEscribir(o);
     try { const act = document.querySelector('.panel.active'); if (act) visApuntarTab(act.id); } catch (e) {}
   }
-  const VIS_VERSION = 284;
+  const VIS_VERSION = 285;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

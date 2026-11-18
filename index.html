@@ -1752,6 +1752,8 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v274 (visor) · 🌬️ Tiempo del partido: viento medio y rachas por separado; el efecto de viento sale ya con rachas de 40 km/h (antes 50).
+  // v273 (visor; app v258) · 💥 El golazo de la vuelta con su vídeo en las historias de premios.
   // v265 (visor) · Fuera lo de inclinar el móvil (cartel y ficha).
   // v264 (visor) · ✨ El tiempo del partido en el cartel y detrás del marcador del directo (10 efectos + focos), campos en 3D con botón 3D / plano y rótulos de tele en «Último partido» y en las tarjetas de cifras.
   // v261 (visor) · La pantalla de entrada se queda hasta que la cabecera tiene el partido (o el próximo partido), no solo la temporada: ya no se ve «Cargando…» con el marcador vacío. Como mucho 8 s.
@@ -7823,8 +7825,8 @@
                 <div><div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:30px; color:#e2e8f0;">${d.t} °C</div>
                 <div style="font-size:12px; color:#94a3b8; font-weight:700;">${d.sens != null ? 'Sensación ' + d.sens + ' °C' : ''}${cielo ? (d.sens != null ? ' · ' : '') + cielo : ''}</div></div>
             </div>
-            <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:10px;">
-                ${dato(d.prob != null ? d.prob + ' %' : '—', 'LLUVIA')}${dato(d.mm != null ? String(d.mm).replace('.', ',') + ' mm' : '—', 'CANTIDAD')}${dato(d.racha != null ? d.racha + ' km/h' : (d.viento != null ? d.viento + ' km/h' : '—'), 'VIENTO')}
+            <div style="display:grid; grid-template-columns:repeat(${d.racha != null ? 4 : 3},1fr); gap:6px; margin-top:10px;">
+                ${dato(d.prob != null ? d.prob + ' %' : '—', 'LLUVIA')}${dato(d.mm != null ? String(d.mm).replace('.', ',') + ' mm' : '—', 'CANTIDAD')}${dato(d.viento != null ? d.viento + ' km/h' : '—', 'VIENTO')}${d.racha != null ? dato(d.racha + ' km/h', 'RACHAS') : ''}
             </div>
             <div style="text-align:right; font-size:9.5px; color:#64748b; margin-top:6px;">Datos del tiempo: <a href="https://open-meteo.com/" target="_blank" rel="noopener" style="color:#64748b;">Open-Meteo</a></div>`, lineaCampo);
     }
@@ -8435,7 +8437,7 @@
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(fechaISO || ''), h = /^(\d{1,2}):(\d{2})/.exec(hora || '');
     return m && h ? new Date(+m[1], +m[2] - 1, +m[3], +h[1], +h[2] + (mas || 0)) : null;
   }
-  // Qué efecto toca, por este orden: tormenta, nieve, lluvia, niebla (si no hace frío), viento (30 km/h o rachas de 50),
+  // Qué efecto toca, por este orden: tormenta, nieve, lluvia, niebla (si no hace frío), viento (30 km/h o rachas de 40),
   // calor (25 °C), frío (6 °C), atardecer, soleado / nublado — umbrales de la v266
   function c264Tipo(d, campo, fechaISO, hora) {
     if (!d) return null;
@@ -8447,7 +8449,7 @@
     else if ((c >= 71 && c <= 77) || (c >= 85 && c <= 86)) k = 'nieve';
     else if ((c >= 51 && c <= 67) || (c >= 80 && c <= 82)) k = 'lluvia';
     else if ((c === 45 || c === 48) && !(t <= 6)) k = 'niebla'; // v266: con 6 °C o menos, manda el frío
-    else if (v >= 30 || r >= 50) k = 'viento';
+    else if (v >= 30 || r >= 40) k = 'viento'; // v274: rachas desde 40 (antes 50)
     else if (t >= 25) k = 'calor';
     else if (t <= 6) k = 'frio';
     else if (e0 <= 0) k = c >= 3 ? 'nublado' : null;
@@ -15755,7 +15757,7 @@
     visEscribir(o);
     try { const act = document.querySelector('.panel.active'); if (act) visApuntarTab(act.id); } catch (e) {}
   }
-  const VIS_VERSION = 273;
+  const VIS_VERSION = 274;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

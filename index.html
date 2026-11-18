@@ -7213,13 +7213,22 @@
         : dos ? `<div style="display:flex;">${p.ids.map((id, n) => `<div class="pm-foto" style="width:92px; height:92px;${n ? ' margin-left:-18px;' : ''}">${pmFoto(id, pmDorsal(id))}</div>`).join('')}</div>`
         : `<div class="pm-foto">${pmFoto((p.ids || [])[0], pmDorsal((p.ids || [])[0]))}</div>`;
       const extras = [[p.dato, p.lab]].concat(p.extras || []).slice(0, 3);
-      S.push({ dur: 8000, fondo: 'linear-gradient(170deg,#1c1407 0%,#0d0b08 55%,#000 100%)', html: `
+      let pv = ''; // v273 · 💥 El golazo de la vuelta: con su vídeo, si lo tiene
+      try {
+        if (p.video && p.video.i != null) {
+          const pg = ultimaTemporada && ultimaTemporada.partidos && ultimaTemporada.partidos[p.video.i], gg = pg && pg.goles && pg.goles[p.video.k];
+          const v = gg && videoValido(gg) ? gg.video : null;
+          if (v && esVideoGh(v)) pv = `<video src="${escHtml(v.slice(3))}" autoplay muted loop playsinline style="width:100%; max-height:30vh; object-fit:cover; border-radius:12px; margin-top:14px;"></video>`;
+          if (v) pv += `<button type="button" class="pm-btn" style="background:#f5a623; color:#111; margin-top:8px;" onclick="event.stopPropagation(); pmCerrar(); verVideoPartido(${Number(p.video.i)}, ${Number(p.video.k)});">▶ Ver el gol con sonido</button>`;
+        }
+      } catch (e) {}
+      S.push({ dur: pv ? 14000 : 8000, fondo: 'linear-gradient(170deg,#1c1407 0%,#0d0b08 55%,#000 100%)', html: `
         <div class="pm-kick">PREMIO ${k + 1} DE ${N}</div>
         <div class="pm-tit">${escHtml(p.e || '🏆')} ${escHtml(p.t || '')}</div>
         <div style="display:flex; align-items:center; gap:16px; margin-top:24px;">${fotos}
           <div style="min-width:0;"><div class="m" style="font-weight:900; font-size:${dos || pa ? 22 : 28}px; color:#fff; line-height:1.1;">${escHtml(p.nombre || '')}</div></div></div>
         <div class="pm-datos">${extras.map(x => `<div><b>${escHtml(x[0])}</b><span>${escHtml(x[1])}</span></div>`).join('')}</div>
-        <div class="pm-txt">${escHtml(p.txt || '')}</div>
+        <div class="pm-txt">${escHtml(p.txt || '')}</div>${pv}
         ${(p.podio || []).length > 1 ? `<div class="pm-podio"><div style="border-top:none; font-size:10.5px; font-weight:800; letter-spacing:1px; color:#cbd5e1;">EL PODIO</div>${p.podio.map((o, n) => `<div><span class="m" style="font-weight:900; width:16px; color:${['#f5a623', '#cbd5e1', '#d08a4e'][n] || '#94a3b8'};">${n + 1}</span><span style="flex:1;">${escHtml(o.nombre)}</span><b class="m">${escHtml(o.dato)}</b></div>`).join('')}</div>` : ''}` });
     });
     if (u.gol) {
@@ -15746,7 +15755,7 @@
     visEscribir(o);
     try { const act = document.querySelector('.panel.active'); if (act) visApuntarTab(act.id); } catch (e) {}
   }
-  const VIS_VERSION = 272;
+  const VIS_VERSION = 273;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

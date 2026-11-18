@@ -1083,6 +1083,7 @@
           <div class="card-title">Ranking de temporada</div>
           <select id="rankingCriterioSelect" onchange="rerenderRanking()" style="width:100%; padding:8px; border-radius:8px; background:#0f172a; color:#e2e8f0; border:1px solid rgba(255,255,255,.1); margin-bottom:10px; font-size:12px;">
             <option value="pond">⭐ Impacto (x70min)</option>
+            <option value="mvp">🏅 Ranking MVP (x70min)</option>
             <option value="peso">⚖️ Peso en el equipo</option>
             <option value="cuota">🎯 Cuota de acciones</option>
             <option value="puntosGol">💎 Puntos de sus goles</option>
@@ -1901,6 +1902,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v284 (visor) · 🏅 Ranking MVP: solo sus acciones individuales por 70' (con las veces MVP al lado).
   // v283 (visor) · Arreglo: al cambiar de pestaña, la barra de abajo se escondía un momento (la animación ensanchaba la página).
   // v282 (visor) · Más análisis se recoge al elegir una tarjeta y baja a ese apartado; tarjetas y bordes más claros en todo el visor (se distinguían poco del fondo).
   // v281 (visor) · 🏟️ Día de partido (cartel grande con cuenta atrás, focos por la tarde), 🖼️ póster de cada vuelta (imagen y PDF) y 🔁 El Hergar de ahora contra la 1.ª vuelta.
@@ -11849,9 +11851,27 @@
     const esB2b = criterio === 'b2b', b2bT = esB2b ? b2bTemporada(temporada) : null;
     const valB2b = j => (b2bT && b2bT[j.id]) || null;
     valorPorCriterio.b2b = j => { const r = valB2b(j); return r ? r.n * 100 + r.nT : -1; };
+    // v284: 🏅 Ranking MVP — solo sus acciones individuales por 70' (lo mismo que decide el MVP de cada partido, sin la parte de equipo)
+    const esMvp = criterio === 'mvp';
+    const mvpT = {};
+    if (esMvp) {
+      const ps = temporada.partidos || [];
+      jugadores.forEach(j => {
+        let v = 0, m = 0;
+        (j.historial || []).forEach(h => {
+          const pp = ps.find(x => x.fecha === h.fecha && x.rival === h.rival) || {};
+          if (pp.manual) return;
+          const r = evoSusAcciones(pp, j, h); if (!r || !(Number(h.mins) > 0)) return;
+          v += r.v; m += Number(h.mins);
+        });
+        const mvps = ps.filter(x => x.mvpId != null && String(x.mvpId) === String(j.id)).length;
+        mvpT[j.id] = { v70: m > 0 ? v / m * 70 : null, mins: m, mvps };
+      });
+    }
+    valorPorCriterio.mvp = j => { const r = mvpT[j.id]; return r && r.v70 != null ? r.v70 : -99; };
     const getVal = valorPorCriterio[criterio] || valorPorCriterio.pond;
     // v41: el ranking de impacto exige un mínimo de minutos; quien no llega aparece aparte, en observación
-    const esImpacto = criterio === 'pond' || esPesoCuota || esMM;
+    const esImpacto = criterio === 'pond' || esPesoCuota || esMM || esMvp;
     const minRanking = minMinutosRanking();
     let lista = esImpacto ? jugadores.filter(j => (j.minutos || 0) >= minRanking) : jugadores;
     const sinCuota = criterio === 'cuota' ? lista.filter(j => valPeso(j) === null) : []; // porteros o sin detalle de acciones
@@ -11866,6 +11886,7 @@
     if (esEcha) lista = lista.filter(j => valEcha(j) && valEcha(j).dif !== null);
     if (esComp) lista = lista.filter(j => valComp(j) && valComp(j).efecto != null && valComp(j).efecto > 0);
     if (esB2b) lista = lista.filter(j => valB2b(j) && valB2b(j).n > 0);
+    if (esMvp) lista = lista.filter(j => mvpT[j.id] && mvpT[j.id].v70 != null);
     const enObservacion = esImpacto ? jugadores.filter(j => (j.minutos || 0) < minRanking).sort((a,b) => (b.minutos || 0) - (a.minutos || 0)) : [];
     lista.sort((a,b) => getVal(b) - getVal(a));
     const cont = document.getElementById('rankingLista');
@@ -11888,6 +11909,7 @@
     etiquetaVal.peso = j => { const v = valPeso(j); return v === null ? '—' : `<span style="color:${pesoColor(v)};">${pesoFmt(v)}</span>`; };
     etiquetaVal.b2b = j => { const r = valB2b(j); return `<span style="color:#f5a623;">📦 ${r.n}${r.nT ? ` · 📦📦 ${r.nT}` : ''}</span>`; };
     etiquetaVal.cuota = j => { const v = valPeso(j); return `<span style="color:${(v ?? 0) >= 1 ? '#2ed573' : '#ff6b7a'};">${pesoFmtCuota(v)}</span>`; };
+    etiquetaVal.mvp = j => { const r = mvpT[j.id]; return `<span style="color:${r.v70 >= 0 ? '#f5a623' : '#ff6b7a'};">${(r.v70 >= 0 ? '+' : '−') + Math.abs(r.v70).toFixed(2).replace('.', ',')}</span>${r.mvps ? `<span style="font-size:10.5px; color:#cbd5e1; margin-left:6px;">⭐${r.mvps}</span>` : ''}`; };
     const getEtiqueta = etiquetaVal[criterio] || etiquetaVal.pond;
     cont.innerHTML = lista.map((j, i) => `
       <div class="rank-row" onclick="abrirPerfilJugadorTemporada('${j.id}')" style="cursor:pointer;">
@@ -11900,7 +11922,9 @@
     if (esImpacto && lista.length === 0) {
       cont.innerHTML = `<div class="loader">Aún nadie llega a ${minRanking} minutos acumulados</div>`;
     }
-    if (esWpa) {
+    if (esMvp) {
+      cont.innerHTML = `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin:0 0 8px;">Solo lo que hace cada niño, por 70 minutos: goles, asistencias, pases, regates, acciones defensivas y paradas, con los fallos restando. Sin la parte de equipo (goles a favor y en contra, portería a cero). Es lo mismo que decide el MVP de cada partido; ⭐ = veces que ha sido MVP. No cuentan los partidos cargados a mano.</div>` + (lista.length ? cont.innerHTML : `<div class="loader">Aún nadie llega a ${minRanking} minutos acumulados</div>`);
+    } else if (esWpa) {
       cont.innerHTML = `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin:0 0 8px;">Cuánto subieron sus goles y asistencias la probabilidad de ganar. +1,00 es una victoria entera; la asistencia se lleva la mitad.</div>` + (lista.length ? cont.innerHTML : '<div class="loader">Aún no hay goles con minuto</div>');
     } else if (esTC) {
       cont.innerHTML = `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin:0 0 8px;">De los tiros de los dos equipos mientras juega, cuántos son del Hergar. Media del equipo: ${proPct(tcT.media)}. Se cuenta desde la v135 de la app.</div>` + (lista.length ? cont.innerHTML : '<div class="loader">Empezará a salir tras el próximo partido</div>');
@@ -16381,7 +16405,7 @@
     visEscribir(o);
     try { const act = document.querySelector('.panel.active'); if (act) visApuntarTab(act.id); } catch (e) {}
   }
-  const VIS_VERSION = 283;
+  const VIS_VERSION = 284;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

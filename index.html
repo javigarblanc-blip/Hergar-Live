@@ -1563,12 +1563,17 @@
   .c264 .k-sol i:nth-child(3) { left:22%; top:72%; width:34px; height:34px; background:rgba(160,220,255,.14); animation-delay:1.2s; }
   .c264 .k-atar { background:radial-gradient(circle at 88% 10%,rgba(255,214,130,.85) 0,rgba(255,150,60,.4) 20%,transparent 52%),linear-gradient(0deg,rgba(255,120,60,.25),transparent 60%); }
   .c264 .k-atar::after { background:repeating-conic-gradient(from 0deg at 88% 10%,rgba(255,200,130,.13) 0 4deg,transparent 4deg 14deg); transform-origin:88% 10%; }
-  .c264 .k-nube { background:linear-gradient(180deg,rgba(100,116,139,.45),rgba(30,41,59,.12)); }
-  .c264 .k-nube i { position:absolute; left:-200px; height:60px; border-radius:40px; background:rgba(203,213,225,.42); filter:blur(10px); animation:c264Nube 26s linear infinite; }
+  /* v280 · nublado más visible: velo gris y nubes grises con volumen que cruzan a distintas alturas y velocidades */
+  .c264 .k-nube { background:linear-gradient(180deg,rgba(71,85,105,.62) 0%,rgba(51,65,85,.32) 55%,rgba(30,41,59,.12) 100%); }
+  .c264 .k-nube i { position:absolute; left:-260px; height:58px; border-radius:40px; background:linear-gradient(180deg,rgba(226,232,240,.78),rgba(148,163,184,.62) 70%,rgba(100,116,139,.55)); filter:blur(3px); box-shadow:0 10px 18px rgba(15,23,42,.25); animation:c264Nube 30s linear infinite; }
   .c264 .k-nube i::before, .c264 .k-nube i::after { content:''; position:absolute; border-radius:50%; background:inherit; }
-  .c264 .k-nube i::before { width:60%; height:120%; left:15%; top:-55%; } .c264 .k-nube i::after { width:40%; height:90%; left:50%; top:-35%; }
-  .c264 .k-nube i:nth-child(1) { top:22px; width:170px; } .c264 .k-nube i:nth-child(2) { top:70px; width:130px; animation-duration:34s; animation-delay:-14s; opacity:.8; }
-  .c264 .k-nube i:nth-child(3) { top:8px; width:120px; animation-duration:30s; animation-delay:-24s; opacity:.7; }
+  .c264 .k-nube i::before { width:55%; height:130%; left:14%; top:-62%; } .c264 .k-nube i::after { width:38%; height:100%; left:52%; top:-42%; }
+  .c264 .k-nube i:nth-child(1) { top:18px; width:220px; }
+  .c264 .k-nube i:nth-child(2) { top:78px; width:160px; height:48px; animation-duration:38s; animation-delay:-16s; opacity:.9; }
+  .c264 .k-nube i:nth-child(3) { top:-6px; width:180px; animation-duration:44s; animation-delay:-30s; opacity:.8; }
+  .c264 .k-nube i:nth-child(4) { top:130px; width:200px; height:52px; animation-duration:34s; animation-delay:-8s; opacity:.7; }
+  .c264 .k-nube i:nth-child(5) { top:46px; width:140px; height:42px; animation-duration:26s; animation-delay:-21s; opacity:.85; }
+  .c264 .k-nube i:nth-child(6) { top:175px; width:240px; height:60px; animation-duration:50s; animation-delay:-38s; opacity:.6; }
   .c264 .k-torm { background:linear-gradient(180deg,rgba(15,23,42,.65),rgba(15,23,42,.25)); }
   .c264 .k-rayo { background:rgba(235,240,255,.85); opacity:0; animation:c264Rayo 7s infinite; }
   .c264 .k-calor { background:radial-gradient(circle at 80% 0%,rgba(255,200,80,.6),transparent 50%),linear-gradient(0deg,rgba(255,110,30,.4),rgba(255,160,50,.08) 55%,transparent); }
@@ -1587,7 +1592,7 @@
   .c264-chip { position:absolute; bottom:9px; left:50%; transform:translateX(-50%); z-index:2; background:rgba(10,14,20,.68); border:1px solid rgba(255,255,255,.15); border-radius:20px; padding:3px 10px; font-size:10.5px; font-weight:800; color:#e2e8f0; white-space:nowrap; }
   @keyframes c264Gira { to { transform:rotate(360deg); } }
   @keyframes c264Dest { 50% { opacity:.35; transform:scale(1.2); } }
-  @keyframes c264Nube { to { transform:translateX(780px); } }
+  @keyframes c264Nube { to { transform:translateX(860px); } }
   @keyframes c264Deriva { from { transform:translateX(-12%); } to { transform:translateX(12%); } }
   @keyframes c264Foco { 50% { opacity:.75; } }
   @keyframes c264Rayo { 0%, 30%, 100% { opacity:0; } 31% { opacity:.85; } 32.5% { opacity:.1; } 34% { opacity:.6; } 38% { opacity:0; } 71% { opacity:0; } 72% { opacity:.7; } 75% { opacity:0; } }
@@ -1826,6 +1831,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v280 (visor) · ☁️ Efecto nublado más visible: velo gris y 6 nubes grises con volumen a distintas alturas y velocidades.
   // v279 (visor) · Fuera el escudo de fondo. Con el próximo partido publicado y sin convocatoria, cabecera fina en vez del marcador «– –».
   // v278 (visor) · Escudo de fondo algo más suave (distorsionaba).
   // v277 (visor) · Cabecera fina en rojo del club más vivo y escudo de fondo más visible.
@@ -8602,8 +8608,8 @@
     return { k, luz: e1 < 4 };
   }
   const C264_TXT = { soleado: ['☀️', 'soleado'], nublado: ['☁️', 'nublado'], lluvia: ['🌧️', 'lluvia'], tormenta: ['⛈️', 'tormenta'], viento: ['💨', 'viento'], calor: ['🥵', 'calor'], frio: ['🥶', 'frío'], nieve: ['❄️', 'nieve'], niebla: ['🌫️', 'niebla'], atardecer: ['🌇', 'atardecer'] };
-  const C264_CAPAS = { soleado: '<div class="cp k-sol"><i></i><i></i><i></i></div>', atardecer: '<div class="cp k-atar"></div>', nublado: '<div class="cp k-nube"><i></i><i></i><i></i></div>',
-    tormenta: '<div class="cp k-nube"><i></i><i></i><i></i></div><div class="cp k-torm"></div><div class="cp k-rayo"></div>', calor: '<div class="cp k-calor"></div>', frio: '<div class="cp k-frio"></div>',
+  const C264_CAPAS = { soleado: '<div class="cp k-sol"><i></i><i></i><i></i></div>', atardecer: '<div class="cp k-atar"></div>', nublado: '<div class="cp k-nube"><i></i><i></i><i></i><i></i><i></i><i></i></div>',
+    tormenta: '<div class="cp k-nube"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="cp k-torm"></div><div class="cp k-rayo"></div>', calor: '<div class="cp k-calor"></div>', frio: '<div class="cp k-frio"></div>',
     niebla: '<div class="cp k-niebla"><i></i><i></i><i></i></div>' };
   const C264_PART = { lluvia: [60, 130], tormenta: [90, 190], nieve: [40, 90], viento: [16, 32], frio: [16, 30], calor: [14, 26] };
   function c264Poner(cont, T, suave) {
@@ -16045,7 +16051,7 @@
     visEscribir(o);
     try { const act = document.querySelector('.panel.active'); if (act) visApuntarTab(act.id); } catch (e) {}
   }
-  const VIS_VERSION = 279;
+  const VIS_VERSION = 280;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

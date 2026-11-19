@@ -2004,6 +2004,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v305 (visor) · Probabilidades de cada partido: mezcla del cálculo por goles y del Ranking Elo antes de cada jornada; el peso del Elo (0-100 %) lo eligen solas las jornadas ya jugadas. En Pronóstico → Jornada, tabla «¿Qué cálculo acierta más?».
   // v304 (visor) · Liga → Partidos en tarjetas compactas: el nuestro el primero con borde rojo; hora con números de tele; cada equipo con su porcentaje (el favorito en blanco, sin etiqueta) y la barra con los colores de cada equipo (sin leyenda); jugados con el resultado y si acertó el pronóstico, y arriba los aciertos de la jornada y de la temporada.
   // v303 (visor) · Al cambiar de pestaña abajo, la nueva se abre arriba del todo (antes salía a la altura donde estabas en la otra); tocar la pestaña en la que ya estás sube arriba.
   // v302 (visor) · La pantalla de entrada del estadio se pinta desde el primer instante (sus estilos pasan a <head>): ya no asoma el campo con las fichas antes de la entrada.
@@ -15252,13 +15253,42 @@
       const s = String(n || '');
       return s.replace(/^(C\.D\.F\.|C\.D\.|C\.F\.|U\.D\.|A\.D\.|S\.D\.|S\.C\.)\s*/i, '').replace(/\s*C\.F\.?\s*$/i, ' ').replace(/['"]/g, '').replace(/\s+/g, ' ').trim() || s;
     }
+    // v305 · Probabilidades de cada partido: mezcla de dos modelos, elegida sola con los partidos ya jugados
+    //  · Goles: ataque y defensa de cada equipo ajustados por rival (Poisson), como hasta ahora.
+    //  · Elo: el Ranking Elo de cada equipo justo antes de esa jornada (con el factor campo), pasado a gana/empata/pierde.
+    //  · Mezcla: para cada jornada se prueba qué peso del Elo (0 %, 25 %, 50 %, 75 % o 100 %) habría acertado mejor
+    //    en las jornadas anteriores (por la «puntuación de Brier») y se usa ese. Sin datos suficientes, mitad y mitad.
+    const PRON_MIX_PESOS = [0, .25, .5, .75, 1], PRON_MIX_MIN = 10;
+    function pronEloPrevio(D){
+      const jug = D.P.filter(p => p.jugado).sort((a, b) => a.jg - b.jg);
+      let casa = 100; try { casa = eloCasaUsada(ultimaLiga); } catch (e) {}
+      const e = Array(D.NT).fill(1000), antes = {};
+      jug.forEach(p => {
+        if (!antes[p.jg]) antes[p.jg] = e.slice();
+        const we = 1 / (1 + Math.pow(10, -(e[p.l] + casa - e[p.v]) / 400));
+        const w = p.gl > p.gv ? 1 : p.gl === p.gv ? .5 : 0, gd = Math.abs(p.gl - p.gv), G = gd <= 1 ? 1 : gd === 2 ? 1.5 : (11 + gd) / 8;
+        const d = 30 * G * (w - we); e[p.l] += d; e[p.v] -= d;
+      });
+      // Elo antes de la jornada J (incluye todas las jornadas anteriores); sin partidos de esa jornada, el de ahora
+      return { casa, final: e.slice(), antes: (J) => antes[J] || e.slice() };
+    }
+    function pronEloA1X2(eL, eV, casa, empate){
+      const we = 1 / (1 + Math.pow(10, -(eL + casa - eV) / 400));
+      const pD = Math.max(.05, empate * (1 - Math.abs(2 * we - 1) * .8));
+      const w = Math.max(.01, we - pD / 2), l = Math.max(.01, 1 - we - pD / 2), t = w + pD + l;
+      return [w / t, pD / t, l / t];
+    }
+    function pronBrier(pr, r){ let b = 0; for (let i = 0; i < 3; i++) b += Math.pow(pr[i] - (i === r ? 1 : 0), 2); return b; }
     function pronJorCalc(D, S){
       const jug = D.P.filter(p => p.jugado);
       const Jmax = jug.length ? Math.max(...jug.map(p => p.jg)) : 0;
       const nivC = {};
       const niv = (J) => nivC[J] || (nivC[J] = pronNiveles(D.NT, D.P.filter(p => p.jugado && p.jg <= J), J));
+      const EL = pronEloPrevio(D);
+      const empateHasta = (J) => { const a = jug.filter(p => p.jg <= J); return (a.filter(p => p.gl === p.gv).length + .25 * 8) / (a.length + 8); };
       const porId = {};
-      let ok = 0, n = 0;
+      // 1) los dos modelos para cada partido, con lo que se sabía antes
+      const filas = [];
       D.P.forEach(p => {
         const Jb = p.jugado ? p.jg - 1 : Jmax;
         const o = { l: p.l, v: p.v, jg: p.jg, jugado: p.jugado, pr: null };
@@ -15266,14 +15296,37 @@
         if (!D.P.some(x => x.jugado && x.jg <= Jb)) return;   // sin resultados previos no hay pronóstico
         const R = niv(Jb);
         const [w, d] = pronGanaEmpata(R.mu*R.att[p.l]*R.def[p.v]*R.h, R.mu*R.att[p.v]*R.def[p.l]/R.h);
-        o.pr = [w, d, Math.max(0, 1 - w - d)];
-        if (p.jugado) {
-          const r = p.gl > p.gv ? 0 : p.gl < p.gv ? 2 : 1;
+        o.prG = [w, d, Math.max(0, 1 - w - d)];
+        const eA = p.jugado ? EL.antes(p.jg) : EL.final;
+        o.prE = pronEloA1X2(eA[p.l], eA[p.v], EL.casa, empateHasta(Jb));
+        if (p.jugado) o.real = p.gl > p.gv ? 0 : p.gl < p.gv ? 2 : 1;
+        filas.push(o);
+      });
+      // 2) el peso del Elo para cada jornada, elegido con las jornadas anteriores
+      const mezcla = (o, a) => [0, 1, 2].map(i => (1 - a) * o.prG[i] + a * o.prE[i]);
+      const pesoPara = (J) => {
+        const prev = filas.filter(o => o.jugado && o.jg < J);
+        if (prev.length < PRON_MIX_MIN) return .5;
+        let mejor = .5, bm = Infinity;
+        PRON_MIX_PESOS.forEach(a => { const b = prev.reduce((s, o) => s + pronBrier(mezcla(o, a), o.real), 0); if (b < bm - 1e-9) { bm = b; mejor = a; } });
+        return mejor;
+      };
+      const pesoC = {};
+      let ok = 0, n = 0;
+      const cmp = { G: [0, 0], E: [0, 0], M: [0, 0], n: 0 }; // aciertos y Brier de cada versión
+      filas.forEach(o => {
+        const J = o.jugado ? o.jg : Jmax + 1;
+        const a = pesoC[J] != null ? pesoC[J] : (pesoC[J] = pesoPara(J));
+        o.pr = mezcla(o, a); o.pesoElo = a;
+        if (o.jugado) {
           const fav = o.pr.indexOf(Math.max(...o.pr));
-          o.real = r; o.fav = fav; o.pReal = o.pr[r]; o.acierto = r === fav;
+          o.fav = fav; o.pReal = o.pr[o.real]; o.acierto = o.real === fav;
           n++; if (o.acierto) ok++;
+          cmp.n++;
+          [['G', o.prG], ['E', o.prE], ['M', o.pr]].forEach(([k, pr]) => { if (pr.indexOf(Math.max(...pr)) === o.real) cmp[k][0]++; cmp[k][1] += pronBrier(pr, o.real); });
         }
       });
+      const pesoAhora = pesoPara(Jmax + 1);
       let interes = null;
       if (S && S.nextH && D.H >= 0) {
         const champ = S.pos[D.H][0] / S.N;
@@ -15285,7 +15338,7 @@
         });
         interes = { jg: S.nextH.jg, champ, vivo: champ > .005 && champ < .995, byId };
       }
-      return { porId, ok, n, Jmax, interes };
+      return { porId, ok, n, Jmax, interes, cmp, pesoAhora };
     }
     // Para la lista de Partidos: con caché, se recalcula solo cuando cambian los resultados
     function pronJornadaInfo(liga){
@@ -15485,6 +15538,14 @@
       }
       if (info.n) h += `<div class="pron-card" style="display:flex; align-items:center; gap:12px;"><span style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:22px; color:#2ed573; line-height:1;">${info.ok}/${info.n}</span>
         <div><div style="font-size:12.5px; font-weight:700;">¿Acierta? Ganó el favorito ${info.ok} de ${info.n} veces</div><div style="font-size:11px; color:#94a3b8; line-height:1.4; margin-top:2px;">Cada partido con lo que se sabía antes de jugarse. La primera jornada no cuenta: aún no había resultados.</div></div></div>`;
+      if (info.cmp && info.cmp.n) { // v305 · comparación de los dos modelos y la mezcla
+        const C = info.cmp, f = (k, t, d) => { const ac = C[k][0], br = C[k][1] / C.n, best = Math.min(C.G[1], C.E[1], C.M[1]) === C[k][1];
+          return `<tr style="${best ? 'color:#2ed573; font-weight:800;' : ''}"><td style="padding:5px 0;">${t}<div style="font-size:10px; color:#64748b; font-weight:500;">${d}</div></td><td style="text-align:center;">${ac}/${C.n}</td><td style="text-align:center;">${Math.round(ac / C.n * 100)} %</td><td style="text-align:right;">${(br).toFixed(3).replace('.', ',')}</td></tr>`; };
+        h += `<div class="pron-card"><div class="pron-h2">¿Qué cálculo acierta más?</div>
+          <table style="width:100%; border-collapse:collapse; font-size:12px; color:#e2e8f0;"><tr style="font-size:10px; color:#94a3b8; text-align:left;"><th style="font-weight:600;">Cálculo</th><th style="font-weight:600; text-align:center;">Favorito</th><th></th><th style="font-weight:600; text-align:right;">Error</th></tr>
+          ${f('G', '⚽ Solo goles', 'Ataque y defensa ajustados por rival')}${f('E', '📊 Solo Ranking Elo', 'Elo de cada equipo antes de la jornada')}${f('M', '🔀 Mezcla (la que se usa)', 'El peso del Elo lo eligen las jornadas anteriores')}</table>
+          <div style="font-size:11px; color:#94a3b8; line-height:1.45; margin-top:8px;">Ahora mismo el Elo pesa un <b style="color:#e2e8f0;">${Math.round(info.pesoAhora * 100)} %</b> y los goles un ${Math.round((1 - info.pesoAhora) * 100)} %. «Error» es la puntuación de Brier: mide si los porcentajes eran buenos, no solo si ganó el favorito (cuanto más bajo, mejor). En verde, el que menos se equivoca.</div></div>`;
+      }
       return h || `<div class="pron-card" style="font-size:12px; color:#94a3b8;">Aún no hay partidos con pronóstico.</div>`;
     }
 
@@ -16713,7 +16774,7 @@
     window.addEventListener('scroll', prog, { passive: true });
     prog();
   })();
-  const VIS_VERSION = 304;
+  const VIS_VERSION = 305;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

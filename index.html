@@ -448,6 +448,7 @@
   .rv-det { display:flex; gap:12px; align-items:flex-start; margin:10px 0 4px; padding:12px 14px; border-radius:14px; background:#111827; border:1px solid rgba(245,166,35,.35); }
   .rv-det:empty { display:none; }
   .rv-dico { font-size:30px; line-height:1; }
+  .rv-ico img { display:block; width:52px; height:52px; object-fit:contain; } .rv-dico img { display:block; width:44px; height:44px; object-fit:contain; } /* v297 */
   .rv-dt { font-family:'Montserrat',sans-serif; font-weight:800; font-size:13px; color:#fff; }
   .rv-dv { font-family:'Barlow Condensed','Montserrat',sans-serif; font-weight:800; font-size:22px; color:#fff; margin-top:2px; }
   .rv-dd { font-size:11.5px; color:#94a3b8; margin-top:2px; line-height:1.4; }
@@ -1960,6 +1961,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v297 (visor) · 🏆 Vitrina de Récords con trofeos ilustrados (copa, balón dorado, copa con llama, escudo, rayo y medalla para los individuales) en vez de emojis.
   // v296 (visor) · 🏟️ Pantalla de entrada con el estadio de noche de fondo (img/estadio.jpg), acercándose despacio detrás del escudo.
   // v295 (visor) · 🔴 En el cartel del próximo partido (y el de Día de partido) la mitad del Hergar en rojo vivo #e00507 (antes granate).
   // v294 (visor) · 🌱 Césped de verdad en los campos (Alineación, campo del directo y Modo TV): grano de hierba, manchas de luz y sombra y franjas de corte.
@@ -9420,6 +9422,9 @@
     sel292IO.observe(el);
   }
 
+  // v297 · 🏆 trofeos ilustrados de la vitrina (img/trofeos/): individuales = medalla; del equipo, según el récord
+  const TROFEO297 = { '🏆': 'copa', '💥': 'copa', '⚽': 'balon', '🔥': 'llama', '🎯': 'llama', '🛡️': 'escudo', '🧤': 'escudo', '⚡': 'rayo' };
+  function trofeoImg297(r, ind) { return `img/trofeos/${ind ? 'medalla' : (TROFEO297[r.ico] || 'copa')}.png`; }
   // ── v276 · 🏆 RÉCORDS EN VITRINA: trofeos en baldas (equipo e individuales); al tocar uno, abajo su detalle ──
   let recItems = [];
   function recVitrinaHTML(R, bat, cae) {
@@ -9434,7 +9439,8 @@
         const partes = String(r.v || '').split(' · ');
         const quien = ind && partes.length > 1 ? partes[0] : '';
         const val = ind && partes.length > 1 ? partes.slice(1).join(' · ') : String(r.v || '');
-        const ico = r.dorsal != null ? '🏅' : r.ico, clave = (ind ? 'j' : 'e') + r.t, nuevo = bat.has(clave); // v292
+        r._img = trofeoImg297(r, ind); // v297: trofeo ilustrado
+        const ico = `<img src="${r._img}" alt="" loading="lazy">`, clave = (ind ? 'j' : 'e') + r.t, nuevo = bat.has(clave); // v292
         r._b = nuevo; r._antes = nuevo ? bat.get(clave) : null;
         return `<button type="button" class="rv-trofeo${r.vivo ? ' vivo' : ''}${nuevo ? ' nuevo292' + (cae ? ' golpe292' : '') : ''}" data-k="${k}" onclick="recSel(${k})" aria-label="${escHtml(r.t)}${nuevo ? ' · récord nuevo' : ''}">${nuevo ? sel292HTML('p', cae) : ''}<span class="rv-ico" aria-hidden="true">${ico}</span><span class="rv-v">${escHtml(val)}</span>${quien ? `<span class="rv-q">${escHtml(quien)}</span>` : ''}<span class="rv-t">${r.t}</span></button>`;
       }).join('')}</div><div class="rv-balda" aria-hidden="true"></div>`).join('');
@@ -9446,7 +9452,7 @@
   window.recSel = function (k) {
     const r = recItems[k], box = document.getElementById('recDet'); if (!r || !box) return;
     document.querySelectorAll('.rv-trofeo').forEach(b => b.classList.toggle('on', Number(b.dataset.k) === k));
-    box.innerHTML = `<span class="rv-dico" aria-hidden="true">${r.ico}</span><div style="min-width:0; flex:1;"><div class="rv-dt">${r.t}${r.vivo ? ' <span class="rec-vivo">EN CURSO</span>' : ''}</div><div class="rv-dv">${r.v}</div><div class="rv-dd">${r.det}</div>${r._b ? `<div class="rv-dd" style="color:#ff5c7f; font-weight:800;">Récord nuevo en el último partido${r._antes ? ' · antes ' + r._antes : ''}</div>` : ''}</div>${r.vid ? `<button type="button" class="vplay" style="align-self:center;" onclick="verVideoPartido(${r.vid[0]}, ${r.vid[1]})" aria-label="Ver vídeo">▶</button>` : ''}`;
+    box.innerHTML = `<span class="rv-dico" aria-hidden="true">${r._img ? `<img src="${r._img}" alt="">` : r.ico}</span><div style="min-width:0; flex:1;"><div class="rv-dt">${r.t}${r.vivo ? ' <span class="rec-vivo">EN CURSO</span>' : ''}</div><div class="rv-dv">${r.v}</div><div class="rv-dd">${r.det}</div>${r._b ? `<div class="rv-dd" style="color:#ff5c7f; font-weight:800;">Récord nuevo en el último partido${r._antes ? ' · antes ' + r._antes : ''}</div>` : ''}</div>${r.vid ? `<button type="button" class="vplay" style="align-self:center;" onclick="verVideoPartido(${r.vid[0]}, ${r.vid[1]})" aria-label="Ver vídeo">▶</button>` : ''}`;
   };
   function pintarRecords(t) {
     const cont = document.getElementById('recordsLista');
@@ -16577,7 +16583,7 @@
     visEscribir(o);
     try { const act = document.querySelector('.panel.active'); if (act) visApuntarTab(act.id); } catch (e) {}
   }
-  const VIS_VERSION = 296;
+  const VIS_VERSION = 297;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

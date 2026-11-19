@@ -1976,6 +1976,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v301 (visor) · Pantalla de arranque de Android: escudo redondo sin el cuadrado blanco sobre el fondo oscuro (icon-splash-*.png, «any» en el manifest), para que enlace con la entrada del estadio; el icono de la pantalla de inicio sigue siendo el de siempre (icon-*.png como «maskable»).
   // v300 (visor) · La barra de pestañas de abajo ya no se va por debajo de la pantalla al subir con la página ampliada: se pega a lo que se ve (visualViewport).
   // v299 (visor) · «Mi hijo»: la tarjeta del nombre abre su ficha completa (enlace «📇 Ver ficha completa ›» bajo el puesto y flecha › a la derecha); el botón grande de abajo se queda.
   // v298 (visor) · Vitrina menos dorada: borde, títulos, nombres y trofeo elegido en neutro, sin brillo naranja detrás (solo brillan los trofeos); sello algo más pequeño.
@@ -16623,7 +16624,7 @@
     window.addEventListener('scroll', prog, { passive: true });
     prog();
   })();
-  const VIS_VERSION = 300;
+  const VIS_VERSION = 301;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

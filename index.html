@@ -969,7 +969,8 @@
 </style>
 </head>
 <body>
-<div id="splashV260" aria-hidden="true"><img src="icon-192.png" alt=""><div class="sp-t">HERGAR LIVE</div><div class="sp-s">C.D. HERGAR · SALAMANCA</div></div>
+<div id="splashV260" aria-hidden="true"><div class="sp-bg"></div><img src="icon-192.png" alt=""><div class="sp-t">HERGAR LIVE</div><div class="sp-s">C.D. HERGAR · SALAMANCA</div></div>
+<script>/* v296: estadio de fondo en la entrada, aparece en cuanto carga */(function(){var b=document.querySelector("#splashV260 .sp-bg");if(!b)return;var i=new Image();i.onload=function(){b.classList.add("ok");};i.src="img/estadio.jpg";})();</script>
 
 <div class="app-container">
   <div class="live-banner" id="liveBanner"><span class="live-dot"></span> EN VIVO — Solo lectura</div>
@@ -1649,6 +1650,13 @@
   #splashV260 { position:fixed; inset:0; z-index:2000; background:#0a0e14; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; transition:opacity .45s ease, visibility .45s; }
   #splashV260::before { content:''; position:absolute; inset:0; background:radial-gradient(circle at 15% 0%, rgba(255,255,230,.12), transparent 45%), radial-gradient(circle at 85% 0%, rgba(255,255,230,.12), transparent 45%), radial-gradient(circle at 50% 60%, rgba(180,20,56,.22), transparent 55%); }
   #splashV260.fuera { opacity:0; visibility:hidden; }
+  /* v296 · 🏟️ estadio de noche de fondo, acercándose despacio; oscurecido en el centro para que se lea el escudo */
+  #splashV260 .sp-bg { position:absolute; inset:0; background:url('img/estadio.jpg') center 42%/cover no-repeat; opacity:0; transition:opacity .7s ease; animation:sp296Zoom 16s ease-out forwards; }
+  #splashV260 .sp-bg.ok { opacity:1; }
+  #splashV260 .sp-bg::after { content:''; position:absolute; inset:0; background:radial-gradient(circle at 50% 46%, rgba(180,20,56,.32), rgba(3,5,13,.5) 42%, rgba(3,5,13,.82) 100%); }
+  #splashV260 .sp-s { color:#cbd5e1 !important; text-shadow:0 1px 6px rgba(0,0,0,.9); } #splashV260 .sp-t { text-shadow:0 2px 12px rgba(0,0,0,.8); }
+  @keyframes sp296Zoom { from { transform:scale(1); } to { transform:scale(1.14); } }
+  @media (prefers-reduced-motion: reduce) { #splashV260 .sp-bg { animation:none; } }
   #splashV260 img { position:relative; width:110px; height:110px; border-radius:50%; object-fit:cover; background:#fff; box-shadow:0 0 50px rgba(180,20,56,.55); animation:v260Late 1.6s ease-in-out infinite; }
   #splashV260 .sp-t { position:relative; font-family:'Montserrat',sans-serif; font-weight:900; font-size:22px; letter-spacing:3px; color:#fff; }
   #splashV260 .sp-s { position:relative; font-size:11px; color:#64748b; letter-spacing:1px; }
@@ -1952,6 +1960,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v296 (visor) · 🏟️ Pantalla de entrada con el estadio de noche de fondo (img/estadio.jpg), acercándose despacio detrás del escudo.
   // v295 (visor) · 🔴 En el cartel del próximo partido (y el de Día de partido) la mitad del Hergar en rojo vivo #e00507 (antes granate).
   // v294 (visor) · 🌱 Césped de verdad en los campos (Alineación, campo del directo y Modo TV): grano de hierba, manchas de luz y sombra y franjas de corte.
   // v293 (visor) · 🏅 Aro del MVP en la Alineación más grueso y brillante, y su nombre en dorado (no se confundía con el borde naranja del portero).
@@ -16568,7 +16577,7 @@
     visEscribir(o);
     try { const act = document.querySelector('.panel.active'); if (act) visApuntarTab(act.id); } catch (e) {}
   }
-  const VIS_VERSION = 295;
+  const VIS_VERSION = 296;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

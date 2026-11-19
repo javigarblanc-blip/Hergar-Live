@@ -1952,6 +1952,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v295 (visor) · 🔴 En el cartel del próximo partido (y el de Día de partido) la mitad del Hergar en rojo vivo #e00507 (antes granate).
   // v294 (visor) · 🌱 Césped de verdad en los campos (Alineación, campo del directo y Modo TV): grano de hierba, manchas de luz y sombra y franjas de corte.
   // v293 (visor) · 🏅 Aro del MVP en la Alineación más grueso y brillante, y su nombre en dorado (no se confundía con el borde naranja del portero).
   // v292 (visor) · 🔖 Sello de récord: cae estampado (con golpe y polvo) en el aviso de récord del directo y en el Modo TV, y en la vitrina de Récords en cada trofeo (del equipo o individual) batido en el último partido (cae la primera vez que se ve; se queda hasta el siguiente). Los récords personales de cada niño, sin sello.
@@ -2421,7 +2422,7 @@
   const v260CartelVisto = new Set();
   function v260CartelHTML(liga, p, hergar, rival, esCasa) {
     const filas = ligaClasifViewer(liga), fila = (eq) => filas.find(f => f.id === eq.id);
-    const col = (eq) => eq.esHergar ? '#b41438' : (colorEquipoV(eq) || '#334155');
+    const col = (eq) => eq.esHergar ? '#e00507' : (colorEquipoV(eq) || '#334155'); // v295: rojo Hergar vivo (antes granate #b41438)
     const L = esCasa ? hergar : rival, V = esCasa ? rival : hergar;
     const esc = (eq) => { const src = escudoSrcVisor(eq); return src ? `<img class="ca-esc" src="${src}" alt="">` : `<div class="ca-esc" style="background:${col(eq)};">${escHtml(inicialesEquipoViewer(eq.nombre))}</div>`; };
     const pos = (eq) => { const f = fila(eq); return f && f.pj ? `${f.pos}.º · ${f.pts} ${f.pts === 1 ? 'pt' : 'pts'}` : ''; };
@@ -16567,7 +16568,7 @@
     visEscribir(o);
     try { const act = document.querySelector('.panel.active'); if (act) visApuntarTab(act.id); } catch (e) {}
   }
-  const VIS_VERSION = 294;
+  const VIS_VERSION = 295;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

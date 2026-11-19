@@ -1976,6 +1976,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v300 (visor) · La barra de pestañas de abajo ya no se va por debajo de la pantalla al subir con la página ampliada: se pega a lo que se ve (visualViewport).
   // v299 (visor) · «Mi hijo»: la tarjeta del nombre abre su ficha completa (enlace «📇 Ver ficha completa ›» bajo el puesto y flecha › a la derecha); el botón grande de abajo se queda.
   // v298 (visor) · Vitrina menos dorada: borde, títulos, nombres y trofeo elegido en neutro, sin brillo naranja detrás (solo brillan los trofeos); sello algo más pequeño.
   // v297 (visor) · 🏆 Vitrina de Récords con trofeos ilustrados (copa, balón dorado, copa con llama, escudo, rayo y medalla para los individuales) en vez de emojis.
@@ -16603,7 +16604,26 @@
     visEscribir(o);
     try { const act = document.querySelector('.panel.active'); if (act) visApuntarTab(act.id); } catch (e) {}
   }
-  const VIS_VERSION = 299;
+  // v300 · La barra de pestañas de abajo se queda pegada a lo que se ve en pantalla aunque la página esté
+  // un poco ampliada (pellizco) o el móvil recoloque la pantalla al subir: antes se iba por debajo y se cortaba.
+  (function () {
+    const vv = window.visualViewport; if (!vv) return;
+    let raf = 0;
+    function pegar() {
+      raf = 0;
+      const w = document.querySelector('.bottom-tabbar-wrap'); if (!w) return;
+      const L = document.documentElement.clientHeight || window.innerHeight;
+      const s = vv.scale || 1, dy = vv.offsetTop + vv.height - L, dx = vv.offsetLeft;
+      if (Math.abs(s - 1) < 0.01 && Math.abs(dy) < 1 && Math.abs(dx) < 1) { if (w.style.transform) { w.style.transform = ''; w.style.transformOrigin = ''; } return; }
+      w.style.transformOrigin = '0 100%';
+      w.style.transform = `translate(${dx}px, ${dy}px) scale(${1 / s})`;
+    }
+    const prog = () => { if (!raf) raf = requestAnimationFrame(pegar); };
+    vv.addEventListener('resize', prog); vv.addEventListener('scroll', prog);
+    window.addEventListener('scroll', prog, { passive: true });
+    prog();
+  })();
+  const VIS_VERSION = 300;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

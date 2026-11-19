@@ -474,6 +474,30 @@
   .tv-record::before, .tv-record::after { content:''; position:absolute; left:0; right:0; height:12px; background:#f5a623; }
   .tv-record::before { top:0; } .tv-record::after { bottom:0; }
   @media (prefers-reduced-motion: reduce) { #recordBanner.visible, .tv-record { animation:none; } }
+  /* v292 · 🔖 sello de récord: aviso del directo (g), Modo TV (tv) y trofeos de la vitrina (p) */
+  .rv-trofeo { position:relative; }
+  .sel292 { --r:-14deg; position:absolute; z-index:3; border-radius:50%; box-sizing:border-box; display:flex; align-items:center; justify-content:center; pointer-events:none; transform:rotate(var(--r)); }
+  .sel292 > span { display:flex; flex-direction:column; align-items:center; line-height:1; }
+  .sel292 i { font-style:normal; display:block; }
+  .sel292 .e { font:800 9px Inter,sans-serif; letter-spacing:2px; } .sel292 .r { font:900 14px Montserrat,sans-serif; letter-spacing:0; margin:2px 0; } .sel292 .a { font:800 9px Inter,sans-serif; letter-spacing:1.5px; }
+  .sel292.g { width:84px; height:84px; right:-2px; top:-6px; border:4px solid #8f0f2c; color:#8f0f2c; background:rgba(255,236,200,.18); box-shadow:inset 0 0 0 3px #f5a623, inset 0 0 0 5px #8f0f2c; }
+  .sel292.p { --r:-16deg; width:50px; height:50px; right:-8px; top:-12px; border:3px solid #c81e45; color:#ff5c7f; background:#0f141d; box-shadow:inset 0 0 0 2px #0f141d, inset 0 0 0 3.5px #c81e45, 0 4px 10px rgba(0,0,0,.6); }
+  .sel292.p .e { font-size:6px; letter-spacing:1px; } .sel292.p .r { font-size:8.5px; margin:1px 0 0; }
+  .sel292.tv { width:200px; height:200px; right:80px; top:70px; border:9px solid #f5a623; color:#f5a623; box-shadow:inset 0 0 0 6px #0a0e14, inset 0 0 0 10px #f5a623; }
+  .sel292.tv .e { font-size:20px; letter-spacing:4px; } .sel292.tv .r { font-size:34px; } .sel292.tv .a { font-size:20px; letter-spacing:3px; }
+  .sel292.cae { animation:sel292Cae .55s .5s cubic-bezier(.3,1.4,.5,1) both; }
+  .pol292 { position:absolute; z-index:2; border-radius:50%; pointer-events:none; border:2px dashed rgba(122,13,38,.45); opacity:0; animation:sel292Polvo .8s .5s ease-out both; }
+  .pol292.g { width:96px; height:96px; right:-8px; top:-12px; } .pol292.p { width:62px; height:62px; right:-14px; top:-18px; border-color:rgba(255,92,127,.5); }
+  .pol292.tv { width:240px; height:240px; right:60px; top:50px; border:3px dashed rgba(245,166,35,.5); }
+  #recordBanner.con-sello .t, #recordBanner.con-sello .x, #recordBanner.con-sello .d { padding:0 54px; }
+  #recordBanner.visible.golpe292 { animation:golEntra .35s ease-out, sel292Golpe .9s .35s ease-out; }
+  .rv-trofeo.golpe292, .tv-record.golpe292 { animation:sel292Golpe .9s .1s ease-out; }
+  .tv-record.golpe292 { animation:tvGolEntra .45s ease-out, sel292Golpe .9s .45s ease-out; }
+  .rv-trofeo.nuevo292 { background:rgba(245,166,35,.15); border-color:rgba(245,166,35,.7); }
+  @keyframes sel292Cae { 0% { opacity:0; transform:rotate(calc(var(--r) - 24deg)) scale(3.2); } 55% { opacity:1; transform:rotate(var(--r)) scale(.9); } 72% { transform:rotate(var(--r)) scale(1.06); } 100% { opacity:1; transform:rotate(var(--r)) scale(1); } }
+  @keyframes sel292Golpe { 0%, 48% { transform:translate(0,0); } 54% { transform:translate(-3px,3px); } 62% { transform:translate(3px,-2px); } 70% { transform:translate(-2px,1px); } 80%, 100% { transform:translate(0,0); } }
+  @keyframes sel292Polvo { 0%, 50% { opacity:0; transform:scale(.6); } 60% { opacity:.9; } 100% { opacity:0; transform:scale(1.6); } }
+  @media (prefers-reduced-motion: reduce) { .sel292.cae, .pol292, #recordBanner.visible.golpe292, .rv-trofeo.golpe292, .tv-record.golpe292 { animation:none; } .pol292 { display:none; } }
   /* ── Modo TV (visor) ─────────────────────────────────────────── */
   .btn-modo-tv { display:inline-flex; align-items:center; gap:6px; margin-top:10px; background:rgba(46,213,115,.1); border:1px solid rgba(46,213,115,.55);
     color:#2ed573; font-family:'Montserrat',sans-serif; font-weight:800; font-size:12px; letter-spacing:.5px; padding:8px 16px; border-radius:20px; cursor:pointer; }
@@ -1923,6 +1947,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v292 (visor) · 🔖 Sello de récord: cae estampado (con golpe y polvo) en el aviso de récord del directo y en el Modo TV, y en la vitrina de Récords en cada trofeo (del equipo o individual) batido en el último partido (cae la primera vez que se ve; se queda hasta el siguiente). Los récords personales de cada niño, sin sello.
   // v291 (visor) · 🏅 Aro dorado del MVP en la hoja 👕 Alineación de cada partido (once inicial y final), con un brillo que lo recorre; en la leyenda, «MVP: nombre».
   // v290 (visor) · 🌧️ Lluvia más visible: cielo gris con nubes oscuras que pasan, casi el doble de gotas, más largas y brillantes (en dos planos) y salpicaduras también en la cabecera del directo.
   // v289 (visor) · 🌦️ El tiempo del próximo partido se refresca solo cada 30 minutos con el visor en pantalla, y al volver a él si ya han pasado.
@@ -9349,9 +9374,39 @@
     return R;
   }
 
+  // ── v292 · 🔖 Sello de récord ──
+  function sel292HTML(k, cae) {
+    return (cae ? `<span class="pol292 ${k}" aria-hidden="true"></span>` : '') + `<span class="sel292 ${k}${cae ? ' cae' : ''}" aria-hidden="true"><span><i class="e">★ ★ ★</i><i class="r">RÉCORD</i>${k !== 'p' ? `<i class="a">${marcaTemporada()}</i>` : ''}</span></span>`;
+  }
+  // Trofeos de la vitrina batidos en el último partido: se compara con los récords sin ese partido
+  function sel292Batidos(t, R) {
+    const ps = (t && t.partidos) || [], out = new Map();
+    if (ps.length < 3) return out;
+    const R0 = recordsTemporada(Object.assign({}, t, { partidos: ps.slice(0, -1) }));
+    const val = (r) => r.t === 'Porterías a cero' ? r.det : r.v; // el total sube con cada una; cuenta la racha
+    const antes = new Map();
+    (R0.equipo || []).forEach(r => antes.set('e' + r.t, r)); (R0.jugadores || []).forEach(r => antes.set('j' + r.t, r));
+    const mira = (L, pre) => (L || []).forEach(r => {
+      if (!r || !r.v || r.v === '—') return;
+      const a = antes.get(pre + r.t);
+      if (!a || a.v === '—' || val(a) !== val(r)) out.set(pre + r.t, a && a.v !== '—' ? a.v : null);
+    });
+    mira(R.equipo, 'e'); mira(R.jugadores, 'j');
+    return out;
+  }
+  let sel292Marca = '', sel292IO = null;
+  function sel292Observar() { // el sello cae solo la primera vez que se ve en ese móvil (hasta el siguiente partido)
+    const el = document.querySelector('.rv-vitrina .sel292.cae'); if (!el || !sel292Marca) return;
+    if (sel292IO) sel292IO.disconnect();
+    if (!('IntersectionObserver' in window)) { try { localStorage.setItem('hergarLive_sello', sel292Marca); } catch (e) {} return; }
+    sel292IO = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { try { localStorage.setItem('hergarLive_sello', sel292Marca); } catch (e) {} sel292IO.disconnect(); } }, { threshold: .6 });
+    sel292IO.observe(el);
+  }
+
   // ── v276 · 🏆 RÉCORDS EN VITRINA: trofeos en baldas (equipo e individuales); al tocar uno, abajo su detalle ──
   let recItems = [];
-  function recVitrinaHTML(R) {
+  function recVitrinaHTML(R, bat, cae) {
+    bat = bat || new Map();
     recItems = [];
     const balda = (tit, L, ind) => {
       if (!L.length) return '';
@@ -9362,8 +9417,9 @@
         const partes = String(r.v || '').split(' · ');
         const quien = ind && partes.length > 1 ? partes[0] : '';
         const val = ind && partes.length > 1 ? partes.slice(1).join(' · ') : String(r.v || '');
-        const ico = r.dorsal != null ? '🏅' : r.ico;
-        return `<button type="button" class="rv-trofeo${r.vivo ? ' vivo' : ''}" data-k="${k}" onclick="recSel(${k})" aria-label="${escHtml(r.t)}"><span class="rv-ico" aria-hidden="true">${ico}</span><span class="rv-v">${escHtml(val)}</span>${quien ? `<span class="rv-q">${escHtml(quien)}</span>` : ''}<span class="rv-t">${r.t}</span></button>`;
+        const ico = r.dorsal != null ? '🏅' : r.ico, clave = (ind ? 'j' : 'e') + r.t, nuevo = bat.has(clave); // v292
+        r._b = nuevo; r._antes = nuevo ? bat.get(clave) : null;
+        return `<button type="button" class="rv-trofeo${r.vivo ? ' vivo' : ''}${nuevo ? ' nuevo292' + (cae ? ' golpe292' : '') : ''}" data-k="${k}" onclick="recSel(${k})" aria-label="${escHtml(r.t)}${nuevo ? ' · récord nuevo' : ''}">${nuevo ? sel292HTML('p', cae) : ''}<span class="rv-ico" aria-hidden="true">${ico}</span><span class="rv-v">${escHtml(val)}</span>${quien ? `<span class="rv-q">${escHtml(quien)}</span>` : ''}<span class="rv-t">${r.t}</span></button>`;
       }).join('')}</div><div class="rv-balda" aria-hidden="true"></div>`).join('');
     };
     const h = balda('DEL EQUIPO', R.equipo || [], false) + balda('INDIVIDUALES', R.jugadores || [], true);
@@ -9373,7 +9429,7 @@
   window.recSel = function (k) {
     const r = recItems[k], box = document.getElementById('recDet'); if (!r || !box) return;
     document.querySelectorAll('.rv-trofeo').forEach(b => b.classList.toggle('on', Number(b.dataset.k) === k));
-    box.innerHTML = `<span class="rv-dico" aria-hidden="true">${r.ico}</span><div style="min-width:0; flex:1;"><div class="rv-dt">${r.t}${r.vivo ? ' <span class="rec-vivo">EN CURSO</span>' : ''}</div><div class="rv-dv">${r.v}</div><div class="rv-dd">${r.det}</div></div>${r.vid ? `<button type="button" class="vplay" style="align-self:center;" onclick="verVideoPartido(${r.vid[0]}, ${r.vid[1]})" aria-label="Ver vídeo">▶</button>` : ''}`;
+    box.innerHTML = `<span class="rv-dico" aria-hidden="true">${r.ico}</span><div style="min-width:0; flex:1;"><div class="rv-dt">${r.t}${r.vivo ? ' <span class="rec-vivo">EN CURSO</span>' : ''}</div><div class="rv-dv">${r.v}</div><div class="rv-dd">${r.det}</div>${r._b ? `<div class="rv-dd" style="color:#ff5c7f; font-weight:800;">Récord nuevo en el último partido${r._antes ? ' · antes ' + r._antes : ''}</div>` : ''}</div>${r.vid ? `<button type="button" class="vplay" style="align-self:center;" onclick="verVideoPartido(${r.vid[0]}, ${r.vid[1]})" aria-label="Ver vídeo">▶</button>` : ''}`;
   };
   function pintarRecords(t) {
     const cont = document.getElementById('recordsLista');
@@ -9381,15 +9437,20 @@
     const R = recordsTemporada(t);
     if (!R.n) { cont.innerHTML = '<div class="loader">Aún no hay partidos en la temporada</div>'; return; }
     const vivo = '<span class="rec-vivo">EN CURSO</span>';
+    let bat = new Map(); try { bat = sel292Batidos(t, R); } catch (e) { console.error('Sello de récord:', e); } // v292
+    const ultP = t.partidos[t.partidos.length - 1] || {};
+    sel292Marca = `${t.partidos.length}|${ultP.fecha || ''}|${ultP.rival || ''}`;
+    let selCae = false; try { selCae = !V264_RM && localStorage.getItem('hergarLive_sello') !== sel292Marca; } catch (e) {}
     cont.innerHTML = `
       <div class="rec-cab"><img src="${ESCUDO_HERGAR_SRC}" alt="C.D. Hergar"><div><div class="rec-cab-t">Récords del Hergar</div><div class="rec-cab-s">${R.n} ${R.n === 1 ? 'partido' : 'partidos'} · se actualizan solos</div></div></div>
-      ${recVitrinaHTML(R)}
+      ${recVitrinaHTML(R, bat, selCae)}
       ${R.hattricks.length ? `<div class="rec-sec">HAT-TRICKS</div>
       <div class="rec-lista">${R.hattricks.map(h => `<div class="rec-fila" style="justify-content:space-between;"><span style="font-weight:700;">⭐ ${escHtml(h.nombre)} · ${h.n} goles</span><span class="rec-d">${h.det}</span></div>`).join('')}</div>` : ''}
       ${(() => { try { return b2bRecordsHTML(t); } catch (e) { console.error('Box-to-box:', e); return ''; } })()}
       <div class="sub-caption" style="margin-top:10px; text-align:center;">Los partidos cargados a mano cuentan para resultados y rachas, no para tiros.</div>`;
     try { cont.insertAdjacentHTML('beforeend', hitosEquipoHTML(t)); } catch (e) { console.error('Hitos del equipo:', e); } // v231
-    try { if (recItems.length) recSel(0); } catch (e) {} // v276
+    try { if (recItems.length) { const kb = recItems.findIndex(r => r._b); recSel(kb >= 0 ? kb : 0); } } catch (e) {} // v276 (v292: el recién batido)
+    try { if (selCae && bat.size) sel292Observar(); } catch (e) {}
   }
 
   // Goles con minuto en la lista de Partidos
@@ -10656,7 +10717,11 @@
     document.getElementById('recordTexto').textContent = a.hattrick ? a.titulo.replace(/^¡Hat-trick de (.+)!$/, '$1 marca tres goles') : a.titulo;
     const det = a.antes != null ? `Ahora ${a.ahora} · antes ${a.antes}${a.antesDet ? ' (' + a.antesDet.replace(/<[^>]+>/g, '') + ')' : ''}` : a.marcador;
     document.getElementById('recordDetalle').textContent = det;
-    b.classList.remove('visible'); void b.offsetWidth; b.classList.add('visible');
+    const sello = !a.b2b && !a.personal; // v292
+    b.querySelectorAll('.sel292, .pol292').forEach(x => x.remove());
+    b.classList.toggle('con-sello', sello);
+    if (sello) b.insertAdjacentHTML('beforeend', sel292HTML('g', !V264_RM));
+    b.classList.remove('visible', 'golpe292'); void b.offsetWidth; b.classList.add('visible'); if (sello && !V264_RM) b.classList.add('golpe292');
     clearTimeout(recordTimer);
     recordTimer = setTimeout(mostrarSiguienteRecord, 6500);
   }
@@ -11002,7 +11067,8 @@
       dur = 6500;
     } else if (r.tipo === 'record') {
       const copa = '<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#f5a623" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4zM17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"></path></svg>';
-      cont.innerHTML = `<div class="tv-record">
+      const sel292 = !r.personal && !r.b2b; // v292
+      cont.innerHTML = `<div class="tv-record${sel292 && !V264_RM ? ' golpe292' : ''}">${sel292 ? sel292HTML('tv', !V264_RM) : ''}
         <div style="display:flex; align-items:center; gap:18px;">${copa}<div class="tv-mont" style="font-weight:900; font-size:84px; letter-spacing:6px; color:#f5a623;">${r.hattrick ? '¡HAT-TRICK!' : (r.personal ? 'RÉCORD PERSONAL' : 'NUEVO RÉCORD')}</div></div>
         <div class="tv-mont" style="font-weight:800; font-size:40px; text-align:center; max-width:1100px;">${escHtml(r.hattrick ? r.titulo.replace(/^¡Hat-trick de (.+)!$/, '$1 marca tres goles') : r.titulo)}</div>
         ${r.antes != null ? `<div style="display:flex; align-items:center; gap:40px;">
@@ -16494,7 +16560,7 @@
     visEscribir(o);
     try { const act = document.querySelector('.panel.active'); if (act) visApuntarTab(act.id); } catch (e) {}
   }
-  const VIS_VERSION = 291;
+  const VIS_VERSION = 292;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

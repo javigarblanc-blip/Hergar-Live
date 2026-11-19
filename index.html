@@ -1980,6 +1980,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v303 (visor) · Al cambiar de pestaña abajo, la nueva se abre arriba del todo (antes salía a la altura donde estabas en la otra); tocar la pestaña en la que ya estás sube arriba.
   // v302 (visor) · La pantalla de entrada del estadio se pinta desde el primer instante (sus estilos pasan a <head>): ya no asoma el campo con las fichas antes de la entrada.
   // v301 (visor) · Pantalla de arranque de Android: escudo redondo sin el cuadrado blanco sobre el fondo oscuro (icon-splash-*.png, «any» en el manifest), para que enlace con la entrada del estadio; el icono de la pantalla de inicio sigue siendo el de siempre (icon-*.png como «maskable»).
   // v300 (visor) · La barra de pestañas de abajo ya no se va por debajo de la pantalla al subir con la página ampliada: se pega a lo que se ve (visualViewport).
@@ -13323,6 +13324,8 @@
     if (id === 'temporada') { try { numPintar(); } catch (e) { console.error('Números:', e); } try { ddPintar(); } catch (e) { console.error('Dato del día:', e); } }
     try { visApuntarTab(id); } catch (e) {} // v237
     try { v260TrasTab(v260Prev, id); } catch (e) {} // v260
+    // v303 · cada pestaña se abre arriba del todo (antes se quedaba a la altura de la anterior); tocar la que ya estás sube arriba
+    try { if (v260Prev !== id) window.scrollTo(0, 0); else window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {}
   }
   function showSub(ev, id){
     const btn = ev.currentTarget || ev.target.closest('.subtab-btn') || ev.target;
@@ -16629,7 +16632,7 @@
     window.addEventListener('scroll', prog, { passive: true });
     prog();
   })();
-  const VIS_VERSION = 302;
+  const VIS_VERSION = 303;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

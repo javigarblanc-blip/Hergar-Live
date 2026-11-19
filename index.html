@@ -448,6 +448,18 @@
   .rv-det { display:flex; gap:12px; align-items:flex-start; margin:10px 0 4px; padding:12px 14px; border-radius:14px; background:#111827; border:1px solid rgba(245,166,35,.35); }
   .rv-det:empty { display:none; }
   .rv-dico { font-size:30px; line-height:1; }
+  /* v298 · vitrina menos dorada: solo brillan los trofeos */
+  .rv-vitrina { border-color:rgba(255,255,255,.12) !important; box-shadow:none !important; }
+  .rv-sec { color:#cbd5e1 !important; }
+  .rv-q { color:#fff !important; }
+  .rv-ico, .rv-trofeo.vivo .rv-ico { filter:drop-shadow(0 5px 8px rgba(0,0,0,.55)); }
+  .rv-trofeo.vivo .rv-ico { animation:rv298Vivo 2.4s ease-in-out infinite; }
+  @keyframes rv298Vivo { 50% { filter:drop-shadow(0 0 12px rgba(46,213,115,.85)); } }
+  .rv-trofeo.on { background:rgba(255,255,255,.09) !important; border-color:rgba(255,255,255,.35) !important; }
+  .rv-trofeo.nuevo292 { background:rgba(255,255,255,.06) !important; border-color:rgba(255,92,127,.45) !important; }
+  .rv-det { border-color:rgba(255,255,255,.14) !important; }
+  .sel292.p { width:44px; height:44px; right:-6px; top:-10px; }
+  @media (prefers-reduced-motion: reduce) { .rv-trofeo.vivo .rv-ico { animation:none; } }
   .rv-ico img { display:block; width:52px; height:52px; object-fit:contain; } .rv-dico img { display:block; width:44px; height:44px; object-fit:contain; } /* v297 */
   .rv-dt { font-family:'Montserrat',sans-serif; font-weight:800; font-size:13px; color:#fff; }
   .rv-dv { font-family:'Barlow Condensed','Montserrat',sans-serif; font-weight:800; font-size:22px; color:#fff; margin-top:2px; }
@@ -1961,6 +1973,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v298 (visor) · Vitrina menos dorada: borde, títulos, nombres y trofeo elegido en neutro, sin brillo naranja detrás (solo brillan los trofeos); sello algo más pequeño.
   // v297 (visor) · 🏆 Vitrina de Récords con trofeos ilustrados (copa, balón dorado, copa con llama, escudo, rayo y medalla para los individuales) en vez de emojis.
   // v296 (visor) · 🏟️ Pantalla de entrada con el estadio de noche de fondo (img/estadio.jpg), acercándose despacio detrás del escudo.
   // v295 (visor) · 🔴 En el cartel del próximo partido (y el de Día de partido) la mitad del Hergar en rojo vivo #e00507 (antes granate).
@@ -16583,7 +16596,7 @@
     visEscribir(o);
     try { const act = document.querySelector('.panel.active'); if (act) visApuntarTab(act.id); } catch (e) {}
   }
-  const VIS_VERSION = 297;
+  const VIS_VERSION = 298;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

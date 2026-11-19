@@ -2004,6 +2004,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v306 (visor) · Probabilidades: mientras no haya partidos suficientes para comparar, solo el cálculo por goles (antes mitad goles y mitad Elo); el Elo solo entra si demuestra que acierta más.
   // v305 (visor) · Probabilidades de cada partido: mezcla del cálculo por goles y del Ranking Elo antes de cada jornada; el peso del Elo (0-100 %) lo eligen solas las jornadas ya jugadas. En Pronóstico → Jornada, tabla «¿Qué cálculo acierta más?».
   // v304 (visor) · Liga → Partidos en tarjetas compactas: el nuestro el primero con borde rojo; hora con números de tele; cada equipo con su porcentaje (el favorito en blanco, sin etiqueta) y la barra con los colores de cada equipo (sin leyenda); jugados con el resultado y si acertó el pronóstico, y arriba los aciertos de la jornada y de la temporada.
   // v303 (visor) · Al cambiar de pestaña abajo, la nueva se abre arriba del todo (antes salía a la altura donde estabas en la otra); tocar la pestaña en la que ya estás sube arriba.
@@ -15257,7 +15258,7 @@
     //  · Goles: ataque y defensa de cada equipo ajustados por rival (Poisson), como hasta ahora.
     //  · Elo: el Ranking Elo de cada equipo justo antes de esa jornada (con el factor campo), pasado a gana/empata/pierde.
     //  · Mezcla: para cada jornada se prueba qué peso del Elo (0 %, 25 %, 50 %, 75 % o 100 %) habría acertado mejor
-    //    en las jornadas anteriores (por la «puntuación de Brier») y se usa ese. Sin datos suficientes, mitad y mitad.
+    //    en las jornadas anteriores (por la «puntuación de Brier») y se usa ese. Sin datos suficientes, solo goles (v306).
     const PRON_MIX_PESOS = [0, .25, .5, .75, 1], PRON_MIX_MIN = 10;
     function pronEloPrevio(D){
       const jug = D.P.filter(p => p.jugado).sort((a, b) => a.jg - b.jg);
@@ -15306,8 +15307,8 @@
       const mezcla = (o, a) => [0, 1, 2].map(i => (1 - a) * o.prG[i] + a * o.prE[i]);
       const pesoPara = (J) => {
         const prev = filas.filter(o => o.jugado && o.jg < J);
-        if (prev.length < PRON_MIX_MIN) return .5;
-        let mejor = .5, bm = Infinity;
+        if (prev.length < PRON_MIX_MIN) return 0; // v306: sin datos suficientes, solo goles
+        let mejor = 0, bm = Infinity;
         PRON_MIX_PESOS.forEach(a => { const b = prev.reduce((s, o) => s + pronBrier(mezcla(o, a), o.real), 0); if (b < bm - 1e-9) { bm = b; mejor = a; } });
         return mejor;
       };
@@ -16774,7 +16775,7 @@
     window.addEventListener('scroll', prog, { passive: true });
     prog();
   })();
-  const VIS_VERSION = 305;
+  const VIS_VERSION = 306;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

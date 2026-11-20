@@ -314,6 +314,31 @@
   .lj304-res div { flex:1; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.1); border-radius:12px; padding:8px; text-align:center; }
   .lj304-res b { display:block; font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:24px; color:#fff; line-height:1.1; }
   .lj304-res span { font-size:10.5px; color:#94a3b8; }
+  /* v312 · los 5 partidos de la jornada en una pantalla */
+  .lj312-nav { display:flex; align-items:center; gap:6px; margin-bottom:8px; }
+  .lj312-nav .liga-vuelta-select { flex:1; margin:0; gap:5px; }
+  .lj312-nav .liga-vuelta-chip { padding:6px 4px; font-size:9.5px; }
+  .lj312-nav > button { flex:none; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.12); color:#e2e8f0; width:30px; height:28px; border-radius:9px; font-size:15px; line-height:1; padding:0; cursor:pointer; }
+  .lj-pills { gap:5px; padding:1px 1px 6px; margin-bottom:2px; }
+  .lj-pills button { width:34px; min-height:32px; border-radius:9px; font-size:15px; }
+  .lj312-cab { display:flex; justify-content:space-between; align-items:baseline; gap:8px; font-family:'Montserrat',sans-serif; font-weight:800; font-size:10px; letter-spacing:1px; color:#f5a623; text-transform:uppercase; margin:2px 2px 5px; }
+  .lj312-cab span { color:#64748b; letter-spacing:.8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .lj304-dia { margin:8px 2px 4px; font-size:9.5px; }
+  .lj304-m { grid-template-columns:40px 1fr; gap:8px; padding:5px 10px 6px 6px; margin-bottom:5px; border-radius:12px; }
+  .lj304-t { font-size:17px; }
+  .lj304-t.fin { font-size:12.5px; }
+  .lj304-eq { gap:7px; font-size:12.5px; min-height:22px; }
+  .lj304-eq .pc { font-size:15.5px; min-width:36px; }
+  .lj304-eq.f .pc { font-size:17px; }
+  .lj304-eq .gl { font-size:19px; }
+  .lj304-bb { margin-top:3px; gap:7px; }
+  .lj304-bar { height:5px; }
+  .lj304-x { font-size:9.5px; }
+  .lj304-ok { font-size:10px; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .lj304-mas { font-size:10px; margin-top:3px; line-height:1.35; }
+  .lj304-mas.una { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .lj304-res.lj312 { display:block; font-size:10.5px; color:#94a3b8; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.1); border-radius:10px; padding:6px 10px; margin-bottom:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .lj304-res.lj312 b { display:inline; font-family:inherit; font-size:inherit; font-weight:800; color:#fff; }
   .liga-partido-row { display:flex; align-items:center; gap:8px; padding:9px 4px; border-bottom:1px solid rgba(255,255,255,.08); }
   .liga-equipo-name { flex:1; font-size:11px; font-weight:700; text-align:center; color:#e2e8f0; line-height:1.25; }
   .liga-equipo-name.local { text-align:right; }
@@ -1454,18 +1479,19 @@
 
       <div id="subLigaPartidos" class="sub-panel">
         <div class="card">
-          <div class="liga-vuelta-select">
-            <div class="liga-vuelta-chip active" onclick="cambiarVueltaLigaViewer(1,this)">1ª VUELTA</div>
-            <div class="liga-vuelta-chip" onclick="cambiarVueltaLigaViewer(2,this)">2ª VUELTA</div>
-            <div class="liga-vuelta-chip" onclick="cambiarVueltaLigaViewer(3,this)">3ª VUELTA</div>
+          <!-- v312 · una sola fila: ‹ vueltas › (la jornada y la fecha van en el rótulo de la lista) -->
+          <div class="lj312-nav">
+            <button type="button" onclick="cambiarJornadaLigaViewer(-1)" aria-label="Jornada anterior">‹</button>
+            <div class="liga-vuelta-select">
+              <div class="liga-vuelta-chip active" onclick="cambiarVueltaLigaViewer(1,this)">1ª VUELTA</div>
+              <div class="liga-vuelta-chip" onclick="cambiarVueltaLigaViewer(2,this)">2ª VUELTA</div>
+              <div class="liga-vuelta-chip" onclick="cambiarVueltaLigaViewer(3,this)">3ª VUELTA</div>
+            </div>
+            <button type="button" onclick="cambiarJornadaLigaViewer(1)" aria-label="Jornada siguiente">›</button>
           </div>
-          <div class="liga-jornada-nav">
-            <button onclick="cambiarJornadaLigaViewer(-1)">‹</button>
-            <div class="liga-jn-label" id="ligaViewerJnLabel">JORNADA 1</div>
-            <button onclick="cambiarJornadaLigaViewer(1)">›</button>
-          </div>
+          <div class="liga-jn-label" id="ligaViewerJnLabel" hidden>JORNADA 1</div>
           <div class="lj-pills" id="ligaJnPills" role="group" aria-label="Jornadas"></div>
-          <div class="liga-jornada-fecha" id="ligaViewerJnFecha"></div>
+          <div class="liga-jornada-fecha" id="ligaViewerJnFecha" hidden></div>
           <div id="ligaViewerPartidos"><div class="loader">Cargando...</div></div>
         </div>
       </div>
@@ -2032,6 +2058,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v312 (visor) · Liga → Partidos: los 5 partidos de la jornada en una pantalla — vueltas y flechas en una sola fila, rótulo «Jornada N · día» en vez de «JORNADA N» + «Nuestro partido» + «El resto», tarjetas más bajas, campeón y aciertos en una línea; la tira de jornadas se centra en la elegida al abrir la pestaña.
   // v311 (visor) · Ranking: fuera la explicación fija bajo el desplegable (estaba repetida con la ⓘ); solo quedan los avisos de datos (media del equipo, sin dato, sin cuota).
   // v310 (visor) · ⓘ: cada una abre su propia caja con solo su explicación (✕ siempre arriba, se cierra también tocando fuera), en vez de la ventana única; igual desde el buscador.
   // v309 (visor) · ❔ «¿Cómo se calcula?» (antes «…el impacto?») con todas las explicaciones por bloques e índice; ⓘ en las tarjetas con explicación y junto al desplegable del Ranking; el buscador encuentra las explicaciones; nuevos: Ranking MVP, Once ideal, dominio, probabilidad, pronóstico, rachas, contexto, prime, mapa de calor, grandes, comodines, estilo, medias, cadenas, mapa de goles y pegamento; «Ranking de impacto» en vez de «clasificación»; «Hace mejores a los demás» en el Ranking; líneas en Hace mejores, Box-to-box, Impacto y racha de titularidad.
@@ -15624,7 +15651,7 @@
       const jugado = p.golesLocal != null && p.golesVisitante != null;
       const o = info && info.porId[p.id] && info.porId[p.id].pr ? info.porId[p.id] : null;
       const pc = (x) => pronPct(x) + ' %';
-      const fila = (eq, nom, h, cls, dato) => `<div class="lj304-eq${cls}${h ? ' hgn' : ''}">${escudoEquipoVisorHTML(eq, 24, nom)}<span class="n">${pronEsc(nom)}</span>${dato}</div>`;
+      const fila = (eq, nom, h, cls, dato) => `<div class="lj304-eq${cls}${h ? ' hgn' : ''}">${escudoEquipoVisorHTML(eq, 20, nom)}<span class="n">${pronEsc(nom)}</span>${dato}</div>`;
       let t, cuerpo;
       if (jugado) {
         const gl = p.golesLocal, gv = p.golesVisitante, cL = gl > gv ? ' f' : gl < gv ? ' p' : '', cV = gv > gl ? ' f' : gv < gl ? ' p' : '';
@@ -15648,7 +15675,7 @@
           if (it) {
             const v = it.vals, f = (x) => x == null ? '—' : pc(x);
             if (esH) { const g = o.l === Hh ? v[0] : v[2], q = o.l === Hh ? v[2] : v[0];
-              cuerpo += `<div class="lj304-mas">🏆 Opciones de campeón: ganando ${f(g)} · empatando ${f(v[1])} · perdiendo ${f(q)}</div>`; }
+              cuerpo += `<div class="lj304-mas una">🏆 Campeón si gana <b>${f(g)}</b> · empata <b>${f(v[1])}</b> · pierde <b>${f(q)}</b></div>`; }
             else if (it.rango >= .03) {
               const sN = (n) => pronJorNom(n), ok = v.map((x, i) => [x, i]).filter(x => x[0] != null && pr[x[1]] >= .15);
               const best = Math.max(...ok.map(x => x[0])), worst = Math.min(...ok.map(x => x[0]));
@@ -15661,7 +15688,7 @@
           }
         } else cuerpo = fila(eqL, nL, hL, '', '') + fila(eqV, nV, hV, '', '');
       }
-      return `${esH ? '<div class="lj304-tag">● NUESTRO PARTIDO</div>' : ''}<div class="lj304-m${esH ? ' hg' : ''}">${t}<div style="min-width:0;">${cuerpo}</div></div>`;
+      return `<div class="lj304-m${esH ? ' hg' : ''}">${t}<div style="min-width:0;">${cuerpo}</div></div>`;
     }
     // Resumen de aciertos arriba de la jornada (jornada y temporada)
     function pronJorResumen304(info, ids){
@@ -15669,7 +15696,7 @@
       const jug = ids.map(id => info.porId[id]).filter(o => o && o.pr && o.jugado);
       if (!jug.length) return '';
       const ok = jug.filter(o => o.acierto).length;
-      return `<div class="lj304-res"><div><b>${ok} de ${jug.length}</b><span>aciertos del pronóstico esta jornada</span></div>${info.n ? `<div><b>${Math.round(info.ok / info.n * 100)} %</b><span>aciertos en la temporada (${info.ok} de ${info.n})</span></div>` : ''}</div>`;
+      return `<div class="lj304-res lj312">🎯 Pronóstico: <b>${ok} de ${jug.length}</b> esta jornada${info.n ? ` · <b>${Math.round(info.ok / info.n * 100)} %</b> en la temporada (${info.ok}/${info.n})` : ''}</div>`;
     }
     // Resumen arriba de la lista de una jornada
     function pronJorResumenHTML(info, ids){
@@ -16042,17 +16069,17 @@
     const esNuestro = (p) => esHergarLigaViewer(liga, p.local) || esHergarLigaViewer(liga, p.visitante);
     const nuestro = partidosJornada.filter(esNuestro), resto = partidosJornada.filter(p => !esNuestro(p));
     const tarjeta = (p, dc) => pronJorTarjetaHTML(liga, pj ? pj.D : null, pj ? pj.info : null, p, dc);
-    let h = pj ? pronJorResumen304(pj.info, partidosJornada.map(p => p.id)) : '';
+    // v312 · rótulo único arriba (jornada + día) y separador solo cuando cambia el día
+    const diaTxt = (fp) => fp ? diaDe(fp) + ' ' + fp.slice(0, 5) : 'Fecha por confirmar';
+    const fpDe = (p) => porDias && isoDe(p.fechaPartido) ? p.fechaPartido : '';
+    const fechaCab = porDias ? (resto.length ? diaTxt(fpDe(resto[0])) : '') : (partidosJornada.length ? partidosJornada[0].fecha || '' : '');
+    let h = `<div class="lj312-cab">Jornada ${numGlobal}${fechaCab ? `<span>${escHtml(fechaCab)}</span>` : ''}</div>`;
+    h += pj ? pronJorResumen304(pj.info, partidosJornada.map(p => p.id)) : '';
     nuestro.forEach(p => { h += tarjeta(p, corto(p.fechaPartido)); });
     resto.forEach((p, k) => {
-      const fp = porDias && isoDe(p.fechaPartido) ? p.fechaPartido : '';
-      if (k === 0 || (porDias && fp !== diaActual)) {
-        const dia = porDias ? (fp ? diaDe(fp) + ' ' + fp.slice(0, 5) : 'Fecha por confirmar') : '';
-        const pre = nuestro.length && k === 0 ? 'El resto' : '';
-        const txt = [pre, dia].filter(Boolean).join(' · ');
-        if (txt) h += `<div class="lj304-dia">${escHtml(txt)}</div>`;
-        diaActual = fp;
-      }
+      const fp = fpDe(p);
+      if (k === 0) diaActual = fp;
+      else if (porDias && fp !== diaActual) { h += `<div class="lj304-dia">${escHtml(diaTxt(fp))}</div>`; diaActual = fp; }
       h += tarjeta(p, '');
     });
     cont.innerHTML = h;
@@ -16081,7 +16108,14 @@
       h += `<button type="button" class="${cls}" onclick="ljIr(${n})" aria-label="Jornada ${n}"${n === sel ? ' aria-current="true"' : ''}>${n}</button>`;
     }
     box.innerHTML = h;
-    const b = box.querySelector('.sel'); if (b) box.scrollLeft = b.offsetLeft - box.clientWidth / 2 + b.offsetWidth / 2;
+    ljCentrarPill(box);
+    if (!box._ro312 && window.ResizeObserver) { box._ro312 = new ResizeObserver(() => ljCentrarPill(box)); box._ro312.observe(box); } // v312
+  }
+  function ljCentrarPill(box) {
+    const b = box.querySelector('.sel'); if (!b || !box.clientWidth) return;
+    const sb = box.style.scrollBehavior; box.style.scrollBehavior = 'auto';
+    box.scrollLeft = b.offsetLeft - box.offsetLeft - box.clientWidth / 2 + b.offsetWidth / 2;
+    box.style.scrollBehavior = sb;
   }
   (function ljDeslizar() {
     const el = document.getElementById('ligaViewerPartidos'); if (!el) return;
@@ -16968,7 +17002,7 @@
     window.addEventListener('scroll', prog, { passive: true });
     prog();
   })();
-  const VIS_VERSION = 311;
+  const VIS_VERSION = 312;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

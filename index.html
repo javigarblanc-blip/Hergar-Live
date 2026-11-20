@@ -2004,6 +2004,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v307 (visor) · 🏅 Once ideal por sus acciones en bruto en cada línea, con el valor del rival como el Ranking MVP (antes impacto por 70' con 20' mínimos); línea que lo explica.
   // v306 (visor) · Probabilidades: mientras no haya partidos suficientes para comparar, solo el cálculo por goles (antes mitad goles y mitad Elo); el Elo solo entra si demuestra que acierta más.
   // v305 (visor) · Probabilidades de cada partido: mezcla del cálculo por goles y del Ranking Elo antes de cada jornada; el peso del Elo (0-100 %) lo eligen solas las jornadas ya jugadas. En Pronóstico → Jornada, tabla «¿Qué cálculo acierta más?».
   // v304 (visor) · Liga → Partidos en tarjetas compactas: el nuestro el primero con borde rojo; hora con números de tele; cada equipo con su porcentaje (el favorito en blanco, sin etiqueta) y la barra con los colores de cada equipo (sin leyenda); jugados con el resultado y si acertó el pronóstico, y arriba los aciertos de la jornada y de la temporada.
@@ -12061,29 +12062,8 @@
     const esMvp = criterio === 'mvp';
     const mvpT = {};
     if (esMvp) {
-      const ps = temporada.partidos || [], liga = ultimaLiga;
-      let E = null; try { E = eloLiga(liga); } catch (e) {}
-      const facCache = new Map();
-      const factor = (pp) => {
-        if (facCache.has(pp)) return facCache.get(pp);
-        let f = 1, como = 'jornada 1-3';
-        try {
-          const lp = pp.contexto && pp.contexto.ligaId != null && liga ? (liga.partidos || []).find(q => q.id === pp.contexto.ligaId) : null;
-          const R = proRivalLiga(liga, pp), ri = R ? R.i : -1, hi = liga ? liga.equipos.findIndex(e => e.esHergar) : -1;
-          const J = lp ? numJornadaGlobalViewer(liga, lp) : null;
-          if (J == null || ri < 0 || hi < 0) { como = 'sin jornada'; }
-          else if (J >= 9 && E && E.histT) {
-            const h = E.histT.filter(x => x.jg < J).pop(), el = h ? h.elo : null;
-            if (el) { f = 1 + (el[ri] - el[hi]) / 600; como = `Elo ${Math.round(el[ri])} vs ${Math.round(el[hi])}`; }
-          } else if (J >= 4) {
-            const tab = ligaClasifViewer({ equipos: liga.equipos, partidos: liga.partidos.filter(q => q.golesLocal != null && q.golesVisitante != null && numJornadaGlobalViewer(liga, q) < J) });
-            const pr = tab.find(x => x.id === liga.equipos[ri].id), ph = tab.find(x => x.id === liga.equipos[hi].id);
-            if (pr && ph) { f = 1 + (ph.pos - pr.pos) * 0.06; como = `${pr.pos}.º vs ${ph.pos}.º`; }
-          }
-          f = Math.max(0.5, Math.min(1.5, f));
-        } catch (e) { f = 1; }
-        const r = { f, como }; facCache.set(pp, r); return r;
-      };
+      const ps = temporada.partidos || [];
+      const factor = mvpFactorRival(); // v307: el mismo cálculo lo usa el Once ideal
       jugadores.forEach(j => {
         let tot = 0, bruto = 0, n = 0; const det = [];
         (j.historial || []).forEach(h => {
@@ -13279,21 +13259,73 @@
     else { cupos.centrocampista = esquema[1]; cupos.delantero = esquema[2]; }
     return cupos;
   }
+  // v307 · Valor del rival de cada partido (Ranking MVP y Once ideal): jornadas 1-3 ×1 · 4-8 por la clasificación antes del
+  //   partido (6 % por puesto de diferencia) · desde la 9 por el Elo antes del partido (60 puntos = 10 %) · tope ×0,5 a ×1,5
+  function mvpFactorRival() {
+    const liga = ultimaLiga;
+    let E = null; try { E = eloLiga(liga); } catch (e) {}
+    const facCache = new Map();
+    return (pp) => {
+      if (facCache.has(pp)) return facCache.get(pp);
+      let f = 1, como = 'jornada 1-3';
+      try {
+        const lp = pp.contexto && pp.contexto.ligaId != null && liga ? (liga.partidos || []).find(q => q.id === pp.contexto.ligaId) : null;
+        const R = proRivalLiga(liga, pp), ri = R ? R.i : -1, hi = liga ? liga.equipos.findIndex(e => e.esHergar) : -1;
+        const J = lp ? numJornadaGlobalViewer(liga, lp) : null;
+        if (J == null || ri < 0 || hi < 0) { como = 'sin jornada'; }
+        else if (J >= 9 && E && E.histT) {
+          const h = E.histT.filter(x => x.jg < J).pop(), el = h ? h.elo : null;
+          if (el) { f = 1 + (el[ri] - el[hi]) / 600; como = `Elo ${Math.round(el[ri])} vs ${Math.round(el[hi])}`; }
+        } else if (J >= 4) {
+          const tab = ligaClasifViewer({ equipos: liga.equipos, partidos: liga.partidos.filter(q => q.golesLocal != null && q.golesVisitante != null && numJornadaGlobalViewer(liga, q) < J) });
+          const pr = tab.find(x => x.id === liga.equipos[ri].id), ph = tab.find(x => x.id === liga.equipos[hi].id);
+          if (pr && ph) { f = 1 + (ph.pos - pr.pos) * 0.06; como = `${pr.pos}.º vs ${ph.pos}.º`; }
+        }
+        f = Math.max(0.5, Math.min(1.5, f));
+      } catch (e) { f = 1; }
+      const r = { f, como }; facCache.set(pp, r); return r;
+    };
+  }
   const MIN_MINUTOS_ONCE_IDEAL = 20;
+  // v307 · Once ideal por SUS ACCIONES EN BRUTO en cada línea (como el Ranking MVP: sin la parte de equipo y cada partido
+  //   multiplicado por el valor del rival). Si en un partido jugó en varias líneas, sus acciones se reparten por los minutos en cada una.
+  //   Antes: impacto por 70' en la línea (con 20' bastaba para entrar). Mínimo: MIN_MINUTOS_ONCE_IDEAL en la línea.
+  function onceIdealValores(t) {
+    const ps = (t && t.partidos) || [], factor = mvpFactorRival(), out = {};
+    Object.values((t && t.jugadores) || {}).forEach(j => {
+      const acc = {}, mins = {};
+      let principal = null; try { principal = posicionTemporada(j); } catch (e) {}
+      (j.historial || []).forEach(h => {
+        const pp = ps.find(x => x.fecha === h.fecha && x.rival === h.rival); if (!pp || pp.manual) return;
+        let r = null; try { r = evoSusAcciones(pp, j, h); } catch (e) { r = null; }
+        if (!r || !(Number(h.mins) > 0)) return;
+        let reparto = {};
+        if (h.lineas && Object.keys(h.lineas).length) Object.keys(h.lineas).forEach(l => { if (l !== 'suplente' && Number(h.lineas[l]) > 0) reparto[l] = Number(h.lineas[l]); });
+        else if (h.puestos && Object.keys(h.puestos).length) Object.keys(h.puestos).forEach(pu => { const l = PUESTO_LINEA_V[pu], m = Number(h.puestos[pu]) || 0; if (l && m) reparto[l] = (reparto[l] || 0) + m; });
+        if (!Object.keys(reparto).length && principal) reparto[principal] = Number(h.mins);
+        const tot = Object.values(reparto).reduce((a, v) => a + v, 0); if (!tot) return;
+        const v = r.v * factor(pp).f;
+        Object.keys(reparto).forEach(l => { acc[l] = (acc[l] || 0) + v * reparto[l] / tot; mins[l] = (mins[l] || 0) + reparto[l]; });
+      });
+      out[j.id] = { acc, mins };
+    });
+    return out;
+  }
   function calcularMejorOnce(t, formacion) {
     const cupos = obtenerCuposFormacion(formacion);
     const posiciones = ['portero','defensa','centrocampista','delantero'];
     const candidatosPorJugador = {};
+    const V = onceIdealValores(t);
     Object.values(t.jugadores || {}).forEach(j => {
-      const mpp = j.minutosPorPosicion || {}, ipp = j.impactoPorPosicion || {};
+      const x = V[j.id] || { acc: {}, mins: {} };
       const opciones = [];
       posiciones.forEach(pos => {
-        const mins = mpp[pos] || 0;
+        const mins = x.mins[pos] || 0;
         if (mins >= MIN_MINUTOS_ONCE_IDEAL) {
-          opciones.push({ id: j.id, nombre: j.name, dorsal: j.dorsal, pos, impPond: (ipp[pos]||0)/mins*70, mins });
+          opciones.push({ id: j.id, nombre: j.name, dorsal: j.dorsal, pos, val: x.acc[pos] || 0, mins });
         }
       });
-      if (opciones.length > 0) { opciones.sort((a,b)=>b.impPond-a.impPond); candidatosPorJugador[j.id] = opciones; }
+      if (opciones.length > 0) { opciones.sort((a,b)=>b.val-a.val); candidatosPorJugador[j.id] = opciones; }
     });
     const asignados = { portero:[], defensa:[], centrocampista:[], delantero:[] };
     function intentarColocar(jugadorId, visitados) {
@@ -13314,7 +13346,7 @@
       }
       return false;
     }
-    const orden = Object.keys(candidatosPorJugador).sort((a,b) => candidatosPorJugador[b][0].impPond - candidatosPorJugador[a][0].impPond);
+    const orden = Object.keys(candidatosPorJugador).sort((a,b) => candidatosPorJugador[b][0].val - candidatosPorJugador[a][0].val);
     orden.forEach(id => intentarColocar(id, new Set()));
     return { cupos, asignados };
   }
@@ -13326,9 +13358,9 @@
     const { cupos, asignados } = calcularMejorOnce(t, formacion);
     const posLabels = { portero:'🧤 Portero', defensa:'🛡️ Defensas', centrocampista:'⚙️ Centrocampistas', delantero:'⚽ Delanteros' };
     const orden = ['delantero','centrocampista','defensa','portero'];
-    cont.innerHTML = orden.map(pos => {
+    cont.innerHTML = `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin:0 0 10px;">Los que más han hecho en cada línea en toda la temporada: sus acciones en bruto, como el Ranking MVP (sin la parte de equipo, con los fallos restando y cada partido valiendo más cuanto mejor era el rival). Si en un partido jugó en varias líneas, se reparte por los minutos en cada una. Mínimo ${MIN_MINUTOS_ONCE_IDEAL}' en la línea.</div>` + orden.map(pos => {
       const filas = asignados[pos].map(c => `
-        <div class="rank-row"><div class="rank-pos">${c.dorsal}</div><div class="rank-name">${(c.nombre||'').split(' ')[0]}</div><div class="rank-val">${c.impPond.toFixed(1)}</div></div>`).join('');
+        <div class="rank-row"><div class="rank-pos">${c.dorsal}</div><div class="rank-name">${(c.nombre||'').split(' ')[0]}</div><div class="rank-val">${c.val.toFixed(1).replace('.', ',')}</div></div>`).join('');
       const vacios = cupos[pos] - asignados[pos].length;
       const filasVacias = vacios > 0 ? Array.from({length:vacios}).map(()=> `<div class="rank-row" style="opacity:.4;"><div class="rank-name">Sin datos suficientes</div></div>`).join('') : '';
       return `<div style="margin-bottom:10px;"><div class="card-title">${posLabels[pos]} (${asignados[pos].length}/${cupos[pos]})</div>${filas}${filasVacias}</div>`;
@@ -16775,7 +16807,7 @@
     window.addEventListener('scroll', prog, { passive: true });
     prog();
   })();
-  const VIS_VERSION = 306;
+  const VIS_VERSION = 307;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

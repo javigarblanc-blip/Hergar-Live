@@ -2004,6 +2004,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v308 (visor) · ❔ ¿Cómo se calcula?: como la de la app, con los fallos, los penaltis, el gol de centrocampista y el suelo de −5 por partido; el MVP dice que los fallos restan.
   // v307 (visor) · 🏅 Once ideal por sus acciones en bruto en cada línea, con el valor del rival como el Ranking MVP (antes impacto por 70' con 20' mínimos); línea que lo explica.
   // v306 (visor) · Probabilidades: mientras no haya partidos suficientes para comparar, solo el cálculo por goles (antes mitad goles y mitad Elo); el Elo solo entra si demuestra que acierta más.
   // v305 (visor) · Probabilidades de cada partido: mezcla del cálculo por goles y del Ranking Elo antes de cada jornada; el peso del Elo (0-100 %) lo eligen solas las jornadas ya jugadas. En Pronóstico → Jornada, tabla «¿Qué cálculo acierta más?».
@@ -4556,7 +4557,7 @@
         minMin = minMin || 10;
         const fila = (a, b, c, d, neg) => `<div style="display:grid; grid-template-columns:1.5fr .7fr .8fr .9fr; gap:4px; padding:5px 0; border-top:1px solid rgba(255,255,255,.1); font-size:11.5px; ${neg ? 'font-weight:800; color:#94a3b8; font-size:9.5px; letter-spacing:.4px;' : 'color:#e2e8f0;'}"><span>${a}</span><span style="text-align:center;">${b}</span><span style="text-align:center;">${c}</span><span style="text-align:center;${neg ? '' : ' font-weight:800; color:#f5a623;'}">${d}</span></div>`;
         return `<div style="font-size:12.5px; line-height:1.55; color:#e2e8f0; padding-top:6px;">
-            <p style="margin:0 0 8px;">Gana quien más suma con <strong>sus acciones</strong>: goles, asistencias, tiros, pases clave y al área, regates, defensas y paradas.</p>
+            <p style="margin:0 0 8px;">Gana quien más suma con <strong>sus acciones</strong>: goles, asistencias, tiros, pases clave y al área, regates, defensas y paradas; los fallos restan.</p>
             <p style="margin:0 0 8px;">No cuenta lo que le toca por estar en el campo: el +1 de cada gol del equipo, lo que restan los goles y tiros del rival, ni la portería a cero (que sí cuenta en el impacto). Así no gana quien tuvo la suerte de estar cuando caían los goles, sino quien más hizo.</p>
             <div style="margin:8px 0;">${fila('', 'Minutos', 'Impacto', 'Sus acciones', true)}${fila('Entra y caen 3 goles', "30'", '+4,9', '+1,5')}${fila('Titular con gol y regates', "70'", '+5,2', '+3,4')}</div>
             <p style="margin:0 0 8px; font-size:11.5px; color:#cbd5e1;">El MVP es el titular: hizo mucho más, aunque al otro le sumaran los goles del equipo. Quien entra desde el banquillo también puede ganarlo si en su rato hace mucho.</p>
@@ -14724,7 +14725,7 @@
     if (tvActivo) tvRender();
   }, (err) => { console.error('Firebase fotos read error:', err); });
 
-  // ── ¿Cómo se calcula el impacto? — versión para familias (sin penalizaciones por fallos individuales) ──
+  // ── ¿Cómo se calcula el impacto? — v308: igual que la de la app (con fallos, penaltis y el suelo de cada partido) ──
   const fmtPts = (n) => !n ? '0' : (n > 0 ? '+' : '−') + Math.abs(n).toFixed(2).replace('.', ',');
   function csFila(label, valorTxt, positivo, detalle) {
     const color = positivo === null ? '#94a3b8' : (positivo ? '#2ed573' : '#ff6b7a');
@@ -14748,7 +14749,7 @@
     const cont = document.getElementById('comoSeCalculaContenido');
     if (!cont) return;
     const suma = [
-      csFila('Gol', fmtPts(a.gol), true, `Un gol de defensa vale más: ${fmtPts(a.gol + a.golExtraDefensa)}.`),
+      csFila('Gol', fmtPts(a.gol), true, `Defensa ${fmtPts(a.gol + a.golExtraDefensa)} · centrocampista ${fmtPts(a.gol + (a.golExtraMedio || 0))}.`),
       csFila('Asistencia', fmtPts(a.asistencia), true),
       csFila('Pase clave', fmtPts(a.paseClave), true),
       csFila('Pase al área', fmtPts(a.paseArea), true),
@@ -14756,11 +14757,13 @@
       csFila('Al palo / larguero', fmtPts(a.disparoPuerta), true, 'Cuenta como un disparo a puerta. El palo del rival resta como un tiro a puerta, pero no cuenta en las paradas del portero.'), // v205
       csFila('Falta recibida', '0', true, 'No suma ni resta: solo se cuenta quién recibe más faltas.'), // v205
       csFila('Disparo fuera / sin peligro', fmtPts(a.disparoFuera), true, a.disparoFueraExceso ? `Los ${a.disparoFueraUmbral || 3} primeros de cada partido. Desde el ${(a.disparoFueraUmbral || 3) + 1}.º, ${fmtPts(a.disparoFueraExceso)} cada uno.` : ''), // v194
-      csFila('Regate / jugada individual', fmtPts(a.regate), true, 'Supera a un rival sin acabar en tiro ni pase.'),
+      csFila('Regate / jugada individual', fmtPts(a.regate), true, 'Supera a un rival o gana metros con el balón y no acaba en tiro, pase clave ni pase al área.'),
       csFila('Acción defensiva', fmtPts(a.defensa), true, a.defensaPuesto ? `Si la hace un defensa (LI · DFC · LD), ${fmtPts(a.defensaPuesto.DFC)}; el pivote (MCD), ${fmtPts(a.defensaPuesto.MCD)}. Defender es su trabajo principal y es casi lo único que se les puede apuntar.` : ''),
       csFila('Acción defensiva clave', fmtPts(a.defensaClave), true, a.defensaClavePuesto ? `Un despeje o una entrada que evita una ocasión clara. Defensa ${fmtPts(a.defensaClavePuesto.DFC)} · pivote ${fmtPts(a.defensaClavePuesto.MCD)}.` : 'Un despeje o una entrada que evita una ocasión clara.'),
       csFila('Paradas del portero', `${fmtPts(a.parada)} / ${fmtPts(a.paradaDificil)}`, true, 'Parada normal / parada difícil. Cuentan como tiro a puerta del rival, pero al portero no le restan.'),
-      csFila('Fuera de juego', fmtPts(a.fueraJuego != null ? a.fueraJuego : -0.05), false, 'Resta muy poco: un desmarque que sale por poco no se castiga como un fallo. El fuera de juego del rival no suma a nadie.')
+      csFila('Fuera de juego', fmtPts(a.fueraJuego != null ? a.fueraJuego : -0.05), false, 'Resta muy poco: un desmarque que sale por poco no se castiga como un fallo. El fuera de juego del rival no suma a nadie.'),
+      csFila('Fallo', fmtPts(a.fallo != null ? a.fallo : -0.20), false), // v308
+      csFila('Fallo importante', fmtPts(a.falloImportante != null ? a.falloImportante : -0.50), false) // v308
     ].join('');
     const juego = [
       csFila('Gol a favor', fmtPts(e.golFavor), true, `Suma a todos los que están en el campo. Si el equipo marca más de ${e.golesSinReparto || 4} en el partido, cada gol vale ${e.golesSinReparto || 4} ÷ goles totales, caiga cuando caiga, para que la 1.ª y la 2.ª parte cuenten igual.`),
@@ -14782,10 +14785,17 @@
       csFila('Centrocampistas', fmtPts(pc.centrocampista), true)
     ].join('');
     cont.innerHTML =
-      `<div style="font-size:12px; line-height:1.5; color:#94a3b8;">El impacto resume lo que aporta cada jugador: sus acciones y lo que ocurre mientras está en el campo.</div>`
+      `<div style="font-size:12px; line-height:1.5; color:#94a3b8;">El impacto resume lo que aporta cada jugador: sus acciones y lo que ocurre mientras está en el campo. En un partido, el impacto de un jugador nunca baja de ${fmtPts(R.suelo != null ? R.suelo : -5)}.</div>`
       + csTarjeta('Lo que suma un jugador', suma)
       + csTarjeta('Lo que pasa mientras juega', juego)
       + csTarjeta('Portería a cero', porteria, 'Se aplica si el equipo no encaja ningún gol mientras el jugador está en el campo. Es proporcional a sus minutos.' + (pcp ? ' Va por el puesto en el que jugó (si jugó en varios, la parte de cada uno), desde los partidos de finales de octubre.' : ''), true)
+      + csTarjeta('Penaltis', (() => { const pe = R.penaltis || { marca: 0.50, falla: -0.75, provocado: 0.40, contraGolCampo: -0.50, paradoPortero: 1.00 }; return [ // v308
+          csFila('Ejecutor que marca', fmtPts(pe.marca), true, 'En lugar de lo que vale un gol normal.'),
+          csFila('Ejecutor que falla', fmtPts(pe.falla), false),
+          csFila('Provocar el penalti', fmtPts(pe.provocado), true),
+          csFila('Penalti en contra convertido', fmtPts(pe.contraGolCampo), false, 'A cada jugador en el campo.'),
+          csFila('Portero que para un penalti', fmtPts(pe.paradoPortero), true)
+        ].join(''); })())
       + csTarjeta('Sinergias', `<div style="font-size:12.5px; line-height:1.55; color:#e2e8f0; padding-top:6px;">Impacto que suman los dos jugadores de una pareja mientras coinciden en el campo, por cada 70 minutos juntos. Hacen falta ${R.minMinutosSinergia || 20} minutos juntos medidos para entrar en la lista. Las que no llegan salen en observación con una nota orientativa ≈ (lo que falta se estima con el impacto de cada uno), que no entra en la lista.</div>`)
       + csTarjeta('Peso en el equipo', pesoExplicacionHTML(R.minMinutosRanking || 35)) // v132
       + csTarjeta('Puntos de los goles y más/menos', puntosMasMenosExplicacionHTML(R.minMinutosRanking || 35)) // v133
@@ -16807,7 +16817,7 @@
     window.addEventListener('scroll', prog, { passive: true });
     prog();
   })();
-  const VIS_VERSION = 307;
+  const VIS_VERSION = 308;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

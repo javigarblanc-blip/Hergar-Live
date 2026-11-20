@@ -1037,6 +1037,18 @@
   .cs-ind { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
   .cs-ind button { padding:6px 11px; border-radius:999px; border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.06); color:#e2e8f0; font-size:11.5px; font-weight:700; font-family:inherit; cursor:pointer; }
   @media (prefers-reduced-motion: reduce) { .cs-sec.cs-flash { animation:none; outline:2px solid #f5a623; } }
+  /* v310 · cada ⓘ abre su caja: solo esa explicación, con la ✕ siempre a la vista */
+  #csCaja { position:fixed; inset:0; z-index:960; display:none; align-items:flex-end; justify-content:center; background:rgba(0,0,0,.72); }
+  #csCaja.on { display:flex; animation:csCajaF .2s ease-out; }
+  #csCaja .cc-in { width:100%; max-width:480px; max-height:80vh; max-height:80svh; display:flex; flex-direction:column; background:linear-gradient(145deg,#111827,#0f172a); border:1px solid rgba(255,255,255,.14); border-bottom:0; border-radius:18px 18px 0 0; box-shadow:0 -12px 40px rgba(0,0,0,.5); animation:csCajaS .28s cubic-bezier(.2,.8,.2,1); }
+  #csCaja .cc-cab { flex:0 0 auto; display:flex; align-items:center; gap:10px; padding:12px 12px 10px 16px; border-bottom:1px solid rgba(255,255,255,.1); }
+  #csCaja .cc-cab b { flex:1; min-width:0; font-family:'Montserrat',sans-serif; font-weight:900; font-size:14.5px; color:#f5a623; line-height:1.25; }
+  #csCaja .cc-x { flex:0 0 44px; width:44px; height:44px; border-radius:12px; border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.07); color:#e2e8f0; font-size:17px; cursor:pointer; }
+  #csCaja .cc-cuerpo { flex:1 1 auto; overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; padding:2px 16px calc(18px + env(safe-area-inset-bottom,0px)); }
+  #csCaja .cc-cuerpo > div > div:first-child { border-top:0 !important; }
+  @keyframes csCajaF { from { opacity:0; } to { opacity:1; } }
+  @keyframes csCajaS { from { transform:translateY(40px); } to { transform:none; } }
+  @media (prefers-reduced-motion: reduce) { #csCaja.on, #csCaja .cc-in { animation:none; } }
 </style>
 </head>
 <body>
@@ -1551,6 +1563,7 @@
   </div>
 </div>
 
+<div id="csCaja" role="dialog" aria-modal="true" aria-labelledby="csCajaT" onclick="if (event.target === this) csCerrarCaja()"><div class="cc-in"><div class="cc-cab"><b id="csCajaT"></b><button type="button" class="cc-x" onclick="csCerrarCaja()" aria-label="Cerrar">✕</button></div><div class="cc-cuerpo" id="csCajaC"></div></div></div>
 <div id="comoSeCalculaModal" style="display:none; position:fixed; inset:0; z-index:950; background:rgba(0,0,0,.85); align-items:flex-start; justify-content:center; padding:20px; overflow-y:auto; overscroll-behavior:contain;">
   <div style="background:linear-gradient(145deg,#111827,#0f172a); border-radius:20px; padding:18px; max-width:380px; width:100%; border:1px solid rgba(255,255,255,.12); margin:auto 0;">
     <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">
@@ -2019,6 +2032,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v310 (visor) · ⓘ: cada una abre su propia caja con solo su explicación (✕ siempre arriba, se cierra también tocando fuera), en vez de la ventana única; igual desde el buscador.
   // v309 (visor) · ❔ «¿Cómo se calcula?» (antes «…el impacto?») con todas las explicaciones por bloques e índice; ⓘ en las tarjetas con explicación y junto al desplegable del Ranking; el buscador encuentra las explicaciones; nuevos: Ranking MVP, Once ideal, dominio, probabilidad, pronóstico, rachas, contexto, prime, mapa de calor, grandes, comodines, estilo, medias, cadenas, mapa de goles y pegamento; «Ranking de impacto» en vez de «clasificación»; «Hace mejores a los demás» en el Ranking; líneas en Hace mejores, Box-to-box, Impacto y racha de titularidad.
   // v308 (visor) · ❔ ¿Cómo se calcula?: como la de la app, con los fallos, los penaltis, el gol de centrocampista y el suelo de −5 por partido; el MVP dice que los fallos restan.
   // v307 (visor) · 🏅 Once ideal por sus acciones en bruto en cada línea, con el valor del rival como el Ranking MVP (antes impacto por 70' con 20' mínimos); línea que lo explica.
@@ -14903,16 +14917,30 @@
   window.csIrBloque = (b) => { const el = document.getElementById('csb-' + b); if (el) try { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { el.scrollIntoView(); } };
   window.abrirComoSeCalcula = (sec) => {
     renderComoSeCalculaViewer();
+    if (sec && document.getElementById('cs-' + sec)) { csAbrirCaja(sec); return; } // v310: cada ⓘ abre su caja
     const modal = document.getElementById('comoSeCalculaModal');
     modal.style.display = 'flex';
     modal.scrollTop = 0;
-    if (!sec) return;
-    const el = document.getElementById('cs-' + sec); if (!el) return;
-    requestAnimationFrame(() => {
-      try { el.scrollIntoView({ behavior: 'auto', block: 'start' }); } catch (e) { el.scrollIntoView(); }
-      el.classList.remove('cs-flash'); void el.offsetWidth; el.classList.add('cs-flash');
-    });
   };
+  // v310 · caja de una explicación: copia el apartado de la ventana (mismos textos) sin su título, que va en la cabecera
+  let csCajaFoco = null;
+  function csAbrirCaja(sec) {
+    const el = document.getElementById('cs-' + sec), caja = document.getElementById('csCaja');
+    if (!el || !caja) return;
+    const meta = CS_META.find(m => m.id === sec);
+    const tmp = document.createElement('div'); tmp.innerHTML = el.innerHTML;
+    if (tmp.firstElementChild) tmp.firstElementChild.remove();
+    document.getElementById('csCajaT').textContent = meta ? meta.t : '';
+    const c = document.getElementById('csCajaC'); c.innerHTML = '<div>' + tmp.innerHTML + '</div>'; c.scrollTop = 0;
+    csCajaFoco = document.activeElement;
+    caja.classList.add('on');
+    try { caja.querySelector('.cc-x').focus({ preventScroll: true }); } catch (e) {}
+  }
+  window.csCerrarCaja = () => {
+    const caja = document.getElementById('csCaja'); if (caja) caja.classList.remove('on');
+    try { if (csCajaFoco && csCajaFoco.focus) csCajaFoco.focus({ preventScroll: true }); } catch (e) {}
+  };
+  document.addEventListener('keydown', ev => { if (ev.key === 'Escape') { const caja = document.getElementById('csCaja'); if (caja && caja.classList.contains('on')) csCerrarCaja(); } });
   // ⓘ junto al desplegable del Ranking: la explicación del ranking elegido
   const CS_RANKING = { mvp: 'ranking-mvp', pond: 'orden-impacto', puntosGol: 'puntos', clave: 'momentos', wpa: 'pro', peso: 'peso', cuota: 'peso', masmenos: 'puntos', tirosCampo: 'pro', companeros: 'companeros', echa: 'momentos', b2b: 'b2b' };
   window.csRankingI = () => { const v = (document.getElementById('rankingCriterioSelect') || {}).value || 'mvp'; abrirComoSeCalcula(CS_RANKING[v] || 'suma'); };
@@ -16941,7 +16969,7 @@
     window.addEventListener('scroll', prog, { passive: true });
     prog();
   })();
-  const VIS_VERSION = 309;
+  const VIS_VERSION = 310;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

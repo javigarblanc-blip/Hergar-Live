@@ -1022,6 +1022,21 @@
   #splashV260 img { position:relative; width:110px; height:110px; border-radius:50%; object-fit:cover; background:#fff; box-shadow:0 0 50px rgba(180,20,56,.55); animation:v260Late 1.6s ease-in-out infinite; }
   #splashV260 .sp-t { position:relative; font-family:'Montserrat',sans-serif; font-weight:900; font-size:22px; letter-spacing:3px; color:#fff; }
   #splashV260 .sp-s { position:relative; font-size:11px; color:#64748b; letter-spacing:1px; }
+
+  /* v309 · ⓘ de ayuda: abre «¿Cómo se calcula?» en su apartado */
+  .cs-i { flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; margin:-9px -6px -9px 2px; padding:0; border:0; background:transparent; cursor:pointer; vertical-align:middle; -webkit-tap-highlight-color:transparent; }
+  .cs-i span { width:20px; height:20px; border-radius:50%; border:1.5px solid #f5a623; color:#f5a623; background:rgba(245,166,35,.1); font-family:Georgia,'Times New Roman',serif; font-style:italic; font-weight:700; font-size:12.5px; line-height:17px; text-align:center; text-transform:none; letter-spacing:0; }
+  .cs-i:active span { background:rgba(245,166,35,.3); }
+  .cs-i-sel { width:38px; height:38px; margin:0; border-radius:9px; border:1.5px solid rgba(245,166,35,.55); background:rgba(245,166,35,.12); }
+  .cs-i-sel span { border:0; background:transparent; font-size:17px; }
+  .card-title:has(> .cs-i) { display:flex; align-items:center; gap:4px; }
+  .card-title > .cs-i { margin-left:auto; }
+  .cs-sec.cs-flash { animation:csFlash 2s ease-out; }
+  @keyframes csFlash { 0%, 35% { box-shadow:0 0 0 2px #f5a623, 0 0 24px rgba(245,166,35,.35); } 100% { box-shadow:none; } }
+  .cs-blq { font-family:'Montserrat',sans-serif; font-weight:900; font-size:12px; color:#f5a623; text-transform:uppercase; letter-spacing:.6px; margin:18px 2px 0; }
+  .cs-ind { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+  .cs-ind button { padding:6px 11px; border-radius:999px; border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.06); color:#e2e8f0; font-size:11.5px; font-weight:700; font-family:inherit; cursor:pointer; }
+  @media (prefers-reduced-motion: reduce) { .cs-sec.cs-flash { animation:none; outline:2px solid #f5a623; } }
 </style>
 </head>
 <body>
@@ -1172,7 +1187,7 @@
       <div id="subRanking" class="sub-panel">
         <div class="card">
           <div class="card-title">Ranking de temporada</div>
-          <select id="rankingCriterioSelect" onchange="rerenderRanking()" style="width:100%; padding:8px; border-radius:8px; background:#0f172a; color:#e2e8f0; border:1px solid rgba(255,255,255,.1); margin-bottom:10px; font-size:12px;">
+          <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;"><select id="rankingCriterioSelect" onchange="rerenderRanking()" style="flex:1; min-width:0; width:100%; padding:8px; border-radius:8px; background:#0f172a; color:#e2e8f0; border:1px solid rgba(255,255,255,.1); margin-bottom:0; font-size:12px;">
             <optgroup label="Lo principal">
             <option value="mvp">🏅 Ranking MVP</option>
             <option value="pond">⭐ Impacto (x70min)</option>
@@ -1194,12 +1209,12 @@
             <option value="cuota">🎯 Cuota de acciones</option>
             <option value="masmenos">➕➖ Con él y sin él</option>
             <option value="tirosCampo">🎯 Tiros con él en el campo</option>
-            <option value="companeros">🧲 Efecto en los demás</option>
+            <option value="companeros">🧲 Hace mejores a los demás</option>
             <option value="echa">🫂 Se le echa de menos</option>
             <option value="b2b">📦 Box-to-box</option>
             </optgroup>
-          </select>
-          <button onclick="abrirComoSeCalcula()" style="width:100%; margin:0 0 8px; padding:10px 12px; border-radius:10px; border:1px solid rgba(245,166,35,.4); background:rgba(245,166,35,.08); color:#f5a623; font-family:'Montserrat',sans-serif; font-weight:800; font-size:12px; text-align:left; cursor:pointer;">❔ ¿Cómo se calcula el impacto?</button>
+          </select><button type="button" class="cs-i cs-i-sel" onclick="csRankingI()" aria-label="Qué es este ranking"><span>i</span></button></div>
+          <button onclick="abrirComoSeCalcula()" style="display:none; width:100%; margin:0 0 8px; padding:10px 12px; border-radius:10px; border:1px solid rgba(245,166,35,.4); background:rgba(245,166,35,.08); color:#f5a623; font-family:'Montserrat',sans-serif; font-weight:800; font-size:12px; text-align:left; cursor:pointer;">❔ ¿Cómo se calcula el impacto?</button>
           <div id="rankingLista"><div class="loader">Cargando temporada...</div></div>
         </div>
       </div>
@@ -1539,7 +1554,7 @@
 <div id="comoSeCalculaModal" style="display:none; position:fixed; inset:0; z-index:950; background:rgba(0,0,0,.85); align-items:flex-start; justify-content:center; padding:20px; overflow-y:auto; overscroll-behavior:contain;">
   <div style="background:linear-gradient(145deg,#111827,#0f172a); border-radius:20px; padding:18px; max-width:380px; width:100%; border:1px solid rgba(255,255,255,.12); margin:auto 0;">
     <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">
-      <div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:15px; color:#f5a623;">❔ ¿Cómo se calcula el impacto?</div>
+      <div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:15px; color:#f5a623;">❔ ¿Cómo se calcula?</div>
       <button onclick="cerrarComoSeCalcula()" aria-label="Cerrar" style="flex:0 0 36px; width:36px; height:36px; border-radius:10px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.06); color:#e2e8f0; font-size:16px; cursor:pointer;">✕</button>
     </div>
     <div id="comoSeCalculaContenido"></div>
@@ -2004,6 +2019,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v309 (visor) · ❔ «¿Cómo se calcula?» (antes «…el impacto?») con todas las explicaciones por bloques e índice; ⓘ en las tarjetas con explicación y junto al desplegable del Ranking; el buscador encuentra las explicaciones; nuevos: Ranking MVP, Once ideal, dominio, probabilidad, pronóstico, rachas, contexto, prime, mapa de calor, grandes, comodines, estilo, medias, cadenas, mapa de goles y pegamento; «Ranking de impacto» en vez de «clasificación»; «Hace mejores a los demás» en el Ranking; líneas en Hace mejores, Box-to-box, Impacto y racha de titularidad.
   // v308 (visor) · ❔ ¿Cómo se calcula?: como la de la app, con los fallos, los penaltis, el gol de centrocampista y el suelo de −5 por partido; el MVP dice que los fallos restan.
   // v307 (visor) · 🏅 Once ideal por sus acciones en bruto en cada línea, con el valor del rival como el Ranking MVP (antes impacto por 70' con 20' mínimos); línea que lo explica.
   // v306 (visor) · Probabilidades: mientras no haya partidos suficientes para comparar, solo el cálculo por goles (antes mitad goles y mitad Elo); el Elo solo entra si demuestra que acierta más.
@@ -12149,6 +12165,12 @@
       cont.innerHTML = `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin:0 0 8px;">Solo en los partidos que juega: cuántos goles de diferencia más (por cada 70') hace el equipo con él en el campo que mientras está en el banquillo. Así el rival es el mismo en los dos casos. Hace falta haber estado al menos ${MM_MIN_OFF} minutos en el banquillo para comparar.${sinMM.length ? ' Sin dato (lo jugó casi todo o faltan datos): ' + sinMM.map(j => escHtml((j.name || '').split(' ')[0])).join(', ') + '.' : ''}</div>` + cont.innerHTML;
     } else if (criterio === 'peso') {
       cont.innerHTML = `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin:0 0 8px;">Cuánto está cada jugador por encima o por debajo de sus compañeros del mismo partido (por 70'). No depende del resultado ni del rival.</div>` + cont.innerHTML;
+    } else if (esComp) { // v309
+      cont.innerHTML = `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin:0 0 8px;">Cuánto mejoran las acciones de los compañeros (por 70') cuando él está en el campo, frente a cuando está en el banquillo en esos mismos partidos. Solo salen los que suman. Desde el 17 de octubre.</div>` + (lista.length ? cont.innerHTML : '<div class="loader">Aún no hay datos suficientes</div>');
+    } else if (esB2b) { // v309
+      cont.innerHTML = `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin:0 0 8px;">Partidos en los que llegó a todo: ${B2B_N} o más puntos en ataque y ${B2B_N} o más en defensa (📦📦: ${B2B_T} y ${B2B_T}).</div>` + (lista.length ? cont.innerHTML : '<div class="loader">Aún nadie ha hecho un box-to-box</div>');
+    } else if (criterio === 'pond') { // v309
+      cont.innerHTML = `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin:0 0 8px;">Su impacto por cada 70 minutos jugados: sus acciones y lo que pasa mientras está en el campo. Mínimo ${minRanking} minutos.</div>` + cont.innerHTML;
     } else if (criterio === 'cuota') {
       cont.innerHTML = `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin:0 0 8px;">Acciones de juego que hace frente a las que le tocarían por sus minutos. ×1,0 es lo normal.${sinCuota.length ? ' Sin cuota (portero o sin partidos con detalle): ' + sinCuota.map(j => escHtml((j.name || '').split(' ')[0])).join(', ') + '.' : ''}</div>` + cont.innerHTML;
     }
@@ -13210,6 +13232,7 @@
       <div style="font-size:11.5px; color:#cbd5e1; margin-bottom:10px;">${partidos.length} partidos · GF: <strong style="color:#2ed573;">${GF}</strong> · GC: <strong style="color:#ff4757;">${GC}</strong></div>
       ${efEq ? `<div style="font-size:11.5px; color:#cbd5e1; margin-bottom:10px;">Eficacia de tiro: <strong style="color:#2ed573;">${efEq.pct}%</strong> <span style="color:#64748b;">(${efEq.goles} goles de ${efEq.tiros} tiros)</span></div>` : ''}
       <div class="card-title" style="margin-top:6px;">🔥 Racha de titularidad por jugador</div>
+      <div style="font-size:11px; line-height:1.45; color:#94a3b8; margin:-4px 0 6px;">Partidos seguidos saliendo de titular. Se corta en cuanto no sale de titular, esté en el banquillo o no convocado.</div>
       ${filasJugadores || '<div class="loader">Ahora mismo nadie lleva racha</div>'}`;
   }
 
@@ -14591,7 +14614,7 @@
     const out = [];
     document.querySelectorAll('#temporada .sub-panel, #liga .sub-panel').forEach(sp => {
       sp.querySelectorAll('.card-title').forEach(ct => {
-        const tit = ct.textContent.replace(/\s+/g, ' ').trim();
+        const tit = [...ct.childNodes].filter(n => !(n.classList && n.classList.contains('cs-i'))).map(n => n.textContent).join('').replace(/\s+/g, ' ').trim(); // v309: sin la ⓘ
         if (!tit) return;
         const n = buscaNorm(tit), extra = Object.keys(BUSCA_SINONIMOS).filter(k => n.includes(k)).map(k => BUSCA_SINONIMOS[k]).join(' ');
         out.push({ tipo: 'tarjeta', txt: tit, sub: sp.id, el: ct, clave: n + ' ' + extra });
@@ -14619,6 +14642,12 @@
         if (palabras.every(w => nn.includes(w) || String(p.dorsal) === w)) res.unshift({ tipo: 'nino', txt: '👤 ' + mhNombre(p.name) + (p.dorsal != null ? ' · #' + p.dorsal : ''), id: p.id });
       });
     } catch (e) {}
+    // v309 · explicaciones de «¿Cómo se calcula?» (como mucho 2, las primeras)
+    try {
+      const ex = CS_META.filter(m => { const k = buscaNorm(m.t + ' ' + m.kw); return palabras.every(w => k.includes(w)); }).slice(0, 2)
+        .map(m => ({ tipo: 'explica', txt: '📖 Qué es: ' + m.t.replace(/^[^A-Za-zÁÉÍÓÚÑáéíóúñ¿]+/, ''), sec: m.id }));
+      res.unshift(...ex);
+    } catch (e) {}
     return res.slice(0, 8);
   }
   let buscaUlt = [];
@@ -14631,7 +14660,7 @@
     buscaUlt = buscaResultados(q);
     box.style.display = '';
     box.innerHTML = buscaUlt.length
-      ? buscaUlt.map((e, i) => `<button type="button" class="tmp-res-it" data-i="${i}">${escHtml(e.txt)}<small>${e.tipo === 'nino' || e.tipo === 'portero' ? 'Abre su ficha' : escHtml(buscaRuta(e.sub)) + (e.sub === 'subPlantilla' && e.dentro === '' ? ' · toca un niño' : '')}</small></button>`).join('')
+      ? buscaUlt.map((e, i) => `<button type="button" class="tmp-res-it" data-i="${i}">${escHtml(e.txt)}<small>${e.tipo === 'explica' ? 'Explicación · ❔ ¿Cómo se calcula?' : e.tipo === 'nino' || e.tipo === 'portero' ? 'Abre su ficha' : escHtml(buscaRuta(e.sub)) + (e.sub === 'subPlantilla' && e.dentro === '' ? ' · toca un niño' : '')}</small></button>`).join('')
       : `<div class="tmp-res-no">No encuentro nada con «${escHtml(q.trim())}». Prueba con otra palabra (gol, portero, córner, racha, un nombre…).</div>`;
     box.querySelectorAll('.tmp-res-it').forEach(b => b.onclick = () => buscaIr(buscaUlt[Number(b.dataset.i)]));
   }
@@ -14639,6 +14668,7 @@
   function buscaIr(e) {
     if (!e) return;
     buscaLimpiar();
+    if (e.tipo === 'explica') { abrirComoSeCalcula(e.sec); return; } // v309
     if (e.tipo === 'nino') { try { window.abrirPerfilJugadorTemporada(e.id); } catch (er) { console.error('Buscar:', er); } return; }
     if (e.tipo === 'portero') {
       try {
@@ -14737,8 +14767,8 @@
       <div style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:14px; white-space:nowrap; color:${color};">${valorTxt}</div>
     </div>`;
   }
-  function csTarjeta(titulo, filasHtml, nota, destacada) {
-    return `<div style="background:rgba(255,255,255,.06); border:1px solid ${destacada ? 'rgba(245,166,35,.4)' : 'rgba(255,255,255,.07)'}; border-radius:14px; padding:12px 14px; margin-top:10px;">
+  function csTarjeta(titulo, filasHtml, nota, destacada, id) {
+    return `<div ${id ? `id="cs-${id}" class="cs-sec"` : ''} style="scroll-margin-top:12px; background:rgba(255,255,255,.06); border:1px solid ${destacada ? 'rgba(245,166,35,.4)' : 'rgba(255,255,255,.07)'}; border-radius:14px; padding:12px 14px; margin-top:10px;">
       <div style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:11px; letter-spacing:.05em; color:#94a3b8; text-transform:uppercase; margin-bottom:4px;">${titulo}</div>
       ${filasHtml}
       ${nota ? `<div style="margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,.1); font-size:11px; line-height:1.5; color:#94a3b8;">${nota}</div>` : ''}
@@ -14784,39 +14814,133 @@
       csFila('Defensas', fmtPts(pc.defensa), true),
       csFila('Centrocampistas', fmtPts(pc.centrocampista), true)
     ].join('');
-    cont.innerHTML =
-      `<div style="font-size:12px; line-height:1.5; color:#94a3b8;">El impacto resume lo que aporta cada jugador: sus acciones y lo que ocurre mientras está en el campo. En un partido, el impacto de un jugador nunca baja de ${fmtPts(R.suelo != null ? R.suelo : -5)}.</div>`
-      + csTarjeta('Lo que suma un jugador', suma)
-      + csTarjeta('Lo que pasa mientras juega', juego)
-      + csTarjeta('Portería a cero', porteria, 'Se aplica si el equipo no encaja ningún gol mientras el jugador está en el campo. Es proporcional a sus minutos.' + (pcp ? ' Va por el puesto en el que jugó (si jugó en varios, la parte de cada uno), desde los partidos de finales de octubre.' : ''), true)
-      + csTarjeta('Penaltis', (() => { const pe = R.penaltis || { marca: 0.50, falla: -0.75, provocado: 0.40, contraGolCampo: -0.50, paradoPortero: 1.00 }; return [ // v308
+    const P = (...ps) => `<div style="font-size:12.5px; line-height:1.55; color:#e2e8f0; padding-top:6px;">` + ps.map((x, k) => `<p style="margin:${k === ps.length - 1 ? '0' : '0 0 8px'};">${x}</p>`).join('') + '</div>';
+    const H = {
+      suma: [suma], juego: [juego],
+      porteria: [porteria, 'Se aplica si el equipo no encaja ningún gol mientras el jugador está en el campo. Es proporcional a sus minutos.' + (pcp ? ' Va por el puesto en el que jugó (si jugó en varios, la parte de cada uno), desde los partidos de finales de octubre.' : ''), true],
+      penaltis: [(() => { const pe = R.penaltis || { marca: 0.50, falla: -0.75, provocado: 0.40, contraGolCampo: -0.50, paradoPortero: 1.00 }; return [ // v308
           csFila('Ejecutor que marca', fmtPts(pe.marca), true, 'En lugar de lo que vale un gol normal.'),
           csFila('Ejecutor que falla', fmtPts(pe.falla), false),
           csFila('Provocar el penalti', fmtPts(pe.provocado), true),
           csFila('Penalti en contra convertido', fmtPts(pe.contraGolCampo), false, 'A cada jugador en el campo.'),
           csFila('Portero que para un penalti', fmtPts(pe.paradoPortero), true)
-        ].join(''); })())
-      + csTarjeta('Sinergias', `<div style="font-size:12.5px; line-height:1.55; color:#e2e8f0; padding-top:6px;">Impacto que suman los dos jugadores de una pareja mientras coinciden en el campo, por cada 70 minutos juntos. Hacen falta ${R.minMinutosSinergia || 20} minutos juntos medidos para entrar en la lista. Las que no llegan salen en observación con una nota orientativa ≈ (lo que falta se estima con el impacto de cada uno), que no entra en la lista.</div>`)
-      + csTarjeta('Peso en el equipo', pesoExplicacionHTML(R.minMinutosRanking || 35)) // v132
-      + csTarjeta('Puntos de los goles y más/menos', puntosMasMenosExplicacionHTML(R.minMinutosRanking || 35)) // v133
-      + csTarjeta('Momentos, momento clave y el muro', momentosExplicacionHTML()) // v134
-      + csTarjeta('Métricas de los profesionales', proExplicacionHTML()) // v135
-      + csTarjeta('Suerte y nivel', snExplicacionHTML()) // v155
-      + csTarjeta('Efecto del banquillo', banquilloExplicacionHTML()) // v137
-      + csTarjeta('Hacen mejores a los demás', companerosExplicacionHTML()) // v140
-      + csTarjeta('⭐ MVP del partido', mvpExplicacionHTML(R.minMinutosMVP || 10)) // v190
-      + csTarjeta('📦 Box-to-box', b2bExplicacionHTML()) // v222
-      + csTarjeta('🔗 Química del once', qmExplicacionHTML()) // v222
-      + csTarjeta('Cómo se ordena la clasificación',
-        `<div style="font-size:12.5px; line-height:1.55; color:#e2e8f0; padding-top:6px;">
-          <p style="margin:0 0 8px;">Se usa el impacto por 70 minutos, para poder comparar a quien juega más con quien juega menos.</p>
-          <p style="margin:0;">Hacen falta ${R.minMinutosRanking} minutos acumulados para entrar en la clasificación. Hasta entonces, el jugador aparece en observación.</p>
-        </div>`);
+        ].join(''); })()],
+      'orden-impacto': [P(`<strong>Impacto por 70 min</strong> = impacto acumulado ÷ minutos jugados × 70, para poder comparar a quien juega más con quien juega menos.`, `Hacen falta <strong>${R.minMinutosRanking || 35} minutos</strong> acumulados para entrar en el ranking de impacto. Hasta entonces, el niño aparece en «en observación».`)],
+      mvp: [mvpExplicacionHTML(R.minMinutosMVP || 10)],
+      'ranking-mvp': [P(`Suma todo lo que hace cada niño en la temporada, juegue lo que juegue: goles, asistencias, tiros, pases, regates, acciones defensivas y paradas, con los fallos restando. Sin la parte de equipo (goles a favor y en contra, tiros del rival, portería a cero).`, `Cada partido vale más cuanto mejor era el rival: <strong>jornadas 1-3</strong>, ×1; <strong>jornadas 4-8</strong>, según la clasificación antes del partido (6 % por puesto de diferencia); <strong>desde la 9</strong>, según los puntos Elo antes del partido (60 puntos = 10 %). Como mucho, de ×0,5 a ×1,5.`, `No hay mínimo de minutos: quien juega poco suma poco. ⭐ = veces MVP. Tocando a un niño se ve partido a partido.`)],
+      once: [P(`En cada línea (portero, defensas, centrocampistas y delanteros) entran los que más han hecho en toda la temporada: sus acciones en bruto, como el Ranking MVP (sin la parte de equipo, con los fallos restando y cada partido multiplicado por el valor del rival).`, `Si en un partido jugó en varias líneas, sus acciones se reparten por los minutos en cada una. Hacen falta 20' en esa línea, y cada niño ocupa un solo sitio. Los partidos cargados a mano no cuentan.`)],
+      peso: [pesoExplicacionHTML(R.minMinutosRanking || 35)],
+      puntos: [puntosMasMenosExplicacionHTML(R.minMinutosRanking || 35)],
+      sinergias: [`<div style="font-size:12.5px; line-height:1.55; color:#e2e8f0; padding-top:6px;">Impacto que suman los dos jugadores de una pareja mientras coinciden en el campo, por cada 70 minutos juntos. Hacen falta ${R.minMinutosSinergia || 20} minutos juntos medidos para entrar en la lista. Las que no llegan salen en observación con una nota orientativa ≈ (lo que falta se estima con el impacto de cada uno), que no entra en la lista.</div>`],
+      pegamento: [P(`Con cuántos compañeros forma <strong>pareja rodada</strong> cada niño en los 4 últimos partidos, jugando a su lado en la pizarra: los que más unen al equipo.`, `Pareja rodada: han jugado al lado el 65 % o más de los minutos que jugó en esa zona el que menos jugó ahí de los dos (como poco, de 140'). El portero, con sus defensas; el delantero, con extremos y mediapunta; y quien juega en dos puestos, con los compañeros de las dos zonas.`)],
+      companeros: [companerosExplicacionHTML()],
+      b2b: [b2bExplicacionHTML()],
+      banquillo: [banquilloExplicacionHTML()],
+      prime: [P(`Cuándo aparece más cada niño: los puntos de sus acciones (lo bueno y lo malo que hace él) en cada tramo, frente a su propia media. Se mira de dos formas: según el tiempo que lleva seguido en el campo y según el minuto del partido.`, `<strong>100 %</strong> es su nivel normal. Un 130 % no quiere decir que haga más que otro, sino cuándo rinde mejor él. No cuenta lo que suma el equipo por los goles, así que las goleadas no influyen.`, `Sale con los partidos apuntados en directo desde el 17 de octubre: con menos de 150' medidos es provisional, y un tramo con menos de 20' no se da. «Partes enteras»: casi siempre juega la parte completa, así que cuenta su minuto del partido. El portero no se calcula.`)],
+      calor: [P(`Cada casilla es el <strong>peso en el equipo</strong> de un niño en un partido: frente a sus compañeros de ese mismo partido, así que una goleada no lo pinta todo de verde. Verde, por encima; rojo, por debajo.`, `Regularidad (desde 3 partidos), por el color de sus casillas: 🎯 regular, al menos 2 de cada 3 partidos del mismo color; 🎢 irregular, alterna verdes y rojas (al menos 1 de cada 4 de cada); 〰️ normal, el resto. Tocando una casilla se abre su ficha de ese partido.`)],
+      grandes: [P(`Los partidos grandes son contra los <strong>4 rivales con más puntos Elo</strong> el día del partido. Se compara el peso en el equipo de cada niño en esos partidos con el del resto, así que las goleadas no influyen.`, `Solo salen quienes rinden más en los grandes, con un mínimo de 70' en partidos grandes y 70' en el resto. Con menos de 4 partidos grandes es un dato provisional.`)],
+      comodines: [P(`Los más polivalentes. Un puesto o una línea cuenta con <strong>35' o más</strong> jugados ahí en la temporada. Polivalente: 3 puestos en 2 líneas, o 3 líneas.`, `Primero va quien toca más líneas (portería, defensa, medio y ataque) y después quien juega en más puestos. Los partidos antiguos sin puesto exacto solo cuentan para las líneas.`)],
+      adn: [P(`El estilo de cada niño sale de 6 rasgos por 70': <strong>Puntería</strong> (goles por tiro, con 5 tiros como mínimo), <strong>Disparo</strong>, <strong>Último pase</strong> (asistencias y pases clave), <strong>Pase al área</strong>, <strong>Regate</strong> (con los penaltis provocados) y <strong>Defensa</strong> (las clave cuentan doble).`, `Cada rasgo puntúa de 0 a 100 según a cuántos compañeros supera, y gana el estilo con la media más alta. Nada resta: el estilo dice qué hace, no si lo hace bien. Hacen falta 70' en la temporada. El portero es el Guardián.`, `Estilos: 🎯 Francotirador · 🔫 Pistolero · 🧠 Cerebro · 🪄 Mago · 🧱 Muro · 🚜 Todoterreno (ataca y defiende, sin un rasgo dominante) · 🧤 Guardián.`)],
+      momentos: [momentosExplicacionHTML()],
+      pro: [proExplicacionHTML()],
+      suerte: [snExplicacionHTML()],
+      quimica: [qmExplicacionHTML()],
+      medias: [P(`Cómo es un partido medio del Hergar frente a sus rivales: goles, tiros, córners, faltas, fueras de juego, tarjetas, impacto medio y la 1.ª parte frente a la 2.ª. Se filtra por temporada, últimos 5, casa o fuera.`, `Cada dato sale solo de los partidos que lo tienen: los cargados a mano solo tienen goles.`)],
+      vueltas: [P(`El Hergar de ahora contra el de la 1.ª vuelta: medias por partido en ataque y en defensa, y los partidos de ida y vuelta contra el mismo rival. Tiros, eficacia y defensa solo cuentan los partidos en directo o del delegado.`)],
+      rachas: [P(`El balance de la temporada (victorias, empates y derrotas), los goles a favor y en contra y la <strong>eficacia de tiro</strong> del equipo: goles ÷ tiros totales (los partidos cargados a mano no cuentan).`, `<strong>Racha de titularidad</strong>: partidos seguidos que lleva cada niño saliendo de titular. Se corta en cuanto no sale de titular, esté en el banquillo o no convocado.`)],
+      contexto: [P(`Cómo nos va según las circunstancias de cada partido: dónde se juega, la hora, el césped y el tamaño del campo, la temperatura, la lluvia y el viento, cómo llegábamos (después de ganar o de no ganar) y si el rival es de arriba, de la mitad o de abajo de la clasificación.`, `El tiempo y los campos se rellenan solos con el calendario y los campos de la Liga. Si a un partido le falta un dato, no entra en ese apartado. Tocando una fila se ven sus partidos.`)],
+      mapagoles: [P(`Desde dónde y cómo llega cada gol, a favor y en contra, con filtros por origen y por niño.`, `<strong>Jugada</strong>: ataque con el balón en juego. <strong>Robo / contraataque</strong>: gol poco después de recuperar el balón. <strong>Rechace</strong>: gol al segundo intento, tras una parada, un poste o un despeje que vuelve. <strong>Córner · Falta · Penalti</strong>: a balón parado. <strong>Error del rival / Pérdida nuestra</strong>: siempre del equipo, nunca de un niño.`, `<strong>Índice golazo</strong>: lo difícil que era marcar desde el sitio de cada gol, de 0 a 10 (sin penaltis ni goles de falta).`)],
+      cadenas: [P(`Quién participa en los goles además del goleador y el asistente: las acciones del Hergar del mismo minuto del gol o del anterior. Es orientativo, porque la cronología va por minutos, no por segundos.`, `Goles y asistencias cuentan toda la temporada; «en la jugada», solo desde el 17 de octubre, cuando la app empezó a guardar el registro de acciones.`)],
+      dominio: [P(`Qué equipo aprieta más en cada momento del partido. Por encima de la línea aprieta el Hergar; por debajo, el rival.`, `Suma cada jugada para quien la hace: <strong>gol 3</strong>, <strong>tiro a puerta o al palo 1</strong>, <strong>tiro fuera 0,5</strong>, <strong>córner 0,5</strong> y <strong>pase clave del Hergar 0,5</strong>. Las acciones defensivas cuentan según dónde se hacen: del portero o un defensa, aprieta el rival (0,3; la clave, 0,5); de un delantero, aprieta el Hergar; las de los centrocampistas no cuentan.`, `En cada momento se mira lo que pasó en los 6 minutos anteriores, y se suaviza para que un gol no aplaste todo lo demás. No cambia el impacto de nadie.`)],
+      probabilidad: [P(`Lo probable que es que el Hergar gane, empate o pierda en cada minuto del directo: según el marcador, el tiempo que queda y el nivel de ataque y defensa de los dos equipos en la Liga (el mismo que usa el Pronóstico).`, `En la gráfica, el verde es ganar, el gris empatar y el rojo perder. Cada punto es un gol: el verde sube de golpe con los nuestros y baja con los del rival.`)],
+      pronostico: [P(`1. Con los resultados de la Liga se calcula el nivel de ataque y de defensa de cada equipo. Cuenta a quién le metiste o te metió los goles: marcarle al líder vale más que marcarle al último.`, `2. Los partidos recientes pesan más que los antiguos. Con pocas jornadas jugadas todos se parecen a la media, para que un resultado raro no lo descoloque todo.`, `3. Con esos niveles se juega el resto de la Liga 10.000 veces, con resultados al azar pero realistas, y se aplican los desempates (puntos, diferencia de goles y goles a favor).`, `4. Si un equipo acaba primero en 3.400 de esas 10.000 temporadas, sus opciones de ascenso son del 34 %. Solo sube el campeón.`)]
+    };
+    const ind = CS_BLOQUES.map(bq => `<button type="button" onclick="csIrBloque('${bq.id}')">${bq.t}</button>`).join('');
+    cont.innerHTML =
+      `<div style="font-size:12px; line-height:1.5; color:#94a3b8;">Todas las explicaciones del visor. El impacto resume lo que aporta cada jugador: sus acciones y lo que ocurre mientras está en el campo. En un partido, el impacto de un jugador nunca baja de ${fmtPts(R.suelo != null ? R.suelo : -5)}.</div><div class="cs-ind">${ind}</div>`
+      + CS_BLOQUES.map(bq => `<div class="cs-blq" id="csb-${bq.id}">${bq.t}</div>` + CS_META.filter(m => m.b === bq.id && H[m.id]).map(m => csTarjeta(m.t, H[m.id][0], H[m.id][1], H[m.id][2], m.id)).join('')).join('');
   }
-  window.abrirComoSeCalcula = () => {
+  // v309 · índice de la ventana y ⓘ de ayuda
+  const CS_BLOQUES = [
+    { id: 'imp', t: '⭐ Impacto y MVP' }, { id: 'jug', t: '👥 Jugadores' }, { id: 'equ', t: '🏟️ Equipo' },
+    { id: 'gol', t: '⚽ Goles' }, { id: 'par', t: '📺 Partido' }, { id: 'liga', t: '📋 Liga' }
+  ];
+  const CS_META = [
+    { id: 'suma', b: 'imp', t: 'Lo que suma un jugador', kw: 'impacto puntos gol asistencia pase clave area disparo tiro palo regate defensa defensiva clave parada paradon fuera de juego fallo falta recibida' },
+    { id: 'juego', b: 'imp', t: 'Lo que pasa mientras juega', kw: 'impacto gol a favor en contra tiros del rival tope goleada' },
+    { id: 'porteria', b: 'imp', t: 'Portería a cero', kw: 'porteria cero imbatido portero defensas' },
+    { id: 'penaltis', b: 'imp', t: 'Penaltis', kw: 'penalti penaltis provocar fallar parar' },
+    { id: 'orden-impacto', b: 'imp', t: 'Cómo se ordena el Ranking de impacto', kw: 'ranking impacto x70 70 minutos observacion minimo' },
+    { id: 'mvp', b: 'imp', t: '⭐ MVP del partido', kw: 'mvp mejor jugador partido' },
+    { id: 'ranking-mvp', b: 'imp', t: '🏅 Ranking MVP', kw: 'ranking mvp acciones bruto rival valor elo' },
+    { id: 'once', b: 'imp', t: '🏅 Once ideal', kw: 'once ideal mejor once' },
+    { id: 'peso', b: 'jug', t: '⚖️ Peso en el equipo y cuota de acciones', kw: 'peso equipo cuota acciones companeros' },
+    { id: 'puntos', b: 'jug', t: '💎 Puntos de sus goles · ➕➖ Con él y sin él', kw: 'puntos goles victoria empate con el sin el mas menos' },
+    { id: 'sinergias', b: 'jug', t: '🔗 Sinergias', kw: 'sinergias parejas conexiones' },
+    { id: 'pegamento', b: 'jug', t: '🧩 El pegamento', kw: 'pegamento pareja rodada vecinos' },
+    { id: 'companeros', b: 'jug', t: '🧲 Hacen mejores a los demás', kw: 'hace mejores demas efecto companeros iman' },
+    { id: 'b2b', b: 'jug', t: '📦 Box-to-box', kw: 'box to box llega a todo ataque defensa' },
+    { id: 'banquillo', b: 'jug', t: '🔄 Efecto del banquillo', kw: 'banquillo cambios suplentes titular suplente' },
+    { id: 'prime', b: 'jug', t: '⚡ Prime', kw: 'prime tramo cuando rinde cansancio' },
+    { id: 'calor', b: 'jug', t: '🗓️ Mapa de calor', kw: 'mapa calor regularidad regular irregular casillas' },
+    { id: 'grandes', b: 'jug', t: '🏟️ Se crecen en los grandes', kw: 'grandes partidos grandes se crece' },
+    { id: 'comodines', b: 'jug', t: '🔄 Los comodines', kw: 'comodines polivalente polivalentes puestos lineas' },
+    { id: 'adn', b: 'jug', t: '🎨 Estilo de juego y ADN del equipo', kw: 'estilo adn juega como francotirador pistolero cerebro mago muro todoterreno guardian rasgos hexagono' },
+    { id: 'momentos', b: 'equ', t: '📈 Momentos, momento clave y el muro', kw: 'momentos remontados perdidos reaccion momento clave muro se le echa de menos' },
+    { id: 'pro', b: 'equ', t: '📊 Métricas de los profesionales', kw: 'tiempo por marcador cuota de tiros victorias anadidas elo ranking tabla de la suerte' },
+    { id: 'suerte', b: 'equ', t: '🍀 Suerte y nivel', kw: 'suerte termometro nivel sobre lo esperado cuota tiros pdo' },
+    { id: 'quimica', b: 'equ', t: '🔗 Química del once', kw: 'quimica once rodada casi nueva enlaces' },
+    { id: 'medias', b: 'equ', t: '📊 Medias por partido', kw: 'medias partido medio' },
+    { id: 'vueltas', b: 'equ', t: '🔁 El Hergar de ahora', kw: 'hergar de ahora 1.a vuelta ida y vuelta comparar' },
+    { id: 'rachas', b: 'equ', t: '🔥 Rachas', kw: 'rachas racha titularidad eficacia balance' },
+    { id: 'contexto', b: 'equ', t: '🧭 Contexto', kw: 'contexto casa fuera hora cesped campo temperatura lluvia viento' },
+    { id: 'mapagoles', b: 'gol', t: '🎯 Mapa de goles y origen de cada gol', kw: 'mapa goles origen jugada robo rechace corner falta penalti error perdida golazo' },
+    { id: 'cadenas', b: 'gol', t: '⛓️ Cadenas de gol', kw: 'cadenas jugada participa goles' },
+    { id: 'dominio', b: 'par', t: '📉 Dominio (momentum)', kw: 'dominio momentum aprieta' },
+    { id: 'probabilidad', b: 'par', t: '📈 Probabilidad de ganar', kw: 'probabilidad ganar directo opciones' },
+    { id: 'pronostico', b: 'liga', t: '🔮 Pronóstico', kw: 'pronostico ascenso campeon simulaciones probabilidades' }
+  ];
+  window.csIrBloque = (b) => { const el = document.getElementById('csb-' + b); if (el) try { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { el.scrollIntoView(); } };
+  window.abrirComoSeCalcula = (sec) => {
     renderComoSeCalculaViewer();
-    document.getElementById('comoSeCalculaModal').style.display = 'flex';
+    const modal = document.getElementById('comoSeCalculaModal');
+    modal.style.display = 'flex';
+    modal.scrollTop = 0;
+    if (!sec) return;
+    const el = document.getElementById('cs-' + sec); if (!el) return;
+    requestAnimationFrame(() => {
+      try { el.scrollIntoView({ behavior: 'auto', block: 'start' }); } catch (e) { el.scrollIntoView(); }
+      el.classList.remove('cs-flash'); void el.offsetWidth; el.classList.add('cs-flash');
+    });
   };
+  // ⓘ junto al desplegable del Ranking: la explicación del ranking elegido
+  const CS_RANKING = { mvp: 'ranking-mvp', pond: 'orden-impacto', puntosGol: 'puntos', clave: 'momentos', wpa: 'pro', peso: 'peso', cuota: 'peso', masmenos: 'puntos', tirosCampo: 'pro', companeros: 'companeros', echa: 'momentos', b2b: 'b2b' };
+  window.csRankingI = () => { const v = (document.getElementById('rankingCriterioSelect') || {}).value || 'mvp'; abrirComoSeCalcula(CS_RANKING[v] || 'suma'); };
+  // ⓘ en los títulos de las tarjetas que tienen explicación (se ponen solas cada vez que se pinta una tarjeta)
+  const CS_TITULOS = [
+    [/^Momentum/, 'dominio'], [/Probabilidad de ganar/, 'probabilidad'], [/^Clasificación$/, 'pro'],
+    [/Momentos del partido/, 'momentos'], [/Tiempo por marcador/, 'pro'], [/Cuota de tiros/, 'suerte'], [/Mapa de goles/, 'mapagoles'],
+    [/ADN del equipo/, 'adn'], [/Su estilo/, 'adn'], [/Se crecen en los partidos grandes/, 'grandes'], [/Los comodines/, 'comodines'],
+    [/Química del once/, 'quimica'], [/Cómo se fabrican los goles/, 'cadenas'], [/prime de cada uno/, 'prime'], [/Mapa de calor/, 'calor'],
+    [/Efecto del banquillo/, 'banquillo'], [/Contexto$/, 'contexto'], [/Medias por partido/, 'medias'], [/El Hergar de ahora/, 'vueltas'],
+    [/Suerte y nivel/, 'suerte'], [/Rachas de la temporada/, 'rachas'], [/Once ideal/, 'once'], [/Conexiones tácticas/, 'sinergias'],
+    [/El muro/, 'momentos'], [/El pegamento/, 'pegamento'], [/Hacen mejores a los demás/, 'companeros']
+  ];
+  function csPonerIs() {
+    document.querySelectorAll('.card-title').forEach(ct => {
+      if (ct.querySelector('.cs-i') || ct.closest('#comoSeCalculaModal')) return;
+      const txt = ct.textContent.replace(/\s+/g, ' ').trim();
+      const m = CS_TITULOS.find(([re]) => re.test(txt)); if (!m) return;
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'cs-i'; b.setAttribute('aria-label', 'Qué es: ' + txt);
+      b.innerHTML = '<span>i</span>';
+      b.addEventListener('click', ev => { ev.preventDefault(); ev.stopPropagation(); abrirComoSeCalcula(m[1]); });
+      ct.appendChild(b);
+    });
+  }
+  let csPonerT = null;
+  try { new MutationObserver(() => { clearTimeout(csPonerT); csPonerT = setTimeout(() => { try { csPonerIs(); } catch (e) {} }, 120); }).observe(document.body, { childList: true, subtree: true }); } catch (e) {}
+  try { csPonerIs(); } catch (e) {}
   window.cerrarComoSeCalcula = () => {
     document.getElementById('comoSeCalculaModal').style.display = 'none';
   };
@@ -16817,7 +16941,7 @@
     window.addEventListener('scroll', prog, { passive: true });
     prog();
   })();
-  const VIS_VERSION = 308;
+  const VIS_VERSION = 309;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

@@ -328,14 +328,23 @@
   .lj304-m.jg .lj304-t.fin { font-size:15px; }
   .lj304-m.jg .lj304-t small { font-size:10px; }
   /* con la línea del pronóstico debajo, un punto intermedio para que sigan cabiendo los 5 */
-  .lj304-m.jgm { padding:7px 12px 7px 8px; margin-bottom:6px; grid-template-columns:44px 1fr; }
-  .lj304-m.jgm .lj304-eq { font-size:13.5px; min-height:26px; gap:8px; }
-  .lj304-m.jgm .lj304-eq .gl { font-size:23px; }
-  .lj304-m.jgm .lj304-t.fin { font-size:13.5px; }
+  .lj304-m.jgm { padding:4px 12px 5px 8px; margin-bottom:5px; grid-template-columns:44px 1fr; }
+  .lj304-m.jgm .lj304-eq { font-size:13px; min-height:22px; gap:8px; }
+  .lj304-m.jgm .lj304-eq .gl { font-size:20px; line-height:1; }
+  .lj304-m.jgm .lj304-t.fin { font-size:13px; }
+  .lj304-m.jgm .lj304-ok { margin-top:1px; font-size:10px; }
+  /* v314 · por jugar: un poco más grandes, que sobraba hueco abajo */
+  .lj304-m.pj { padding:7px 10px 8px 6px; margin-bottom:6px; }
+  .lj304-m.pj .lj304-eq { font-size:13.5px; min-height:25px; }
+  .lj304-m.pj .lj304-eq .pc { font-size:16.5px; }
+  .lj304-m.pj .lj304-eq.f .pc { font-size:18px; }
+  .lj304-m.pj .lj304-t { font-size:18px; }
+  .lj304-m.pj .lj304-bb { margin-top:5px; }
+  .lj304-m.pj .lj304-bar { height:6px; }
   .lj-pills button { width:34px; min-height:32px; border-radius:9px; font-size:15px; }
   .lj312-cab { display:flex; justify-content:space-between; align-items:baseline; gap:8px; font-family:'Montserrat',sans-serif; font-weight:800; font-size:10px; letter-spacing:1px; color:#f5a623; text-transform:uppercase; margin:2px 2px 5px; }
   .lj312-cab span { color:#64748b; letter-spacing:.8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .lj304-dia { margin:8px 2px 4px; font-size:9.5px; }
+  .lj304-dia { margin:6px 2px 3px; font-size:9.5px; }
   .lj304-m { grid-template-columns:40px 1fr; gap:8px; padding:5px 10px 6px 6px; margin-bottom:5px; border-radius:12px; }
   .lj304-t { font-size:17px; }
   .lj304-t.fin { font-size:12.5px; }
@@ -2065,6 +2074,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v314 (visor) · Liga → Partidos: jornadas jugadas (con pronóstico) más compactas para que quepan las 5; por jugar algo más grandes; «Campeón si…» puede ir en dos líneas.
   // v313 (visor) · Liga → Partidos: fuera el selector de vueltas (‹ tira de jornadas › en una fila); tarjetas más grandes en las jornadas ya jugadas; la cabecera no dice «Fecha por confirmar».
   // v312 (visor) · Liga → Partidos: los 5 partidos de la jornada en una pantalla — vueltas y flechas en una sola fila, rótulo «Jornada N · día» en vez de «JORNADA N» + «Nuestro partido» + «El resto», tarjetas más bajas, campeón y aciertos en una línea; la tira de jornadas se centra en la elegida al abrir la pestaña.
   // v311 (visor) · Ranking: fuera la explicación fija bajo el desplegable (estaba repetida con la ⓘ); solo quedan los avisos de datos (media del equipo, sin dato, sin cuota).
@@ -15659,7 +15669,7 @@
       const jugado = p.golesLocal != null && p.golesVisitante != null;
       const o = info && info.porId[p.id] && info.porId[p.id].pr ? info.porId[p.id] : null;
       const pc = (x) => pronPct(x) + ' %';
-      const fila = (eq, nom, h, cls, dato) => `<div class="lj304-eq${cls}${h ? ' hgn' : ''}">${escudoEquipoVisorHTML(eq, jugado ? (o ? 24 : 28) : 20, nom)}<span class="n">${pronEsc(nom)}</span>${dato}</div>`;
+      const fila = (eq, nom, h, cls, dato) => `<div class="lj304-eq${cls}${h ? ' hgn' : ''}">${escudoEquipoVisorHTML(eq, jugado ? (o ? 22 : 28) : 23, nom)}<span class="n">${pronEsc(nom)}</span>${dato}</div>`;
       let t, cuerpo;
       if (jugado) {
         const gl = p.golesLocal, gv = p.golesVisitante, cL = gl > gv ? ' f' : gl < gv ? ' p' : '', cV = gv > gl ? ' f' : gv < gl ? ' p' : '';
@@ -15683,7 +15693,7 @@
           if (it) {
             const v = it.vals, f = (x) => x == null ? '—' : pc(x);
             if (esH) { const g = o.l === Hh ? v[0] : v[2], q = o.l === Hh ? v[2] : v[0];
-              cuerpo += `<div class="lj304-mas una">🏆 Campeón si gana <b>${f(g)}</b> · empata <b>${f(v[1])}</b> · pierde <b>${f(q)}</b></div>`; }
+              cuerpo += `<div class="lj304-mas">🏆 Campeón si gana <b>${f(g)}</b> · empata <b>${f(v[1])}</b> · pierde <b>${f(q)}</b></div>`; }
             else if (it.rango >= .03) {
               const sN = (n) => pronJorNom(n), ok = v.map((x, i) => [x, i]).filter(x => x[0] != null && pr[x[1]] >= .15);
               const best = Math.max(...ok.map(x => x[0])), worst = Math.min(...ok.map(x => x[0]));
@@ -15696,7 +15706,7 @@
           }
         } else cuerpo = fila(eqL, nL, hL, '', '') + fila(eqV, nV, hV, '', '');
       }
-      return `<div class="lj304-m${esH ? ' hg' : ''}${jugado ? (o ? ' jgm' : ' jg') : ''}">${t}<div style="min-width:0;">${cuerpo}</div></div>`;
+      return `<div class="lj304-m${esH ? ' hg' : ''}${jugado ? (o ? ' jgm' : ' jg') : ' pj'}">${t}<div style="min-width:0;">${cuerpo}</div></div>`;
     }
     // Resumen de aciertos arriba de la jornada (jornada y temporada)
     function pronJorResumen304(info, ids){
@@ -17011,7 +17021,7 @@
     window.addEventListener('scroll', prog, { passive: true });
     prog();
   })();
-  const VIS_VERSION = 313;
+  const VIS_VERSION = 314;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

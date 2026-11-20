@@ -2032,6 +2032,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v311 (visor) · Ranking: fuera la explicación fija bajo el desplegable (estaba repetida con la ⓘ); solo quedan los avisos de datos (media del equipo, sin dato, sin cuota).
   // v310 (visor) · ⓘ: cada una abre su propia caja con solo su explicación (✕ siempre arriba, se cierra también tocando fuera), en vez de la ventana única; igual desde el buscador.
   // v309 (visor) · ❔ «¿Cómo se calcula?» (antes «…el impacto?») con todas las explicaciones por bloques e índice; ⓘ en las tarjetas con explicación y junto al desplegable del Ranking; el buscador encuentra las explicaciones; nuevos: Ranking MVP, Once ideal, dominio, probabilidad, pronóstico, rachas, contexto, prime, mapa de calor, grandes, comodines, estilo, medias, cadenas, mapa de goles y pegamento; «Ranking de impacto» en vez de «clasificación»; «Hace mejores a los demás» en el Ranking; líneas en Hace mejores, Box-to-box, Impacto y racha de titularidad.
   // v308 (visor) · ❔ ¿Cómo se calcula?: como la de la app, con los fallos, los penaltis, el gol de centrocampista y el suelo de −5 por partido; el MVP dice que los fallos restan.
@@ -12163,30 +12164,28 @@
     if (esImpacto && lista.length === 0) {
       cont.innerHTML = `<div class="loader">Aún nadie llega a ${minRanking} minutos acumulados</div>`;
     }
+    // v311 · la explicación de cada ranking va solo en la ⓘ; aquí solo quedan los avisos que dependen de los datos
+    const rkNota = (t) => t ? `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin:0 0 8px;">${t}</div>` : '';
     if (esMvp) {
-      cont.innerHTML = `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin:0 0 8px;">Suma de todo lo que hace cada niño en la temporada, juegue lo que juegue: goles, asistencias, pases, regates, acciones defensivas y paradas, con los fallos restando. Sin la parte de equipo. Cada partido vale más cuanto mejor era el rival: <b style="color:#cbd5e1;">jornadas 1-3</b> igual, <b style="color:#cbd5e1;">4-8</b> por la clasificación de antes del partido (6 % por puesto), <b style="color:#cbd5e1;">desde la 9</b> por el Elo (60 puntos = 10 %), entre ×0,5 y ×1,5. ⭐ = veces MVP. Toca a un niño para ver partido a partido.</div>` + (lista.length ? cont.innerHTML : `<div class="loader">Aún no hay partidos con acciones</div>`);
+      // sin nota
     } else if (esWpa) {
-      cont.innerHTML = `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin:0 0 8px;">Cuánto subieron sus goles y asistencias la probabilidad de ganar. +1,00 es una victoria entera; la asistencia se lleva la mitad.</div>` + (lista.length ? cont.innerHTML : '<div class="loader">Aún no hay goles con minuto</div>');
+      if (!lista.length) cont.innerHTML = '<div class="loader">Aún no hay goles con minuto</div>';
     } else if (esTC) {
-      cont.innerHTML = `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin:0 0 8px;">De los tiros de los dos equipos mientras juega, cuántos son del Hergar. Media del equipo: ${proPct(tcT.media)}. Se cuenta desde la v135 de la app.</div>` + (lista.length ? cont.innerHTML : '<div class="loader">Empezará a salir tras el próximo partido</div>');
+      cont.innerHTML = rkNota(`Media del equipo: ${proPct(tcT.media)}.`) + (lista.length ? cont.innerHTML : '<div class="loader">Empezará a salir tras el próximo partido</div>');
     } else if (esClave) {
-      cont.innerHTML = `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin:0 0 8px;">Goles y asistencias del minuto ${MOM_CLAVE_MIN} en adelante con el partido empatado o a un gol.</div>` + (lista.length ? cont.innerHTML : '<div class="loader">Aún no hay goles en el momento clave</div>');
+      if (!lista.length) cont.innerHTML = '<div class="loader">Aún no hay goles en el momento clave</div>';
     } else if (esEcha) {
-      cont.innerHTML = `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin:0 0 8px;">Puntos por partido del equipo cuando juega menos los de cuando no está. Mínimo ${ECHA_MIN_SIN} partidos sin él.${sinEcha.length ? ` ${sinEcha.length} sin dato (han faltado a menos de ${ECHA_MIN_SIN} partidos o suben de otro equipo).` : ''}</div>` + (lista.length ? cont.innerHTML : '<div class="loader">Aún nadie ha faltado a suficientes partidos</div>');
+      cont.innerHTML = rkNota(sinEcha.length ? `${sinEcha.length} sin dato (han faltado a menos de ${ECHA_MIN_SIN} partidos o suben de otro equipo).` : '') + (lista.length ? cont.innerHTML : '<div class="loader">Aún nadie ha faltado a suficientes partidos</div>');
     } else if (esPuntos) {
-      cont.innerHTML = `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin:0 0 8px;">Gol de la victoria +2, gol del empate +1. Las asistencias de esos goles se cuentan aparte.</div>` + (lista.length ? cont.innerHTML : '<div class="loader">Aún no hay goles</div>');
+      if (!lista.length) cont.innerHTML = '<div class="loader">Aún no hay goles</div>';
     } else if (esMM) {
-      cont.innerHTML = `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin:0 0 8px;">Solo en los partidos que juega: cuántos goles de diferencia más (por cada 70') hace el equipo con él en el campo que mientras está en el banquillo. Así el rival es el mismo en los dos casos. Hace falta haber estado al menos ${MM_MIN_OFF} minutos en el banquillo para comparar.${sinMM.length ? ' Sin dato (lo jugó casi todo o faltan datos): ' + sinMM.map(j => escHtml((j.name || '').split(' ')[0])).join(', ') + '.' : ''}</div>` + cont.innerHTML;
-    } else if (criterio === 'peso') {
-      cont.innerHTML = `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin:0 0 8px;">Cuánto está cada jugador por encima o por debajo de sus compañeros del mismo partido (por 70'). No depende del resultado ni del rival.</div>` + cont.innerHTML;
-    } else if (esComp) { // v309
-      cont.innerHTML = `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin:0 0 8px;">Cuánto mejoran las acciones de los compañeros (por 70') cuando él está en el campo, frente a cuando está en el banquillo en esos mismos partidos. Solo salen los que suman. Desde el 17 de octubre.</div>` + (lista.length ? cont.innerHTML : '<div class="loader">Aún no hay datos suficientes</div>');
-    } else if (esB2b) { // v309
-      cont.innerHTML = `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin:0 0 8px;">Partidos en los que llegó a todo: ${B2B_N} o más puntos en ataque y ${B2B_N} o más en defensa (📦📦: ${B2B_T} y ${B2B_T}).</div>` + (lista.length ? cont.innerHTML : '<div class="loader">Aún nadie ha hecho un box-to-box</div>');
-    } else if (criterio === 'pond') { // v309
-      cont.innerHTML = `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin:0 0 8px;">Su impacto por cada 70 minutos jugados: sus acciones y lo que pasa mientras está en el campo. Mínimo ${minRanking} minutos.</div>` + cont.innerHTML;
+      cont.innerHTML = rkNota(sinMM.length ? 'Sin dato (lo jugó casi todo o faltan datos): ' + sinMM.map(j => escHtml((j.name || '').split(' ')[0])).join(', ') + '.' : '') + cont.innerHTML;
+    } else if (esComp) {
+      if (!lista.length) cont.innerHTML = '<div class="loader">Aún no hay datos suficientes</div>';
+    } else if (esB2b) {
+      if (!lista.length) cont.innerHTML = '<div class="loader">Aún nadie ha hecho un box-to-box</div>';
     } else if (criterio === 'cuota') {
-      cont.innerHTML = `<div style="font-size:11px; line-height:1.45; color:#94a3b8; margin:0 0 8px;">Acciones de juego que hace frente a las que le tocarían por sus minutos. ×1,0 es lo normal.${sinCuota.length ? ' Sin cuota (portero o sin partidos con detalle): ' + sinCuota.map(j => escHtml((j.name || '').split(' ')[0])).join(', ') + '.' : ''}</div>` + cont.innerHTML;
+      cont.innerHTML = rkNota(sinCuota.length ? 'Sin cuota (portero o sin partidos con detalle): ' + sinCuota.map(j => escHtml((j.name || '').split(' ')[0])).join(', ') + '.' : '') + cont.innerHTML;
     }
     if (esImpacto && enObservacion.length > 0) {
       cont.innerHTML += `<div style="margin-top:12px; padding:10px 12px; border:1px dashed rgba(255,255,255,.18); border-radius:12px;">
@@ -16969,7 +16968,7 @@
     window.addEventListener('scroll', prog, { passive: true });
     prog();
   })();
-  const VIS_VERSION = 310;
+  const VIS_VERSION = 311;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

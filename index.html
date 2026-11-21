@@ -2217,6 +2217,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v323 (visor) · 🎬 Resumen del partido también sin vídeos de goles (0-0, derrota sin marcar o goles sin grabar): entrada, once inicial, el partido en números (con las paradas del portero y la portería a cero), dominio y cómo queda la Liga. Respeta el interruptor de la app (solo goles = sin resumen si no hay vídeos).
   // v322 (visor) · 📺 Entrar en el modo TV: en directo, franja roja «Ver en modo TV» en lugar del botón pequeño (late 3 veces), aviso una vez por partido «Gira el móvil para verlo como en la tele» y, en el móvil, girarlo a horizontal en la pestaña Partido abre el modo TV (y volver a vertical lo cierra). 🔗 Química en el campo del directo: selector «👕 Fotos | 🔗 Química» (recuerda la elección), líneas bajo las fotos, nota del once, leyenda y aviso del cambio («estrena N parejas»).
   // v321 (visor; app v273 + delegado) · 📺 Modo TV en directo rehecho: campo en vertical más estrecho que alterna solo entre ACCIONES (iconos en cada jugador y el último que actúa se ilumina) y QUÍMICA cada 15 s, estadísticas con barras Hergar vs rival, gráfico de dominio, lista fija de las últimas acciones (fuera la cinta que corría) con la frase narrada en la última, aviso grande en el centro con la frase en disparos a puerta, palos, paradones y tarjetas, rachas («¡El Hergar aprieta!») y contadores; reloj más grande y pronóstico Gana / Empate / Pierde. Las frases nuevas solo salen en la tele (el minuto a minuto sigue igual).
   // v320 (visor) · Juega como: el Muro mediocentro con toque de Mago que además pasa (Cerebro) sale como Frenkie de Jong, no Gavi; Camavinga para el que solo roba y regatea, Valverde si dispara.
@@ -9880,6 +9881,16 @@
       .sort((a, b) => (a.g.min ?? 999) - (b.g.min ?? 999));
   }
   function rsTieneVideos(p) { return !!p && Array.isArray(p.goles) && p.goles.some(g => g && g.equipo !== 'rival' && videoValido(g)); }
+  // v323 · ¿hay resumen? Con vídeos de goles, siempre; sin vídeos (0-0, sin marcar o sin grabar), si hay rótulos de datos que enseñar
+  const rsCacheSin = new WeakMap();
+  function rsSinVideosOk(p) {
+    if (!p || !rsdOn()) return false;
+    if (rsCacheSin.has(p)) return rsCacheSin.get(p);
+    let ok = false;
+    try { const pi = ultimaTemporada.partidos.indexOf(p); if (pi >= 0) { const X = rsdDatos(p, pi); ok = !!(X.once || X.nums || X.dom); } } catch (e) { ok = false; }
+    rsCacheSin.set(p, ok); return ok;
+  }
+  function rsHayResumen(p) { return rsTieneVideos(p) || rsSinVideosOk(p); }
   function rsSrcVideo(v) { return esVideoGh(v) ? v.slice(3) : `https://drive.usercontent.google.com/download?id=${v}&export=download`; }
   function rsAbrev(n) { return (normNombreEquipo(n).replace(/\s+/g, '').slice(0, 3) || 'RIV').toUpperCase(); }
   function rsEscH(px) { return `<img src="${ESCUDO_HERGAR_SRC}" alt="" style="width:${px}px; height:${px}px; border-radius:50%; object-fit:cover; background:#fff; flex-shrink:0;">`; }
@@ -9902,15 +9913,15 @@
   }
   function resumenBotonHTML(pi) {
     const p = ultimaTemporada && Array.isArray(ultimaTemporada.partidos) ? ultimaTemporada.partidos[pi] : null;
-    if (!rsTieneVideos(p)) return '';
+    if (!rsHayResumen(p)) return ''; // v323
     const hs = rsGolesPartido(p).filter(x => x.g.equipo !== 'rival');
     const nv = hs.filter(x => videoValido(x.g)).length;
-    return `<button type="button" class="btn-resumen" onclick="abrirResumenPartido(${pi})"><span class="rp">▶</span><span><b>Ver resumen del partido</b><small>${nv === 1 ? '1 gol en vídeo' : nv + ' goles en vídeo'}</small></span><span class="rt">${hs.slice(0, 16).map(x => `<i class="${videoValido(x.g) ? '' : 'o'}"></i>`).join('')}</span></button>`
+    return `<button type="button" class="btn-resumen" onclick="abrirResumenPartido(${pi})"><span class="rp">▶</span><span><b>Ver resumen del partido</b><small>${nv === 0 ? 'Once, números, dominio y Liga' : nv === 1 ? '1 gol en vídeo' : nv + ' goles en vídeo'}</small></span><span class="rt">${hs.slice(0, 16).map(x => `<i class="${videoValido(x.g) ? '' : 'o'}"></i>`).join('')}</span></button>`
       + `<button type="button" class="btn-exportar" onclick="abrirExportarResumen(${pi})">⬇️ Descargar el resumen en vídeo</button>`;
   }
   function resumenFilaHTML(p) {
     const t = ultimaTemporada, pi = t && Array.isArray(t.partidos) ? t.partidos.indexOf(p) : -1;
-    if (pi < 0 || !rsTieneVideos(p)) return '';
+    if (pi < 0 || !rsHayResumen(p)) return ''; // v323
     return `<div style="display:flex; justify-content:flex-end; margin-top:5px;"><button type="button" class="btn-resumen-mini" onclick="abrirResumenPartido(${pi})">🎬 Resumen del partido</button><button type="button" class="btn-resumen-mini" style="margin-left:6px;" onclick="abrirExportarResumen(${pi})">⬇️ Vídeo</button></div>`;
   }
 
@@ -10415,7 +10426,7 @@
   window.rsDeNuevo = () => { if (!rs) return; rsIr(0); rsSetPausa(false); };
   window.abrirResumenPartido = (pi, gi) => {
     const t = ultimaTemporada, p = t && Array.isArray(t.partidos) ? t.partidos[pi] : null;
-    if (!rsTieneVideos(p)) return;
+    if (!rsHayResumen(p)) return; // v323
     if (rs) window.cerrarResumen();
     const b = rsConstruir(p, pi);
     const de = document.documentElement;
@@ -10945,7 +10956,7 @@
   };
   window.abrirExportarResumen = async (pi) => {
     const t = ultimaTemporada, p = t && Array.isArray(t.partidos) ? t.partidos[pi] : null;
-    if (!rsTieneVideos(p)) return;
+    if (!rsHayResumen(p)) return; // v323
     if (ex) window.cerrarExportar();
     const m = exModal(); m.classList.add('on'); document.body.style.overflow = 'hidden';
     document.getElementById('exTitulo').textContent = `Resumen · Hergar ${Number(p.golesLocal) || 0}-${Number(p.golesRival) || 0} ${p.rival || ''}`;
@@ -11460,7 +11471,7 @@
       if (st) { if (c) { st.style.setProperty('--rv', rvFondoV(m.rival)); st.style.setProperty('--rvt', colorTextoV(c)); } else { st.style.removeProperty('--rv'); st.style.removeProperty('--rvt'); } } }
     if (estado === 'final') { // 🎬 resumen del partido en la pantalla de Final
       const pi = indicePartidoDeMatch(m);
-      if (pi >= 0 && rsTieneVideos(ultimaTemporada.partidos[pi])) base.insertAdjacentHTML('beforeend', `<button type="button" class="tv-btn-resumen" onclick="event.stopPropagation(); abrirResumenPartido(${pi})">🎬 Ver resumen</button>`);
+      if (pi >= 0 && rsHayResumen(ultimaTemporada.partidos[pi])) base.insertAdjacentHTML('beforeend', `<button type="button" class="tv-btn-resumen" onclick="event.stopPropagation(); abrirResumenPartido(${pi})">🎬 Ver resumen</button>`);
     }
   }
   function tvActualizarReloj() {
@@ -12769,7 +12780,7 @@
       const nVid = Array.isArray(p.goles) ? p.goles.filter(g => g && g.equipo !== 'rival' && videoValido(g)).length : 0;
       let escR = ''; try { escR = rsEscR(p, 40); } catch (e) {}
       const chips = [goleadoresTxt ? `<span>⚽ ${escHtml(goleadoresTxt)}</span>` : '', tieneMvp ? `<span class="mvp">⭐ ${escHtml(p.mvp)}</span>` : '', nVid ? `<span class="vid">🎥 ${nVid}</span>` : '', (() => { try { return b2bChips(temporada, p) + qmChip(temporada, p); } catch (e) { return ''; } })(), (() => { try { return snChipsTarjeta(snCtx, p); } catch (e) { return ''; } })()].filter(Boolean).join(''); // v222: 📦 box-to-box y 🔗 química
-      const dentro = ['📊 Estadísticas', '👥 Actuación', alinTieneDatos(p) ? '👕 Alineación' : '', (p.analisisIA || p.resumenIA) ? '🤖 Informe IA' : '', rsTieneVideos(p) ? '🎬 Resumen' : '', temporada.actaVisor ? '📄 Acta' : ''].filter(Boolean).join(' · ');
+      const dentro = ['📊 Estadísticas', '👥 Actuación', alinTieneDatos(p) ? '👕 Alineación' : '', (p.analisisIA || p.resumenIA) ? '🤖 Informe IA' : '', rsHayResumen(p) ? '🎬 Resumen' : '', temporada.actaVisor ? '📄 Acta' : ''].filter(Boolean).join(' · ');
       const mes = mesDe(p);
       const bm = balMes[mes];
       const sepMes = mes && mes !== mesPrevio ? `<div class="hp-mes"><span>${mes}</span>${bm ? `<small>${bm.V}V · ${bm.E}E · ${bm.D}D</small>` : ''}</div>` : '';
@@ -17436,7 +17447,7 @@
     window.addEventListener('scroll', prog, { passive: true });
     prog();
   })();
-  const VIS_VERSION = 322;
+  const VIS_VERSION = 323;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

@@ -2075,6 +2075,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v320 (visor) · Juega como: el Muro mediocentro con toque de Mago que además pasa (Cerebro) sale como Frenkie de Jong, no Gavi; Camavinga para el que solo roba y regatea, Valverde si dispara.
   // v319 (visor; app v272 + delegado) · El partido del delegado no se va del visor: la app no cambia el partido del visor mientras haya uno del delegado sin cargar, el delegado lo vuelve a poner en cada envío y avisa si el visor estaba en otro; y con el partido empezado (descanso, reloj parado) o recién acabado, la tarjeta del próximo partido ya no vuelve a salir.
   // v318 (visor) · Once ideal: por defecto sale en 1-4-2-3-1 (antes 1-4-3-3).
   // v317 (visor; app v271) · 🔗 Química: en los partidos del delegado salía solo un once (el del final) porque la app guardaba una sola pizarra; ahora, si hay una sola y hubo cambios, los tramos se deducen de los cambios y los puestos (once inicial y final).
@@ -6110,7 +6111,7 @@
     // v191 · «Muro» que juega de centrocampista: mediocentros defensivos en vez de centrales y laterales
     murMedio: {
       puro: [['Palhinha', 'Gana todos los balones divididos.'], ['Marc Casadó', 'Corta y la da fácil.', 'cer'], ['Tchouaméni', 'Lo corta todo y dispara de lejos.', 'pis'], ['Camavinga', 'Roba y sale conduciendo.', 'mag']],
-      mag: [['Frenkie de Jong', 'Recupera y sale conduciendo, rompiendo líneas.'], ['Camavinga', 'Roba y se va de su par.', 'pis'], ['Gavi', 'Muerde, recupera y regatea.', 'cer']],
+      mag: [['Camavinga', 'Roba y se va de su par conduciendo.'], ['Frenkie de Jong', 'Recupera, sale conduciendo y rompe líneas con el pase.', 'cer'], ['Fede Valverde', 'Recupera, conduce y dispara de lejos.', 'pis'], ['Gavi', 'Muerde, recupera y regatea.']], // v320: De Jong para el que además mete balones (antes salía Gavi)
       cer: [['Marc Casadó', 'Recupera y la da fácil.'], ['Zubimendi', 'Siempre bien colocado: corta y la da.', 'mag'], ['Tchouaméni', 'Corta y lanza el juego.', 'pis']],
       pis: [['Tchouaméni', 'Recupera y dispara de lejos.'], ['Declan Rice', 'Recupera, empuja y dispara.', 'mag']],
       fra: [['Casemiro', 'Corta en el medio y aparece en el área para marcar.'], ['Tchouaméni', 'Corta y la mete a balón parado.', 'pis']]
@@ -17042,7 +17043,7 @@
     window.addEventListener('scroll', prog, { passive: true });
     prog();
   })();
-  const VIS_VERSION = 314;
+  const VIS_VERSION = 320;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

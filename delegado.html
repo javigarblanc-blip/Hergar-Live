@@ -431,6 +431,15 @@ function cambio() { procesarTiempo(); guardarLocal(); publicar(false); pintarTod
         // v220 · tarjetas del rival
         amarillaRival: ['Amarilla para un jugador del {RIV}.', 'El árbitro amonesta a uno del {RIV}.', 'Tarjeta amarilla para el {RIV}.'],
         rojaRival: ['¡Expulsión en el {RIV}! El Hergar jugará con uno más.', 'Roja para un jugador del {RIV}: se quedan con uno menos.', '¡El {RIV} se queda con uno menos!'],
+        // v273 · 📺 frases para el Modo TV (solo acciones gordas; el minuto a minuto del visor no las enseña)
+        tiro: ['¡Lo intenta {J}!', '{J} prueba al portero', 'Disparo de {J} entre los tres palos', '{J} avisa con un chut bien dirigido', 'Remate de {J} que obliga a intervenir al portero', '¡Chut de {J}!'],
+        palo: ['¡Al palo! {J} se queda a centímetros', '¡La madera le niega el gol a {J}!', '¡Uyyy! El balón de {J} se estrella en el poste', '¡Qué mala suerte! Palo de {J}', '¡{J} la manda al poste!'],
+        paloR: ['¡Al palo del rival! Respira el Hergar', '¡Salva el palo al Hergar!', '¡Susto! El {RIV} la manda a la madera', '¡El poste se viste de Hergar!'],
+        tiroCtx: { cero: ['El marcador sigue sin moverse.', 'Sigue el empate a cero.'], ventaja: ['El Hergar quiere sentenciar.', 'A por el siguiente.'], empate: ['A por el desempate.', 'El Hergar quiere desnivelarlo.'], detras: ['El Hergar busca la reacción.', 'Hay partido.'] },
+        contTiro: ['{J} ya lleva {N} disparos a puerta.', 'Insiste {J}: {N} disparos a puerta.', '{J} no para: {N} tiros a puerta.'],
+        contParada: ['¡Partidazo de {J}! Ya van {N} paradas.', '{J} suma {N} paradas.', 'Van {N} paradas de {J}.'],
+        rachaH: ['¡El Hergar aprieta!', 'Asedio del Hergar en el área rival', 'El {RIV} no sale de su campo', 'Buen momento del Hergar', 'El Hergar empuja con todo'],
+        rachaR: ['Aprieta el {RIV}', 'Momento delicado: el {RIV} empuja', 'Toca sufrir', 'El Hergar resiste el empuje del {RIV}'],
         descanso: {
             cero: ['Descanso sin goles.', '0-0 al descanso. Todo por decidir.', 'Al vestuario con el marcador a cero.'],
             ventaja: ['Descanso con ventaja: {H}-{R}.', 'Al vestuario por delante, {H}-{R}.', 'Buen primer tiempo: {H}-{R} al descanso.', '{H}-{R} al descanso. Media parte, media faena.'],
@@ -492,6 +501,13 @@ function cambio() { procesarTiempo(); guardarLocal(); publicar(false); pintarTod
             else if ((g = /^🟥 Roja directa #\S+ (\S+)/.exec(t))) out.push({ tipo: 'roja', min, idx, j: g[1] });
             else if (/^🟨 Amarilla al rival/.test(t)) out.push({ tipo: 'amarillaRival', min, idx }); // v220
             else if (/^🟥 Roja al rival/.test(t)) out.push({ tipo: 'rojaRival', min, idx });
+            // v273 · 📺 para el Modo TV: disparos y palos con frase; paradas normales, córners y tiros fuera solo cuentan (rachas y contadores)
+            else if ((g = /^🎯 Disparo a puerta #\S+ (\S+) \(al palo\)/.exec(t))) out.push({ tipo: 'palo', min, idx, j: g[1] });
+            else if ((g = /^🎯 Disparo a puerta #\S+ (\S+)/.exec(t))) out.push({ tipo: 'tiro', min, idx, j: g[1] });
+            else if (/^🥅 Tiro rival a puerta \(al palo\)/.test(t)) out.push({ tipo: 'paloR', min, idx });
+            else if ((g = /^🧤 Parada #\S+ (\S+)/.exec(t))) out.push({ tipo: 'paradaN', min, idx, j: g[1] });
+            else if (/^💨 Disparo fuera/.test(t) || /^⛳ Córner a favor/.test(t)) out.push({ tipo: 'llegH', min, idx });
+            else if (/^🥅 Tiro rival a puerta/.test(t) || /^🧤 Parada\b/.test(t) || /^💨 Tiro rival/.test(t) || /^⛳ Córner en contra/.test(t)) out.push({ tipo: 'llegR', min, idx });
         });
         return out;
     }
@@ -502,6 +518,8 @@ function cambio() { procesarTiempo(); guardarLocal(); publicar(false); pintarTod
         const DUR = opc.duracion || 70, MITAD = DUR / 2;
         const res = [];
         let H = 0, R = 0, fueDetras = false, descansoPuesto = false;
+        const tirosDe = {}, paradasDe = {}, llegH = [], llegR = []; let ultRacha = -99; // v273
+        const sitMarc = () => H === 0 && R === 0 ? 'cero' : H > R ? 'ventaja' : H === R ? 'empate' : 'detras';
         const golesDe = {};
         const ponDescanso = () => {
             if (descansoPuesto) return;
@@ -580,7 +598,8 @@ function cambio() { procesarTiempo(); guardarLocal(); publicar(false); pintarTod
             } else if (h.tipo === 'parada') {
                 const s = H === 0 && R === 0 ? 'cero' : H > R ? 'ventaja' : H === R ? 'empate' : 'detras';
                 const base = narrRellena(narrElige(ctx, 'parada', NARR.parada, clave), { J: h.j });
-                const resto = narrElige(ctx, 'pctx_' + s, NARR.paradaCtx[s], clave);
+                paradasDe[h.j] = (paradasDe[h.j] || 0) + 1; // v273
+                const resto = paradasDe[h.j] >= 3 ? narrRellena(narrElige(ctx, 'contPar', NARR.contParada, clave), { J: h.j, N: paradasDe[h.j] }) : narrElige(ctx, 'pctx_' + s, NARR.paradaCtx[s], clave);
                 res.push({ m: h.min, ic: '🧤', k: 'parada', h: base.replace(/[!¡]/g, '').trim(), x: resto });
             } else if (h.tipo === 'penParado') {
                 res.push({ m: h.min, ic: '🧤', k: 'parada', h: narrRellena(narrElige(ctx, 'penParado', NARR.penParado, clave), { J: h.j }), x: '' });
@@ -593,8 +612,29 @@ function cambio() { procesarTiempo(); guardarLocal(); publicar(false); pintarTod
                 res.push({ m: h.min, ic: '🔄', k: 'cambio', h: '', x: narrRellena(narrElige(ctx, L.length > 1 ? 'cambioD' : 'cambio', L.length > 1 ? NARR.cambioDoble : NARR.cambio, clave), v) });
             } else if (h.tipo === 'amarillaRival' || h.tipo === 'rojaRival') { // v220
                 res.push({ m: h.min, ic: h.tipo === 'amarillaRival' ? '🟨' : '🟥', k: 'tarjeta', h: '', x: narrRellena(narrElige(ctx, h.tipo, NARR[h.tipo], clave), { RIV }) });
+            } else if (h.tipo === 'tiro' || h.tipo === 'palo') { // v273
+                tirosDe[h.j] = (tirosDe[h.j] || 0) + 1;
+                const N = tirosDe[h.j], s = sitMarc();
+                const tit = narrRellena(narrElige(ctx, h.tipo, NARR[h.tipo], clave), { J: h.j });
+                const resto = N >= 3 ? narrRellena(narrElige(ctx, 'contTiro', NARR.contTiro, clave), { J: h.j, N }) : narrElige(ctx, 'tctx_' + s, NARR.tiroCtx[s], clave);
+                res.push({ m: h.min, ic: h.tipo === 'palo' ? '🪵' : '🎯', k: h.tipo, h: tit, x: resto });
+            } else if (h.tipo === 'paloR') { // v273
+                res.push({ m: h.min, ic: '😮‍💨', k: 'paloR', h: narrRellena(narrElige(ctx, 'paloR', NARR.paloR, clave), { RIV }), x: '' });
+            } else if (h.tipo === 'paradaN') { // v273: no se narra, solo cuenta para el contador del portero
+                paradasDe[h.j] = (paradasDe[h.j] || 0) + 1;
             } else if (h.tipo === 'amarilla' || h.tipo === 'dobleAmarilla' || h.tipo === 'roja') {
                 res.push({ m: h.min, ic: h.tipo === 'amarilla' ? '🟨' : '🟥', k: 'tarjeta', h: '', x: narrRellena(narrElige(ctx, h.tipo, NARR[h.tipo], clave), { J: h.j }) });
+            }
+            // v273 · 🔥 rachas para el Modo TV
+            const esH = (h.tipo === 'gol' && h.eq === 'hergar') || h.tipo === 'tiro' || h.tipo === 'palo' || h.tipo === 'llegH';
+            const esR = (h.tipo === 'gol' && h.eq === 'rival') || h.tipo === 'paloR' || h.tipo === 'parada' || h.tipo === 'paradaN' || h.tipo === 'penParado' || h.tipo === 'penFuera' || h.tipo === 'llegR';
+            if (esH || esR) {
+                const L = esH ? llegH : llegR; L.push(h.min);
+                const n = L.filter(x => x > h.min - 5).length;
+                if (n >= 3 && h.min - ultRacha >= 10 && h.tipo !== 'gol') {
+                    ultRacha = h.min;
+                    res.push({ m: h.min, ic: esH ? '🔥' : '⚠️', k: 'racha', eq: esH ? 'hergar' : 'rival', h: narrRellena(narrElige(ctx, esH ? 'rachaH' : 'rachaR', esH ? NARR.rachaH : NARR.rachaR, clave), { RIV }), x: `${n} llegadas ${esH ? 'del Hergar' : 'del rival'} en 5 minutos.` });
+                }
             }
         });
         if (opc.descanso && !descansoPuesto) ponDescanso();

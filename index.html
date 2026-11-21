@@ -991,6 +991,102 @@
   .tv-cambio .qm .l { font-family:'Montserrat',sans-serif; font-weight:800; font-size:15px; letter-spacing:2px; color:#94a3b8; }
   .tv-cambio .qm .v { font-family:'Montserrat',sans-serif; font-weight:900; font-size:36px; color:#fff; }
   .tv-cambio .qm .s { font-size:14px; color:#7dd3fc; font-weight:700; }
+
+  /* v321 · 📺 Modo TV nuevo: campo vertical estrecho, estadísticas con barras, dominio y lista fija de acciones con frases */
+  .tv3-medio { flex-grow:1; min-height:0; display:grid; grid-template-columns:340px minmax(0,1fr) 410px; gap:16px; padding:14px 24px 16px; }
+  .tv3-medio > * { min-height:0; }
+  .tv3-col1 { padding:12px 14px; gap:8px; }
+  .tv3-col1 .tv-card-t { align-items:center; white-space:nowrap; }
+  .tv3-seg { display:flex; background:#0a0e14; border:1px solid rgba(255,255,255,.12); border-radius:9px; padding:3px; gap:2px; }
+  .tv3-seg button { background:none; border:0; color:#94a3b8; font-family:'Montserrat',sans-serif; font-weight:800; font-size:11px; letter-spacing:1px; padding:5px 9px; border-radius:7px; cursor:pointer; }
+  .tv3-seg button.on { background:#1f2937; color:#fff; }
+  .tv-campo.tv3-campo { width:auto; flex:1; min-height:0; flex-shrink:1; }
+  .tv3-campo .tv-jug { width:84px; margin-left:-42px; margin-top:-20px; gap:3px; }
+  .tv3-campo .tv-jug .c { width:38px; height:38px; font-size:18px; position:relative; }
+  .tv3-campo .tv-jug .n { font-size:13px; padding:0 6px; max-width:84px; }
+  .tv3-bdgs { position:absolute; left:27px; top:-12px; display:flex; gap:2px; transition:opacity .5s; }
+  .tv3-bdgs span { background:#0a0e14; border:1px solid rgba(255,255,255,.28); border-radius:9px; padding:0 4px; font-family:'Inter',sans-serif !important; font-size:11px; font-weight:700; line-height:17px; white-space:nowrap; color:#fff; letter-spacing:0; }
+  .tv3-campo .tv-jug.hot .c { animation:tv3Hot 1s ease-out infinite; }
+  @keyframes tv3Hot { from { box-shadow:0 0 0 0 rgba(255,255,255,.9); } to { box-shadow:0 0 0 18px rgba(255,255,255,0); } }
+  .tv3-campo .tv-qm-lin, .tv3-campo .tv-qm-badge, .tv3-campo .tv-qm-ley { transition:opacity .6s; }
+  .tv3-a .tv-qm-lin, .tv3-a .tv-qm-badge, .tv3-a .tv-qm-ley { opacity:0; }
+  .tv3-q .tv3-bdgs { opacity:0; }
+  .tv3-campo .tv-qm-badge { top:8px; left:8px; right:auto; text-align:left; padding:4px 9px; }
+  .tv3-campo .tv-qm-ley { display:none; }
+  .tv3-ley { display:flex; gap:12px; font-size:11px; font-weight:700; color:rgba(255,255,255,.7); transition:opacity .6s; }
+  .tv3-ley i { display:inline-block; width:16px; height:5px; border-radius:3px; vertical-align:middle; margin-right:5px; }
+  .tv3-ley i.d { height:0; border-top:3px dashed #7dd3fc; border-radius:0; }
+  .tv3-a .tv3-ley { opacity:0; }
+  .tv3-campo .tv-qm-badge b { font-size:18px; }
+  .tv3-campo .tv-qm-badge span { display:none; }
+  .tv3-campo .tv-qm-ley { left:8px; bottom:6px; gap:9px; font-size:11px; background:rgba(10,14,20,.62); padding:3px 8px; border-radius:7px; }
+  .tv3-campo .tv-qm-ley i { width:16px; }
+  .tv3-col2 { display:flex; flex-direction:column; gap:14px; min-height:0; }
+  .tv3-stats { padding:12px 18px; gap:2px; flex-shrink:0; }
+  .tv3-heads { display:flex; justify-content:space-between; gap:10px; font-family:'Montserrat',sans-serif; font-weight:900; font-size:15px; letter-spacing:2px; margin-bottom:2px; }
+  .tv3-heads .h { color:#ff5577; }
+  .tv3-heads .r { color:var(--rvt,#94a3b8); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .tv3-st { padding:2px 0 5px; }
+  .tv3-st .row { display:grid; grid-template-columns:40px 1fr 40px; align-items:center; }
+  .tv3-st b { font-weight:800; font-size:26px; line-height:1.05; color:#64748b; }
+  .tv3-st b.lead { color:#fff; }
+  .tv3-st b.r { text-align:right; }
+  .tv3-st span { text-align:center; font-size:15px; color:#cbd5e1; }
+  .tv3-st .tv-barra { height:6px; margin-top:3px; }
+  .tv3-st .tv-barra.vacia { background:#222c3c; }
+  .tv3-dom { flex:1; min-height:0; padding:12px 18px 10px; gap:6px; }
+  .tv3-dom .tv-card-t i { font-style:normal; color:#94a3b8; }
+  .tv3-dom .tv-card-t i.h { color:#ff5577; }
+  .tv3-dom canvas { flex:1; min-height:0; width:100%; display:block; }
+  .tv3-dom-eje { display:flex; justify-content:space-between; font-size:11px; color:#64748b; font-weight:700; }
+  .tv3-col3 { padding:12px 14px; gap:8px; min-height:0; overflow:hidden; }
+  .tv3-goles { display:flex; flex-wrap:wrap; gap:6px; }
+  .tv3-goles span { background:rgba(180,20,56,.22); border:1px solid rgba(255,85,119,.45); border-radius:8px; padding:2px 8px; font-size:13px; font-weight:700; }
+  .tv3-goles span.r { background:rgba(148,163,184,.12); border-color:rgba(148,163,184,.35); color:#cbd5e1; }
+  .tv3-goles b { color:#ff8fa3; font-size:15px; }
+  .tv3-goles span.r b { color:#94a3b8; }
+  .tv3-accs { display:flex; flex-direction:column; gap:7px; min-height:0; }
+  .tv3-acc { display:grid; grid-template-columns:38px 42px minmax(0,1fr); align-items:center; gap:4px; padding:7px 10px; border-radius:10px; border-left:5px solid rgb(180,20,56); background:rgba(180,20,56,.1); }
+  .tv3-acc.r { border-left-color:var(--rvt,#94a3b8); background:rgba(148,163,184,.08); }
+  .tv3-acc.racha { border-left-color:#ffd23f; background:rgba(255,210,63,.09); }
+  .tv3-acc .ic { font-size:20px; text-align:center; line-height:1; }
+  .tv3-acc .ic .tv272 { margin-right:0; }
+  .tv3-acc .ic .tv272 .ev272-ic { width:28px; height:28px; }
+  .tv3-acc .mi { font-size:22px; font-weight:800; color:#ff8fa3; }
+  .tv3-acc.r .mi { color:var(--rvt,#94a3b8); }
+  .tv3-acc.racha .mi { color:#ffd23f; }
+  .tv3-acc .p { font-size:16px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .tv3-acc:not(.ult) { opacity:.88; }
+  .tv3-acc.ult { padding:11px 10px; }
+  .tv3-acc.ult .k { font-size:10px; font-weight:800; letter-spacing:2px; color:#94a3b8; }
+  .tv3-acc.ult .p { font-size:19px; white-space:normal; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; line-height:1.2; }
+  .tv3-acc .s { font-size:13px; color:#94a3b8; margin-top:2px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .tv-reloj b { font-size:34px; font-weight:800; color:#2ed573; line-height:1; }
+  .tv-reloj span { font-family:'Montserrat',sans-serif !important; font-size:13px; font-weight:800; color:#94a3b8; letter-spacing:2px; margin-left:8px; }
+  .tv3-wp { text-align:left; }
+  .tv3-wp .t { font-family:'Montserrat',sans-serif; font-weight:800; font-size:11px; letter-spacing:2px; color:#94a3b8; margin-bottom:6px; }
+  .tv3-wp .b { display:flex; gap:2px; height:8px; border-radius:4px; overflow:hidden; }
+  .tv3-wp .b div { transition:width .6s; }
+  .tv3-wp .n { display:flex; justify-content:space-between; margin-top:6px; }
+  .tv3-wp .n span { display:flex; flex-direction:column; align-items:center; line-height:1.05; }
+  .tv3-wp .n span:first-child { align-items:flex-start; }
+  .tv3-wp .n span:last-child { align-items:flex-end; }
+  .tv3-wp small { font-size:11px; color:#94a3b8; }
+  .tv3-wp b { font-size:24px; font-weight:800; color:#fff; }
+  .tv3-velo { position:absolute; inset:0; background:rgba(10,14,20,.45); }
+  .tv3-aviso { position:absolute; left:50%; top:52%; width:780px; transform:translate(-50%,-50%); display:grid; grid-template-columns:96px minmax(0,1fr); align-items:center; gap:22px;
+    background:rgba(15,21,32,.97); border:1px solid rgba(255,255,255,.14); border-left:12px solid rgb(180,20,56); border-radius:20px; padding:26px 34px; box-shadow:0 24px 60px rgba(0,0,0,.7); animation:tv3Aviso .45s cubic-bezier(.2,1.3,.4,1); }
+  .tv3-aviso.r { border-left-color:var(--rvt,#94a3b8); }
+  .tv3-aviso.racha { border-left-color:#ffd23f; }
+  @keyframes tv3Aviso { from { transform:translate(-50%,-50%) scale(.85); opacity:0; } }
+  .tv3-aviso .ic { font-size:76px; text-align:center; line-height:1; }
+  .tv3-aviso .k { font-family:'Montserrat',sans-serif; font-weight:800; font-size:16px; letter-spacing:3px; color:#94a3b8; }
+  .tv3-aviso .k b { color:#ff8fa3; font-size:24px; letter-spacing:1px; }
+  .tv3-aviso.r .k b { color:var(--rvt,#cbd5e1); }
+  .tv3-aviso.racha .k b { color:#ffd23f; }
+  .tv3-aviso .t { font-family:'Montserrat',sans-serif; font-weight:900; font-size:40px; line-height:1.1; margin-top:6px; color:#fff; }
+  .tv3-aviso .s { font-size:19px; color:#cbd5e1; margin-top:8px; }
+  @media (prefers-reduced-motion: reduce) { .tv3-aviso, .tv3-campo .tv-jug.hot .c { animation:none; } }
   /* v230 · 🏆 premios de la vuelta (historias) */
   .pm-card { display:flex; align-items:center; gap:12px; margin-bottom:10px; padding:12px 14px; border-radius:14px; cursor:pointer; background:linear-gradient(120deg,rgba(180,20,56,.55),rgba(245,166,35,.25)); border:1px solid rgba(245,166,35,.55); }
   .pm-card .i { font-size:30px; }
@@ -2075,6 +2171,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v321 (visor; app v273 + delegado) · 📺 Modo TV en directo rehecho: campo en vertical más estrecho que alterna solo entre ACCIONES (iconos en cada jugador y el último que actúa se ilumina) y QUÍMICA cada 15 s, estadísticas con barras Hergar vs rival, gráfico de dominio, lista fija de las últimas acciones (fuera la cinta que corría) con la frase narrada en la última, aviso grande en el centro con la frase en disparos a puerta, palos, paradones y tarjetas, rachas («¡El Hergar aprieta!») y contadores; reloj más grande y pronóstico Gana / Empate / Pierde. Las frases nuevas solo salen en la tele (el minuto a minuto sigue igual).
   // v320 (visor) · Juega como: el Muro mediocentro con toque de Mago que además pasa (Cerebro) sale como Frenkie de Jong, no Gavi; Camavinga para el que solo roba y regatea, Valverde si dispara.
   // v319 (visor; app v272 + delegado) · El partido del delegado no se va del visor: la app no cambia el partido del visor mientras haya uno del delegado sin cargar, el delegado lo vuelve a poner en cada envío y avisa si el visor estaba en otro; y con el partido empezado (descanso, reloj parado) o recién acabado, la tarjeta del próximo partido ya no vuelve a salir.
   // v318 (visor) · Once ideal: por defecto sale en 1-4-2-3-1 (antes 1-4-3-3).
@@ -10921,6 +11018,8 @@
     if (t.startsWith('⚽ Gol')) return { min, tipo: 'gol', nombre: tvNombreDe(t), texto: `GOL de ${tvNombreDe(t)}` };
     if (t.startsWith('🥅 Gol rival')) return { min, tipo: 'golRival', texto: /penalti/.test(t) ? 'Gol del rival (penalti)' : 'Gol del rival' };
     if (t.startsWith('👟 Asistencia')) return { min, tipo: 'otro', texto: `Asistencia de ${tvNombreDe(t)}` };
+    if (/^🟨 Amarilla al rival/.test(t)) return { min, tipo: 'tarjeta', rival: true, texto: 'Amarilla al rival' }; // v321
+    if (/^🟥 Roja al rival/.test(t)) return { min, tipo: 'tarjeta', rival: true, texto: 'Roja al rival' };
     if (t.startsWith('🟨')) return { min, tipo: 'tarjeta', texto: /ROJA/.test(t) ? `Doble amarilla a ${tvNombreDe(t)}` : `Amarilla a ${tvNombreDe(t)}` };
     if (t.startsWith('🟥')) return { min, tipo: 'tarjeta', texto: `Roja a ${tvNombreDe(t)}` };
     if (t.startsWith('🧤 Portería a cero')) return { min, tipo: 'otro', texto: 'Portería a cero' };
@@ -10964,6 +11063,11 @@
     return '';
   }
 
+  // v321 · en juego: el minuto en grande y la parte al lado
+  function tvRelojHTML(m, estado) {
+    if (estado === 'juego' || estado === 'pausa') return `<b class="t269">${tvMinuto(m)}</b><span>${estado === 'pausa' ? 'PAUSA' : (m.parte === 2 ? '2ª PARTE' : '1ª PARTE')}</span>`;
+    return escHtml(tvTextoReloj(m, estado));
+  }
   function tvEscudo(nombre, esH) {
     if (esH) return `<div class="tv-escudo h"><img src="${ESCUDO_HERGAR_SRC}" alt="C.D. Hergar"></div>`;
     const src = escudoSrcVisor(equipoLigaPorNombre(nombre));
@@ -10974,9 +11078,10 @@
     if (!['juego', 'pausa', 'descanso'].includes(estado)) return 'HERGAR LIVE';
     try {
       const [w, d, l] = wpProb(wpContexto(m), Number(m.golesLocal) || 0, Number(m.golesRival) || 0, wpMinuto(m), false);
-      return `<div style="font-size:12px; letter-spacing:1px; color:#94a3b8;">OPCIONES DE GANAR</div>
-        <div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:34px; line-height:1.05; color:#2ed573;">${pronPct(w)}%</div>
-        <div style="display:flex; height:6px; border-radius:3px; overflow:hidden; margin-top:4px;"><div style="width:${w*100}%; background:#2ed573;"></div><div style="width:${d*100}%; background:#64748b;"></div><div style="width:${l*100}%; background:#ff4757;"></div></div>`;
+      // v321 · pronóstico con los tres resultados: Hergar en rojo, empate gris y el color del rival
+      return `<div class="tv3-wp"><div class="t">PRONÓSTICO HERGAR</div>
+        <div class="b"><div style="width:${w * 100}%; background:rgb(180,20,56);"></div><div style="width:${d * 100}%; background:#64748b;"></div><div style="width:${l * 100}%; background:var(--rv,#94a3b8);"></div></div>
+        <div class="n"><span><small>Gana</small><b class="t269">${pronPct(w)}%</b></span><span><small>Empate</small><b class="t269">${pronPct(d)}%</b></span><span><small>Pierde</small><b class="t269">${pronPct(l)}%</b></span></div></div>`;
     } catch (e) { return 'HERGAR LIVE'; }
   }
   function tvStats(m) {
@@ -11013,7 +11118,7 @@
         <div class="tv-estado" style="color:${vivo ? '#ff4757' : '#f5a623'};">${vivo ? '<span class="tv-dot"></span>EN DIRECTO' : (estado === 'final' ? 'FINALIZADO' : (previa ? 'PREVIA' : 'EN PAUSA'))}</div>
         <div class="tv-marcador">
           <div class="tv-equipo"><span class="nom">HERGAR</span>${tvEscudo('HERGAR', true)}</div>
-          <div class="tv-centro-marc"><div class="tv-goles">${previa ? '– –' : `${m.golesLocal ?? 0} – ${m.golesRival ?? 0}`}</div><div class="tv-reloj" id="tvReloj">${tvTextoReloj(m, estado)}</div></div>
+          <div class="tv-centro-marc"><div class="tv-goles">${previa ? '– –' : `${m.golesLocal ?? 0} – ${m.golesRival ?? 0}`}</div><div class="tv-reloj" id="tvReloj">${tvRelojHTML(m, estado)}</div></div>
           <div class="tv-equipo">${tvEscudo(m.rival, false)}<span class="nom" style="font-size:${rival.length > 16 ? 22 : rival.length > 11 ? 26 : 30}px;">${escHtml(rival)}</span></div>
         </div>
         <div class="tv-info">${tvWP(m, estado)}</div>
@@ -11045,9 +11150,9 @@
   }
   const TV_QM_NUEVA = '#7dd3fc';
   function tvQmColor(e) { return e.v >= QM_RODADA ? '#2ed573' : e.v >= QM_CASI_NUEVA ? '#f5a623' : TV_QM_NUEVA; }
-  function tvQmCapa(m, coords) {
+  function tvQmCapa(m, coords, vertical) {
     const Q = tvQm(m); if (!Q) return '';
-    const pos = k => { const c = coords[k]; return c ? [Math.max(6, Math.min(94, 100 - c.y)), Math.max(8, Math.min(90, c.x))] : null; };
+    const pos = k => { const c = coords[k]; if (!c) return null; return vertical ? tvPosV(c) : [Math.max(6, Math.min(94, 100 - c.y)), Math.max(8, Math.min(90, c.x))]; }; // v321: también en vertical
     const lineas = Q.enlaces.map(e => { const A = pos(e.x), B = pos(e.y); if (!A || !B) return '';
       return `<line x1="${A[0]}" y1="${A[1]}" x2="${B[0]}" y2="${B[1]}" stroke="${tvQmColor(e)}" stroke-width="${e.v >= QM_RODADA ? 5 : e.v >= QM_CASI_NUEVA ? 4 : 3}" stroke-linecap="round" opacity=".8" vector-effect="non-scaling-stroke"${e.v >= QM_CASI_NUEVA ? '' : ' stroke-dasharray="9 8"'}/>`; }).join('');
     return `<svg class="tv-qm-lin" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${lineas}</svg>
@@ -11090,31 +11195,140 @@
       </div>`;
   }
 
-  function tvPantallaPartido(m, estado) {
+  // ── v321 · 📺 MODO TV NUEVO ─────────────────────────────────────────────────────────
+  // Campo en vertical (rival arriba, como en el visor) que alterna solo entre ACCIONES y QUÍMICA; en el centro las
+  // estadísticas con barras y el dominio; a la derecha las últimas acciones, la última con su frase del minuto a minuto.
+  const TV_NARR_K = { gol: 'gol', golRival: 'golr', parada: 'parada', palo: 'palo', paloR: 'paloR', tiro: 'tiro', tarjeta: 'tarjeta', cambio: 'cambio' };
+  const TV_AVISO_K = ['tiro', 'palo', 'paloR', 'parada', 'tarjeta']; // acciones con aviso grande (el gol y el cambio ya tienen el suyo)
+  let tvVista = 'a', tvVistaManual = 0, tvVistaTimer = null, tvHot = null, tvHotTimer = null, tvRachasCodigo = null, tvRachasVistas = new Set();
+  function tvPosV(c) { return [Math.max(13, Math.min(87, c.x)), Math.max(7, Math.min(91, c.y))]; }
+  // Qué es cada evento para la tele: clase (para buscar su frase), icono y de quién es (h = Hergar, r = rival)
+  function tvClaseEv(e) {
+    const t = e.texto || '';
+    if (e.tipo === 'gol') return { k: 'gol', ic: '⚽', eq: 'h' };
+    if (e.tipo === 'golRival') return { k: 'golRival', ic: '🥅', eq: 'r' };
+    if (e.tipo === 'cambio') return { k: 'cambio', ic: '🔄', eq: 'h' };
+    if (e.tipo === 'tarjeta') return { k: 'tarjeta', ic: /^Roja|^Doble/.test(t) ? '🟥' : '🟨', eq: e.rival ? 'r' : 'h' };
+    if (/^¡Al palo del rival/.test(t)) return { k: 'paloR', ic: '😮‍💨', eq: 'r' };
+    if (/^¡Al palo!/.test(t)) return { k: 'palo', ic: '🪵', eq: 'h' };
+    if (/^Disparo a puerta/.test(t)) return { k: 'tiro', ic: '🎯', eq: 'h' };
+    if (/^Paradón|^Penalti parado|^Penalti del rival parado/.test(t)) return { k: 'parada', ic: '🧤', eq: 'h' };
+    if (/^Parada/.test(t)) return { k: 'paradaN', ic: '🧤', eq: 'h' };
+    if (/^Portería a cero/.test(t)) return { k: 'cero', ic: '🧤', eq: 'h' };
+    if (/^Asistencia/.test(t)) return null; // ya va con su gol
+    return { k: 'otro', ic: '•', eq: 'h' };
+  }
+  // La frase del minuto a minuto que escribe la app para ese evento (mismo minuto y mismo tipo)
+  function tvFraseDe(m, e, c) {
+    const nk = TV_NARR_K[c.k]; if (!nk) return null;
+    const arr = (m && Array.isArray(m.narracion)) ? m.narracion.filter(x => x && x.k === nk && Number(x.m) === e.min) : [];
+    if (!arr.length) return null;
+    const nom = e.nombre || ((/ de (\S+)$/.exec(e.texto || '') || [])[1]) || '';
+    const f = (nom && arr.find(x => `${x.h || ''} ${x.x || ''}`.includes(nom))) || arr[arr.length - 1];
+    return (f.h || f.x) ? { h: f.h || '', x: f.x || '' } : null;
+  }
+  // Frase → línea grande y línea pequeña (si la segunda parte sigue la frase en minúscula, van juntas)
+  function tvFraseTxt(f, texto, racha) {
+    if (!f) return { p: texto, s: '' };
+    let p = f.h || f.x, x = f.h ? f.x : '';
+    if (f.h && x && /^[a-záéíóúñ]/.test(x)) { p = `${f.h} ${x}`; x = ''; }
+    return { p, s: [x, racha ? '' : texto].filter(Boolean).join(' · ') };
+  }
+  // Eventos y rachas juntos, lo último primero (cada racha detrás del evento que la provoca)
+  function tvAccionesLista(m) {
+    const evs = tvEventos(m).map((e, i) => { const c = tvClaseEv(e); return c ? { e: Object.assign({}, e, c), o: e.min * 1000 + i } : null; }).filter(Boolean);
+    const rachas = ((m && Array.isArray(m.narracion)) ? m.narracion : []).filter(x => x && x.k === 'racha')
+      .map((x, i) => ({ e: { min: Number(x.m) || 0, k: 'racha', ic: x.ic || '🔥', eq: x.eq === 'rival' ? 'r' : 'h', texto: x.h || '', frase: { h: x.h || '', x: x.x || '' } }, o: (Number(x.m) || 0) * 1000 + 900 + i }));
+    const desde = evs.length >= 30 ? evs[0].e.min : -1; // la app publica las 30 últimas líneas
+    return evs.concat(rachas.filter(r => r.e.min >= desde)).sort((a, b) => a.o - b.o).map(x => x.e).reverse();
+  }
+  function tvAccionesHTML(m, estado) {
+    const L = tvAccionesLista(m).slice(0, 7);
+    const goles = estado === 'alineacion' ? [] : tvListaGoles(m);
+    const golesHTML = goles.length ? `<div class="tv3-goles">${goles.map(g => `<span class="${g.rival ? 'r' : ''}">${g.rival ? '🥅' : '⚽'} ${escHtml(g.texto)} <b class="t269">${escHtml(g.min)}</b></span>`).join('')}</div>` : '';
+    const filas = L.length ? L.map((e, i) => {
+      const f = i === 0 ? (e.frase || tvFraseDe(m, e, e)) : null;
+      const { p: principal, s: sub } = i === 0 ? tvFraseTxt(f, e.texto, e.k === 'racha') : { p: e.texto, s: '' };
+      let ic = e.ic; if (e.k !== 'racha') { try { ic = ev272TvIcono(e) || e.ic; } catch (er) {} }
+      return `<div class="tv3-acc ${e.eq}${e.k === 'racha' ? ' racha' : ''}${i === 0 ? ' ult' : ''}"><span class="ic">${ic}</span><b class="mi t269">${e.min}'</b>
+        <div style="min-width:0;">${i === 0 ? '<div class="k">ÚLTIMA ACCIÓN</div>' : ''}<div class="p">${escHtml(principal)}</div>${sub ? `<div class="s">${escHtml(sub)}</div>` : ''}</div></div>`;
+    }).join('') : `<div class="tv-nota" style="text-align:left;">${estado === 'alineacion' ? 'El partido aún no ha empezado' : 'Sin acciones todavía'}</div>`;
+    return `<div class="tv-card tv3-col3"><div class="tv-card-t"><span>ÚLTIMAS ACCIONES</span>${goles.length ? '<span>GOLES</span>' : ''}</div>${golesHTML}<div class="tv3-accs">${filas}</div></div>`;
+  }
+  function tvStatsHTML(m) {
     const rival = (m.rival || 'RIVAL').toUpperCase();
-    let lado;
+    return `<div class="tv-card tv3-stats"><div class="tv3-heads"><span class="h">HERGAR</span><span class="r">${escHtml(rival)}</span></div>
+      ${tvStats(m).map(([l, a, b]) => { const t = a + b; return `<div class="tv3-st"><div class="row"><b class="t269${a > b ? ' lead' : ''}">${a}</b><span>${l}</span><b class="t269 r${b > a ? ' lead' : ''}">${b}</b></div>
+        <div class="tv-barra${t ? '' : ' vacia'}">${t ? `<div style="width:${a / t * 100}%;"></div>` : ''}</div></div>`; }).join('')}</div>`;
+  }
+  function tvDominioHTML() {
+    return `<div class="tv-card tv3-dom"><div class="tv-card-t"><span>DOMINIO</span><span><i class="h">▲ HERGAR</i> &nbsp;<i>▼ RIVAL</i></span></div>
+      <canvas id="tvDomCanvas"></canvas><div class="tv3-dom-eje"><span>0'</span><span>35'</span><span>70'</span></div></div>`;
+  }
+  function tvPintarDominio(m) {
+    const cv = document.getElementById('tvDomCanvas'); if (!cv || !m) return;
+    const W = cv.clientWidth, H = cv.clientHeight; if (!W || !H) return;
+    cv.width = W * 2; cv.height = H * 2;
+    const ctx = cv.getContext('2d'); ctx.scale(2, 2);
+    const datos = Array.isArray(m.momentumData) ? m.momentumData : Object.values(m.momentumData || {});
+    if (datos.length < 2) { ctx.fillStyle = '#64748b'; ctx.font = '600 14px Inter'; ctx.textAlign = 'center'; ctx.fillText('Sin datos suficientes todavía', W / 2, H / 2 + 5); return; }
+    const ultimo = Math.max(...datos.map(d => Number(d.min) || 0));
+    const dur = Math.max(70, ultimo), ahora = Math.max(ultimo, Number(m.minuto) || 0);
+    const hasta = m.matchFinished ? dur : Math.min(dur, ahora);
+    const goles = m.golesMin ? Object.values(m.golesMin).filter(g => g && g.min != null) : [];
+    momentumPintarSerie(ctx, momentumVentana(datos, dur), { x: 2, y: 4, w: W - 4, h: H - 8, dur, hasta, goles, descanso: true });
+  }
+  function tvCampoV(m) {
+    const formacion = m.formacion || '4-3-3';
+    const coords = COORDENADAS_FORMACIONES[formacion] || COORDENADAS_FORMACIONES['4-3-3'];
+    const jug = m.jugadores || {};
+    const hot = tvHot && tvHot.hasta > Date.now() ? String(tvHot.dorsal) : null;
+    const puntos = (m.onFieldIds || []).map((id, i) => {
+      const p = jug[id], c = coords[i]; if (!p || !c) return '';
+      const [left, top] = tvPosV(c), g = Number(p.goles) || 0, b = [];
+      if (g) b.push('⚽' + (g > 1 ? g : ''));
+      const tp = Math.max(0, (Number(p.disparosPuerta) || 0) - g); if (tp) b.push('🎯' + (tp > 1 ? tp : ''));
+      if (i === 0 && Number(p.paradas) > 0) b.push('🧤' + (p.paradas > 1 ? p.paradas : ''));
+      if (p.roja) b.push('🟥'); else if (Number(p.amarillas) > 0) b.push('🟨');
+      return `<div class="tv-jug ${i === 0 ? 'gk' : ''}${hot === String(p.dorsal) ? ' hot' : ''}" style="left:${left}%; top:${top}%;"><div class="c">${escHtml(p.dorsal)}${b.length ? `<div class="tv3-bdgs">${b.slice(0, 3).map(x => `<span>${x}</span>`).join('')}</div>` : ''}</div><div class="n">${escHtml(tvPrimerNombre(p.name))}</div></div>`;
+    }).join('');
+    let qm = ''; try { qm = tvQmCapa(m, coords, true); } catch (e) { console.error('Química TV:', e); }
+    const vista = qm ? tvVista : 'a';
+    return `<div class="tv-card tv3-col1 tv3-${vista}" id="tvCampoCard">
+      <div class="tv-card-t"><span>ONCE ${escHtml('1-' + formacion)}</span>${qm ? `<span class="tv3-seg"><button type="button" data-v="a" class="${vista === 'a' ? 'on' : ''}" onclick="tvVerVista('a', event)">ACCIONES</button><button type="button" data-v="q" class="${vista === 'q' ? 'on' : ''}" onclick="tvVerVista('q', event)">QUÍMICA</button></span>` : ''}</div>
+      <div class="tv-campo tv3-campo">
+        <svg viewBox="0 0 68 105" preserveAspectRatio="none"><g fill="none" stroke="rgba(255,255,255,.38)" stroke-width=".45">
+          <rect x="1.5" y="1.5" width="65" height="102"></rect><line x1="1.5" y1="52.5" x2="66.5" y2="52.5"></line><circle cx="34" cy="52.5" r="9.15"></circle>
+          <rect x="13.85" y="1.5" width="40.3" height="16.5"></rect><rect x="24.85" y="1.5" width="18.3" height="5.5"></rect>
+          <rect x="13.85" y="87" width="40.3" height="16.5"></rect><rect x="24.85" y="98" width="18.3" height="5.5"></rect></g></svg>
+        ${qm}${puntos}
+      </div>${qm ? '<div class="tv3-ley"><span><i style="background:#2ed573;"></i>rodada</span><span><i style="background:#f5a623;"></i>a medias</span><span><i class="d"></i>casi nueva</span></div>' : ''}</div>`;
+  }
+  // Pone la vista (acciones / química) sin repintar todo
+  function tvAplicarVista() {
+    const el = document.getElementById('tvCampoCard'); if (!el || !el.querySelector('.tv3-seg')) return;
+    el.classList.toggle('tv3-a', tvVista === 'a'); el.classList.toggle('tv3-q', tvVista === 'q');
+    el.querySelectorAll('.tv3-seg button').forEach(b => b.classList.toggle('on', b.dataset.v === tvVista));
+  }
+  window.tvVerVista = function (v, ev) { if (ev) ev.stopPropagation(); tvVista = v; tvVistaManual = Date.now() + 30000; tvAplicarVista(); };
+  // En la tele nadie toca: cada 15 s cambia sola (si no se acaba de tocar ni hay un jugador iluminado)
+  function tvVistaTick() {
+    if (!tvActivo || Date.now() < tvVistaManual || (tvHot && tvHot.hasta > Date.now())) return;
+    const el = document.getElementById('tvCampoCard'); if (!el || !el.querySelector('.tv3-seg')) return;
+    tvVista = tvVista === 'a' ? 'q' : 'a'; tvAplicarVista();
+  }
+
+  function tvPantallaPartido(m, estado) {
+    let col2;
     if (estado === 'alineacion') {
       const jug = m.jugadores || {};
       const bench = (m.benchIds || []).map(id => jug[id]).filter(Boolean);
-      lado = `<div class="tv-card" style="flex-grow:1;"><div class="tv-card-t"><span>SUPLENTES</span></div>
+      col2 = `<div class="tv-card" style="flex-grow:1;"><div class="tv-card-t"><span>SUPLENTES</span></div>
         ${bench.length ? bench.map(p => `<div class="tv-fila"><span>${escHtml(tvPrimerNombre(p.name))}</span><span class="min" style="color:#f5a623;">${escHtml(p.dorsal)}</span></div>`).join('') : '<div class="tv-nota">Sin suplentes</div>'}
       </div>`;
-    } else {
-      const goles = tvListaGoles(m);
-      lado = `
-        <div class="tv-card"><div class="tv-card-t"><span>GOLES</span></div>
-          ${goles.length ? goles.map(g => `<div class="tv-fila ${g.rival ? 'rival' : ''}"><span>${escHtml(g.texto)}</span><span class="min">${escHtml(g.min)}</span></div>`).join('') : '<div class="tv-nota" style="text-align:left;">Aún sin goles</div>'}
-        </div>
-        <div class="tv-card" style="flex-grow:1;"><div class="tv-card-t"><span>HERGAR</span><span style="max-width:170px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escHtml(rival)}</span></div>
-          ${tvStats(m).map(([l, a, b]) => `<div class="tv-stat"><span class="v">${a}</span><span class="l">${l}</span><span class="v r">${b}</span></div>`).join('')}
-        </div>`;
-    }
-    const ultimos = tvEventos(m).slice(-6).reverse();
-    const cinta = ultimos.length ? ultimos.map(e => `<span>${ev272TvIcono(e)}<b>${e.min}'</b> ${escHtml(e.texto)}</span>`).join('')
-      : `<span style="color:#94a3b8;">${estado === 'alineacion' ? 'El partido aún no ha empezado' : 'Sin eventos todavía'}</span>`;
+    } else col2 = tvStatsHTML(m) + tvDominioHTML();
     return `${tvCabecera(m, estado)}
-      <div class="tv-medio">${tvCampo(m)}<div class="tv-lado">${lado}</div></div>
-      <div class="tv-cinta"><div class="tv-cinta-t">ÚLTIMO</div><div class="tv-cinta-e">${cinta}</div></div>`;
+      <div class="tv3-medio">${tvCampoV(m)}<div class="tv3-col2">${col2}</div>${tvAccionesHTML(m, estado)}</div>`;
   }
 
   function tvPantallaResumen(m, estado) {
@@ -11192,6 +11406,7 @@
     else if (estado === 'descanso' || estado === 'final') html = tvPantallaResumen(m, estado);
     else html = tvPantallaPartido(m, estado);
     base.innerHTML = html;
+    if (estado === 'juego' || estado === 'pausa') { try { tvPintarDominio(m); } catch (e) { console.error('Dominio TV:', e); } } // v321
     { const st = document.getElementById('tvStage'), c = m ? colorEquipoV(m.rival) : null; // v231
       if (st) { if (c) { st.style.setProperty('--rv', rvFondoV(m.rival)); st.style.setProperty('--rvt', colorTextoV(c)); } else { st.style.removeProperty('--rv'); st.style.removeProperty('--rvt'); } } }
     if (estado === 'final') { // 🎬 resumen del partido en la pantalla de Final
@@ -11201,7 +11416,7 @@
   }
   function tvActualizarReloj() {
     const el = document.getElementById('tvReloj');
-    if (el && ultimoMatchData) el.textContent = tvTextoReloj(ultimoMatchData, tvEstado(ultimoMatchData));
+    if (el && ultimoMatchData) el.innerHTML = tvRelojHTML(ultimoMatchData, tvEstado(ultimoMatchData)); // v321
   }
 
   // ── Rótulos (gol y cambio): uno detrás de otro ──
@@ -11247,6 +11462,10 @@
           <span style="font-weight:900; font-size:32px;">${escHtml(r.marcador)}</span><span style="font-size:20px; color:#2ed573; font-weight:800;">${escHtml(r.minuto)}</span></div>
       </div>`;
       dur = 6500;
+    } else if (r.tipo === 'accion') { // v321 · disparo, palo, paradón, tarjeta o racha, con su frase
+      cont.innerHTML = `<div class="tv3-velo"></div><div class="tv3-aviso ${r.eq}${r.k === 'racha' ? ' racha' : ''}"><div class="ic">${r.ic}</div>
+        <div style="min-width:0;"><div class="k">${escHtml(r.quien)} · <b class="t269">${escHtml(String(r.min))}'</b>${r.frase ? ' · 🎙️' : ''}</div><div class="t">${escHtml(r.titulo)}</div>${r.sub ? `<div class="s">${escHtml(r.sub)}</div>` : ''}</div></div>`;
+      dur = 5000;
     } else {
       cont.innerHTML = `<div class="tv-cambio-velo"></div><div class="tv-cambio">
         <div class="izq"><div class="tv-mont" style="font-weight:900; font-size:24px; letter-spacing:3px;">${r.pares.length > 1 ? 'CAMBIOS' : 'CAMBIO'}</div><div class="tv-mont" style="font-weight:800; font-size:32px;">${r.min}'</div></div>
@@ -11262,14 +11481,41 @@
   // Detecta cambios nuevos en la cronología (al cargar un partido se toma lo que haya como ya visto)
   function tvRevisarEventos(m) {
     const lineas = m.eventos || [];
+    // v321 · rachas del minuto a minuto (una vez cada una)
+    const rachas = (Array.isArray(m.narracion) ? m.narracion : []).filter(x => x && x.k === 'racha');
+    const claveR = x => `${x.m}|${x.eq || ''}`;
+    let rachasNuevas = [];
+    if (tvRachasCodigo !== codigoPartidoActual) { tvRachasCodigo = codigoPartidoActual; tvRachasVistas = new Set(rachas.map(claveR)); }
+    else { rachasNuevas = rachas.filter(x => !tvRachasVistas.has(claveR(x))); rachasNuevas.forEach(x => tvRachasVistas.add(claveR(x))); }
     if (tvEventosCodigo !== codigoPartidoActual) {
       tvEventosCodigo = codigoPartidoActual; tvEventosVistos = new Set(lineas);
       return;
     }
     const nuevos = lineas.filter(l => !tvEventosVistos.has(l));
     lineas.forEach(l => tvEventosVistos.add(l));
+    try { tvRevisarAcciones(m, nuevos, rachasNuevas); } catch (e) { console.error('Modo TV acciones:', e); } // v321
     const cambios = nuevos.map(tvParseEvento).filter(e => e && e.tipo === 'cambio');
     if (cambios.length && !m.matchFinished) tvEncolar({ tipo: 'cambio', min: cambios[cambios.length - 1].min, pares: cambios, qmAntes: tvQmUlt }); // v230: con la química de antes
+  }
+
+  // v321 · lo nuevo de cada actualización: se ilumina el jugador y sale el aviso grande con la frase
+  function tvRevisarAcciones(m, nuevas, rachasNuevas) {
+    if (m.matchFinished) return;
+    const rivalTxt = (m.rival || 'RIVAL').toUpperCase();
+    const evs = nuevas.map(l => { const e = tvParseEvento(l); if (e) e.linea = l; return e; }).filter(Boolean);
+    evs.forEach(e => { const d = /#(\S+)/.exec(e.linea || ''); if (d && e.tipo !== 'cambio') tvHot = { dorsal: d[1], hasta: Date.now() + 9000 }; });
+    if (tvHot && tvHot.hasta > Date.now() && evs.length) {
+      tvVista = 'a';
+      clearTimeout(tvHotTimer); tvHotTimer = setTimeout(() => { if (tvActivo && tvEstado(ultimoMatchData) === 'juego') tvRender(); }, 9300);
+    }
+    evs.map(e => ({ e, c: tvClaseEv(e) })).filter(x => x.c && TV_AVISO_K.includes(x.c.k)).slice(-2).forEach(({ e, c }) => {
+      const f = tvFraseDe(m, e, c);
+      if (!f && c.k !== 'tarjeta' && c.k !== 'parada') return; // sin frase (app sin actualizar): solo en la lista
+      const T = tvFraseTxt(f, e.texto, false);
+      tvEncolar({ tipo: 'accion', k: c.k, ic: c.ic, eq: c.eq, min: e.min, quien: c.eq === 'r' ? rivalTxt : 'HERGAR', titulo: T.p, sub: f ? T.s : '', frase: !!f });
+    });
+    rachasNuevas.slice(-1).forEach(x => tvEncolar({ tipo: 'accion', k: 'racha', ic: x.ic || '🔥', eq: x.eq === 'rival' ? 'r' : 'h', min: x.m,
+      quien: x.eq === 'rival' ? rivalTxt : 'HERGAR', titulo: x.h || '', sub: x.x || '', frase: true }));
   }
 
   function tvAlActualizarPartido(m) {
@@ -11308,6 +11554,7 @@
     tvRender();
     tvMostrarSalir(4500);
     tvTick = setInterval(tvActualizarReloj, 10000);
+    clearInterval(tvVistaTimer); tvVistaTimer = setInterval(tvVistaTick, 15000); // v321
     const el = document.documentElement;
     try {
       if (el.requestFullscreen) await el.requestFullscreen({ navigationUI: 'hide' });
@@ -11324,6 +11571,7 @@
     tvActivo = false; tvFullscreen = false;
     tvCola = []; tvRotuloEnCurso = false;
     clearInterval(tvTick); tvTick = null;
+    clearInterval(tvVistaTimer); tvVistaTimer = null; // v321
     const cont = document.getElementById('tvRotulo'); cont.classList.remove('visible'); cont.innerHTML = '';
     document.getElementById('tvModo').classList.remove('activo');
     document.body.style.overflow = '';
@@ -12786,7 +13034,7 @@
         return res;
     }
   function narrDePartidoGuardado(t, p) {
-    if (Array.isArray(p.narracion) && p.narracion.length) return p.narracion;
+    if (Array.isArray(p.narracion) && p.narracion.length) return p.narracion.filter(e => e && !NARR_SOLO_TV.has(e.k)); // v321
     const gf = Number(p.golesLocal) || 0, gc = Number(p.golesRival) || 0;
     let sec = [];
     if (gf + gc > 0) {
@@ -12799,6 +13047,7 @@
       origen: x.g.origen || null, pos: x.g.pos || null, penalti: !!x.g.penalti } }));
     return narrConstruir(hechos, { rival: p.rival, duracion: Math.max(70, dur), descanso: true, final: true });
   }
+  const NARR_SOLO_TV = new Set(['tiro', 'palo', 'paloR', 'racha']); // v321 · frases solo para el Modo TV
   function narrFilaHTML(e) {
     const cls = e.k === 'gol' ? ' gol' : e.k === 'final' ? ' fin' : (e.k === 'desc' || e.k === 'b2b' || e.k === 'b2bT') ? ' desc' : ''; // v222: 📦 box-to-box
     const min = e.k === 'final' ? 'FIN' : e.k === 'desc' ? 'DESC' : `${Number(e.m) || 0}'`;
@@ -12809,7 +13058,7 @@
     try { b2bAvisoDirecto(m); } catch (e) { console.error('Box-to-box en directo:', e); } // v222
     const card = document.getElementById('narracionCard');
     if (!card) return;
-    const arr = (m && Array.isArray(m.narracion)) ? m.narracion.filter(Boolean) : [];
+    const arr = (m && Array.isArray(m.narracion)) ? m.narracion.filter(e => e && !NARR_SOLO_TV.has(e.k)) : []; // v321
     const previa = m && m.previa === true && !m.matchFinished && !m.matchRunning;
     let prox = null; try { prox = proximoPartidoActual(); } catch (e) {}
     if (!m || !arr.length || previa || (prox && !m.matchRunning)) { card.style.display = 'none'; card.innerHTML = ''; return; }
@@ -17043,7 +17292,7 @@
     window.addEventListener('scroll', prog, { passive: true });
     prog();
   })();
-  const VIS_VERSION = 320;
+  const VIS_VERSION = 321;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

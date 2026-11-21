@@ -1472,7 +1472,7 @@
           <select id="onceIdealFormacionSelect" onchange="rerenderOnceIdeal()" style="width:100%; padding:8px; border-radius:8px; background:#0f172a; color:#e2e8f0; border:1px solid rgba(255,255,255,.1); margin-bottom:10px; font-size:12px;">
             <option value="4-3-3">1-4-3-3</option>
             <option value="4-4-2">1-4-4-2</option>
-            <option value="4-2-3-1">1-4-2-3-1</option>
+            <option value="4-2-3-1" selected>1-4-2-3-1</option>
             <option value="3-5-2">1-3-5-2</option>
             <option value="3-4-3">1-3-4-3</option>
           </select>
@@ -2075,6 +2075,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v318 (visor) · Once ideal: por defecto sale en 1-4-2-3-1 (antes 1-4-3-3).
   // v317 (visor; app v271) · 🔗 Química: en los partidos del delegado salía solo un once (el del final) porque la app guardaba una sola pizarra; ahora, si hay una sola y hubo cambios, los tramos se deducen de los cambios y los puestos (once inicial y final).
   // v316 (visor) · Acabado el partido, la cabecera grande (marcador, «Final · 73'», Modo TV) ya no sale en Partido: el resultado se ve en «Último partido». Queda la cabecera fina, con su botón 📺 TV.
   // v315 (visor) · 🌦️ El efecto del tiempo se ve también en el cartel de Día de partido (antes quedaba sin tamaño, tapado por el diseño del cartel grande). La cabecera grande con el «– –» ya no sale hasta que empieza el partido (con convocatoria o sin ella): cabecera fina hasta INICIAR.
@@ -13444,7 +13445,7 @@
   }
   function pintarOnceIdeal(t) {
     const cont = document.getElementById('onceIdealLista');
-    const formacion = document.getElementById('onceIdealFormacionSelect')?.value || '4-3-3';
+    const formacion = document.getElementById('onceIdealFormacionSelect')?.value || '4-2-3-1'; // v318: por defecto 1-4-2-3-1
     if (!cont) return;
     if (Object.keys(t.jugadores || {}).length === 0) { cont.innerHTML = '<div class="loader">Sin datos aún</div>'; return; }
     const { cupos, asignados } = calcularMejorOnce(t, formacion);

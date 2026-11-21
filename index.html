@@ -2075,6 +2075,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v316 (visor) · Acabado el partido, la cabecera grande (marcador, «Final · 73'», Modo TV) ya no sale en Partido: el resultado se ve en «Último partido». Queda la cabecera fina, con su botón 📺 TV.
   // v315 (visor) · 🌦️ El efecto del tiempo se ve también en el cartel de Día de partido (antes quedaba sin tamaño, tapado por el diseño del cartel grande). La cabecera grande con el «– –» ya no sale hasta que empieza el partido (con convocatoria o sin ella): cabecera fina hasta INICIAR.
   // v314 (visor) · Liga → Partidos: jornadas jugadas (con pronóstico) más compactas para que quepan las 5; por jugar algo más grandes; «Campeón si…» puede ir en dos líneas.
   // v313 (visor) · Liga → Partidos: fuera el selector de vueltas (‹ tira de jornadas › en una fila); tarjetas más grandes en las jornadas ya jugadas; la cabecera no dice «Fecha por confirmar».
@@ -8099,8 +8100,9 @@
     const m = (typeof ultimoMatchData !== 'undefined') ? ultimoMatchData : null;
     // v256: en Partido también va la cabecera fina mientras el último partido está arriba (3 primeros días) y ya hay próximo partido publicado
     const ppSinConv = cabTabActual === 'partido' && cabProximoSinConv(m);
-    document.body.classList.toggle('cab-fina', cabTabActual !== 'partido' || cabUltimoArriba(m) || ppSinConv); // v279: + próximo partido sin convocatoria
-    document.body.classList.toggle('cab-pp', ppSinConv && !cabUltimoArriba(m));
+    const finalizado = !!(m && m.matchFinished && !m.matchRunning); // v316: acabado el partido, el resultado ya sale en «Último partido»: cabecera fina
+    document.body.classList.toggle('cab-fina', cabTabActual !== 'partido' || cabUltimoArriba(m) || ppSinConv || finalizado); // v279: + próximo partido sin convocatoria
+    document.body.classList.toggle('cab-pp', (ppSinConv || (finalizado && cabTabActual === 'partido')) && !cabUltimoArriba(m)); // v316: el aviso de goles se sigue viendo como antes
     if (m && m.matchRunning && !m.matchFinished) {
       el.className = 'mini-cab vivo';
       let min = '';

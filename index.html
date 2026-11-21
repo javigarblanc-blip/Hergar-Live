@@ -2075,6 +2075,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v319 (visor; app v272 + delegado) · El partido del delegado no se va del visor: la app no cambia el partido del visor mientras haya uno del delegado sin cargar, el delegado lo vuelve a poner en cada envío y avisa si el visor estaba en otro; y con el partido empezado (descanso, reloj parado) o recién acabado, la tarjeta del próximo partido ya no vuelve a salir.
   // v318 (visor) · Once ideal: por defecto sale en 1-4-2-3-1 (antes 1-4-3-3).
   // v317 (visor; app v271) · 🔗 Química: en los partidos del delegado salía solo un once (el del final) porque la app guardaba una sola pizarra; ahora, si hay una sola y hubo cambios, los tramos se deducen de los cambios y los puestos (once inicial y final).
   // v316 (visor) · Acabado el partido, la cabecera grande (marcador, «Final · 73'», Modo TV) ya no sale en Partido: el resultado se ve en «Último partido». Queda la cabecera fina, con su botón 📺 TV.
@@ -11403,6 +11404,15 @@
     const esCasa = p.local === hergar.id;
     const rival = liga.equipos.find(e => e.id === (esCasa ? p.visitante : p.local));
     if (!rival) return null;
+    // v319 · en los partidos del delegado la tarjeta no se quita al empezar (eso lo hace la app al pulsar INICIAR):
+    // con el partido ya empezado (en el descanso o con el reloj parado) o recién acabado contra ese rival, no vuelve a salir
+    const m = ultimoMatchData;
+    if (m && m.previa !== true) {
+      const empezado = (Number(m.minuto) || 0) > 0 || Number(m.parte) === 2;
+      if (!m.matchFinished && empezado) return null;
+      const fin = m.finalizadoEn || m.actualizado || 0;
+      if (m.matchFinished && normNombreEquipo(m.rival) === normNombreEquipo(rival.nombre) && fin && Date.now() - fin < 3 * 86400000) return null;
+    }
     return { liga, pub, p, hergar, rival, esCasa };
   }
   // ── v93 · Tarjeta "Próximo partido": pronóstico, lo que está en juego, cara a cara y a seguir ──

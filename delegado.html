@@ -349,6 +349,7 @@ function pintarSync() {
   let txt, cls;
   if (ultimoError) { txt = '⚠️ No se pudo enviar: ' + ultimoError; cls = 'bad'; }
   else if (!navigator.onLine || pendientes > 0) { txt = navigator.onLine ? '⏳ Enviando…' : '📵 Sin cobertura · se guarda en el móvil y se enviará al volver'; cls = 'pend'; }
+  else if (S && S.fase === 'directo' && !(S.prueba || PRUEBA) && visorCode && visorCode !== CODE) { txt = '⚠️ El visor estaba en otro partido · volviendo a ponerlo en este…'; cls = 'pend'; } // v272
   else { txt = S && S.fase === 'directo' && !(S.prueba || PRUEBA) ? '● En directo en el visor · guardado en la nube' : '● Guardado en la nube'; cls = ''; }
   if (el) { el.textContent = txt; el.className = 'sync ' + cls; }
   if (f) { const ok = soloLectura || (!ultimoError && navigator.onLine && pendientes === 0); f.className = 'ok ' + (ok ? 'si' : 'no'); f.textContent = soloLectura ? '✔ Javi ya ha cargado este partido en su app. ¡Gracias!' : ok ? '✔ Enviado. Javi lo revisará y lo guardará en la temporada.' : txt; }
@@ -363,6 +364,16 @@ function publicar(inmediato) {
   pendientes++; pintarSync();
   set(ref(db, 'matches/' + CODE), payload).then(() => { ultimoError = null; }).catch(e => { ultimoError = (e && e.message) || String(e); })
     .finally(() => { pendientes = Math.max(0, pendientes - 1); pintarSync(); });
+  ponerVisorAqui();
+}
+// v272 · Durante el partido (y al pitar el final) el visor de las familias tiene que seguir ESTE partido: si algo lo ha
+// cambiado (p. ej. la app de Javi), se vuelve a poner en cada envío (como mucho cada 20 s).
+let visorCode = null;
+function ponerVisorAqui() {
+  if (!S || PRUEBA || S.prueba || soloLectura) return;
+  if (S.fase !== 'directo' && !(S.fase === 'final' && S.finEn && Date.now() - S.finEn < 10 * 60000)) return;
+  if (visorCode === CODE) return;
+  set(ref(db, 'lastMatchCode'), { secret: SECRET, code: CODE, actualizado: Date.now() }).then(() => { visorCode = CODE; pintarSync(); }).catch(() => {});
 }
 function cambio() { procesarTiempo(); guardarLocal(); publicar(false); pintarTodo(); }
 
@@ -1297,6 +1308,7 @@ function pintarFinal() {
 // Si otro móvil ha seguido el partido, se actualiza (solo si es más nuevo)
 cargar().then(() => {
   if (!CODE || !D) return;
+  if (!PRUEBA) onValue(ref(db, 'lastMatchCode'), snap => { const v = snap.val(); visorCode = v && v.code ? String(v.code) : null; pintarSync(); if (visorCode !== CODE) ponerVisorAqui(); }, () => {}); // v272
   onValue(ref(db, 'matches/' + CODE + '/delegado/st'), snap => {
     const r = snap.val();
     if (!r || !S || (r.rev || 0) <= (S.rev || 0)) return;

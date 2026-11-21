@@ -2075,6 +2075,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v317 (visor; app v271) · 🔗 Química: en los partidos del delegado salía solo un once (el del final) porque la app guardaba una sola pizarra; ahora, si hay una sola y hubo cambios, los tramos se deducen de los cambios y los puestos (once inicial y final).
   // v316 (visor) · Acabado el partido, la cabecera grande (marcador, «Final · 73'», Modo TV) ya no sale en Partido: el resultado se ve en «Último partido». Queda la cabecera fina, con su botón 📺 TV.
   // v315 (visor) · 🌦️ El efecto del tiempo se ve también en el cartel de Día de partido (antes quedaba sin tamaño, tapado por el diseño del cartel grande). La cabecera grande con el «– –» ya no sale hasta que empieza el partido (con convocatoria o sin ella): cabecera fina hasta INICIAR.
   // v314 (visor) · Liga → Partidos: jornadas jugadas (con pronóstico) más compactas para que quepan las 5; por jugar algo más grandes; «Campeón si…» puede ir en dos líneas.
@@ -7088,7 +7089,9 @@
   }
   function qmTramosPartido(t, p, tit, form, dur, filas) {
     // 1) con la pizarra guardada por la app
-    if (Array.isArray(p.pizarra) && p.pizarra.length) {
+    // v317: los partidos del delegado guardados antes de la app v271 traen una sola pizarra (la del final): si hubo cambios, se deduce de los cambios y los puestos
+    const pizUna = Array.isArray(p.pizarra) && p.pizarra.length === 1 && (() => { try { return qmCambios(t, p).length > 0; } catch (e) { return false; } })();
+    if (Array.isArray(p.pizarra) && p.pizarra.length && !pizUna) {
       const L = p.pizarra.map(x => ({ m: Number(x.m) || 0, f: x.f || form, ids: (Array.isArray(x.ids) ? x.ids : String(x.ids || '').split(',')).map(v => v === '' || v == null ? null : String(v)) })).sort((a, b) => a.m - b.m);
       const out = []; let prev = null;
       L.forEach((x, k) => {

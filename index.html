@@ -1721,7 +1721,8 @@
   /* v281 · 🏟️ Día de partido */
   .cartel.dp { height:auto; min-height:calc(100svh - 190px); display:flex; flex-direction:column; align-items:center; gap:14px; padding:46px 14px 16px; box-sizing:border-box; }
   .cartel.dp > * { position:relative; z-index:1; }
-  .cartel.dp .dp-velo { position:absolute; inset:0; z-index:0; background:linear-gradient(180deg, rgba(0,0,0,.05), rgba(0,0,0,.55)); }
+  .cartel.dp > .c264 { position:absolute; inset:0; z-index:0; } /* v315 · el tiempo del partido también en Día de partido (la regla de arriba lo dejaba sin tamaño) */
+  .cartel.dp .dp-velo { position:absolute; inset:0; z-index:-1; background:linear-gradient(180deg, rgba(0,0,0,.05), rgba(0,0,0,.55)); }
   .cartel.dp.noche .dp-velo { background:radial-gradient(ellipse at 50% 0%, rgba(20,6,10,.25), rgba(5,7,11,.82) 70%); }
   .cartel.dp .dp-foco { position:absolute; z-index:0; top:-80px; width:240px; height:480px; background:radial-gradient(ellipse at 50% 0%, rgba(255,250,220,.5), rgba(255,250,220,0) 70%); animation:dpFoco 4s ease-in-out infinite; pointer-events:none; }
   .cartel.dp .dp-foco.i { left:-70px; transform:rotate(-18deg); } .cartel.dp .dp-foco.d { right:-70px; transform:rotate(18deg); animation-delay:2s; }
@@ -2074,6 +2075,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v315 (visor) · 🌦️ El efecto del tiempo se ve también en el cartel de Día de partido (antes quedaba sin tamaño, tapado por el diseño del cartel grande). La cabecera grande con el «– –» ya no sale hasta que empieza el partido (con convocatoria o sin ella): cabecera fina hasta INICIAR.
   // v314 (visor) · Liga → Partidos: jornadas jugadas (con pronóstico) más compactas para que quepan las 5; por jugar algo más grandes; «Campeón si…» puede ir en dos líneas.
   // v313 (visor) · Liga → Partidos: fuera el selector de vueltas (‹ tira de jornadas › en una fila); tarjetas más grandes en las jornadas ya jugadas; la cabecera no dice «Fecha por confirmar».
   // v312 (visor) · Liga → Partidos: los 5 partidos de la jornada en una pantalla — vueltas y flechas en una sola fila, rótulo «Jornada N · día» en vez de «JORNADA N» + «Nuestro partido» + «El resto», tarjetas más bajas, campeón y aciertos en una línea; la tira de jornadas se centra en la elegida al abrir la pestaña.
@@ -8110,11 +8112,14 @@
     }
   }
   // v279 · con el próximo partido publicado y sin convocatoria todavía, el marcador grande «– –» sobra (el cartel ya enseña el partido): cabecera fina
+  // v315 · y ahora hasta que empieza: con convocatoria o sin ella, mientras no se pulse INICIAR la cabecera es fina (el cartel ya enseña el partido)
   function cabProximoSinConv(m) {
     try {
-      if (m && m.matchRunning && !m.matchFinished) return false;
-      const d = proximoPartidoActual(); if (!d) return false;
-      return !((d.pub && d.pub.convocados) || []).length;
+      if (m && m.matchRunning) return false;
+      if (proximoPartidoActual()) return true;
+      if (!m) return true;
+      if (m.matchFinished) return false;
+      return m.previa === true; // alineación prevista, aún sin empezar (en pausa o descanso se queda el marcador)
     } catch (e) { return false; }
   }
   function cabUltimoArriba(m) {

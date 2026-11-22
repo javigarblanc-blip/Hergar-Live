@@ -2239,6 +2239,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v332 (visor, sin cambios en la app) · Tocar a un niño en la hoja «👕 Alineación» abre su ficha (con la foto que vuela), por encima de la hoja.
   // v331 (visor; app v280) · El rival escrito corto («C.RODRIGO») se reconoce como su equipo de la Liga («Ciudad Rodrigo»): escudo y jornada en el póster, colores, etc.
   // v330 (visor, sin cambios en la app) · 🧊 Escudos dentro de un cubito de hielo (bloque translúcido torcido con aristas brillantes), color del escudo más apagado y escarcha que sube desde abajo.
   // v329 (visor, sin cambios en la app) · 🧊 Frío como hielo y no como nieve: escudos dentro de un bloque de hielo (reflejo y grietas, sin nieve encima), carámbanos translúcidos azulados, escarcha de ventana en ramas en las esquinas y destellos quietos en rombo.
@@ -3260,7 +3261,7 @@
       const c = co[k]; if (!id || !c) return '';
       const j = D.jug[id] || { nom: '¿?', dorsal: '' }, foto = fotoNinoV(id), g = D.goles[id] || 0;
       const sale = modo === 'ini' && D.ini && !fin.includes(id), entra = modo === 'fin' && D.ini && !ini.includes(id);
-      return `<div class="jf-wrap${k === 0 ? ' gk' : ''}${D.mvp && D.mvp === String(id) ? ' mvp293' : ''}" style="left:${c.x}%; top:${c.y}%;${sale ? ' opacity:.5;' : ''}">
+      return `<div class="jf-wrap${k === 0 ? ' gk' : ''}${D.mvp && D.mvp === String(id) ? ' mvp293' : ''}" role="button" tabindex="0" aria-label="Ver la ficha de ${escHtml(j.nom)}" onclick="alinFicha('${escHtml(String(id))}')" onkeydown="if(event.key==='Enter'){this.click();}" style="cursor:pointer; left:${c.x}%; top:${c.y}%;${sale ? ' opacity:.5;' : ''}">
         <div class="jf-foto${D.mvp && D.mvp === String(id) ? ' mvp291' : ''}"${entra ? ' style="border-color:#5dade2; box-shadow:0 0 0 2px #5dade2;"' : ''}>${foto ? `<img src="${foto}" alt="">` : escHtml(j.dorsal ?? '')}${g ? `<span class="jf-ic alin-gol">⚽<b>${g}</b></span>` : ''}</div>
         ${foto ? `<span class="jf-dor">${escHtml(j.dorsal ?? '')}</span>` : ''}
         <div class="jf-nom">${escHtml(j.nom)}</div></div>`;
@@ -3300,7 +3301,11 @@
     alinModo = 'ini'; alinPintarHoja();
     M.style.display = 'flex'; document.getElementById('alinCaja').scrollTop = 0; document.body.style.overflow = 'hidden';
   }
-  window.cerrarAlineacionFinal = () => { const M = document.getElementById('alinModal'); if (M) M.style.display = 'none'; document.body.style.overflow = ''; };
+  window.cerrarAlineacionFinal = () => { const M = document.getElementById('alinModal'); if (M) M.style.display = 'none'; document.body.style.overflow = ''; const pf = document.getElementById('perfilModal'); if (pf) pf.style.zIndex = ''; };
+  // v332 · tocar a un niño en la hoja «👕 Alineación» abre su ficha (por encima de la hoja; al cerrarla se vuelve a la alineación)
+  window.alinFicha = (id) => {
+    try { const pf = document.getElementById('perfilModal'); if (pf) pf.style.zIndex = '970'; window.abrirPerfilJugadorTemporada(id); } catch (e) { console.error('Alineación → ficha:', e); }
+  };
 
   function pintarEventos(matchData) {
     const cont = document.getElementById('eventosLista');
@@ -17564,7 +17569,7 @@
     window.addEventListener('scroll', prog, { passive: true });
     prog();
   })();
-  const VIS_VERSION = 331;
+  const VIS_VERSION = 332;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

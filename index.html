@@ -2217,6 +2217,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v325 (visor; app v275) · 🏆 Premios: «La pareja de la vuelta» sin podio (salía el portero) y «El muro» con su racha más larga sin encajar.
   // v324 (visor) · 🏆 Los premios de la vuelta se abren solos (una vez en cada móvil) la primera vez que se entra al visor tras publicarlos, aunque no se toque la notificación; nunca con el partido en juego ni encima del modo TV; antes que el dato del día.
   // v323 (visor) · 🎬 Resumen del partido también sin vídeos de goles (0-0, derrota sin marcar o goles sin grabar): entrada, once inicial, el partido en números (con las paradas del portero y la portería a cero), dominio y cómo queda la Liga. Respeta el interruptor de la app (solo goles = sin resumen si no hay vídeos).
   // v322 (visor) · 📺 Entrar en el modo TV: en directo, franja roja «Ver en modo TV» en lugar del botón pequeño (late 3 veces), aviso una vez por partido «Gira el móvil para verlo como en la tele» y, en el móvil, girarlo a horizontal en la pestaña Partido abre el modo TV (y volver a vertical lo cierra). 🔗 Química en el campo del directo: selector «👕 Fotos | 🔗 Química» (recuerda la elección), líneas bajo las fotos, nota del once, leyenda y aviso del cambio («estrena N parejas»).
@@ -7816,7 +7817,7 @@
           <div style="min-width:0;"><div class="m" style="font-weight:900; font-size:${dos || pa ? 22 : 28}px; color:#fff; line-height:1.1;">${escHtml(p.nombre || '')}</div></div></div>
         <div class="pm-datos">${extras.map(x => `<div><b>${escHtml(x[0])}</b><span>${escHtml(x[1])}</span></div>`).join('')}</div>
         <div class="pm-txt">${escHtml(p.txt || '')}</div>${pv}
-        ${(p.podio || []).length > 1 ? `<div class="pm-podio"><div style="border-top:none; font-size:10.5px; font-weight:800; letter-spacing:1px; color:#cbd5e1;">EL PODIO</div>${p.podio.map((o, n) => `<div><span class="m" style="font-weight:900; width:16px; color:${['#f5a623', '#cbd5e1', '#d08a4e'][n] || '#94a3b8'};">${n + 1}</span><span style="flex:1;">${escHtml(o.nombre)}</span><b class="m">${escHtml(o.dato)}</b></div>`).join('')}</div>` : ''}` });
+        ${p.k !== 'pareja' && (p.podio || []).length > 1 ? `<div class="pm-podio"><div style="border-top:none; font-size:10.5px; font-weight:800; letter-spacing:1px; color:#cbd5e1;">EL PODIO</div>${p.podio.map((o, n) => `<div><span class="m" style="font-weight:900; width:16px; color:${['#f5a623', '#cbd5e1', '#d08a4e'][n] || '#94a3b8'};">${n + 1}</span><span style="flex:1;">${escHtml(o.nombre)}</span><b class="m">${escHtml(o.dato)}</b></div>`).join('')}</div>` : ''}` });
     });
     if (u.gol) {
       const g = u.gol;

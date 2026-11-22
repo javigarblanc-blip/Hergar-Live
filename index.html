@@ -2217,6 +2217,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v324 (visor) · 🏆 Los premios de la vuelta se abren solos (una vez en cada móvil) la primera vez que se entra al visor tras publicarlos, aunque no se toque la notificación; nunca con el partido en juego ni encima del modo TV; antes que el dato del día.
   // v323 (visor) · 🎬 Resumen del partido también sin vídeos de goles (0-0, derrota sin marcar o goles sin grabar): entrada, once inicial, el partido en números (con las paradas del portero y la portería a cero), dominio y cómo queda la Liga. Respeta el interruptor de la app (solo goles = sin resumen si no hay vídeos).
   // v322 (visor) · 📺 Entrar en el modo TV: en directo, franja roja «Ver en modo TV» en lugar del botón pequeño (late 3 veces), aviso una vez por partido «Gira el móvil para verlo como en la tele» y, en el móvil, girarlo a horizontal en la pestaña Partido abre el modo TV (y volver a vertical lo cierra). 🔗 Química en el campo del directo: selector «👕 Fotos | 🔗 Química» (recuerda la elección), líneas bajo las fotos, nota del once, leyenda y aviso del cambio («estrena N parejas»).
   // v321 (visor; app v273 + delegado) · 📺 Modo TV en directo rehecho: campo en vertical más estrecho que alterna solo entre ACCIONES (iconos en cada jugador y el último que actúa se ilumina) y QUÍMICA cada 15 s, estadísticas con barras Hergar vs rival, gráfico de dominio, lista fija de las últimas acciones (fuera la cinta que corría) con la frase narrada en la última, aviso grande en el centro con la frase en disparos a puerta, palos, paradones y tarjetas, rachas («¡El Hergar aprieta!») y contadores; reloj más grande y pronóstico Gana / Empate / Pierde. Las frases nuevas solo salen en la tele (el minuto a minuto sigue igual).
@@ -7774,6 +7775,7 @@
     try { pmPintarEntradas(); } catch (e) { console.error('Premios:', e); }
     try { mhPintarPagina(); } catch (e) {} // v246: el botón «Tu vuelta» de «Mi hijo»
     if (pmAbrirAlCargar && pmUltimo()) { pmAbrirAlCargar = false; setTimeout(() => { try { pmAbrir(); } catch (e) {} }, 600); }
+    else if (pmPendiente()) setTimeout(() => { try { ddIntentar(); } catch (e) {} }, 1500); // v324: celebración → premios → dato del día
   });
 
   let pmSl = [], pmPos = 0, pmTimer = null;
@@ -7853,8 +7855,24 @@
     if (s.dur) pmTimer = setTimeout(() => pmIr(pmPos + 1), s.dur);
   }
   window.pmIr = pmIr;
+  // v324 · la primera vez tras publicarlos se abren solos (una vez en cada móvil)
+  const PM_VISTO_KEY = 'hergarLive_pmVisto';
+  function pmMarcarVisto(u) { try { localStorage.setItem(PM_VISTO_KEY, String(u.ts || u.nombre || '')); } catch (e) {} }
+  function pmPendiente() {
+    const u = pmUltimo(); if (!u || (Date.now() - (u.ts || 0)) >= PM_DIAS_ARRIBA * 864e5) return null;
+    let v = null; try { v = localStorage.getItem(PM_VISTO_KEY); } catch (e) { return null; }
+    return v === String(u.ts || u.nombre || '') ? null : u;
+  }
+  function pmAutoIntentar() {
+    const box = document.getElementById('pmStory');
+    if (box && box.classList.contains('on')) return true; // ya abiertos: que no salga nada encima
+    if (!pmPendiente() || !ultimaTemporada) return false;
+    try { if (mhEnJuego() || tvActivo || rs) return false; } catch (e) {}
+    window.pmAbrir(); return true;
+  }
   window.pmAbrir = function () {
     const u = pmUltimo(); if (!u) return;
+    pmMarcarVisto(u);
     pmSl = pmSlides(u);
     const box = document.getElementById('pmStory');
     box.classList.add('on'); document.body.style.overflow = 'hidden';
@@ -17298,6 +17316,7 @@
       if (mhEnJuego() || tvActivo) return;
       if (celAbierta) return; // v260: primero la celebración; el dato del día sale al cerrarla
       if (!celHecha && celIntentar()) return;
+      if (pmAutoIntentar()) return; // v324: los premios recién publicados, antes que el dato del día
       if (ddAvisoHecho) return;
       const hoy = ddHoy();
       let visto = null; try { visto = localStorage.getItem(DD_VISTO_KEY); } catch (e) {}
@@ -17447,7 +17466,7 @@
     window.addEventListener('scroll', prog, { passive: true });
     prog();
   })();
-  const VIS_VERSION = 323;
+  const VIS_VERSION = 324;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

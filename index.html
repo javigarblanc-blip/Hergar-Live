@@ -1990,12 +1990,17 @@
   .match-header > .c264 .k-caram { height:18px; }
   .match-header > .c264 .k-gota { display:none; }
   .cartel.frio264 .ca-top { text-shadow:0 1px 4px rgba(10,30,70,.9); }
+  .cartel.frio264 .ca-nom, .cartel.frio264 .ca-pos { position:relative; z-index:3; }
   .cartel.frio264 .ca-eq { position:relative; }
-  .cartel.frio264 .ca-esc { border-color:rgba(190,228,255,.95); box-shadow:0 0 0 3px rgba(120,190,255,.5), 0 0 20px 5px rgba(120,195,255,.55), 0 10px 24px rgba(0,0,0,.6); }
+  .cartel.frio264 .ca-esc { border-color:rgba(190,228,255,.95); filter:saturate(.72) brightness(1.04); box-shadow:0 0 0 3px rgba(120,190,255,.5), 0 10px 24px rgba(0,0,0,.6); }
+  /* v330 · el escudo dentro de un cubito de hielo: bloque translúcido algo torcido, con aristas brillantes y escarcha que sube desde abajo */
   .cartel.frio264 .ca-eq::before { content:''; position:absolute; top:0; left:50%; width:92px; height:92px; margin-left:-46px; border-radius:50%; pointer-events:none; z-index:1;
-    background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 92 92'%3E%3Cg fill='none' stroke='rgba(255,255,255,.75)' stroke-width='.9' stroke-linecap='round'%3E%3Cpath d='M14 30 L30 38 L36 52 L50 56 L58 72'/%3E%3Cpath d='M30 38 L24 50'/%3E%3Cpath d='M50 56 L62 50 L76 54'/%3E%3Cpath d='M66 14 L62 26 L70 32'/%3E%3C/g%3E%3Cg fill='none' stroke='rgba(120,180,240,.5)' stroke-width='.6'%3E%3Cpath d='M15 31 L31 39 L37 53 L51 57 L59 73'/%3E%3Cpath d='M51 57 L63 51 L77 55'/%3E%3C/g%3E%3C/svg%3E") center/100% 100% no-repeat, linear-gradient(128deg,transparent 22%,rgba(255,255,255,.5) 29%,rgba(255,255,255,.08) 36%,transparent 41%,transparent 63%,rgba(255,255,255,.25) 66%,transparent 69%), radial-gradient(circle,rgba(150,210,255,.06) 0,rgba(130,195,255,.14) 55%,rgba(180,225,255,.55) 68%,rgba(230,246,255,.9) 73%);
-    box-shadow:inset 0 0 8px 1px rgba(255,255,255,.45); }
-  .cartel.frio264 .ca-eq::after { content:''; position:absolute; top:6px; left:50%; margin-left:-30px; width:22px; height:9px; border-radius:50%; background:rgba(255,255,255,.75); filter:blur(2px); transform:rotate(-28deg); pointer-events:none; z-index:2; }
+    background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 92 92'%3E%3Cg fill='none' stroke='rgba(255,255,255,.75)' stroke-width='.9' stroke-linecap='round'%3E%3Cpath d='M14 30 L30 38 L36 52 L50 56 L58 72'/%3E%3Cpath d='M30 38 L24 50'/%3E%3Cpath d='M50 56 L62 50 L76 54'/%3E%3Cpath d='M66 14 L62 26 L70 32'/%3E%3C/g%3E%3Cg fill='none' stroke='rgba(120,180,240,.5)' stroke-width='.6'%3E%3Cpath d='M15 31 L31 39 L37 53 L51 57 L59 73'/%3E%3Cpath d='M51 57 L63 51 L77 55'/%3E%3C/g%3E%3C/svg%3E") center/100% 100% no-repeat, radial-gradient(ellipse 70% 38% at 50% 100%,rgba(240,250,255,.8) 0,rgba(220,240,255,.45) 45%,transparent 75%), radial-gradient(circle,rgba(140,200,255,.1) 0,rgba(130,195,255,.16) 58%,rgba(180,225,255,.55) 68%,rgba(230,246,255,.9) 73%); }
+  .cartel.frio264 .ca-eq::after { content:''; position:absolute; top:-6px; left:50%; width:106px; height:100px; margin-left:-53px; border-radius:24px 30px 22px 34px / 28px 22px 32px 24px; transform:rotate(-5deg); pointer-events:none; z-index:2;
+    border:1.5px solid rgba(225,244,255,.8); border-right-color:rgba(160,210,255,.55); border-bottom-color:rgba(140,200,255,.5);
+    background:linear-gradient(125deg,rgba(255,255,255,.55) 0%,rgba(255,255,255,.12) 16%,transparent 26%,transparent 54%,rgba(255,255,255,.32) 58%,transparent 63%,transparent 80%,rgba(190,228,255,.35) 100%),
+      linear-gradient(180deg,rgba(200,235,255,.14),rgba(120,185,255,.08) 60%,rgba(170,215,255,.22));
+    box-shadow:inset 0 0 0 2px rgba(255,255,255,.12), inset 6px 6px 14px rgba(255,255,255,.35), inset -6px -8px 16px rgba(90,160,240,.35), 0 0 18px 4px rgba(140,205,255,.45), 0 8px 18px rgba(0,30,80,.4); }
   @keyframes c328Brillo { 0%, 55% { background-position:100% 0; } 85%, 100% { background-position:-50% 0; } }
   @keyframes c328Gota { 0%, 55% { opacity:0; transform:translateY(0); } 60% { opacity:1; transform:translateY(0); } 100% { opacity:0; transform:translateY(120px); } }
   @keyframes c264Rayo { 0%, 30%, 100% { opacity:0; } 31% { opacity:.85; } 32.5% { opacity:.1; } 34% { opacity:.6; } 38% { opacity:0; } 71% { opacity:0; } 72% { opacity:.7; } 75% { opacity:0; } }
@@ -2234,6 +2239,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v330 (visor, sin cambios en la app) · 🧊 Escudos dentro de un cubito de hielo (bloque translúcido torcido con aristas brillantes), color del escudo más apagado y escarcha que sube desde abajo.
   // v329 (visor, sin cambios en la app) · 🧊 Frío como hielo y no como nieve: escudos dentro de un bloque de hielo (reflejo y grietas, sin nieve encima), carámbanos translúcidos azulados, escarcha de ventana en ramas en las esquinas y destellos quietos en rombo.
   // v328 (visor, sin cambios en la app) · 🥶 Frío más visible: carámbanos con brillo y gotas arriba, escarcha más marcada en las esquinas, destellos de hielo y escudos congelados (nieve encima y aro de hielo).
   // v327 (visor, sin cambios en la app) · 🎬 «Tu vuelta» a la vista: en «Mi hijo», tarjeta grande arriba (foto, «Tu 1.ª vuelta» y NUEVO) hasta que se abre en ese móvil; después vuelve a ser el botón de abajo.
@@ -17540,7 +17546,7 @@
     window.addEventListener('scroll', prog, { passive: true });
     prog();
   })();
-  const VIS_VERSION = 329;
+  const VIS_VERSION = 330;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

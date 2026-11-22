@@ -2239,6 +2239,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v331 (visor; app v280) · El rival escrito corto («C.RODRIGO») se reconoce como su equipo de la Liga («Ciudad Rodrigo»): escudo y jornada en el póster, colores, etc.
   // v330 (visor, sin cambios en la app) · 🧊 Escudos dentro de un cubito de hielo (bloque translúcido torcido con aristas brillantes), color del escudo más apagado y escarcha que sube desde abajo.
   // v329 (visor, sin cambios en la app) · 🧊 Frío como hielo y no como nieve: escudos dentro de un bloque de hielo (reflejo y grietas, sin nieve encima), carámbanos translúcidos azulados, escarcha de ventana en ramas en las esquinas y destellos quietos en rombo.
   // v328 (visor, sin cambios en la app) · 🥶 Frío más visible: carámbanos con brillo y gotas arriba, escarcha más marcada en las esquinas, destellos de hielo y escudos congelados (nieve encima y aro de hielo).
@@ -4187,6 +4188,20 @@
   }
   // Victorias añadidas
   function proNorm(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\b(c\.?\s?d\.?|u\.?\s?d\.?|c\.?\s?f\.?|a\.?\s?d\.?|club|deportivo|futbol|f\.?c\.?)\b/g, ' ').replace(/[^a-z0-9]+/g, ' ').trim(); }
+  // v331 · nombre corto (el del marcador) contra el nombre de la Liga: cada palabra del corto tiene que estar en el largo, en orden;
+  //  una inicial («C.») vale por cualquier palabra que empiece por esa letra y una palabra de 4+ letras vale por su comienzo
+  function proMismoEquipo(corto, largo) {
+      const pal = (x) => String(x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim().split(' ').filter(Boolean);
+      const a = pal(corto), b = pal(largo).filter(w => !/^(cd|ud|cf|ad|sd|cdf|club|deportivo|futbol|fc)$/.test(w));
+      if (!a.length || !b.length || !a.some(w => w.length >= 3)) return false;
+      let j = 0;
+      for (const w of a) {
+          while (j < b.length && !(b[j] === w || (w.length === 1 && b[j][0] === w) || (w.length >= 4 && b[j].startsWith(w)))) j++;
+          if (j >= b.length) return false;
+          j++;
+      }
+      return true;
+  }
   function proRivalLiga(liga, p) {
       if (!liga || !liga.equipos) return { i: -1, casa: null };
       const H = liga.equipos.findIndex(e => e.esHergar);
@@ -4199,7 +4214,8 @@
           }
       }
       const nr = proNorm(p.rival);
-      const i = nr ? liga.equipos.findIndex((e, k) => k !== H && (proNorm(e.nombre) === nr || (proNorm(e.nombre).includes(nr) && nr.length >= 4) || (nr.includes(proNorm(e.nombre)) && proNorm(e.nombre).length >= 4))) : -1;
+      let i = nr ? liga.equipos.findIndex((e, k) => k !== H && (proNorm(e.nombre) === nr || (proNorm(e.nombre).includes(nr) && nr.length >= 4) || (nr.includes(proNorm(e.nombre)) && proNorm(e.nombre).length >= 4))) : -1;
+      if (i < 0 && nr) { const L = liga.equipos.map((e, k) => k !== H && (proMismoEquipo(p.rival, e.abrev) || proMismoEquipo(p.rival, e.nombre)) ? k : -1).filter(k => k >= 0); if (L.length === 1) i = L[0]; } // v331: «C.RODRIGO» = «Ciudad Rodrigo» (abreviaturas con inicial)
       return { i, casa: typeof c.casa === 'boolean' ? c.casa : null };
   }
   function wpaTemporada(t, liga) {
@@ -9253,7 +9269,9 @@
     if (exacto) return exacto;
     // Coincidencia parcial solo si no hay duda (p. ej. no confundir "Santa Marta" con "Santa Marta B")
     const parecidos = eqs.filter(e => { const x = normNombreEquipo(e.nombre); return x && (x.includes(n) || n.includes(x)); });
-    return parecidos.length === 1 ? parecidos[0] : null;
+    if (parecidos.length === 1) return parecidos[0];
+    const L = eqs.filter(e => !e.esHergar && (proMismoEquipo(nombre, e.abrev) || proMismoEquipo(nombre, e.nombre))); // v331: «C.RODRIGO» = «Ciudad Rodrigo»
+    return L.length === 1 ? L[0] : null;
   }
   // ── v231 · 🎨 Color de cada equipo: lo elige Javi en la app (Liga → Equipos) y viene en la Liga (eq.color) ──
   // --rv = color de sus barras · --rvt = el mismo, aclarado si hace falta para leerse como texto sobre fondo oscuro.
@@ -17546,7 +17564,7 @@
     window.addEventListener('scroll', prog, { passive: true });
     prog();
   })();
-  const VIS_VERSION = 330;
+  const VIS_VERSION = 331;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

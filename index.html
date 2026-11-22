@@ -1937,6 +1937,9 @@
   .c264 { position:absolute; inset:0; overflow:hidden; z-index:-1; pointer-events:none; border-radius:inherit; }
   .match-header > .c264 { position:absolute; z-index:-1; opacity:.75; }
   .c264 canvas { position:absolute; inset:0; width:100%; height:100%; }
+  /* v333 · profundidad al bajar: el fondo de las cabeceras se mueve más despacio que lo de delante (lo mueve px333) */
+  .cartel { background-size:100% 132% !important; background-position:50% var(--px333,50%) !important; }
+  .c264 canvas, .cartel .dp-foco, #perfilHero .ph-dorsal, #perfilHero .ph-fondo333 { will-change:transform; }
   .c264 .cp { position:absolute; inset:0; }
   .c264 .k-sol { background:radial-gradient(circle at 84% 9%,rgba(255,255,235,.95) 0,rgba(255,236,150,.55) 9%,rgba(255,220,120,.18) 30%,transparent 55%),linear-gradient(180deg,rgba(125,200,255,.18),transparent 60%); }
   .c264 .k-sol::after, .c264 .k-atar::after { content:''; position:absolute; inset:-40%; background:repeating-conic-gradient(from 0deg at 84% 9%,rgba(255,250,210,.15) 0 3deg,transparent 3deg 11deg); animation:c264Gira 50s linear infinite; transform-origin:84% 9%; }
@@ -2239,6 +2242,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v333 (visor, sin cambios en la app) · 🏔️ Profundidad al bajar: el fondo del cartel del próximo partido (y Día de partido) y el dorsal gigante de la ficha se mueven más despacio que lo de delante al hacer scroll.
   // v332 (visor, sin cambios en la app) · Tocar a un niño en la hoja «👕 Alineación» abre su ficha (con la foto que vuela), por encima de la hoja.
   // v331 (visor; app v280) · El rival escrito corto («C.RODRIGO») se reconoce como su equipo de la Liga («Ciudad Rodrigo»): escudo y jornada en el póster, colores, etc.
   // v330 (visor, sin cambios en la app) · 🧊 Escudos dentro de un cubito de hielo (bloque translúcido torcido con aristas brillantes), color del escudo más apagado y escarcha que sube desde abajo.
@@ -9385,6 +9389,32 @@
     niebla: '<div class="cp k-niebla"><i></i><i></i><i></i></div>',
     lluvia: '<div class="cp k-lluv"></div><div class="cp k-nube k-gris"><i></i><i></i><i></i><i></i><i></i><i></i></div>' }; // v290: cielo gris y nubes oscuras con la lluvia
   const C264_PART = { lluvia: [120, 230], tormenta: [90, 190], nieve: [40, 90], viento: [16, 32], frio: [10, 18], calor: [14, 26] };
+  // v333 · 🏔️ Profundidad al bajar: al hacer scroll, el fondo de las cabeceras (cartel del próximo partido, Día de partido y cabecera de la ficha)
+  //   se queda un poco atrás respecto a lo de delante. Quieto, todo se ve igual que antes. Sin efecto si el móvil pide menos movimiento.
+  const PX333_TOPE = 70;
+  let px333Pend = false;
+  function px333Aplicar() {
+    px333Pend = false;
+    try {
+      const ref = 56; // altura aproximada de lo fijo de arriba
+      document.querySelectorAll('.cartel').forEach(ca => {
+        const r = ca.getBoundingClientRect();
+        if (r.bottom < -40 || r.top > innerHeight + 40) return;
+        const dy = Math.max(0, Math.min(r.height, ref - r.top)), f = Math.min(1, dy / Math.max(1, r.height));
+        ca.style.setProperty('--px333', (50 - f * 50).toFixed(1) + '%');
+        const d = Math.min(PX333_TOPE, dy * .4).toFixed(1);
+        ca.querySelectorAll(':scope > .c264 > canvas, :scope > .dp-foco').forEach(el => { el.style.translate = `0 ${d}px`; });
+      });
+      const h = document.getElementById('perfilHero'), sc = h && h.parentElement;
+      if (h && sc && h.offsetParent) {
+        const y = Math.max(0, sc.scrollTop), d = Math.min(PX333_TOPE * 1.6, y * .5).toFixed(1);
+        const dor = h.querySelector('.ph-dorsal'); if (dor) dor.style.translate = `0 ${d}px`;
+        h.style.backgroundPosition = `50% ${Math.min(100, y * .25).toFixed(1)}px`;
+      }
+    } catch (e) {}
+  }
+  function px333Pedir() { if (px333Pend) return; px333Pend = true; requestAnimationFrame(px333Aplicar); }
+  if (!V260_RM) { try { document.addEventListener('scroll', px333Pedir, { capture: true, passive: true }); addEventListener('resize', px333Pedir, { passive: true }); } catch (e) {} }
   function c264Poner(cont, T, suave) {
     if (!cont) return;
     let L = cont.querySelector(':scope > .c264');
@@ -17569,7 +17599,7 @@
     window.addEventListener('scroll', prog, { passive: true });
     prog();
   })();
-  const VIS_VERSION = 332;
+  const VIS_VERSION = 333;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

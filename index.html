@@ -2217,6 +2217,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v327 (visor, sin cambios en la app) · 🎬 «Tu vuelta» a la vista: en «Mi hijo», tarjeta grande arriba (foto, «Tu 1.ª vuelta» y NUEVO) hasta que se abre en ese móvil; después vuelve a ser el botón de abajo.
   // v326 (visor; app v276) · 🏆 «La pareja de la vuelta» vuelve a enseñar el podio: la app ya lo calcula sin el portero.
   // v325 (visor; app v275) · 🏆 Premios: «La pareja de la vuelta» sin podio (salía el portero) y «El muro» con su racha más larga sin encajar.
   // v324 (visor) · 🏆 Los premios de la vuelta se abren solos (una vez en cada móvil) la primera vez que se entra al visor tras publicarlos, aunque no se toque la notificación; nunca con el partido en juego ni encima del modo TV; antes que el dato del día.
@@ -8249,6 +8250,27 @@
       return (solo1 ? L.slice(0, 1) : L).map(u => { const nuevo = solo1 && !vistos.includes(tvClave(u, j.id));
         return `<button type="button" onclick="tvAbrir('${escHtml(j.id)}', '${escHtml(u.vuelta || '')}')" style="width:100%; min-height:48px; margin:8px 0; border-radius:12px; border:none; background:${TV_ROJO}; color:#fff; font-family:'Montserrat',sans-serif; font-weight:900; font-size:13.5px; letter-spacing:.5px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">▶ Tu ${escHtml(u.vuelta === 'T' ? 'temporada' : (u.nombre || 'vuelta'))}${nuevo ? `<span style="font-size:10px; letter-spacing:1px; padding:3px 7px; border-radius:6px; background:#fff; color:#7a0d26;">NUEVO</span>` : ''}</button>`; }).join('');
     } catch (e) { console.error('Tu vuelta:', e); return ''; }
+  }
+  // v327 · Tarjeta grande arriba en «Mi hijo» mientras el resumen de la última vuelta esté sin abrir en este móvil
+  function tvTarjetaArribaHTML(t, j) {
+    try {
+      if (!t || !j) return '';
+      const u = pmLista.slice().sort((a, b) => (b.ts || 0) - (a.ts || 0)).filter(x => tvPuede(t, x, j))[0];
+      if (!u || tvVistos().includes(tvClave(u, j.id))) return '';
+      const que = u.vuelta === 'T' ? 'temporada' : (u.nombre || 'vuelta');
+      const f = fotosJugadores[j.id];
+      const foto = f && f.foto ? `<img src="${f.foto}" alt="" style="width:76px; height:76px; border-radius:50%; object-fit:cover; border:3px solid #fff; box-shadow:0 0 0 3px rgba(255,255,255,.2); flex-shrink:0;">`
+        : `<div style="width:76px; height:76px; border-radius:50%; background:rgba(255,255,255,.15); border:3px solid #fff; display:flex; align-items:center; justify-content:center; font-family:'Montserrat',sans-serif; font-weight:900; font-size:28px; color:#fff; flex-shrink:0;">${escHtml(j.dorsal ?? '')}</div>`;
+      return `<div class="card" role="button" tabindex="0" aria-label="Ver tu ${escHtml(que)}: ${escHtml(estNom(j))}" onclick="tvAbrir('${escHtml(j.id)}', '${escHtml(u.vuelta || '')}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}"
+        style="cursor:pointer; border:none; background:linear-gradient(135deg, ${TV_ROJO} 0%, #7a0d26 70%, #3b0613 100%); box-shadow:0 8px 24px rgba(180,20,56,.35); position:relative; overflow:hidden;">
+        <div aria-hidden="true" style="position:absolute; right:-30px; top:-30px; width:140px; height:140px; border-radius:50%; background:rgba(255,255,255,.07);"></div>
+        <div style="display:flex; gap:14px; align-items:center; position:relative;">${foto}<div style="min-width:0; flex:1;">
+          <div style="display:flex; align-items:center; gap:8px;"><span style="font-family:'Montserrat',sans-serif; font-size:10.5px; font-weight:900; letter-spacing:2px; color:rgba(255,255,255,.85);">🎬 YA ESTÁ AQUÍ</span><span style="font-size:10px; font-weight:900; letter-spacing:1px; padding:3px 7px; border-radius:6px; background:#fff; color:#7a0d26;">NUEVO</span></div>
+          <div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:21px; color:#fff; line-height:1.15; margin-top:4px;">Tu ${escHtml(que)}</div>
+          <div style="font-size:12.5px; color:rgba(255,255,255,.85); margin-top:3px;">El resumen de ${escHtml(estNom(j))}, en historias</div></div></div>
+        <div style="position:relative; margin-top:12px; min-height:44px; border-radius:11px; background:#fff; color:#7a0d26; font-family:'Montserrat',sans-serif; font-weight:900; font-size:14px; display:flex; align-items:center; justify-content:center; gap:6px;">▶ Verlo ahora</div>
+      </div>`;
+    } catch (e) { console.error('Tu vuelta · tarjeta:', e); return ''; }
   }
   window.tvAbrir = function (id, vuelta) {
     try {
@@ -14695,6 +14717,7 @@
       <div style="font-size:11.5px; color:#94a3b8; margin-top:2px;">#${escHtml(j.dorsal ?? '')}${pos ? ' · ' + escHtml(pos) : ''}</div>
       <div style="font-size:12.5px; font-weight:600; color:#f5a623; margin-top:6px;">📇 Ver ficha completa ›</div></div>
       <div aria-hidden="true" style="color:#f5a623; font-size:28px; font-weight:300; line-height:1; flex-shrink:0; padding-left:4px;">›</div></div></div>`;
+    const tvArriba = tvTarjetaArribaHTML(t, j); h += tvArriba; // v327
     // Su estilo: «Juega como…» y superpoderes (lo mismo que su pestaña Estilo, en corto)
     try {
       const x = estilosTemporada(t)[j.id], E = x && ESTILOS[x.estilo];
@@ -14781,7 +14804,7 @@
     try { h += hitosMiHijoHTML(t, j); } catch (e) { console.error('Mi hijo · hitos:', e); } // v231
     // Botones
     const btn = 'width:100%; min-height:44px; border-radius:10px; font-weight:700; font-size:12.5px; cursor:pointer; margin-bottom:8px;';
-    h += tvBotonesHTML(t, j, true); // v246
+    if (!tvArriba) h += tvBotonesHTML(t, j, true); // v246 · v327: si está la tarjeta de arriba, abajo no se repite
     h += `<button type="button" onclick="abrirPerfilJugadorTemporada('${escHtml(j.id)}')" style="${btn} border:1px solid #f5a623; background:rgba(245,166,35,.1); color:#f5a623;">Ver su ficha completa (récords, evolución, estilo…) →</button>
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
         <button type="button" onclick="mhCambiar(true)" style="${btn} border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.07); color:#e2e8f0;">🔁 Cambiar favorito</button>
@@ -17468,7 +17491,7 @@
     window.addEventListener('scroll', prog, { passive: true });
     prog();
   })();
-  const VIS_VERSION = 324;
+  const VIS_VERSION = 327;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

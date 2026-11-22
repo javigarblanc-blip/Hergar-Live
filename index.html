@@ -1979,22 +1979,23 @@
   @keyframes c264Deriva { from { transform:translateX(-12%); } to { transform:translateX(12%); } }
   @keyframes c264Foco { 50% { opacity:.75; } }
   /* v328 · 🥶 frío más visible: carámbanos arriba, escarcha en las esquinas y escudos congelados (nieve encima, aro de hielo y brillo) */
-  .c264 .k-frio { background:linear-gradient(180deg,rgba(170,215,255,.38),rgba(90,150,230,.16) 60%,rgba(200,230,255,.22)); box-shadow:inset 0 0 60px 18px rgba(225,242,255,.6); }
-  .c264 .k-frio::before, .c264 .k-frio::after { content:''; position:absolute; -webkit-mask:radial-gradient(circle,#000 0,transparent 70%); mask:radial-gradient(circle,#000 0,transparent 70%); width:190px; height:190px; background:repeating-conic-gradient(from 10deg,rgba(255,255,255,.7) 0 1.5deg,transparent 1.5deg 14deg),radial-gradient(circle,rgba(240,250,255,.55),transparent 65%); }
-  .c264 .k-frio::before { left:-70px; top:-70px; } .c264 .k-frio::after { right:-70px; bottom:-70px; }
-  .c264 .k-caram { position:absolute; left:0; right:0; top:0; height:38px; background:linear-gradient(180deg,rgba(245,251,255,.98) 0%,rgba(205,232,255,.85) 45%,rgba(150,200,255,.35) 100%); filter:drop-shadow(0 2px 3px rgba(20,60,120,.35)); }
-  .c264 .k-caram::after { content:''; position:absolute; inset:0; background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.9) 45%,transparent 60%); background-size:300% 100%; animation:c328Brillo 6s ease-in-out infinite; clip-path:inherit; }
-  .c264 .k-gota { position:absolute; top:30px; width:4px; height:6px; border-radius:50% 50% 50% 50% / 60% 60% 40% 40%; background:rgba(225,242,255,.95); box-shadow:0 0 4px rgba(200,230,255,.9); opacity:0; animation:c328Gota 4.5s ease-in infinite; }
+  /* v329 · 🧊 frío como HIELO (no nieve): tono azul hielo, escarcha de ventana en las esquinas, carámbanos translúcidos, destellos quietos y escudos dentro de un bloque de hielo */
+  .c264 .k-frio { background:linear-gradient(180deg,rgba(120,195,255,.34),rgba(60,140,230,.16) 60%,rgba(150,210,255,.26)); box-shadow:inset 0 0 46px 10px rgba(150,215,255,.5); }
+  .c264 .k-helada { position:absolute; width:170px; height:138px; background-repeat:no-repeat; background-size:100% 100%; opacity:.8; }
+  .c264 .k-helada.a { left:0; top:0; } .c264 .k-helada.b { right:0; bottom:0; transform:rotate(180deg); }
+  .match-header > .c264 .k-helada { width:130px; height:100px; }
+  .c264 .k-caram { position:absolute; left:0; right:0; top:0; height:38px; background:linear-gradient(90deg,rgba(255,255,255,.18),transparent 20%,transparent 80%,rgba(255,255,255,.14)),linear-gradient(180deg,rgba(215,240,255,.88) 0%,rgba(150,205,255,.6) 40%,rgba(110,180,255,.32) 75%,rgba(110,180,255,.1) 100%); filter:drop-shadow(0 0 1px rgba(255,255,255,.9)) drop-shadow(0 3px 3px rgba(10,40,100,.35)); }
+  .c264 .k-caram::after { content:''; position:absolute; inset:0; background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.95) 45%,transparent 60%); background-size:300% 100%; animation:c328Brillo 6s ease-in-out infinite; clip-path:inherit; }
+  .c264 .k-gota { position:absolute; top:30px; width:4px; height:6px; border-radius:50% 50% 50% 50% / 60% 60% 40% 40%; background:rgba(190,230,255,.95); box-shadow:0 0 4px rgba(170,220,255,.9); opacity:0; animation:c328Gota 4.5s ease-in infinite; }
   .match-header > .c264 .k-caram { height:18px; }
   .match-header > .c264 .k-gota { display:none; }
   .cartel.frio264 .ca-top { text-shadow:0 1px 4px rgba(10,30,70,.9); }
   .cartel.frio264 .ca-eq { position:relative; }
-  .cartel.frio264 .ca-esc { border-color:rgba(215,238,255,.95); box-shadow:0 0 0 3px rgba(160,210,255,.45), 0 0 22px 6px rgba(170,215,255,.55), 0 10px 24px rgba(0,0,0,.6); }
+  .cartel.frio264 .ca-esc { border-color:rgba(190,228,255,.95); box-shadow:0 0 0 3px rgba(120,190,255,.5), 0 0 20px 5px rgba(120,195,255,.55), 0 10px 24px rgba(0,0,0,.6); }
   .cartel.frio264 .ca-eq::before { content:''; position:absolute; top:0; left:50%; width:92px; height:92px; margin-left:-46px; border-radius:50%; pointer-events:none; z-index:1;
-    background:radial-gradient(circle at 30% 78%,rgba(255,255,255,.75) 0,transparent 16%),radial-gradient(circle at 78% 70%,rgba(255,255,255,.6) 0,transparent 13%),radial-gradient(circle at 50% 50%,transparent 55%,rgba(225,242,255,.6) 66%,rgba(245,251,255,.9) 72%),linear-gradient(135deg,rgba(255,255,255,.55) 0%,transparent 30%,transparent 72%,rgba(200,230,255,.45) 100%);
-    -webkit-mask:radial-gradient(circle,rgba(0,0,0,.12) 0,rgba(0,0,0,.12) 45%,#000 68%); mask:radial-gradient(circle,rgba(0,0,0,.12) 0,rgba(0,0,0,.12) 45%,#000 68%); }
-  .cartel.frio264 .ca-eq::after { content:''; position:absolute; top:-5px; left:50%; width:50px; height:15px; margin-left:-29px; border-radius:60% 50% 45% 40% / 90% 80% 35% 30%; pointer-events:none; z-index:2;
-    background:radial-gradient(ellipse at 40% 30%,#fff 0,#f1f8ff 55%,#cfe6fb 100%); box-shadow:0 2px 3px rgba(20,60,120,.3), 15px 5px 0 -3px #eef7ff, -11px 6px 0 -4px #e6f2fd, 24px 10px 0 -5px #e6f2fd; }
+    background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 92 92'%3E%3Cg fill='none' stroke='rgba(255,255,255,.75)' stroke-width='.9' stroke-linecap='round'%3E%3Cpath d='M14 30 L30 38 L36 52 L50 56 L58 72'/%3E%3Cpath d='M30 38 L24 50'/%3E%3Cpath d='M50 56 L62 50 L76 54'/%3E%3Cpath d='M66 14 L62 26 L70 32'/%3E%3C/g%3E%3Cg fill='none' stroke='rgba(120,180,240,.5)' stroke-width='.6'%3E%3Cpath d='M15 31 L31 39 L37 53 L51 57 L59 73'/%3E%3Cpath d='M51 57 L63 51 L77 55'/%3E%3C/g%3E%3C/svg%3E") center/100% 100% no-repeat, linear-gradient(128deg,transparent 22%,rgba(255,255,255,.5) 29%,rgba(255,255,255,.08) 36%,transparent 41%,transparent 63%,rgba(255,255,255,.25) 66%,transparent 69%), radial-gradient(circle,rgba(150,210,255,.06) 0,rgba(130,195,255,.14) 55%,rgba(180,225,255,.55) 68%,rgba(230,246,255,.9) 73%);
+    box-shadow:inset 0 0 8px 1px rgba(255,255,255,.45); }
+  .cartel.frio264 .ca-eq::after { content:''; position:absolute; top:6px; left:50%; margin-left:-30px; width:22px; height:9px; border-radius:50%; background:rgba(255,255,255,.75); filter:blur(2px); transform:rotate(-28deg); pointer-events:none; z-index:2; }
   @keyframes c328Brillo { 0%, 55% { background-position:100% 0; } 85%, 100% { background-position:-50% 0; } }
   @keyframes c328Gota { 0%, 55% { opacity:0; transform:translateY(0); } 60% { opacity:1; transform:translateY(0); } 100% { opacity:0; transform:translateY(120px); } }
   @keyframes c264Rayo { 0%, 30%, 100% { opacity:0; } 31% { opacity:.85; } 32.5% { opacity:.1; } 34% { opacity:.6; } 38% { opacity:0; } 71% { opacity:0; } 72% { opacity:.7; } 75% { opacity:0; } }
@@ -2233,6 +2234,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v329 (visor, sin cambios en la app) · 🧊 Frío como hielo y no como nieve: escudos dentro de un bloque de hielo (reflejo y grietas, sin nieve encima), carámbanos translúcidos azulados, escarcha de ventana en ramas en las esquinas y destellos quietos en rombo.
   // v328 (visor, sin cambios en la app) · 🥶 Frío más visible: carámbanos con brillo y gotas arriba, escarcha más marcada en las esquinas, destellos de hielo y escudos congelados (nieve encima y aro de hielo).
   // v327 (visor, sin cambios en la app) · 🎬 «Tu vuelta» a la vista: en «Mi hijo», tarjeta grande arriba (foto, «Tu 1.ª vuelta» y NUEVO) hasta que se abre en ese móvil; después vuelve a ser el botón de abajo.
   // v326 (visor; app v276) · 🏆 «La pareja de la vuelta» vuelve a enseñar el podio: la app ya lo calcula sin el portero.
@@ -9330,12 +9332,30 @@
     const gotas = [[11, 0], [48, 1.7], [83, 3.1]].map(([x, d]) => `<i class="k-gota" style="left:${x}%; animation-delay:${d}s;"></i>`).join('');
     return `<div class="cp" style="inset:auto 0 auto 0; top:0; height:48px;"><div class="k-caram" style="clip-path:polygon(${pts.join(',')});"></div>${gotas}</div>`;
   })();
+  // v329 · escarcha de ventana: ramas que crecen desde la esquina (siempre las mismas: semilla fija)
+  const C329_HELADA = (() => {
+    let sem = 7; const rnd = () => { sem = (sem * 9301 + 49297) % 233280; return sem / 233280; };
+    const L = [];
+    const rama = (x, y, an, lg, n) => {
+      if (n > 2 || lg < 6) return;
+      const x2 = x + Math.cos(an) * lg, y2 = y + Math.sin(an) * lg;
+      L.push(`M${x.toFixed(1)} ${y.toFixed(1)}L${x2.toFixed(1)} ${y2.toFixed(1)}`);
+      const k = 2 + Math.floor(rnd() * 3);
+      for (let q = 1; q <= k; q++) { const t = q / (k + 1), px = x + (x2 - x) * t, py = y + (y2 - y) * t, l2 = lg * (.32 + rnd() * .22);
+        rama(px, py, an - .9 - rnd() * .35, l2, n + 1); rama(px, py, an + .9 + rnd() * .35, l2, n + 1); }
+      rama(x2, y2, an + (rnd() - .5) * .5, lg * .55, n + 1);
+    };
+    [[.2, 115], [.62, 135], [1.05, 110], [1.38, 85]].forEach(([an, lg]) => rama(0, 0, an, lg, 0));
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 210 170'><defs><radialGradient id='g' cx='0' cy='0' r='1'><stop offset='0' stop-color='white' stop-opacity='.95'/><stop offset='.7' stop-color='rgb(200,235,255)' stop-opacity='.55'/><stop offset='1' stop-color='rgb(200,235,255)' stop-opacity='0'/></radialGradient></defs><path d='${L.join('')}' fill='none' stroke='url(#g)' stroke-width='1.3' stroke-linecap='round' transform='scale(1.15 1)'/><path d='M0 0H70Q30 25 0 60Z' fill='url(#g)' opacity='.35'/></svg>`;
+    const u = `url(data:image/svg+xml,${encodeURIComponent(svg).replace(/'/g, '%27').replace(/\(/g, '%28').replace(/\)/g, '%29')})`;
+    return `<i class="k-helada a" style="background-image:${u};"></i><i class="k-helada b" style="background-image:${u};"></i>`;
+  })();
   const C264_TXT = { soleado: ['☀️', 'soleado'], nublado: ['☁️', 'nublado'], lluvia: ['🌧️', 'lluvia'], tormenta: ['⛈️', 'tormenta'], viento: ['💨', 'viento'], calor: ['🥵', 'calor'], frio: ['🥶', 'frío'], nieve: ['❄️', 'nieve'], niebla: ['🌫️', 'niebla'], atardecer: ['🌇', 'atardecer'] };
   const C264_CAPAS = { soleado: '<div class="cp k-sol"><i></i><i></i><i></i></div>', atardecer: '<div class="cp k-atar"></div>', nublado: '<div class="cp k-nube"><i></i><i></i><i></i><i></i><i></i><i></i></div>',
-    tormenta: '<div class="cp k-nube"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="cp k-torm"></div><div class="cp k-rayo"></div>', calor: '<div class="cp k-calor"></div>', frio: '<div class="cp k-frio"></div>' + C328_CARAM,
+    tormenta: '<div class="cp k-nube"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="cp k-torm"></div><div class="cp k-rayo"></div>', calor: '<div class="cp k-calor"></div>', frio: '<div class="cp k-frio">' + C329_HELADA + '</div>' + C328_CARAM,
     niebla: '<div class="cp k-niebla"><i></i><i></i><i></i></div>',
     lluvia: '<div class="cp k-lluv"></div><div class="cp k-nube k-gris"><i></i><i></i><i></i><i></i><i></i><i></i></div>' }; // v290: cielo gris y nubes oscuras con la lluvia
-  const C264_PART = { lluvia: [120, 230], tormenta: [90, 190], nieve: [40, 90], viento: [16, 32], frio: [16, 30], calor: [14, 26] };
+  const C264_PART = { lluvia: [120, 230], tormenta: [90, 190], nieve: [40, 90], viento: [16, 32], frio: [10, 18], calor: [14, 26] };
   function c264Poner(cont, T, suave) {
     if (!cont) return;
     let L = cont.querySelector(':scope > .c264');
@@ -9389,12 +9409,13 @@
         else { c.strokeStyle = `rgba(255,255,255,${.12 + p.r * .2})`; c.lineWidth = k; c.beginPath(); c.moveTo(p.x, p.y); c.quadraticCurveTo(p.x + 30 * k, p.y - 4 * k, p.x + (50 + p.r * 40) * k, p.y); c.stroke(); }
         if (p.x < -100 * k) { p.x = W + Math.random() * 60 * k; p.y = Math.random() * H; }
       } else if (tipo === 'frio') {
-        // v328: destellos de hielo de seis puntas, algo más grandes
-        p.y += .3 * k; p.x += Math.sin(now / 1500 + p.r * 7) * .15 * k; const a = .35 + .55 * Math.abs(Math.sin(now / 600 + p.r * 9)), z = (1.6 + p.r * 2.4) * k;
-        c.strokeStyle = `rgba(230,245,255,${a})`; c.lineWidth = .8 * k; c.beginPath();
-        for (let q = 0; q < 3; q++) { const an = q * Math.PI / 3 + p.r; c.moveTo(p.x - Math.cos(an) * z, p.y - Math.sin(an) * z); c.lineTo(p.x + Math.cos(an) * z, p.y + Math.sin(an) * z); }
-        c.stroke();
-        if (p.y > H) Object.assign(p, nuevo(false));
+        // v329: destellos quietos de hielo (rombos que se encienden y se apagan en su sitio, sin caer)
+        const fase = (now / 1000 / (2.2 + p.r * 2.5) + p.r * 13) % 1, a = fase < .5 ? Math.sin(fase * 2 * Math.PI) : 0, z = (2.5 + p.r * 4.5) * k * (.5 + a * .5);
+        if (a > .02) {
+          c.fillStyle = `rgba(225,245,255,${(a * .95).toFixed(2)})`; c.beginPath(); c.moveTo(p.x, p.y - z); c.lineTo(p.x + z * .28, p.y); c.lineTo(p.x, p.y + z); c.lineTo(p.x - z * .28, p.y); c.closePath(); c.fill();
+          c.beginPath(); c.moveTo(p.x - z * .7, p.y); c.lineTo(p.x, p.y - z * .16); c.lineTo(p.x + z * .7, p.y); c.lineTo(p.x, p.y + z * .16); c.closePath(); c.fill();
+          c.fillStyle = `rgba(170,220,255,${(a * .35).toFixed(2)})`; c.beginPath(); c.arc(p.x, p.y, z * .45, 0, 7); c.fill();
+        }
       } else if (tipo === 'calor') {
         p.y -= (.5 + p.r * .8) * k; p.x += Math.sin((p.y / k) / 18 + p.r * 6) * .6 * k;
         c.strokeStyle = `rgba(255,200,120,${.08 + p.r * .12})`; c.lineWidth = 2 * k; c.beginPath(); c.moveTo(p.x, p.y);
@@ -17519,7 +17540,7 @@
     window.addEventListener('scroll', prog, { passive: true });
     prog();
   })();
-  const VIS_VERSION = 328;
+  const VIS_VERSION = 329;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

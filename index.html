@@ -1963,9 +1963,6 @@
   .c264 .k-torm { background:linear-gradient(180deg,rgba(15,23,42,.65),rgba(15,23,42,.25)); }
   .c264 .k-rayo { background:rgba(235,240,255,.85); opacity:0; animation:c264Rayo 7s infinite; }
   .c264 .k-calor { background:radial-gradient(circle at 80% 0%,rgba(255,200,80,.6),transparent 50%),linear-gradient(0deg,rgba(255,110,30,.4),rgba(255,160,50,.08) 55%,transparent); }
-  .c264 .k-frio { background:linear-gradient(180deg,rgba(150,200,255,.28),rgba(80,140,220,.12)); box-shadow:inset 0 0 50px 14px rgba(220,240,255,.5); }
-  .c264 .k-frio::before, .c264 .k-frio::after { content:''; position:absolute; width:140px; height:140px; background:repeating-conic-gradient(from 10deg,rgba(255,255,255,.55) 0 2deg,transparent 2deg 22deg); -webkit-mask:radial-gradient(circle,#000 0,transparent 70%); mask:radial-gradient(circle,#000 0,transparent 70%); }
-  .c264 .k-frio::before { left:-50px; top:-50px; } .c264 .k-frio::after { right:-50px; bottom:-50px; }
   .c264 .k-niebla { background:linear-gradient(180deg,rgba(200,210,220,.05),rgba(200,210,220,.35)); }
   .c264 .k-niebla i { position:absolute; left:-50%; width:200%; height:70px; border-radius:50%; background:rgba(220,228,235,.28); filter:blur(18px); animation:c264Deriva 14s ease-in-out infinite alternate; }
   .c264 .k-niebla i:nth-child(1) { top:20%; } .c264 .k-niebla i:nth-child(2) { top:50%; animation-duration:19s; animation-direction:alternate-reverse; } .c264 .k-niebla i:nth-child(3) { top:76%; animation-duration:11s; }
@@ -1981,6 +1978,25 @@
   @keyframes c264Nube { to { transform:translateX(860px); } }
   @keyframes c264Deriva { from { transform:translateX(-12%); } to { transform:translateX(12%); } }
   @keyframes c264Foco { 50% { opacity:.75; } }
+  /* v328 · 🥶 frío más visible: carámbanos arriba, escarcha en las esquinas y escudos congelados (nieve encima, aro de hielo y brillo) */
+  .c264 .k-frio { background:linear-gradient(180deg,rgba(170,215,255,.38),rgba(90,150,230,.16) 60%,rgba(200,230,255,.22)); box-shadow:inset 0 0 60px 18px rgba(225,242,255,.6); }
+  .c264 .k-frio::before, .c264 .k-frio::after { content:''; position:absolute; -webkit-mask:radial-gradient(circle,#000 0,transparent 70%); mask:radial-gradient(circle,#000 0,transparent 70%); width:190px; height:190px; background:repeating-conic-gradient(from 10deg,rgba(255,255,255,.7) 0 1.5deg,transparent 1.5deg 14deg),radial-gradient(circle,rgba(240,250,255,.55),transparent 65%); }
+  .c264 .k-frio::before { left:-70px; top:-70px; } .c264 .k-frio::after { right:-70px; bottom:-70px; }
+  .c264 .k-caram { position:absolute; left:0; right:0; top:0; height:38px; background:linear-gradient(180deg,rgba(245,251,255,.98) 0%,rgba(205,232,255,.85) 45%,rgba(150,200,255,.35) 100%); filter:drop-shadow(0 2px 3px rgba(20,60,120,.35)); }
+  .c264 .k-caram::after { content:''; position:absolute; inset:0; background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.9) 45%,transparent 60%); background-size:300% 100%; animation:c328Brillo 6s ease-in-out infinite; clip-path:inherit; }
+  .c264 .k-gota { position:absolute; top:30px; width:4px; height:6px; border-radius:50% 50% 50% 50% / 60% 60% 40% 40%; background:rgba(225,242,255,.95); box-shadow:0 0 4px rgba(200,230,255,.9); opacity:0; animation:c328Gota 4.5s ease-in infinite; }
+  .match-header > .c264 .k-caram { height:18px; }
+  .match-header > .c264 .k-gota { display:none; }
+  .cartel.frio264 .ca-top { text-shadow:0 1px 4px rgba(10,30,70,.9); }
+  .cartel.frio264 .ca-eq { position:relative; }
+  .cartel.frio264 .ca-esc { border-color:rgba(215,238,255,.95); box-shadow:0 0 0 3px rgba(160,210,255,.45), 0 0 22px 6px rgba(170,215,255,.55), 0 10px 24px rgba(0,0,0,.6); }
+  .cartel.frio264 .ca-eq::before { content:''; position:absolute; top:0; left:50%; width:92px; height:92px; margin-left:-46px; border-radius:50%; pointer-events:none; z-index:1;
+    background:radial-gradient(circle at 30% 78%,rgba(255,255,255,.75) 0,transparent 16%),radial-gradient(circle at 78% 70%,rgba(255,255,255,.6) 0,transparent 13%),radial-gradient(circle at 50% 50%,transparent 55%,rgba(225,242,255,.6) 66%,rgba(245,251,255,.9) 72%),linear-gradient(135deg,rgba(255,255,255,.55) 0%,transparent 30%,transparent 72%,rgba(200,230,255,.45) 100%);
+    -webkit-mask:radial-gradient(circle,rgba(0,0,0,.12) 0,rgba(0,0,0,.12) 45%,#000 68%); mask:radial-gradient(circle,rgba(0,0,0,.12) 0,rgba(0,0,0,.12) 45%,#000 68%); }
+  .cartel.frio264 .ca-eq::after { content:''; position:absolute; top:-5px; left:50%; width:50px; height:15px; margin-left:-29px; border-radius:60% 50% 45% 40% / 90% 80% 35% 30%; pointer-events:none; z-index:2;
+    background:radial-gradient(ellipse at 40% 30%,#fff 0,#f1f8ff 55%,#cfe6fb 100%); box-shadow:0 2px 3px rgba(20,60,120,.3), 15px 5px 0 -3px #eef7ff, -11px 6px 0 -4px #e6f2fd, 24px 10px 0 -5px #e6f2fd; }
+  @keyframes c328Brillo { 0%, 55% { background-position:100% 0; } 85%, 100% { background-position:-50% 0; } }
+  @keyframes c328Gota { 0%, 55% { opacity:0; transform:translateY(0); } 60% { opacity:1; transform:translateY(0); } 100% { opacity:0; transform:translateY(120px); } }
   @keyframes c264Rayo { 0%, 30%, 100% { opacity:0; } 31% { opacity:.85; } 32.5% { opacity:.1; } 34% { opacity:.6; } 38% { opacity:0; } 71% { opacity:0; } 72% { opacity:.7; } 75% { opacity:0; } }
   /* 2 · campo en perspectiva (botón 3D / plano, se recuerda en el móvil) */
   .c3d { position:relative; perspective:1100px; perspective-origin:50% 0; padding-top:26px; }
@@ -2217,6 +2233,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v328 (visor, sin cambios en la app) · 🥶 Frío más visible: carámbanos con brillo y gotas arriba, escarcha más marcada en las esquinas, destellos de hielo y escudos congelados (nieve encima y aro de hielo).
   // v327 (visor, sin cambios en la app) · 🎬 «Tu vuelta» a la vista: en «Mi hijo», tarjeta grande arriba (foto, «Tu 1.ª vuelta» y NUEVO) hasta que se abre en ese móvil; después vuelve a ser el botón de abajo.
   // v326 (visor; app v276) · 🏆 «La pareja de la vuelta» vuelve a enseñar el podio: la app ya lo calcula sin el portero.
   // v325 (visor; app v275) · 🏆 Premios: «La pareja de la vuelta» sin podio (salía el portero) y «El muro» con su racha más larga sin encajar.
@@ -9306,9 +9323,16 @@
     else k = c <= 2 ? 'soleado' : 'nublado';
     return { k, luz: e1 < 4 };
   }
+  // v328 · carámbanos: una tira de hielo arriba con picos de distinto largo (siempre los mismos) y alguna gota que cae
+  const C328_CARAM = (() => {
+    const L = [.45, .8, .35, 1, .55, .3, .7, .95, .4, .6, .85, .3, .5, .9, .4, .65, .35, .75, .5, .3, .95, .45], n = L.length, pts = ['0% 0%', '100% 0%', '100% 22%'];
+    for (let i = n - 1; i >= 0; i--) { const x0 = (i / n) * 100, x1 = ((i + 1) / n) * 100, xm = (x0 + x1) / 2; pts.push(`${x1.toFixed(2)}% 22%`, `${xm.toFixed(2)}% ${(22 + L[i] * 78).toFixed(0)}%`, `${x0.toFixed(2)}% 22%`); }
+    const gotas = [[11, 0], [48, 1.7], [83, 3.1]].map(([x, d]) => `<i class="k-gota" style="left:${x}%; animation-delay:${d}s;"></i>`).join('');
+    return `<div class="cp" style="inset:auto 0 auto 0; top:0; height:48px;"><div class="k-caram" style="clip-path:polygon(${pts.join(',')});"></div>${gotas}</div>`;
+  })();
   const C264_TXT = { soleado: ['☀️', 'soleado'], nublado: ['☁️', 'nublado'], lluvia: ['🌧️', 'lluvia'], tormenta: ['⛈️', 'tormenta'], viento: ['💨', 'viento'], calor: ['🥵', 'calor'], frio: ['🥶', 'frío'], nieve: ['❄️', 'nieve'], niebla: ['🌫️', 'niebla'], atardecer: ['🌇', 'atardecer'] };
   const C264_CAPAS = { soleado: '<div class="cp k-sol"><i></i><i></i><i></i></div>', atardecer: '<div class="cp k-atar"></div>', nublado: '<div class="cp k-nube"><i></i><i></i><i></i><i></i><i></i><i></i></div>',
-    tormenta: '<div class="cp k-nube"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="cp k-torm"></div><div class="cp k-rayo"></div>', calor: '<div class="cp k-calor"></div>', frio: '<div class="cp k-frio"></div>',
+    tormenta: '<div class="cp k-nube"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="cp k-torm"></div><div class="cp k-rayo"></div>', calor: '<div class="cp k-calor"></div>', frio: '<div class="cp k-frio"></div>' + C328_CARAM,
     niebla: '<div class="cp k-niebla"><i></i><i></i><i></i></div>',
     lluvia: '<div class="cp k-lluv"></div><div class="cp k-nube k-gris"><i></i><i></i><i></i><i></i><i></i><i></i></div>' }; // v290: cielo gris y nubes oscuras con la lluvia
   const C264_PART = { lluvia: [120, 230], tormenta: [90, 190], nieve: [40, 90], viento: [16, 32], frio: [16, 30], calor: [14, 26] };
@@ -9365,8 +9389,11 @@
         else { c.strokeStyle = `rgba(255,255,255,${.12 + p.r * .2})`; c.lineWidth = k; c.beginPath(); c.moveTo(p.x, p.y); c.quadraticCurveTo(p.x + 30 * k, p.y - 4 * k, p.x + (50 + p.r * 40) * k, p.y); c.stroke(); }
         if (p.x < -100 * k) { p.x = W + Math.random() * 60 * k; p.y = Math.random() * H; }
       } else if (tipo === 'frio') {
-        p.y += .25 * k; const a = .3 + .5 * Math.abs(Math.sin(now / 600 + p.r * 9)), z = (1 + p.r * 1.5) * k;
-        c.fillStyle = `rgba(225,240,255,${a})`; c.fillRect(p.x - z, p.y - .3 * k, z * 2, .6 * k); c.fillRect(p.x - .3 * k, p.y - z, .6 * k, z * 2);
+        // v328: destellos de hielo de seis puntas, algo más grandes
+        p.y += .3 * k; p.x += Math.sin(now / 1500 + p.r * 7) * .15 * k; const a = .35 + .55 * Math.abs(Math.sin(now / 600 + p.r * 9)), z = (1.6 + p.r * 2.4) * k;
+        c.strokeStyle = `rgba(230,245,255,${a})`; c.lineWidth = .8 * k; c.beginPath();
+        for (let q = 0; q < 3; q++) { const an = q * Math.PI / 3 + p.r; c.moveTo(p.x - Math.cos(an) * z, p.y - Math.sin(an) * z); c.lineTo(p.x + Math.cos(an) * z, p.y + Math.sin(an) * z); }
+        c.stroke();
         if (p.y > H) Object.assign(p, nuevo(false));
       } else if (tipo === 'calor') {
         p.y -= (.5 + p.r * .8) * k; p.x += Math.sin((p.y / k) / 18 + p.r * 6) * .6 * k;
@@ -9384,6 +9411,7 @@
     const ca = document.querySelector('#proximoPartidoCard .cartel'); if (!ca) return;
     const T = c264Tipo(d, campo, fechaISO, hora);
     c264Poner(ca, T, false);
+    ca.classList.toggle('frio264', !!(T && T.k === 'frio')); // v328: escudos congelados
     const old = ca.querySelector('.c264-chip'); if (old) old.remove(); // v281: en Día de partido va dentro de los chips
     if (!T || (!T.k && !T.luz)) return;
     const [ico, txt] = T.k ? C264_TXT[T.k] : ['🌙', 'de noche'];
@@ -17491,7 +17519,7 @@
     window.addEventListener('scroll', prog, { passive: true });
     prog();
   })();
-  const VIS_VERSION = 327;
+  const VIS_VERSION = 328;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

@@ -1397,7 +1397,15 @@
             <optgroup label="Lo que juega">
             <option value="minutos">⏱ Minutos</option>
             <option value="partidos">📋 Partidos</option>
-            <option value="notaIA">🤖 Nota IA</option>
+            </optgroup>
+            <optgroup label="Sus acciones">
+            <option value="pasesClave">🔑 Pases clave</option>
+            <option value="pasesArea">📯 Pases al área</option>
+            <option value="regates">🌀 Regates</option>
+            <option value="accionesDef">🛡️ Acciones defensivas</option>
+            <option value="accionesDefClave">🛡️⭐ Acciones defensivas clave</option>
+            <option value="paradas">🧤 Paradas</option>
+            <option value="tarjetas">🟨🟥 Tarjetas</option>
             </optgroup>
             <optgroup label="Los que deciden partidos">
             <option value="puntosGol">💎 Puntos de sus goles</option>
@@ -1572,25 +1580,7 @@
         </div>
       </div>
       <div id="subComparativa" class="sub-panel">
-        <div class="card">
-          <div class="card-title">📊 Top 5 de la temporada</div>
-          <select id="comparativaStatSelect" onchange="rerenderComparativa()" style="width:100%; padding:8px; border-radius:8px; background:#0f172a; color:#e2e8f0; border:1px solid rgba(255,255,255,.1); margin-bottom:10px; font-size:12px;">
-            <option value="goles">⚽ Goles</option>
-            <option value="asistencias">👟 Asistencias</option>
-            <option value="minutos">⏱ Minutos</option>
-            <option value="impactoAcum">⭐ Impacto Total</option>
-            <option value="impactoPorPartido">📊 Impacto (x70min)</option>
-            <option value="regates">🌀 Regates</option>
-            <option value="accionesDefClave">🛡️⭐ Acciones def. clave</option>
-            <option value="pasesArea">📯 Pases al Área</option>
-            <option value="pasesClave">🔑 Pases Clave</option>
-            <option value="accionesDef">🛡️ Acciones Def.</option>
-            <option value="partidos">📋 Partidos</option>
-            <option value="amarillas">🟨 Amarillas</option>
-            <option value="rojas">🟥 Rojas</option>
-          </select>
-          <div id="comparativaLista"><div class="loader">Cargando...</div></div>
-        </div>
+        <!-- v335 · el Top 5 de la temporada se quitó: todo está en Temporada → Ranking -->
         <div class="card">
           <div class="card-title">👥 Jugador contra jugador</div>
           <div id="compVsJugadores"><div class="loader">Cargando...</div></div>
@@ -2242,6 +2232,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v335 (solo visor) · Ranking: grupo «Sus acciones» (pases clave, pases al área, regates, acciones defensivas, defensivas clave, paradas y tarjetas; total y media por partido); fuera «Nota IA» y el Top 5 de Comparativa.
   // v334 (visor; app v281) · Visitas: cómo llegan (notificación, enlace, app instalada, navegador), visitas del día y minutos con el visor a la vista (total y por pestaña).
   // v333 (visor, sin cambios en la app) · 🏔️ Profundidad al bajar: el fondo del cartel del próximo partido (y Día de partido) y el dorsal gigante de la ficha se mueven más despacio que lo de delante al hacer scroll.
   // v332 (visor, sin cambios en la app) · Tocar a un niño en la hoja «👕 Alineación» abre su ficha (con la foto que vuela), por encima de la hoja.
@@ -2430,10 +2421,7 @@
   // v42 · Sinergias: impacto que suman los dos mientras coinciden. v41 · Reglas del impacto (las publica la app), ranking con mínimo de minutos, regates y defensa clave.
   // v2 · Interruptor de notas IA: false = no se muestran notas de jugadores (ni en el partido ni en el ranking).
   // Para volver a mostrarlas: cambiar a true.
-  const MOSTRAR_NOTAS_IA = false;
-  if (!MOSTRAR_NOTAS_IA) {
-    document.querySelector('#rankingCriterioSelect option[value="notaIA"]')?.remove();
-  }
+  const MOSTRAR_NOTAS_IA = false; // v335: la opción «Nota IA» del Ranking ya no existe
 
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
   import { getDatabase, ref, onValue, get, set, update, remove, onDisconnect, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js"; // v237: + escritura solo para visitas/
@@ -8418,7 +8406,7 @@
     const vp = suma(par); if (vp > 0) it.push({ e: '🧤', l: 'paradas', v: vp, u: par(ult), ir: { tipo: 'portero' } });
     const va = suma(asi); if (va > 0) it.push({ e: '🅰️', l: 'asistencias', v: va, u: asi(ult), ir: { sub: 'subRanking' } });
     const vt = suma(tir); if (vt > 0) it.push({ e: '🎯', l: 'tiros a puerta', v: vt, u: tir(ult), ir: { sub: 'subMedias' } });
-    const vg = suma(reg); if (vg > 0) it.push({ e: '🌀', l: 'regates', v: vg, u: reg(ult), ir: { sub: 'subComparativa', sel: 'regates' } }); // v232
+    const vg = suma(reg); if (vg > 0) it.push({ e: '🌀', l: 'regates', v: vg, u: reg(ult), ir: { sub: 'subRanking', sel: 'regates' } }); // v232 · v335: al Ranking (el Top 5 ya no existe)
     const vco = suma(cor); if (vco > 0) it.push({ e: '⛳', l: 'córners a favor', v: vco, u: cor(ult), ir: { sub: 'subMedias' } }); // v232
     const vm = suma(mins); if (vm > 0) it.push({ e: '⏱', l: 'minutos jugados', v: vm, u: mins(ult), extra: numTiempo(vm), ir: { sub: 'subPlantilla' } }); // v232 · todos los niños
     if (racha >= 2) it.push({ e: '🔥', l: 'sin perder', v: racha, txt: 'racha actual', ir: { sub: 'subRachas' } });
@@ -8437,7 +8425,7 @@
     return `= ${h.toLocaleString('es-ES')} h · ${d} ${d === 1 ? 'día' : 'días'}${hr ? ' y ' + hr + ' h' : ''}`;
   }
   let numItems = [], numIn264 = false;
-  window.numIr = function (k) { const x = numItems[k]; if (!x) return; try { buscaIr(Object.assign({ tipo: 'tarjeta' }, x.ir)); if (x.ir && x.ir.sel === 'regates') { const se = document.getElementById('comparativaStatSelect'); if (se) { se.value = 'regates'; try { rerenderComparativa(); } catch (e) {} } } } catch (e) { console.error('Números:', e); } };
+  window.numIr = function (k) { const x = numItems[k]; if (!x) return; try { buscaIr(Object.assign({ tipo: 'tarjeta' }, x.ir)); if (x.ir && x.ir.sel) { const se = document.getElementById('rankingCriterioSelect'); if (se) { se.value = x.ir.sel; try { rerenderRanking(); } catch (e) {} } } } catch (e) { console.error('Números:', e); } };
   function numPintar() {
     const box = document.getElementById('numTira'); if (!box) return;
     const t = (typeof ultimaTemporada !== 'undefined') ? ultimaTemporada : null;
@@ -12672,8 +12660,12 @@
       asistencias: j => j.asistencias || 0,
       minutos: j => j.minutos || 0,
       partidos: j => j.partidos || 0,
-      notaIA: j => j._notaIA !== null ? j._notaIA : -1,
     };
+    // v335 · 👟 Sus acciones: total de la temporada (con la media por partido al lado); solo salen los que tienen alguna
+    const RK_ACC = ['pasesClave', 'pasesArea', 'regates', 'accionesDef', 'accionesDefClave', 'paradas'];
+    const esAcc = RK_ACC.includes(criterio), esTarj = criterio === 'tarjetas';
+    RK_ACC.forEach(k => { valorPorCriterio[k] = j => (Number(j[k]) || 0) + (Number(j[k]) || 0) / 1000 / Math.max(1, j.partidos || 1); });
+    valorPorCriterio.tarjetas = j => (Number(j.rojas) || 0) * 100 + (Number(j.amarillas) || 0);
     // v132: Peso en el equipo y Cuota de acciones (mismo mínimo de minutos que el impacto)
     const esPesoCuota = criterio === 'peso' || criterio === 'cuota';
     const pesos = esPesoCuota ? pesoEquipoTemporada(temporada) : null;
@@ -12748,6 +12740,8 @@
     if (esComp) lista = lista.filter(j => valComp(j) && valComp(j).efecto != null && valComp(j).efecto > 0);
     if (esB2b) lista = lista.filter(j => valB2b(j) && valB2b(j).n > 0);
     if (esMvp) lista = lista.filter(j => mvpT[j.id]);
+    if (esAcc) lista = lista.filter(j => (Number(j[criterio]) || 0) > 0);
+    if (esTarj) lista = lista.filter(j => (Number(j.amarillas) || 0) + (Number(j.rojas) || 0) > 0);
     const enObservacion = esImpacto ? jugadores.filter(j => (j.minutos || 0) < minRanking).sort((a,b) => (b.minutos || 0) - (a.minutos || 0)) : [];
     lista.sort((a,b) => getVal(b) - getVal(a));
     const cont = document.getElementById('rankingLista');
@@ -12758,8 +12752,10 @@
       asistencias: j => j.asistencias || 0,
       minutos: j => `${j.minutos || 0}'`,
       partidos: j => j.partidos || 0,
-      notaIA: j => j._notaIA !== null ? j._notaIA.toFixed(1) : '—',
     };
+    const rkMedia = (v, j) => { const pj = Number(j.partidos) || 0; return pj ? `<div style="font-size:9.5px; color:#94a3b8; text-align:right;">${(v / pj).toFixed(1).replace('.', ',')} por partido</div>` : ''; };
+    RK_ACC.forEach(k => { etiquetaVal[k] = j => { const v = Number(j[k]) || 0; return `${v}${rkMedia(v, j)}`; }; });
+    etiquetaVal.tarjetas = j => `<span style="display:inline-flex; gap:8px; align-items:center;">${(j.amarillas || 0) ? `<span><span style="display:inline-block; width:8px; height:11px; border-radius:2px; background:#f5c518; vertical-align:-1px;"></span> ${j.amarillas}</span>` : ''}${(j.rojas || 0) ? `<span><span style="display:inline-block; width:8px; height:11px; border-radius:2px; background:#e74c3c; vertical-align:-1px;"></span> ${j.rojas}</span>` : ''}</span>`;
     etiquetaVal.wpa = j => { const r = valWpa(j); return `<span style="color:${r.v >= 0 ? '#2ed573' : '#ff6b7a'};">${proFmt(r.v, 2)}</span>`; };
     etiquetaVal.tirosCampo = j => { const r = valTC(j); return `<span style="color:${tcT.media == null || r.cuota >= tcT.media ? '#2ed573' : '#ff6b7a'};">${proPct(r.cuota)}</span>`; };
     etiquetaVal.clave = j => { const r = valClave(j); return `<span style="color:#f5a623;">${r.goles}G · ${r.asist}A</span>`; };
@@ -12777,7 +12773,6 @@
       <div class="rank-row" onclick="${esMvp ? `rkMvpVer('${j.id}')` : `abrirPerfilJugadorTemporada('${j.id}')`}" style="cursor:pointer;">
         <div class="rank-pos">${i+1}</div>
         <div class="rank-name">${(j.name||'').split(' ')[0]}</div>
-        ${(criterio !== 'notaIA' && j._notaIA !== null) ? `<div class="rank-notaia" title="Nota IA media">🤖 ${j._notaIA.toFixed(1)}</div>` : ''}
         ${esImpacto ? `<div style="font-size:10px; color:#64748b; margin-right:6px;">${j.minutos || 0}'</div>` : ''}
         <div class="rank-val">${getEtiqueta(j)}</div>
       </div>${esMvp && rkMvpAbierto === String(j.id) ? rkMvpDetalle(j, mvpT[j.id]) : ''}`).join('');
@@ -12796,6 +12791,8 @@
       if (!lista.length) cont.innerHTML = '<div class="loader">Aún no hay goles en el momento clave</div>';
     } else if (esEcha) {
       cont.innerHTML = rkNota(sinEcha.length ? `${sinEcha.length} sin dato (han faltado a menos de ${ECHA_MIN_SIN} partidos o suben de otro equipo).` : '') + (lista.length ? cont.innerHTML : '<div class="loader">Aún nadie ha faltado a suficientes partidos</div>');
+    } else if (esAcc || esTarj) {
+      if (!lista.length) cont.innerHTML = `<div class="loader">${esTarj ? 'Nadie ha visto tarjeta todavía' : 'Aún no hay ninguna apuntada'}</div>`;
     } else if (esPuntos) {
       if (!lista.length) cont.innerHTML = '<div class="loader">Aún no hay goles</div>';
     } else if (esMM) {
@@ -13875,7 +13872,7 @@
   const COMPARATIVA_DECIMALES = new Set(['impactoAcum', 'impactoPorPartido']);
   function pintarComparativa(t) {
     const sel = document.getElementById('comparativaStatSelect');
-    if (!sel) return;
+    if (!sel) return; // v335: el Top 5 ya no existe (todo está en el Ranking)
     const stat = sel.value || 'goles';
     // v41: "Impacto x70min" solo cuenta a quien llega al mínimo de minutos
     const minRankingC = minMinutosRanking();
@@ -15229,7 +15226,7 @@
     'el muro': 'encajar imbatido porteria cero defensa portero', 'hacen mejores': 'companeros', 'sociedades goleadoras': 'socios pareja parejas asistente asistencias',
     'conexiones tacticas': 'pareja parejas juntos lineas sinergias', 'como llegan los goles': 'origen tramos', 'momentos del partido': 'remontada remontar remontadas primero reaccion puntos',
     'cuando marcamos': 'minutos tramos goles', 'tiempo por marcador': 'ganando perdiendo empatando', 'cuota de tiros': 'tiros disparos', 'rachas': 'racha seguidos invictos',
-    'top 5': 'mejores comparativa', 'jugador contra jugador': 'comparar ninos vs', 'comparar dos partidos': 'partidos vs', 'efecto del banquillo': 'cambios suplentes titular titulares',
+    'jugador contra jugador': 'comparar ninos vs', 'comparar dos partidos': 'partidos vs', 'efecto del banquillo': 'cambios suplentes titular titulares',
     'contexto': 'tiempo lluvia calor hora campo', 'suerte': 'pdo esperado nivel sobre lo esperado', 'medias': 'promedio media goles tiros faltas', 'records': 'record maximo marcas',
     'once ideal': 'mejores alineacion', 'adn': 'estilo estilos equipo', 'clasificacion': 'tabla puntos elo', 'historial de partidos': 'resultados partidos mvp acta',
     'plantilla completa': 'jugadores ninos lesionado sancionado', 'ranking': 'impacto mejores', 'goles en video': 'video videos', 'mapa de goles': 'zona zonas origen',

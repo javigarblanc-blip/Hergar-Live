@@ -1807,6 +1807,32 @@
   @keyframes v260Flash { 0% { opacity:.75; } 100% { opacity:0; } }
   .match-header > *:not(.v260-flash) { position:relative; z-index:1; }
   .match-header > .readonly-tag { position:absolute; }
+  /* v335 · ⚽ gol del Hergar: pelotazo recto hasta el escudo rival, el escudo encaja el golpe, chispas, onda y confeti, el rojo invade su mitad y el número da un latido */
+  .match-header.v335 { overflow:hidden; }
+  .match-header > .v335-inv { position:absolute; inset:0; z-index:0; pointer-events:none; background:linear-gradient(118deg,#b41438,#e11d48); animation:v335Inv 1.5s cubic-bezier(.2,.9,.3,1) forwards; }
+  @keyframes v335Inv { 0% { clip-path:polygon(0 0,46% 0,54% 100%,0 100%); opacity:.95; } 25% { clip-path:polygon(0 0,110% 0,118% 100%,0 100%); opacity:.95; } 65% { clip-path:polygon(0 0,110% 0,118% 100%,0 100%); opacity:.9; } 100% { clip-path:polygon(0 0,46% 0,54% 100%,0 100%); opacity:0; } }
+  .match-header > .v335-fx { position:absolute; inset:0; z-index:6; pointer-events:none; }
+  .v335-fx .bal { position:absolute; width:34px; height:34px; margin:-17px 0 0 -17px; line-height:0; filter:drop-shadow(0 5px 7px rgba(0,0,0,.6)); animation:v335Tiro .9s cubic-bezier(.3,.4,.5,1) forwards; }
+  .v335-fx .bal.f1 { animation-delay:.06s; opacity:.45; filter:blur(1px); } .v335-fx .bal.f2 { animation-delay:.12s; opacity:.28; filter:blur(2px); } .v335-fx .bal.f3 { animation-delay:.18s; opacity:.14; filter:blur(3px); }
+  @keyframes v335Tiro { 0% { transform:translate(0,0) rotate(0) scale(1.15); } 90% { transform:translate(calc(var(--dx) * .96),calc(var(--dy) * .96)) rotate(760deg) scale(.85); } 95% { transform:translate(var(--dx),var(--dy)) rotate(780deg) scale(1.15,.65); } 100% { transform:translate(var(--dx),var(--dy)) rotate(790deg) scale(.5); opacity:0; } }
+  .v335-fx .raf { position:absolute; height:2px; border-radius:2px; background:rgba(255,255,255,.8); animation:v335Raf .3s ease-out forwards; }
+  @keyframes v335Raf { 0% { transform:translateX(26px) scaleX(.2); opacity:0; } 30% { opacity:1; } 100% { transform:translateX(-36px) scaleX(1.2); opacity:0; } }
+  .v335-fx .chi { position:absolute; width:24px; height:3px; margin-top:-1.5px; border-radius:2px; background:linear-gradient(90deg,#fff,rgba(255,220,150,0)); transform-origin:0 50%; animation:v335Chi .45s ease-out forwards; }
+  @keyframes v335Chi { 0% { transform:rotate(var(--a)) translateX(4px) scaleX(.3); opacity:1; } 100% { transform:rotate(var(--a)) translateX(38px) scaleX(1); opacity:0; } }
+  .v335-fx .ond { position:absolute; width:20px; height:20px; margin:-10px 0 0 -10px; border-radius:50%; border:3px solid #fff; animation:v335Ond .7s ease-out forwards; }
+  .v335-fx .ond.d { animation-delay:.12s; opacity:0; }
+  @keyframes v335Ond { 0% { transform:scale(.5); opacity:1; } 100% { transform:scale(12); opacity:0; } }
+  .v335-fx .con { position:absolute; width:6px; height:11px; border-radius:2px; animation:v335Con 1.1s cubic-bezier(.1,.7,.3,1) forwards; }
+  @keyframes v335Con { 0% { transform:translate(0,0) rotate(0); opacity:1; } 100% { transform:translate(var(--dx),var(--dy)) rotate(var(--r)); opacity:0; } }
+  .match-header.v335-tiembla { animation:v335Tiembla .5s cubic-bezier(.36,.07,.19,.97); }
+  @keyframes v335Tiembla { 10%,90% { transform:translate(-1px,0); } 20%,80% { transform:translate(4px,1px); } 30%,50%,70% { transform:translate(-6px,-2px) rotate(-.5deg); } 40%,60% { transform:translate(6px,2px) rotate(.5deg); } }
+  .sb-eq.r .sb-esc.v335-golpe { display:inline-block; animation:v335Golpe .6s cubic-bezier(.2,.9,.3,1); }
+  @keyframes v335Golpe { 0% { transform:none; } 12% { transform:translate(14px,-4px) rotate(14deg) scale(.82); filter:brightness(1.8); } 40% { transform:translate(-4px,1px) rotate(-5deg) scale(1.04); filter:none; } 70% { transform:translate(2px,0) rotate(2deg); } 100% { transform:none; } }
+  /* v335 · hojas que se cierran deslizando hacia abajo: barrita arriba para indicar que se puede arrastrar */
+  #alinCaja, #fichaEquipoCaja, #csCaja .cc-in, #fichaPartidoModal > div, #idaVueltaModal > div, #perfilModal > div { position:relative; }
+  #alinCaja::before, #fichaEquipoCaja::before, #csCaja .cc-in::before, #fichaPartidoModal > div::before, #idaVueltaModal > div::before, #perfilModal > div::before { content:''; position:absolute; top:6px; left:50%; width:40px; height:5px; margin-left:-20px; border-radius:3px; background:rgba(255,255,255,.32); z-index:8; pointer-events:none; }
+  .scoreboard-goals.v335-pulso { display:inline-block; animation:v335Pulso .9s cubic-bezier(.2,1.4,.4,1); }
+  @keyframes v335Pulso { 0% { transform:scale(1); } 25% { transform:scale(1.55); color:#ffd27a; text-shadow:0 0 18px rgba(255,80,110,.95),0 0 40px rgba(225,29,72,.8); } 100% { transform:scale(1); text-shadow:none; } }
   .parte-barra { display:none; max-width:240px; margin:6px auto 2px; }
   .parte-barra .pb-fondo { height:4px; border-radius:2px; background:rgba(255,255,255,.08); overflow:hidden; }
   .parte-barra .pb-fill { height:100%; border-radius:2px; background:#e2e8f0; transition:width .9s linear, background .5s; }
@@ -2233,6 +2259,7 @@
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
   // v335 (solo visor) · Ranking: grupo «Sus acciones» (pases clave, pases al área, regates, acciones defensivas, defensivas clave, paradas y tarjetas; total y media por partido); fuera «Nota IA» y el Top 5 de Comparativa.
+  // v335 (visor, sin cambios en la app) · ⚽ Gol del Hergar en la cabecera del directo: pelotazo recto (balón blanco y negro) hasta el escudo rival, que encaja el golpe, con chispas, onda y confeti; el rojo invade la mitad del rival y el número da un latido (sin giro de tablilla, también en los goles del rival). Hojas de abajo que se cierran deslizando hacia abajo.
   // v334 (visor; app v281) · Visitas: cómo llegan (notificación, enlace, app instalada, navegador), visitas del día y minutos con el visor a la vista (total y por pestaña).
   // v333 (visor, sin cambios en la app) · 🏔️ Profundidad al bajar: el fondo del cartel del próximo partido (y Día de partido) y el dorsal gigante de la ficha se mueven más despacio que lo de delante al hacer scroll.
   // v332 (visor, sin cambios en la app) · Tocar a un niño en la hoja «👕 Alineación» abre su ficha (con la foto que vuela), por encima de la hoja.
@@ -2601,8 +2628,111 @@
     const prev = v260Score; v260Score = { h, r, k };
     v260ParteBarra(m);
     if (!prev || prev.k !== k || V260_RM || tvActivo) return;
-    if (h > prev.h) v260Gol('scoreLocal', '#b41438');
-    if (r > prev.r) v260Gol('scoreRival', colorEquipoV(m.rival) || '#64748b');
+    if (h > prev.h) { try { v335GolHergar(prev.h, h); } catch (e) { v260Gol('scoreLocal', '#b41438'); } }
+    if (r > prev.r) v335Pulso('scoreRival', colorEquipoV(m.rival) || '#64748b'); // v335: latido en vez de giro
+  }
+  // v335 · el número da un latido (sin giro de tablilla) y el destello de siempre con el color de quien marca
+  function v335Pulso(id, col) {
+    const el = document.getElementById(id);
+    if (el) { el.classList.remove('v335-pulso', 'v260-flipA', 'v260-flipB'); void el.offsetWidth; el.classList.add('v335-pulso'); }
+    const hd = document.querySelector('.match-header'); if (!hd || !col) return;
+    let f = hd.querySelector('.v260-flash');
+    if (!f) { f = document.createElement('div'); f.className = 'v260-flash'; hd.insertBefore(f, hd.firstChild); }
+    f.style.background = `radial-gradient(circle at 50% 45%, ${col}, transparent 78%)`;
+    f.classList.remove('on'); void f.offsetWidth; f.classList.add('on');
+  }
+  const V335_BALON = '<svg viewBox="0 0 100 100" width="34" height="34" aria-hidden="true"><circle cx="50" cy="50" r="47" fill="#fff" stroke="#111" stroke-width="3"/><polygon points="50,30 69,44 62,66 38,66 31,44" fill="#111"/><polygon points="50,3 63,10 50,30 37,10" fill="#111"/><polygon points="93,38 95,55 80,62 69,44 80,30" fill="#111"/><polygon points="78,88 62,96 54,82 62,66 80,62" fill="#111"/><polygon points="22,88 38,96 46,82 38,66 20,62" fill="#111"/><polygon points="7,38 5,55 20,62 31,44 20,30" fill="#111"/><path d="M50 30 L50 3 M69 44 L80 30 M62 66 L80 62 M38 66 L20 62 M31 44 L20 30" stroke="#111" stroke-width="2.5"/></svg>';
+  // ════════ v335 · hojas que se cierran deslizando hacia abajo (alineación, ficha de un partido, ficha de un equipo, ficha del niño, ida y vuelta, cómo se calcula) ════════
+  const H335 = [['alinModal', '#alinCaja', 'cerrarAlineacionFinal'], ['fichaEquipoModal', '#fichaEquipoCaja', 'cerrarFichaEquipo'], ['csCaja', '.cc-in', 'csCerrarCaja'],
+    ['fichaPartidoModal', ':scope > div', 'cerrarFichaPartido'], ['idaVueltaModal', ':scope > div', 'cerrarIdaVuelta'], ['perfilModal', ':scope > div', 'fi272Cerrar']];
+  let h335 = null;
+  function h335Buscar(t) {
+    for (const [oid, sel, fn] of H335) {
+      const ov = document.getElementById(oid); if (!ov || getComputedStyle(ov).display === 'none') continue;
+      const sh = ov.querySelector(sel); if (sh && sh.contains(t)) return { ov, sh, fn };
+    }
+    return null;
+  }
+  function h335ScrollDentro(t, hasta) { // ¿algo con scroll entre el dedo y la hoja que no está arriba del todo?
+    for (let e = t; e && e !== hasta.parentElement; e = e.parentElement) {
+      if (e.scrollTop > 0 && e.scrollHeight > e.clientHeight + 2) { const oy = getComputedStyle(e).overflowY; if (oy === 'auto' || oy === 'scroll') return true; }
+    }
+    return false;
+  }
+  document.addEventListener('touchstart', (ev) => {
+    try {
+      h335 = null; if (V260_RM || ev.touches.length !== 1) return;
+      const t = ev.target; if (t.closest && t.closest('input, textarea, select, video, .tv3, canvas')) return;
+      const b = h335Buscar(t); if (!b) return;
+      const p = ev.touches[0], r = b.sh.getBoundingClientRect();
+      h335 = Object.assign(b, { x0: p.clientX, y0: p.clientY, t0: Date.now(), dy: 0, va: false, arriba: p.clientY - r.top <= 72, conScroll: h335ScrollDentro(t, b.sh) || b.ov.scrollTop > 0 });
+    } catch (e) { h335 = null; }
+  }, { passive: true, capture: true });
+  document.addEventListener('touchmove', (ev) => {
+    const g = h335; if (!g) return;
+    try {
+      const p = ev.touches[0], dx = p.clientX - g.x0, dy = p.clientY - g.y0;
+      if (!g.va) {
+        if (Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy)) { h335 = null; return; } // gesto de lado: no es para cerrar
+        if (dy < -6) { h335 = null; return; } // hacia arriba: scroll normal
+        if (dy > 8 && dy > Math.abs(dx) * 1.5 && (g.arriba || !g.conScroll)) { g.va = true; g.sh.style.transition = 'none'; g.ov.style.transition = 'none'; }
+        else return;
+      }
+      g.dy = Math.max(0, dy);
+      g.sh.style.transform = `translateY(${g.dy}px)`;
+      g.ov.style.opacity = String(Math.max(.35, 1 - g.dy / 700));
+      if (ev.cancelable) ev.preventDefault();
+    } catch (e) {}
+  }, { passive: false, capture: true });
+  const h335Fin = () => {
+    const g = h335; h335 = null; if (!g || !g.va) return;
+    const rapido = g.dy > 60 && (Date.now() - g.t0) < 260;
+    if (g.dy > 120 || rapido) {
+      g.sh.style.transition = 'transform .22s ease-in'; g.ov.style.transition = 'opacity .22s ease-in';
+      g.sh.style.transform = 'translateY(100vh)'; g.ov.style.opacity = '0';
+      setTimeout(() => {
+        try { const f = window[g.fn]; if (typeof f === 'function') f(); else g.ov.style.display = 'none'; } catch (e) {}
+        setTimeout(() => { g.sh.style.transition = ''; g.sh.style.transform = ''; g.ov.style.transition = ''; g.ov.style.opacity = ''; }, 60);
+      }, 210);
+    } else {
+      g.sh.style.transition = 'transform .28s cubic-bezier(.2,.9,.3,1)'; g.ov.style.transition = 'opacity .28s';
+      g.sh.style.transform = ''; g.ov.style.opacity = '';
+      setTimeout(() => { g.sh.style.transition = ''; g.ov.style.transition = ''; }, 300);
+    }
+  };
+  document.addEventListener('touchend', h335Fin, { capture: true });
+  document.addEventListener('touchcancel', h335Fin, { capture: true });
+  let v335Tm = [];
+  function v335GolHergar(antes, ahora) {
+    const hd = document.querySelector('.match-header'), eL = document.getElementById('escLocal'), eR = document.getElementById('escRival'), sc = document.getElementById('scoreLocal');
+    if (!hd || !eL || !eR || !hd.offsetParent) { v260Gol('scoreLocal', '#b41438'); return; }
+    v335Tm.forEach(clearTimeout); v335Tm = [];
+    hd.querySelectorAll(':scope > .v335-fx, :scope > .v335-inv').forEach(x => x.remove());
+    const R = hd.getBoundingClientRect(), a = eL.getBoundingClientRect(), b = eR.getBoundingClientRect();
+    const x0 = a.left + a.width / 2 - R.left, y0 = a.top + a.height / 2 - R.top, x1 = b.left + b.width / 2 - R.left, y1 = b.top + b.height / 2 - R.top;
+    if (sc) sc.textContent = antes; // el número cambia cuando el balón llega
+    hd.classList.add('v335');
+    const fx = document.createElement('div'); fx.className = 'v335-fx'; fx.setAttribute('aria-hidden', 'true');
+    const dx = x1 - x0, dy = y1 - y0;
+    fx.innerHTML = [0, 1, 2].map(k => `<i class="raf" style="left:${x0 - 34}px; top:${y0 - 10 + k * 10}px; width:${48 - k * 8}px; animation-delay:${k * .03}s;"></i>`).join('')
+      + ['f3', 'f2', 'f1', ''].map(c => `<div class="bal ${c}" style="left:${x0}px; top:${y0}px; --dx:${dx}px; --dy:${dy}px;">${V335_BALON}</div>`).join('');
+    hd.appendChild(fx);
+    let hecho = false;
+    const choque = () => {
+      if (hecho) return; hecho = true;
+      const inv = document.createElement('div'); inv.className = 'v335-inv'; hd.insertBefore(inv, hd.firstChild);
+      const cols = ['#ffffff', '#e11d48', '#b41438', '#f5a623'];
+      fx.innerHTML = Array.from({ length: 10 }, (_, k) => `<i class="chi" style="left:${x1}px; top:${y1}px; --a:${k * 36 + 8}deg;"></i>`).join('')
+        + `<i class="ond" style="left:${x1}px; top:${y1}px;"></i><i class="ond d" style="left:${x1}px; top:${y1}px;"></i>`
+        + Array.from({ length: 18 }, (_, k) => { const an = (k / 18) * Math.PI * 2, r = 60 + (k % 4) * 20; return `<i class="con" style="left:${x1}px; top:${y1}px; background:${cols[k % 4]}; --dx:${Math.round(Math.cos(an) * r)}px; --dy:${Math.round(Math.sin(an) * r * .7 + 26)}px; --r:${(k * 97) % 540}deg;"></i>`; }).join('');
+      hd.classList.remove('v335-tiembla'); void hd.offsetWidth; hd.classList.add('v335-tiembla');
+      eR.classList.remove('v335-golpe'); void eR.offsetWidth; eR.classList.add('v335-golpe');
+      v335Tm.push(setTimeout(() => { if (sc) sc.textContent = (v260Score && v260Score.h != null) ? v260Score.h : ahora; v335Pulso('scoreLocal', null); }, 650));
+      v335Tm.push(setTimeout(() => { fx.remove(); inv.remove(); hd.classList.remove('v335', 'v335-tiembla'); eR.classList.remove('v335-golpe'); }, 1700));
+    };
+    const ult = fx.querySelector('.bal:not(.f1):not(.f2):not(.f3)');
+    if (ult) ult.addEventListener('animationend', choque, { once: true });
+    v335Tm.push(setTimeout(choque, 1300)); // por si el móvil no avisa del final de la animación
   }
   function v260Gol(id, col) {
     const el = document.getElementById(id);
@@ -17597,7 +17727,7 @@
     window.addEventListener('scroll', prog, { passive: true });
     prog();
   })();
-  const VIS_VERSION = 334;
+  const VIS_VERSION = 335;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

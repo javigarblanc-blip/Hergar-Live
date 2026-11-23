@@ -1341,8 +1341,9 @@
 
     <!-- TEMPORADA -->
     <div id="temporada" class="panel">
+      <div class="tmp-hero vacio" id="tmpHero"><div id="tmpHeroCab"></div><!-- v339 · destacada: puesto, puntos, goles y forma -->
       <div id="numTira" style="display:none;"></div><!-- v230 · la temporada en números -->
-      <div id="ddCard" style="display:none;"></div><!-- v236 · dato del día -->
+      <div id="ddCard" style="display:none;"></div><!-- v236 · dato del día --></div>
       <div id="pmCardTemp" style="display:none;"></div><!-- v230 · premios de la vuelta (2 semanas) -->
       <!-- v177 · buscador -->
       <div class="tmp-busca"><span aria-hidden="true">🔎</span><input id="tmpBuscaIn" type="text" enterkeyhint="search" autocomplete="off" placeholder="Buscar: gol lejano, portero, un niño…" aria-label="Buscar en Temporada y Liga"><button type="button" id="tmpBuscaX" aria-label="Borrar búsqueda" style="display:none;">✕</button></div>
@@ -1356,6 +1357,7 @@
       </div>
       <button type="button" class="tmp-mas" id="tmpMasBtn" onclick="toggleMasTemp()" aria-expanded="false" aria-controls="tmpMasPanel">
         <span>📊 Más análisis</span><span class="txt" id="tmpMasTxt">20 apartados en 3 bloques ▾</span>
+        <span class="tmp-mas-pv" aria-hidden="true"><i>🎯 Mapa de goles</i><i>🏅 Once ideal</i><i>🔗 Química</i><i>🔥 Rachas</i><i>+16</i></span>
       </button>
       <div class="tmp-sec" id="tmpMasPanel"><!-- v276 · galería: cada apartado con su adelanto -->
         <div class="tmp-blq"><b>⚽ Goles</b><span>Dónde, cómo y cuándo marcamos</span></div>
@@ -2249,6 +2251,47 @@
   @media (prefers-reduced-motion: reduce) {
     .ev272.nuevo, .ev272.nuevo * { animation:none !important; }
   }
+
+  /* ══ v339 · jerarquía: una tarjeta destacada por pantalla y el resto sobrias (sin borde, más aire) ══ */
+  .card { border-color:transparent; border-radius:16px; margin-bottom:14px; }
+  .tmp-busca { border-color:transparent; background:rgba(255,255,255,.06); }
+  /* Mi hijo: cabecera destacada */
+  .mh-hero { position:relative; overflow:hidden; border-radius:18px; margin:0 0 16px; padding:18px 16px 16px; background:linear-gradient(160deg,#7a0d26 0%,#3b0613 58%,#111827 100%); color:#fff; cursor:pointer; box-shadow:0 10px 30px rgba(0,0,0,.35); }
+  .mh-hero:active { transform:scale(.99); }
+  .mh-hero .mh-dor { position:absolute; right:-14px; top:-34px; font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:230px; line-height:1; color:rgba(255,255,255,.06); pointer-events:none; }
+  .mh-hero .mh-k { position:relative; font-family:'Montserrat',sans-serif; font-weight:900; font-size:10.5px; letter-spacing:2px; color:rgba(255,255,255,.7); }
+  .mh-hero .mh-fila { position:relative; display:flex; align-items:center; gap:14px; margin-top:12px; }
+  .mh-hero .mh-foto { width:88px; height:88px; border-radius:50%; object-fit:cover; border:3px solid #fff; flex-shrink:0; box-shadow:0 10px 24px rgba(0,0,0,.45); background:radial-gradient(circle at 35% 30%, #ff7a95, rgb(180,20,56)); display:flex; align-items:center; justify-content:center; font-family:'Montserrat',sans-serif; font-weight:900; font-size:30px; }
+  .mh-hero .mh-nom { font-family:'Montserrat',sans-serif; font-weight:900; font-size:26px; line-height:1.05; }
+  .mh-hero .mh-sub { font-size:12.5px; color:rgba(255,255,255,.8); margin-top:4px; line-height:1.35; }
+  .mh-hero .mh-ult { position:relative; display:flex; align-items:center; gap:10px; margin-top:14px; background:rgba(0,0,0,.28); border-radius:12px; padding:10px 12px; font-size:13px; }
+  .mh-hero .mh-ult small { display:block; font-size:12px; color:rgba(255,255,255,.75); }
+  .mh-hero .mh-mvp { margin-left:auto; padding:4px 9px; border-radius:999px; background:#f5c542; color:#1a1204; font-weight:900; font-size:11px; white-space:nowrap; }
+  .mh-hero .mh-btn { position:relative; display:flex; align-items:center; justify-content:center; min-height:44px; margin-top:12px; border-radius:12px; background:#fff; color:#7a0d26; font-family:'Montserrat',sans-serif; font-weight:900; font-size:14px; }
+  /* Temporada: la temporada en números como destacada */
+  .tmp-hero { position:relative; overflow:hidden; border-radius:18px; margin:0 0 14px; padding:16px 14px 12px; background:linear-gradient(160deg,#7a0d26 0%,#3b0613 58%,#111827 100%); box-shadow:0 10px 30px rgba(0,0,0,.35); }
+  .tmp-hero:empty, .tmp-hero.vacio { display:none; }
+  .tmp-hero .th-fondo { position:absolute; right:-8px; top:-40px; font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:200px; line-height:1; color:rgba(255,255,255,.05); pointer-events:none; }
+  .tmp-hero .th-k { position:relative; font-family:'Montserrat',sans-serif; font-weight:900; font-size:10.5px; letter-spacing:2px; color:rgba(255,255,255,.72); }
+  .tmp-hero .th-big { position:relative; display:flex; align-items:flex-end; gap:18px; margin-top:10px; }
+  .tmp-hero .th-big b { display:block; font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:40px; line-height:.9; color:#fff; }
+  .tmp-hero .th-big b.xl { font-size:60px; }
+  .tmp-hero .th-big span { font-size:12px; color:rgba(255,255,255,.8); }
+  .tmp-hero .th-forma { position:relative; display:flex; gap:4px; margin-top:12px; }
+  .tmp-hero .th-forma i { flex:1; height:8px; border-radius:4px; }
+  .tmp-hero .th-pie { position:relative; display:flex; justify-content:space-between; gap:8px; font-size:12px; color:rgba(255,255,255,.75); margin:6px 0 10px; }
+  .tmp-hero #numTira { position:relative; }
+  .tmp-hero .num-cab { color:rgba(255,255,255,.85); }
+  .tmp-hero .num-tira { margin:0 -14px 6px; padding:2px 14px 4px; }
+  .tmp-hero .num-k { background:rgba(0,0,0,.28); border-color:transparent; }
+  .tmp-hero .num-k::before { background:rgba(255,255,255,.35); }
+  .tmp-hero #ddCard { position:relative; margin:4px 0 0; }
+  .tmp-hero #ddCard .dd-card { background:rgba(0,0,0,.28); border-color:transparent; }
+  /* Más análisis con adelanto */
+  .tmp-mas { flex-wrap:wrap; row-gap:8px; min-height:56px; padding:12px 14px; border:none; background:rgba(255,255,255,.06); border-radius:14px; font-size:14px; }
+  .tmp-mas .tmp-mas-pv { flex-basis:100%; display:flex; gap:6px; flex-wrap:wrap; font-family:'Inter',sans-serif; font-weight:600; }
+  .tmp-mas .tmp-mas-pv i { font-style:normal; padding:4px 9px; border-radius:999px; background:rgba(255,255,255,.06); font-size:11.5px; color:#cbd5e1; }
+  .tmp-mas.sec-activo .tmp-mas-pv { display:none; }
 </style>
 <script type="module">
   // v272 (visor) · 🎬 Presentación de alineaciones de tele (sale sola una vez al empezar el partido; se repite con «🎬 Presentación» en el campo y en la hoja «👕 Alineación»), 📸 la foto del niño vuela a la cabecera de su ficha (y vuelve al cerrar), ↔️ deslizar entre partidos abiertos en Temporada → Partidos (con barra ‹ anterior · siguiente ›) y 🟨 iconos animados en «Últimos eventos» y en la cinta del Modo TV (solo se anima lo nuevo).
@@ -2259,6 +2302,7 @@
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
   // v335 (solo visor) · Ranking: grupo «Sus acciones» (pases clave, pases al área, regates, acciones defensivas, defensivas clave, paradas y tarjetas; total y media por partido); fuera «Nota IA» y el Top 5 de Comparativa.
+  // v339 (visor, sin cambios en la app) · 🧱 Jerarquía: tarjetas sobrias (sin borde, más aire); en «Mi hijo», cabecera destacada con foto grande, dorsal gigante, estilo, su último partido (⭐ MVP) y botón a la ficha; en Temporada, «La temporada en números» como destacada (puesto, puntos, goles, forma partido a partido, la tira y el dato del día dentro); «Más análisis» como tarjeta con adelanto de sus apartados.
   // v338 (visor, sin cambios en la app) · 🎨 Colores ordenados: rojo Hergar para la marca y lo que se toca (pestañas, botones, enlaces), dorado solo para lo destacado (MVP, récords, premios; el Ranking MVP en dorado, los demás rankings en blanco), verde/rojo solo para datos (ganar/perder, a favor/en contra), un solo rojo claro (#ff5c7a) en vez de cuatro rosas, tiempo y previa IA sobrios. El naranja queda solo con significado de dato (empate, a medias, portero, centrocampista, avisos).
   // v337 (visor; app v283) · Visitas: minutos también por apartado (subpestaña) y por lo que está abierto encima (modo TV, resumen, premios, vídeo, fichas, alineación).
   // v336 (visor, sin cambios en la app) · ⚽ Gol del Hergar en la cabecera del directo: pelotazo recto (balón blanco y negro) hasta el escudo rival, que encaja el golpe, con chispas, onda y confeti; el rojo invade la mitad del rival y el número da un latido (sin giro de tablilla, también en los goles del rival). Hojas de abajo que se cierran deslizando hacia abajo.
@@ -8558,7 +8602,26 @@
   }
   let numItems = [], numIn264 = false;
   window.numIr = function (k) { const x = numItems[k]; if (!x) return; try { buscaIr(Object.assign({ tipo: 'tarjeta' }, x.ir)); if (x.ir && x.ir.sel) { const se = document.getElementById('rankingCriterioSelect'); if (se) { se.value = x.ir.sel; try { rerenderRanking(); } catch (e) {} } } } catch (e) { console.error('Números:', e); } };
+  // v339 · cabecera destacada de Temporada: puesto en la Liga, puntos, goles y la forma partido a partido
+  function tmpHeroPintar() {
+    const hero = document.getElementById('tmpHero'), cab = document.getElementById('tmpHeroCab'); if (!hero || !cab) return;
+    const t = (typeof ultimaTemporada !== 'undefined') ? ultimaTemporada : null, ps = (t && t.partidos) || [];
+    if (!ps.length) { cab.innerHTML = ''; hero.classList.add('vacio'); return; }
+    let v = 0, e = 0, d = 0, gf = 0, gc = 0, cero = 0;
+    const forma = ps.map(p => { const a = Number(p.golesLocal) || 0, b = Number(p.golesRival) || 0; gf += a; gc += b; if (!b) cero++; if (a > b) { v++; return 'V'; } if (a < b) { d++; return 'D'; } e++; return 'E'; });
+    let pos = null, pts = v * 3 + e;
+    try { const L = ultimaLiga; if (L && L.equipos) { const her = L.equipos.find(x => x.esHergar); const f = ligaClasifViewer(L).find(x => her && x.id === her.id); if (f && f.pj) { pos = f.pos; pts = f.pts; } } } catch (er) {}
+    const col = { V: '#2ed573', E: '#94a3b8', D: '#ff5c7a' };
+    const n = ps.length;
+    cab.innerHTML = `<div class="th-fondo" aria-hidden="true">${pts}</div>
+      <div class="th-k">LA TEMPORADA · ${n} ${n === 1 ? 'PARTIDO' : 'PARTIDOS'}</div>
+      <div class="th-big">${pos ? `<div><b class="xl">${pos}.º</b><span>en la Liga</span></div>` : ''}<div><b>${pts}</b><span>puntos</span></div><div><b>${gf}–${gc}</b><span>goles</span></div></div>
+      <div class="th-forma" aria-label="Resultados partido a partido">${forma.map(x => `<i style="background:${col[x]};" title="${x}"></i>`).join('')}</div>
+      <div class="th-pie"><span>${v} ${v === 1 ? 'victoria' : 'victorias'} · ${e} ${e === 1 ? 'empate' : 'empates'} · ${d} ${d === 1 ? 'derrota' : 'derrotas'}</span><span>${cero} ${cero === 1 ? 'portería' : 'porterías'} a 0</span></div>`;
+    hero.classList.remove('vacio');
+  }
   function numPintar() {
+    try { tmpHeroPintar(); } catch (e) { console.error('Temporada · destacada:', e); }
     const box = document.getElementById('numTira'); if (!box) return;
     const t = (typeof ultimaTemporada !== 'undefined') ? ultimaTemporada : null;
     let R = null; try { R = numTemporada(t); } catch (e) { console.error('Números de la temporada:', e); }
@@ -14949,12 +15012,29 @@
     const foto = f && f.foto ? `<img src="${f.foto}" alt="" style="width:64px; height:64px; border-radius:50%; object-fit:cover; border:2px solid ${CROMO_COLOR}; flex-shrink:0;">`
       : `<div style="width:64px; height:64px; border-radius:50%; background:radial-gradient(circle at 35% 30%, #ff7a95, rgb(180,20,56)); border:2px solid rgba(255,255,255,.8); display:flex; align-items:center; justify-content:center; font-family:'Montserrat',sans-serif; font-weight:900; font-size:24px; color:#fff; flex-shrink:0;">${escHtml(j.dorsal ?? '')}</div>`;
     let pos = ''; try { pos = etiquetaPosicionV(j); } catch (e) {}
-    // v299 · la tarjeta del nombre abre su ficha completa (enlace naranja bajo el puesto y flecha ›)
-    h += `<div class="card mh-cabecera" role="button" tabindex="0" aria-label="Ver la ficha completa de ${nom}" onclick="abrirPerfilJugadorTemporada('${escHtml(j.id)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}"><div style="display:flex; gap:12px; align-items:center;">${foto}<div style="min-width:0; flex:1;">
-      <div style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:19px;">${nom}</div>
-      <div style="font-size:11.5px; color:#94a3b8; margin-top:2px;">#${escHtml(j.dorsal ?? '')}${pos ? ' · ' + escHtml(pos) : ''}</div>
-      <div style="font-size:12.5px; font-weight:600; color:#ff5c7a; margin-top:6px;">📇 Ver ficha completa ›</div></div>
-      <div aria-hidden="true" style="color:#ff5c7a; font-size:28px; font-weight:300; line-height:1; flex-shrink:0; padding-left:4px;">›</div></div></div>`;
+    // v339 · cabecera destacada: foto, nombre, estilo, su último partido y el botón a su ficha (toda la tarjeta la abre)
+    let estTxt = '';
+    try { const x = estilosTemporada(t)[j.id], E = x && ESTILOS[x.estilo]; if (x && E) { const jc = juegaComo(x); estTxt = `${escHtml(E.n)}${x.cola ? ' · ' + escHtml(x.cola) : ''}${jc ? `<br>Juega como ${escHtml(jc[0])}` : ''}`; } } catch (e) {}
+    let ultTxt = '';
+    try {
+      const ps0 = t.partidos || [];
+      for (let i = ps0.length - 1; i >= 0; i--) {
+        const hh = (j.historial || []).find(x => x.fecha === ps0[i].fecha && x.rival === ps0[i].rival);
+        if (hh && ((hh.mins || 0) > 0 || hh.goles || hh.asistencias)) {
+          const p = ps0[i], mvp = p.mvpId != null && String(p.mvpId) === String(j.id);
+          const det = [`${hh.mins || 0}'`, hh.goles ? `${hh.goles} ${hh.goles === 1 ? 'gol' : 'goles'}` : '', hh.asistencias ? `${hh.asistencias} ${hh.asistencias === 1 ? 'asistencia' : 'asistencias'}` : ''].filter(Boolean).join(' · ');
+          ultTxt = `<div class="mh-ult"><div><b>Último partido</b> · vs ${escHtml(p.rival || '')} ${p.golesLocal ?? 0}–${p.golesRival ?? 0}<small>${det}</small></div>${mvp ? '<span class="mh-mvp">⭐ MVP</span>' : ''}</div>`;
+          break;
+        }
+      }
+    } catch (e) {}
+    const fotoH = f && f.foto ? `<img class="mh-foto" src="${f.foto}" alt="">` : `<div class="mh-foto">${escHtml(j.dorsal ?? '')}</div>`;
+    h += `<div class="mh-hero" role="button" tabindex="0" aria-label="Ver la ficha completa de ${nom}" onclick="abrirPerfilJugadorTemporada('${escHtml(j.id)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
+      <div class="mh-dor" aria-hidden="true">${escHtml(j.dorsal ?? '')}</div>
+      <div class="mh-k">MI JUGADOR${pos ? ' · ' + escHtml(String(pos).toUpperCase()) : ''}</div>
+      <div class="mh-fila">${fotoH}<div style="min-width:0;"><div class="mh-nom">${nom}</div>${estTxt ? `<div class="mh-sub">${estTxt}</div>` : ''}</div></div>
+      ${ultTxt}
+      <div class="mh-btn">📇 Ver su ficha completa</div></div>`;
     const tvArriba = tvTarjetaArribaHTML(t, j); h += tvArriba; // v327
     // Su estilo: «Juega como…» y superpoderes (lo mismo que su pestaña Estilo, en corto)
     try {
@@ -15034,8 +15114,8 @@
       const X = k => P + k * (W - 2 * P) / (evo.length - 1), Y = v => P + (1 - (v - mn) / ((mx - mn) || 1)) * (H - 2 * P);
       spark = `<svg viewBox="0 0 ${W} ${H}" width="100%" height="60" preserveAspectRatio="none" role="img" aria-label="Impacto por 70 minutos partido a partido" style="margin-top:10px;">
         ${mn < 0 ? `<line x1="${P}" x2="${W - P}" y1="${Y(0)}" y2="${Y(0)}" stroke="rgba(255,255,255,.15)" stroke-dasharray="3 3"/>` : ''}
-        <polyline fill="none" stroke="#f5a623" stroke-width="2.5" stroke-linejoin="round" points="${evo.map((e, k) => X(k).toFixed(1) + ',' + Y(e.v).toFixed(1)).join(' ')}"/>
-        ${evo.map((e, k) => `<circle cx="${X(k).toFixed(1)}" cy="${Y(e.v).toFixed(1)}" r="3.5" fill="#f5a623"/>`).join('')}</svg>
+        <polyline fill="none" stroke="#ff5c7a" stroke-width="2.5" stroke-linejoin="round" points="${evo.map((e, k) => X(k).toFixed(1) + ',' + Y(e.v).toFixed(1)).join(' ')}"/>
+        ${evo.map((e, k) => `<circle cx="${X(k).toFixed(1)}" cy="${Y(e.v).toFixed(1)}" r="3.5" fill="#ff5c7a"/>`).join('')}</svg>
         <div style="font-size:10.5px; color:#94a3b8; text-align:center;">Su impacto por 70' partido a partido</div>`;
     }
     h += `<div class="card"><div class="card-title">📅 Su temporada</div>${mhKpis([[j.partidos || 0, 'PARTIDOS'], [(j.minutos || 0) + "'", 'MINUTOS'], [j.goles || 0, 'GOLES'], [j.asistencias || 0, 'ASIST.']])}${spark}${(() => { try { return posicionTemporada(j) === 'portero' ? porteroClaveMiHijoHTML(t, j) : ''; } catch (e) { return ''; } })()}</div>`;
@@ -15043,8 +15123,7 @@
     // Botones
     const btn = 'width:100%; min-height:44px; border-radius:10px; font-weight:700; font-size:12.5px; cursor:pointer; margin-bottom:8px;';
     if (!tvArriba) h += tvBotonesHTML(t, j, true); // v246 · v327: si está la tarjeta de arriba, abajo no se repite
-    h += `<button type="button" onclick="abrirPerfilJugadorTemporada('${escHtml(j.id)}')" style="${btn} border:1px solid #f5c542; background:rgba(245,197,66,.1); color:#f5c542;">Ver su ficha completa (récords, evolución, estilo…) →</button>
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+    h += `<div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
         <button type="button" onclick="mhCambiar(true)" style="${btn} border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.07); color:#e2e8f0;">🔁 Cambiar favorito</button>
         <button type="button" onclick="mhQuitar()" style="${btn} border:1px solid rgba(255,255,255,.12); background:transparent; color:#94a3b8;">✕ Quitar favorito</button>
       </div>
@@ -17729,7 +17808,7 @@
     window.addEventListener('scroll', prog, { passive: true });
     prog();
   })();
-  const VIS_VERSION = 338;
+  const VIS_VERSION = 339;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

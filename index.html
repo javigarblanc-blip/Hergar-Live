@@ -2242,6 +2242,7 @@
   // v268 (visor) · 👥 Visitas más completas: cada móvil apunta además qué niño tiene en «Mi hijo» (mhi), Android/iPhone (os), versión del visor (v), qué fichas de niño abre (f/<id>) y qué minutos del directo tiene el visor a la vista (dm/<partido>/m<min>). Lo ve solo Javi en la app.
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
+  // v334 (visor; app v281) · Visitas: cómo llegan (notificación, enlace, app instalada, navegador), visitas del día y minutos con el visor a la vista (total y por pestaña).
   // v333 (visor, sin cambios en la app) · 🏔️ Profundidad al bajar: el fondo del cartel del próximo partido (y Día de partido) y el dorsal gigante de la ficha se mueven más despacio que lo de delante al hacer scroll.
   // v332 (visor, sin cambios en la app) · Tocar a un niño en la hoja «👕 Alineación» abre su ficha (con la foto que vuela), por encima de la hoja.
   // v331 (visor; app v280) · El rival escrito corto («C.RODRIGO») se reconoce como su equipo de la Liga («Ciudad Rodrigo»): escudo y jornada en el póster, colores, etc.
@@ -17599,7 +17600,7 @@
     window.addEventListener('scroll', prog, { passive: true });
     prog();
   })();
-  const VIS_VERSION = 333;
+  const VIS_VERSION = 334;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;
@@ -17669,6 +17670,53 @@
     if (typeof fp === 'function') window.mostrarPestanaPerfil = function (cual) { try { if (cual && cual !== 'cromo') visMarca('s', 'ficha_' + cual); } catch (e) {} return fp.apply(this, arguments); };
   })();
   setTimeout(() => { try { visVisita(); visVivo(); } catch (e) {} }, 1500);
+  // ════════ v334 · Cómo llegan y cuánto tiempo se quedan (sin saber quién es cada móvil) ════════
+  //  ll/<vía>: noti (tocando una notificación), enlace (un enlace de partido compartido), app (abriendo el visor instalado), web (navegador)
+  //  vs: visitas del día (se cuenta otra si vuelve tras 30' fuera) · tm: minutos con el visor a la vista · tt/<pestaña>: minutos en cada pestaña
+  const VIS_VIA0 = (() => {
+    try {
+      const q = new URLSearchParams(location.search);
+      if (q.get('n') === '1' || q.get('premios') === '1') return 'noti';
+      if (q.get('m')) return 'enlace';
+    } catch (e) {}
+    return null;
+  })();
+  function visViaBase() { try { return (matchMedia('(display-mode: standalone)').matches || navigator.standalone === true) ? 'app' : 'web'; } catch (e) { return 'web'; } }
+  const VIS_CONT_KEY = 'hergar_vis_cont334';
+  let visCont = null, visOculto = 0;
+  function visContDia() {
+    if (visHoy() !== visDia) visVisita();
+    if (!visCont || visCont.d !== visDia) {
+      try { const c = JSON.parse(localStorage.getItem(VIS_CONT_KEY) || 'null'); visCont = c && c.d === visDia ? c : { d: visDia, tm: 0, vs: 0, tt: {} }; } catch (e) { visCont = { d: visDia, tm: 0, vs: 0, tt: {} }; }
+    }
+    return visCont;
+  }
+  function visContGuardar() { try { localStorage.setItem(VIS_CONT_KEY, JSON.stringify(visCont)); } catch (e) {} }
+  function visNuevaVisita(via) {
+    if (!visActivo()) return;
+    const c = visContDia(); c.vs++; visContGuardar();
+    visEscribir({ vs: c.vs });
+    visMarca('ll', via || visViaBase());
+  }
+  setTimeout(() => { try { visNuevaVisita(VIS_VIA0); } catch (e) {} }, 1700);
+  document.addEventListener('visibilitychange', () => {
+    try {
+      if (document.visibilityState === 'hidden') { visOculto = Date.now(); return; }
+      if (visOculto && Date.now() - visOculto >= 30 * 60000) visNuevaVisita(null);
+      visOculto = 0;
+    } catch (e) {}
+  });
+  setInterval(() => {
+    try {
+      if (!visActivo() || document.visibilityState !== 'visible') return;
+      const c = visContDia(); c.tm++;
+      const act = document.querySelector('.panel.active'), id = act && act.id ? visClave(act.id) : null;
+      const o = { tm: c.tm };
+      if (id) { c.tt[id] = (c.tt[id] || 0) + 1; o['tt/' + id] = c.tt[id]; }
+      visContGuardar(); visEscribir(o);
+    } catch (e) {}
+  }, 60000);
+  try { (window.OneSignalDeferred = window.OneSignalDeferred || []).push(async function (OS) { try { OS.Notifications.addEventListener('click', () => { try { visHechas.delete('ll/noti'); visNuevaVisita('noti'); } catch (e) {} }); } catch (e) {} }); } catch (e) {}
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('OneSignalSDKWorker.js', { scope: '/Hergar-Live/' }).catch(()=>{}); // v158: un solo trabajador (notificaciones + abrir rápido)

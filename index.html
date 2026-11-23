@@ -2324,6 +2324,7 @@
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
   // v335 (solo visor) · Ranking: grupo «Sus acciones» (pases clave, pases al área, regates, acciones defensivas, defensivas clave, paradas y tarjetas; total y media por partido); fuera «Nota IA» y el Top 5 de Comparativa.
+  // v342 (visor, sin cambios en la app) · Temporada: al tocar Partidos, Plantilla, Ranking o Récords la pantalla baja sola hasta el buscador, para ver lo elegido.
   // v341 (visor, sin cambios en la app) · 📊 Último partido: la parte de arriba (escudos, marcador y rótulo) como destacada en rojo del club, igual que Mi hijo y Temporada; en el rótulo el empate pasa a gris y el MVP a dorado.
   // v340 (visor, sin cambios en la app) · ✂️ Acabado: títulos de tarjeta en letra normal y más grandes (mayúsculas solo para secciones), botones, chips y redondeos con las mismas medidas, y las notas grises largas plegadas detrás de «ⓘ Cómo se lee».
   // v339 (visor, sin cambios en la app) · 🧱 Jerarquía: tarjetas sobrias (sin borde, más aire); en «Mi hijo», cabecera destacada con foto grande, dorsal gigante, estilo, su último partido (⭐ MVP) y botón a la ficha; en Temporada, «La temporada en números» como destacada (puesto, puntos, goles, forma partido a partido, la tira y el dato del día dentro); «Más análisis» como tarjeta con adelanto de sus apartados.
@@ -14310,6 +14311,9 @@
         if (mb) requestAnimationFrame(() => { const y = mb.getBoundingClientRect().top + window.scrollY - (((document.getElementById('cab269') || {}).offsetHeight) || 56) - 8; window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' }); });
       }
       actualizarMasTemp(); tmpPintarVisible();
+      // v342 · al tocar Partidos, Plantilla, Ranking o Récords, la pantalla baja hasta el buscador: se ven los botones y debajo lo elegido
+      const mainB = btn.closest('.tmp-main'), bus = document.querySelector('#temporada .tmp-busca');
+      if (mainB && bus && ev && ev.isTrusted !== false) requestAnimationFrame(() => { const y = bus.getBoundingClientRect().top + window.scrollY - (((document.getElementById('cab269') || {}).offsetHeight) || 56) - 8; window.scrollTo({ top: Math.max(0, y), behavior: V260_RM ? 'auto' : 'smooth' }); });
     } // v175
     try { visMarca('s', id); } catch (e) {} // v237
     try { v260TrasSub(id); } catch (e) {} // v260
@@ -17865,7 +17869,7 @@
     window.addEventListener('scroll', prog, { passive: true });
     prog();
   })();
-  const VIS_VERSION = 341;
+  const VIS_VERSION = 342;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

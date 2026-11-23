@@ -2324,6 +2324,7 @@
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
   // v335 (solo visor) · Ranking: grupo «Sus acciones» (pases clave, pases al área, regates, acciones defensivas, defensivas clave, paradas y tarjetas; total y media por partido); fuera «Nota IA» y el Top 5 de Comparativa.
+  // v343 (visor, sin cambios en la app) · Liga → Partidos abre en la jornada buena: hasta el domingo la del fin de semana y desde el lunes la siguiente (antes, si el primer partido de una jornada no tenía fecha, se iba a la última, la 27).
   // v342 (visor, sin cambios en la app) · Temporada: al tocar Partidos, Plantilla, Ranking o Récords la pantalla baja sola hasta el buscador, para ver lo elegido.
   // v341 (visor, sin cambios en la app) · 📊 Último partido: la parte de arriba (escudos, marcador y rótulo) como destacada en rojo del club, igual que Mi hijo y Temporada; en el rótulo el empate pasa a gris y el MVP a dorado.
   // v340 (visor, sin cambios en la app) · ✂️ Acabado: títulos de tarjeta en letra normal y más grandes (mayúsculas solo para secciones), botones, chips y redondeos con las mismas medidas, y las notas grises largas plegadas detrás de «ⓘ Cómo se lee».
@@ -16879,10 +16880,15 @@
     if (!claves.length) return null;
     const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
     let hayFechas = false, elegida = null;
+    // v343 · la fecha de la jornada es la última de sus partidos (antes solo se miraba el primero, y si ese no tenía fecha se saltaba la jornada).
+    //  Hasta el domingo sale la jornada que se juega ese fin de semana; desde el lunes, la siguiente. Una jornada sin fechas y con partidos por jugar cuenta como la siguiente.
     for (const k of claves) {
-      const fin = fechaFinJornadaLiga(porJornada[k][0].fecha);
-      if (!fin) continue;
+      let fin = null;
+      porJornada[k].forEach(p => { const f = fechaFinJornadaLiga(p.fecha); if (f && (!fin || f > fin)) fin = f; });
+      const pendiente = porJornada[k].some(p => p.golesLocal == null || p.golesVisitante == null);
+      if (!fin) { if (pendiente) { elegida = k; break; } continue; }
       hayFechas = true;
+      fin = new Date(fin.getFullYear(), fin.getMonth(), fin.getDate() + (7 - fin.getDay()) % 7); // hasta el domingo de ese fin de semana
       if (fin >= hoy) { elegida = k; break; }
     }
     if (elegida === null) {
@@ -17869,7 +17875,7 @@
     window.addEventListener('scroll', prog, { passive: true });
     prog();
   })();
-  const VIS_VERSION = 342;
+  const VIS_VERSION = 343;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

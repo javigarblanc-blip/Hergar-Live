@@ -2292,6 +2292,21 @@
   .tmp-mas .tmp-mas-pv { flex-basis:100%; display:flex; gap:6px; flex-wrap:wrap; font-family:'Inter',sans-serif; font-weight:600; }
   .tmp-mas .tmp-mas-pv i { font-style:normal; padding:4px 9px; border-radius:999px; background:rgba(255,255,255,.06); font-size:11.5px; color:#cbd5e1; }
   .tmp-mas.sec-activo .tmp-mas-pv { display:none; }
+
+  /* ══ v340 · acabado: títulos de tarjeta en letra normal (mayúsculas solo para secciones), medidas iguales y notas largas plegadas en «ⓘ Cómo se lee» ══ */
+  .card-title { font-size:15px !important; letter-spacing:0; text-transform:none; color:#fff !important; font-weight:800; margin-bottom:12px; }
+  .card-title::before { height:15px; background:#b41438; }
+  .card { padding:14px; }
+  .subtab-btn { border-radius:12px; min-height:40px; }
+  .tmp-main .subtab-btn { min-height:50px; border-radius:12px; }
+  .tmp-sec .ma-tile { border-radius:14px; }
+  .liga-vuelta-chip, .vis-chip, .chip, .hp-chips span { border-radius:999px; }
+  .card button:not(.subtab-btn):not(.nota340-btn):not([class*="ma-tile"]) { border-radius:12px; }
+  .nota340-btn { display:inline-flex; align-items:center; gap:6px; min-height:32px; margin-top:8px; padding:0 10px; border-radius:999px; border:none; background:rgba(255,255,255,.06); color:#94a3b8; font-family:'Inter',sans-serif; font-weight:700; font-size:11.5px; cursor:pointer; }
+  .nota340-btn[aria-expanded="true"] { color:#e2e8f0; }
+  .nota340-btn .i { display:inline-flex; width:16px; height:16px; border-radius:50%; border:1.5px solid currentColor; align-items:center; justify-content:center; font-family:Georgia,serif; font-size:10px; font-weight:700; }
+  .nota340 { display:none !important; }
+  .nota340.ver { display:block !important; margin-top:6px; }
 </style>
 <script type="module">
   // v272 (visor) · 🎬 Presentación de alineaciones de tele (sale sola una vez al empezar el partido; se repite con «🎬 Presentación» en el campo y en la hoja «👕 Alineación»), 📸 la foto del niño vuela a la cabecera de su ficha (y vuelve al cerrar), ↔️ deslizar entre partidos abiertos en Temporada → Partidos (con barra ‹ anterior · siguiente ›) y 🟨 iconos animados en «Últimos eventos» y en la cinta del Modo TV (solo se anima lo nuevo).
@@ -2302,6 +2317,7 @@
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
   // v335 (solo visor) · Ranking: grupo «Sus acciones» (pases clave, pases al área, regates, acciones defensivas, defensivas clave, paradas y tarjetas; total y media por partido); fuera «Nota IA» y el Top 5 de Comparativa.
+  // v340 (visor, sin cambios en la app) · ✂️ Acabado: títulos de tarjeta en letra normal y más grandes (mayúsculas solo para secciones), botones, chips y redondeos con las mismas medidas, y las notas grises largas plegadas detrás de «ⓘ Cómo se lee».
   // v339 (visor, sin cambios en la app) · 🧱 Jerarquía: tarjetas sobrias (sin borde, más aire); en «Mi hijo», cabecera destacada con foto grande, dorsal gigante, estilo, su último partido (⭐ MVP) y botón a la ficha; en Temporada, «La temporada en números» como destacada (puesto, puntos, goles, forma partido a partido, la tira y el dato del día dentro); «Más análisis» como tarjeta con adelanto de sus apartados.
   // v338 (visor, sin cambios en la app) · 🎨 Colores ordenados: rojo Hergar para la marca y lo que se toca (pestañas, botones, enlaces), dorado solo para lo destacado (MVP, récords, premios; el Ranking MVP en dorado, los demás rankings en blanco), verde/rojo solo para datos (ganar/perder, a favor/en contra), un solo rojo claro (#ff5c7a) en vez de cuatro rosas, tiempo y previa IA sobrios. El naranja queda solo con significado de dato (empate, a medias, portero, centrocampista, avisos).
   // v337 (visor; app v283) · Visitas: minutos también por apartado (subpestaña) y por lo que está abierto encima (modo TV, resumen, premios, vídeo, fichas, alineación).
@@ -2688,6 +2704,38 @@
     f.classList.remove('on'); void f.offsetWidth; f.classList.add('on');
   }
   const V335_BALON = '<svg viewBox="0 0 100 100" width="34" height="34" aria-hidden="true"><circle cx="50" cy="50" r="47" fill="#fff" stroke="#111" stroke-width="3"/><polygon points="50,30 69,44 62,66 38,66 31,44" fill="#111"/><polygon points="50,3 63,10 50,30 37,10" fill="#111"/><polygon points="93,38 95,55 80,62 69,44 80,30" fill="#111"/><polygon points="78,88 62,96 54,82 62,66 80,62" fill="#111"/><polygon points="22,88 38,96 46,82 38,66 20,62" fill="#111"/><polygon points="7,38 5,55 20,62 31,44 20,30" fill="#111"/><path d="M50 30 L50 3 M69 44 L80 30 M62 66 L80 62 M38 66 L20 62 M31 44 L20 30" stroke="#111" stroke-width="2.5"/></svg>';
+
+  // ════════ v340 · notas largas plegadas: los párrafos grises de explicación (más de ~90 letras) se quedan detrás de «ⓘ Cómo se lee» ════════
+  const N340_ZONAS = ['partido', 'mihijo', 'temporada', 'liga', 'perfilModal', 'fichaPartidoModal', 'fichaEquipoModal'];
+  function n340Es(el) {
+    if (!el || el.dataset.n340 || el.dataset.n340c) return false;
+    el.dataset.n340c = '1'; // ya mirado: no se vuelve a calcular
+    if (el.closest('.mh-hero, .tmp-hero, .cartel, .nota340-btn, .cs-caja, #csCaja, [data-n340-no]')) return false;
+    const tx = (el.textContent || '').trim(); if (tx.length < 90) return false;
+    if (el.querySelector('div, table, svg, canvas, img, button, input, select, ul, ol')) return false;
+    const cs = getComputedStyle(el), fs = parseFloat(cs.fontSize) || 14;
+    if (fs > 12.6) return false;
+    const m = /rgb\((\d+), (\d+), (\d+)/.exec(cs.color); if (!m) return false;
+    const [r, g, b] = [+m[1], +m[2], +m[3]];
+    return Math.abs(r - 148) < 22 && Math.abs(g - 163) < 22 && Math.abs(b - 184) < 22; // el gris de las notas (#94a3b8 y parecidos)
+  }
+  function n340Plegar(root) {
+    try {
+      root.querySelectorAll('.card div, .card p, .card small').forEach(el => {
+        if (!n340Es(el)) return;
+        el.dataset.n340 = '1'; el.classList.add('nota340');
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'nota340-btn'; b.setAttribute('aria-expanded', 'false');
+        b.innerHTML = '<span class="i" aria-hidden="true">i</span>Cómo se lee';
+        b.onclick = (ev) => { ev.stopPropagation(); const v = el.classList.toggle('ver'); b.setAttribute('aria-expanded', v ? 'true' : 'false'); b.lastChild.textContent = v ? 'Ocultar' : 'Cómo se lee'; };
+        el.parentNode.insertBefore(b, el);
+      });
+    } catch (e) {}
+  }
+  let n340T = null;
+  function n340Pedir() { clearTimeout(n340T); n340T = setTimeout(() => N340_ZONAS.forEach(id => { const r = document.getElementById(id); if (r && r.offsetParent !== null || (r && getComputedStyle(r).display !== 'none')) n340Plegar(r); }), 250); }
+  try { new MutationObserver(n340Pedir).observe(document.body, { childList: true, subtree: true }); } catch (e) {}
+  document.addEventListener('click', () => n340Pedir(), true);
+  setTimeout(n340Pedir, 2000);
   // ════════ v335 · hojas que se cierran deslizando hacia abajo (alineación, ficha de un partido, ficha de un equipo, ficha del niño, ida y vuelta, cómo se calcula) ════════
   const H335 = [['alinModal', '#alinCaja', 'cerrarAlineacionFinal'], ['fichaEquipoModal', '#fichaEquipoCaja', 'cerrarFichaEquipo'], ['csCaja', '.cc-in', 'csCerrarCaja'],
     ['fichaPartidoModal', ':scope > div', 'cerrarFichaPartido'], ['idaVueltaModal', ':scope > div', 'cerrarIdaVuelta'], ['perfilModal', ':scope > div', 'fi272Cerrar']];
@@ -17808,7 +17856,7 @@
     window.addEventListener('scroll', prog, { passive: true });
     prog();
   })();
-  const VIS_VERSION = 339;
+  const VIS_VERSION = 340;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

@@ -2259,7 +2259,7 @@
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
   // v335 (solo visor) · Ranking: grupo «Sus acciones» (pases clave, pases al área, regates, acciones defensivas, defensivas clave, paradas y tarjetas; total y media por partido); fuera «Nota IA» y el Top 5 de Comparativa.
-  // v335 (visor, sin cambios en la app) · ⚽ Gol del Hergar en la cabecera del directo: pelotazo recto (balón blanco y negro) hasta el escudo rival, que encaja el golpe, con chispas, onda y confeti; el rojo invade la mitad del rival y el número da un latido (sin giro de tablilla, también en los goles del rival). Hojas de abajo que se cierran deslizando hacia abajo.
+  // v336 (visor, sin cambios en la app) · ⚽ Gol del Hergar en la cabecera del directo: pelotazo recto (balón blanco y negro) hasta el escudo rival, que encaja el golpe, con chispas, onda y confeti; el rojo invade la mitad del rival y el número da un latido (sin giro de tablilla, también en los goles del rival). Hojas de abajo que se cierran deslizando hacia abajo.
   // v334 (visor; app v281) · Visitas: cómo llegan (notificación, enlace, app instalada, navegador), visitas del día y minutos con el visor a la vista (total y por pestaña).
   // v333 (visor, sin cambios en la app) · 🏔️ Profundidad al bajar: el fondo del cartel del próximo partido (y Día de partido) y el dorsal gigante de la ficha se mueven más despacio que lo de delante al hacer scroll.
   // v332 (visor, sin cambios en la app) · Tocar a un niño en la hoja «👕 Alineación» abre su ficha (con la foto que vuela), por encima de la hoja.
@@ -17727,7 +17727,7 @@
     window.addEventListener('scroll', prog, { passive: true });
     prog();
   })();
-  const VIS_VERSION = 335;
+  const VIS_VERSION = 336;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

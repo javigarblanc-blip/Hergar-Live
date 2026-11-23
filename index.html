@@ -2307,6 +2307,13 @@
   .nota340-btn .i { display:inline-flex; width:16px; height:16px; border-radius:50%; border:1.5px solid currentColor; align-items:center; justify-content:center; font-family:Georgia,serif; font-size:10px; font-weight:700; }
   .nota340 { display:none !important; }
   .nota340.ver { display:block !important; margin-top:6px; }
+
+  /* v341 · Último partido: la parte de arriba (escudos, marcador y rótulo) como destacada en rojo del club */
+  .card.ult341 { overflow:hidden; }
+  .ult341-hero { position:relative; overflow:hidden; margin:-14px -14px 14px; padding:16px 14px 12px; background:linear-gradient(160deg,#7a0d26 0%,#3b0613 58%,#111827 100%); }
+  .ult341-hero > * { position:relative; }
+  .ult341-hero .ult341-fondo { position:absolute; right:-6px; top:-34px; font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:170px; line-height:1; color:rgba(255,255,255,.05); pointer-events:none; white-space:nowrap; }
+  .ult341-hero span[style*="color:#8da499"] { color:rgba(255,255,255,.75) !important; }
 </style>
 <script type="module">
   // v272 (visor) · 🎬 Presentación de alineaciones de tele (sale sola una vez al empezar el partido; se repite con «🎬 Presentación» en el campo y en la hoja «👕 Alineación»), 📸 la foto del niño vuela a la cabecera de su ficha (y vuelve al cerrar), ↔️ deslizar entre partidos abiertos en Temporada → Partidos (con barra ‹ anterior · siguiente ›) y 🟨 iconos animados en «Últimos eventos» y en la cinta del Modo TV (solo se anima lo nuevo).
@@ -2317,6 +2324,7 @@
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
   // v335 (solo visor) · Ranking: grupo «Sus acciones» (pases clave, pases al área, regates, acciones defensivas, defensivas clave, paradas y tarjetas; total y media por partido); fuera «Nota IA» y el Top 5 de Comparativa.
+  // v341 (visor, sin cambios en la app) · 📊 Último partido: la parte de arriba (escudos, marcador y rótulo) como destacada en rojo del club, igual que Mi hijo y Temporada; en el rótulo el empate pasa a gris y el MVP a dorado.
   // v340 (visor, sin cambios en la app) · ✂️ Acabado: títulos de tarjeta en letra normal y más grandes (mayúsculas solo para secciones), botones, chips y redondeos con las mismas medidas, y las notas grises largas plegadas detrás de «ⓘ Cómo se lee».
   // v339 (visor, sin cambios en la app) · 🧱 Jerarquía: tarjetas sobrias (sin borde, más aire); en «Mi hijo», cabecera destacada con foto grande, dorsal gigante, estilo, su último partido (⭐ MVP) y botón a la ficha; en Temporada, «La temporada en números» como destacada (puesto, puntos, goles, forma partido a partido, la tira y el dato del día dentro); «Más análisis» como tarjeta con adelanto de sus apartados.
   // v338 (visor, sin cambios en la app) · 🎨 Colores ordenados: rojo Hergar para la marca y lo que se toca (pestañas, botones, enlaces), dorado solo para lo destacado (MVP, récords, premios; el Ranking MVP en dorado, los demás rankings en blanco), verde/rojo solo para datos (ganar/perder, a favor/en contra), un solo rojo claro (#ff5c7a) en vez de cuatro rosas, tiempo y previa IA sobrios. El naranja queda solo con significado de dato (empate, a medias, portero, centrocampista, avisos).
@@ -9795,8 +9803,8 @@
   // Los rótulos del último partido: final, MVP, goleadores y posesión
   function r264ItemsUltimo(m, rsP, goles, gl, gr) {
     const its = [], rival = String(m.rival || 'Rival');
-    its.push({ n: `${gl}-${gr}`, t: gl > gr ? 'Victoria' : gl < gr ? 'Derrota' : 'Empate', s: `Hergar ${gl} · ${rival} ${gr}`, g: 'FINAL', c: gl > gr ? '#2ed573' : gl < gr ? '#ff5c7a' : '#f5a623', ct: '#0a0e14' });
-    if (rsP && rsP.mvp && rsP.mvp !== '-') its.push({ n: String((rsP.mvpStats && rsP.mvpStats.dorsal) ?? '⭐'), t: String(rsP.mvp), s: 'MVP del partido', g: 'MVP', c: '#eab308', ct: '#0a0e14' });
+    its.push({ n: `${gl}-${gr}`, t: gl > gr ? 'Victoria' : gl < gr ? 'Derrota' : 'Empate', s: `Hergar ${gl} · ${rival} ${gr}`, g: 'FINAL', c: gl > gr ? '#2ed573' : gl < gr ? '#ff5c7a' : '#94a3b8', ct: '#0a0e14' }); // v341: empate en gris
+    if (rsP && rsP.mvp && rsP.mvp !== '-') its.push({ n: String((rsP.mvpStats && rsP.mvpStats.dorsal) ?? '⭐'), t: String(rsP.mvp), s: 'MVP del partido', g: 'MVP', c: '#f5c542', ct: '#0a0e14' });
     const cuenta = {}; goles.filter(g => g.equipo !== 'rival' && g.nombre).forEach(g => { cuenta[g.nombre] = (cuenta[g.nombre] || 0) + 1; });
     const ks = Object.keys(cuenta);
     if (ks.length) its.push({ n: String(gl), t: ks.map(k => k + (cuenta[k] > 1 ? ' ×' + cuenta[k] : '')).join(' · '), s: gl === 1 ? 'Gol del Hergar' : 'Goles del Hergar', g: 'GOLES', c: '#b41438' });
@@ -12782,17 +12790,18 @@
     const fin = m.finalizadoEn || m.actualizado || null; // la app manda cuándo se pulsó FINAL (v107)
     const fecha = fin ? new Date(fin) : null;
     const fechaTxt = fecha ? fecha.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }) : '';
-    card.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-        <span style="font-size:11px; background:rgba(180,20,56,.18); color:#ff5c7a; border-radius:6px; padding:3px 9px; font-weight:700;">📊 Último partido</span>
-        <span style="font-size:11px; color:#8da499;">${escHtml(fechaTxt)}</span>
+    card.classList.add('ult341'); // v341 · la parte de arriba, como destacada en rojo del club (igual que Mi hijo y Temporada)
+    card.innerHTML = `<div class="ult341-hero"><div class="ult341-fondo" aria-hidden="true">${gl}–${gr}</div>
+      <div style="position:relative; display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <span style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:10.5px; letter-spacing:2px; color:rgba(255,255,255,.75);">ÚLTIMO PARTIDO</span>
+        <span style="font-size:11.5px; color:rgba(255,255,255,.75);">${escHtml(fechaTxt)}</span>
       </div>
       <div style="display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:10px; margin:2px 0 6px;">
         <div style="display:flex; flex-direction:column; align-items:center; gap:6px; min-width:0;"><img src="${ESCUDO_HERGAR_SRC}" alt="" style="width:52px; height:52px; border-radius:50%; object-fit:cover; background:#fff; box-shadow:0 0 0 2px rgba(255,85,119,.45);"><span style="font-size:12px; font-weight:800; color:#ff5c7a; letter-spacing:.5px;">HERGAR</span></div>
         <span class="t269" style="font-size:46px; font-weight:800; line-height:1; color:#fff; white-space:nowrap;">${gl}<span style="color:rgba(255,255,255,.35); margin:0 4px;">–</span>${gr}</span>
         <div style="display:flex; flex-direction:column; align-items:center; gap:6px; min-width:0;">${(() => { try { return escudoEquipoVisorHTML(equipoLigaPorNombre(m.rival), 52, m.rival); } catch (e) { return ''; } })()}<span style="font-size:12px; font-weight:800; color:#94a3b8; letter-spacing:.5px; max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${rival}</span></div>
       </div>
-      <div class="rot264" id="rot264Ult" aria-label="${res[0]}"></div>
+      <div class="rot264" id="rot264Ult" aria-label="${res[0]}"></div></div>
       ${gH ? `<div style="font-size:12px; color:#cbd5e1; line-height:1.5; margin-bottom:4px;">⚽ ${gH}</div>` : ''}
       ${gR ? `<div style="font-size:12px; color:#94a3b8; line-height:1.5; margin-bottom:4px;">🥅 ${rival}: ${gR}</div>` : ''}
       ${rsPi >= 0 ? (() => { try { return hitosHoyHTML(ultimaTemporada, rsPi); } catch (e) { console.error('Hitos de hoy:', e); return ''; } })() : ''}
@@ -17856,7 +17865,7 @@
     window.addEventListener('scroll', prog, { passive: true });
     prog();
   })();
-  const VIS_VERSION = 340;
+  const VIS_VERSION = 341;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

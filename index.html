@@ -1989,7 +1989,7 @@
   .c264 .k-torm { background:linear-gradient(180deg,rgba(15,23,42,.65),rgba(15,23,42,.25)); }
   .c264 .k-rayo { background:rgba(235,240,255,.85); opacity:0; animation:c264Rayo 7s infinite; }
   .c264 .k-calor { background:radial-gradient(circle at 80% 0%,rgba(255,200,80,.6),transparent 50%),linear-gradient(0deg,rgba(255,110,30,.4),rgba(255,160,50,.08) 55%,transparent); }
-  .c264 .k-niebla { background:linear-gradient(180deg,rgba(200,210,220,.05),rgba(200,210,220,.35)); }
+  .c264 .k-niebla { background:linear-gradient(180deg,rgba(200,210,220,.22),rgba(206,214,222,.55)); } /* v346: más espesa */
   .c264 .k-niebla i { position:absolute; left:-50%; width:200%; height:70px; border-radius:50%; background:rgba(220,228,235,.28); filter:blur(18px); animation:c264Deriva 14s ease-in-out infinite alternate; }
   .c264 .k-niebla i:nth-child(1) { top:20%; } .c264 .k-niebla i:nth-child(2) { top:50%; animation-duration:19s; animation-direction:alternate-reverse; } .c264 .k-niebla i:nth-child(3) { top:76%; animation-duration:11s; }
   .c264 .k-focos { background:linear-gradient(180deg,rgba(2,6,23,.55),rgba(2,6,23,.12)); }
@@ -2015,6 +2015,21 @@
   .c264 .k-gota { position:absolute; top:30px; width:4px; height:6px; border-radius:50% 50% 50% 50% / 60% 60% 40% 40%; background:rgba(190,230,255,.95); box-shadow:0 0 4px rgba(170,220,255,.9); opacity:0; animation:c328Gota 4.5s ease-in infinite; }
   .match-header > .c264 .k-caram { height:18px; }
   .match-header > .c264 .k-gota { display:none; }
+  /* v346 · niebla de verdad: además del fondo, bancos de niebla que pasan POR ENCIMA de escudos y VS, que se ven y se esconden */
+  .cartel.niebla346 .ca-esc { filter:saturate(.45) brightness(1.06) contrast(.8); box-shadow:0 6px 18px rgba(0,0,0,.25); }
+  .cartel.niebla346 .ca-vs { opacity:.8; }
+  .cartel .nb346 { position:absolute; inset:0; z-index:4; pointer-events:none; overflow:hidden; border-radius:inherit; }
+  .cartel .nb346::before { content:''; position:absolute; inset:0; background:linear-gradient(180deg,rgba(214,222,230,.10),rgba(214,222,230,.22) 55%,rgba(220,226,232,.42)); animation:nb346Resp 9s ease-in-out infinite alternate; }
+  .cartel .nb346 i { position:absolute; left:-60%; width:220%; border-radius:50%; background:radial-gradient(ellipse at center,rgba(232,237,242,.62),rgba(232,237,242,.30) 45%,transparent 70%); filter:blur(10px); animation:nb346Pasa 22s ease-in-out infinite alternate; }
+  .cartel .nb346 i:nth-child(1) { top:18%; height:90px; }
+  .cartel .nb346 i:nth-child(2) { top:44%; height:120px; animation-duration:28s; animation-direction:alternate-reverse; opacity:.9; }
+  .cartel .nb346 i:nth-child(3) { top:72%; height:110px; animation-duration:17s; animation-delay:-6s; }
+  .cartel.niebla346 .c264-chip, .cartel.niebla346 .ca-top { z-index:5; }
+  .cartel.niebla346 .ca-top { text-shadow:0 1px 4px rgba(0,0,0,.7); }
+  .cartel.dp.niebla346 .dp-cuenta, .cartel.dp.niebla346 .dp-chips, .cartel.dp.niebla346 .dp-btns, .cartel.dp.niebla346 .dp-baja { position:relative; z-index:5; } /* Día de partido: lo práctico se lee por encima de la niebla */
+  @keyframes nb346Pasa { from { transform:translateX(-14%); } to { transform:translateX(14%); } }
+  @keyframes nb346Resp { from { opacity:.65; } to { opacity:1; } }
+  @media (prefers-reduced-motion: reduce) { .cartel .nb346::before, .cartel .nb346 i { animation:none; } }
   .cartel.frio264 .ca-top { text-shadow:0 1px 4px rgba(10,30,70,.9); }
   .cartel.frio264 .ca-nom, .cartel.frio264 .ca-pos { position:relative; z-index:3; }
   .cartel.frio264 .ca-eq { position:relative; }
@@ -2329,6 +2344,7 @@
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
   // v335 (solo visor) · Ranking: grupo «Sus acciones» (pases clave, pases al área, regates, acciones defensivas, defensivas clave, paradas y tarjetas; total y media por partido); fuera «Nota IA» y el Top 5 de Comparativa.
+  // v346 (visor, sin cambios en la app) · Niebla que se nota: fondo más espeso y bancos de niebla que pasan por encima de escudos y VS (escudos apagados); el chip y el título quedan por encima.
   // v345 (visor, sin cambios en la app) · Arreglo: en la v344 se quedaron sin efecto el nublado y el atardecer (un comentario mal puesto los anulaba).
   // v344 (visor, sin cambios en la app) · Tiempo del partido: «atardecer» solo con el sol bajando por la tarde (a las 10:00 de noviembre el sol bajo de la mañana salía como atardecer) y efecto propio «⛅ nubes y claros» (sol que se tapa y se destapa con nubes blancas).
   // v343 (visor, sin cambios en la app) · Liga → Partidos abre en la jornada buena: hasta el domingo la del fin de semana y desde el lunes la siguiente (antes, si el primer partido de una jornada no tenía fecha, se iba a la última, la 27).
@@ -9744,6 +9760,9 @@
     const T = c264Tipo(d, campo, fechaISO, hora);
     c264Poner(ca, T, false);
     ca.classList.toggle('frio264', !!(T && T.k === 'frio')); // v328: escudos congelados
+    const nb = !!(T && T.k === 'niebla'); ca.classList.toggle('niebla346', nb); // v346: niebla también por encima de escudos y VS
+    const nbOld = ca.querySelector(':scope > .nb346');
+    if (nb && !nbOld) ca.insertAdjacentHTML('beforeend', '<div class="nb346" aria-hidden="true"><i></i><i></i><i></i></div>'); else if (!nb && nbOld) nbOld.remove();
     const old = ca.querySelector('.c264-chip'); if (old) old.remove(); // v281: en Día de partido va dentro de los chips
     if (!T || (!T.k && !T.luz)) return;
     const [ico, txt] = T.k ? C264_TXT[T.k] : ['🌙', 'de noche'];
@@ -17885,7 +17904,7 @@
     window.addEventListener('scroll', prog, { passive: true });
     prog();
   })();
-  const VIS_VERSION = 345;
+  const VIS_VERSION = 346;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

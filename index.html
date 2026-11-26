@@ -2329,6 +2329,7 @@
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
   // v335 (solo visor) · Ranking: grupo «Sus acciones» (pases clave, pases al área, regates, acciones defensivas, defensivas clave, paradas y tarjetas; total y media por partido); fuera «Nota IA» y el Top 5 de Comparativa.
+  // v345 (visor, sin cambios en la app) · Arreglo: en la v344 se quedaron sin efecto el nublado y el atardecer (un comentario mal puesto los anulaba).
   // v344 (visor, sin cambios en la app) · Tiempo del partido: «atardecer» solo con el sol bajando por la tarde (a las 10:00 de noviembre el sol bajo de la mañana salía como atardecer) y efecto propio «⛅ nubes y claros» (sol que se tapa y se destapa con nubes blancas).
   // v343 (visor, sin cambios en la app) · Liga → Partidos abre en la jornada buena: hasta el domingo la del fin de semana y desde el lunes la siguiente (antes, si el primer partido de una jornada no tenía fecha, se iba a la última, la 27).
   // v342 (visor, sin cambios en la app) · Temporada: al tocar Partidos, Plantilla, Ranking o Récords la pantalla baja sola hasta el buscador, para ver lo elegido.
@@ -9633,7 +9634,9 @@
   })();
   const C264_TXT = { soleado: ['☀️', 'soleado'], nublado: ['☁️', 'nublado'], lluvia: ['🌧️', 'lluvia'], tormenta: ['⛈️', 'tormenta'], viento: ['💨', 'viento'], calor: ['🥵', 'calor'], frio: ['🥶', 'frío'], nieve: ['❄️', 'nieve'], niebla: ['🌫️', 'niebla'], atardecer: ['🌇', 'atardecer'], claros: ['⛅', 'nubes y claros'] };
   const C264_CAPAS = { soleado: '<div class="cp k-sol"><i></i><i></i><i></i></div>',
-    claros: '<div class="cp k-sol k-claro"><i></i><i></i><i></i></div><div class="cp k-nube k-blanca"><i></i><i></i><i></i><i></i></div>', // v344: sol que se tapa y se destapa con nubes blancas atardecer: '<div class="cp k-atar"></div>', nublado: '<div class="cp k-nube"><i></i><i></i><i></i><i></i><i></i><i></i></div>',
+    // v344: «claros» = sol que se tapa y se destapa con nubes blancas · v345: este comentario estaba en medio de la línea y anulaba atardecer y nublado
+    claros: '<div class="cp k-sol k-claro"><i></i><i></i><i></i></div><div class="cp k-nube k-blanca"><i></i><i></i><i></i><i></i></div>',
+    atardecer: '<div class="cp k-atar"></div>', nublado: '<div class="cp k-nube"><i></i><i></i><i></i><i></i><i></i><i></i></div>',
     tormenta: '<div class="cp k-nube"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="cp k-torm"></div><div class="cp k-rayo"></div>', calor: '<div class="cp k-calor"></div>', frio: '<div class="cp k-frio">' + C329_HELADA + '</div>' + C328_CARAM,
     niebla: '<div class="cp k-niebla"><i></i><i></i><i></i></div>',
     lluvia: '<div class="cp k-lluv"></div><div class="cp k-nube k-gris"><i></i><i></i><i></i><i></i><i></i><i></i></div>' }; // v290: cielo gris y nubes oscuras con la lluvia
@@ -17882,7 +17885,7 @@
     window.addEventListener('scroll', prog, { passive: true });
     prog();
   })();
-  const VIS_VERSION = 344;
+  const VIS_VERSION = 345;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

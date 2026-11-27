@@ -2389,6 +2389,7 @@
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
   // v335 (solo visor) · Ranking: grupo «Sus acciones» (pases clave, pases al área, regates, acciones defensivas, defensivas clave, paradas y tarjetas; total y media por partido); fuera «Nota IA» y el Top 5 de Comparativa.
+  // v348 (visor, sin cambios en la app) · manifest.json vuelve a los iconos de antes de la v301 (icon-192/512 sin «maskable» ni icon-splash): el cambio hacía que Android pidiera una y otra vez «Revisa la actualización del icono» a las familias con el visor instalado. La pantalla de arranque vuelve a llevar el icono de siempre.
   // v347 (visor, sin cambios en la app) · 🔍 Toca un número y mira de dónde sale: las cifras con subrayado punteado abren una hoja con su desglose partido a partido. La temporada en números: goles, porterías a cero, asistencias, tiros (con % a puerta) y paradas (cada partido abre ese partido en Temporada → Partidos, y abajo un botón a la sección de antes). Ficha del niño: goles, asistencias, minutos y partidos (con titular/suplente), impacto, peso, pases clave, pases al área, regates, acciones defensivas y paradas (cada partido abre su ficha de ese partido). Ranking: la cifra de Impacto, goles, asistencias, minutos, partidos, acciones, paradas y peso abre el mismo desglose (el Ranking MVP ya lo tenía al tocar la fila).
   // v346 (visor, sin cambios en la app) · Niebla que se nota: fondo más espeso y bancos de niebla que pasan por encima de escudos y VS (escudos apagados); el chip y el título quedan por encima.
   // v345 (visor, sin cambios en la app) · Arreglo: en la v344 se quedaron sin efecto el nublado y el atardecer (un comentario mal puesto los anulaba).
@@ -18206,7 +18207,7 @@
     window.addEventListener('scroll', prog, { passive: true });
     prog();
   })();
-  const VIS_VERSION = 347;
+  const VIS_VERSION = 348;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;

@@ -1830,6 +1830,51 @@
   @keyframes v335Tiembla { 10%,90% { transform:translate(-1px,0); } 20%,80% { transform:translate(4px,1px); } 30%,50%,70% { transform:translate(-6px,-2px) rotate(-.5deg); } 40%,60% { transform:translate(6px,2px) rotate(.5deg); } }
   .sb-eq.r .sb-esc.v335-golpe { display:inline-block; animation:v335Golpe .6s cubic-bezier(.2,.9,.3,1); }
   @keyframes v335Golpe { 0% { transform:none; } 12% { transform:translate(14px,-4px) rotate(14deg) scale(.82); filter:brightness(1.8); } 40% { transform:translate(-4px,1px) rotate(-5deg) scale(1.04); filter:none; } 70% { transform:translate(2px,0) rotate(2deg); } 100% { transform:none; } }
+  /* v347 · toca un número y mira de dónde sale */
+  .d347-n, [onclick^="d347"] > b.d347-u, .d347-u { text-decoration:underline dotted rgba(255,255,255,.55); text-underline-offset:4px; text-decoration-thickness:1.5px; cursor:pointer; }
+  .rank-val.d347-rk { text-decoration:underline dotted rgba(255,255,255,.5); text-underline-offset:4px; text-decoration-thickness:1.5px; padding:6px 0 6px 10px; margin:-6px 0; }
+  .num-k.d347 b { text-decoration:underline dotted rgba(255,255,255,.55); text-underline-offset:5px; text-decoration-thickness:1.5px; }
+  #d347Caja { background:linear-gradient(145deg,#111827,#0f172a); border-radius:20px 20px 0 0; padding:16px 14px calc(20px + env(safe-area-inset-bottom)); max-width:480px; width:100%; max-height:84vh; overflow-y:auto; border:1px solid rgba(255,255,255,.12); border-bottom:none; position:relative; overscroll-behavior:contain; animation:d347Sube .28s cubic-bezier(.2,.9,.3,1); }
+  #d347Caja::before { content:''; position:absolute; top:6px; left:50%; width:40px; height:5px; margin-left:-20px; border-radius:3px; background:rgba(255,255,255,.22); }
+  @keyframes d347Sube { from { transform:translateY(40%); opacity:.4; } to { transform:none; opacity:1; } }
+  .d347-cabecera { display:flex; align-items:flex-start; gap:10px; margin:8px 0 10px; }
+  .d347-tit { font-family:'Montserrat',sans-serif; font-weight:800; font-size:16px; color:#fff; line-height:1.25; }
+  .d347-subt { font-size:11.5px; color:#94a3b8; margin-top:3px; line-height:1.4; }
+  .d347-x2 { background:rgba(255,255,255,.08); border:none; color:#e2e8f0; width:34px; height:34px; border-radius:50%; font-size:16px; cursor:pointer; flex-shrink:0; }
+  .d347-f { display:flex; align-items:center; gap:8px; padding:9px 6px; border-radius:10px; cursor:pointer; font-size:12.5px; color:#e2e8f0; }
+  .d347-f:nth-child(odd) { background:rgba(255,255,255,.03); }
+  .d347-f:active { background:rgba(180,20,56,.18); }
+  .d347-f.d347-gris { opacity:.55; }
+  .d347-col { display:flex; flex-direction:column; gap:3px; flex:1; min-width:0; }
+  .d347-top { display:flex; align-items:center; gap:8px; }
+  .d347-j { width:28px; flex-shrink:0; color:#64748b; font-weight:700; font-size:11px; }
+  .d347-r { flex:0 1 104px; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600; }
+  .d347-top .d347-r { flex:1; }
+  .d347-res { flex-shrink:0; font-family:'Montserrat',sans-serif; font-weight:800; font-size:10.5px; border-radius:6px; padding:2px 6px; }
+  .d347-v { flex-shrink:0; min-width:38px; text-align:right; font-family:'Barlow Condensed','Montserrat',sans-serif; font-weight:800; font-size:17px; color:#fff; line-height:1; }
+  .d347-v small { display:block; font-family:Inter,sans-serif; font-size:10px; font-weight:700; color:#94a3b8; margin-top:2px; }
+  .d347-x { flex:1; min-width:0; font-size:11.5px; color:#94a3b8; text-align:right; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .d347-sub { padding-left:36px; font-size:12px; color:#cbd5e1; line-height:1.35; }
+  .d347-sub b { color:#fff; font-family:'Barlow Condensed','Montserrat',sans-serif; font-size:13.5px; margin-right:3px; }
+  .d347-sub small, .d347-mini { color:#94a3b8; font-size:10.5px; }
+  .d347-ir { color:#475569; font-size:17px; flex-shrink:0; }
+  .d347-bar { flex:1; min-width:40px; height:8px; border-radius:4px; background:rgba(255,255,255,.07); position:relative; overflow:hidden; }
+  .d347-bar i { position:absolute; left:0; top:0; bottom:0; border-radius:4px; }
+  .d347-peso { flex:1; min-width:40px; height:12px; position:relative; background:rgba(255,255,255,.05); border-radius:4px; }
+  .d347-peso::before { content:''; position:absolute; left:50%; top:-2px; bottom:-2px; width:1px; background:rgba(255,255,255,.3); }
+  .d347-peso i { position:absolute; top:2px; height:8px; border-radius:3px; }
+  .d347-col > .d347-bar, .d347-col > .d347-peso { flex:none; width:100%; }
+  .d347-tot { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; margin-bottom:10px; }
+  .d347-tot div { background:rgba(255,255,255,.06); border-radius:10px; padding:8px 2px; text-align:center; }
+  .d347-tot b { display:block; font-family:'Barlow Condensed','Montserrat',sans-serif; font-weight:800; font-size:20px; color:#fff; }
+  .d347-tot span { font-size:9.5px; color:#94a3b8; text-transform:uppercase; letter-spacing:.3px; }
+  .d347-pie { font-size:11.5px; color:#94a3b8; line-height:1.5; margin:8px 2px; }
+  .d347-cal { display:grid; grid-template-columns:repeat(auto-fill,minmax(54px,1fr)); gap:5px; }
+  .d347-cal div { border-radius:9px; padding:6px 2px; text-align:center; font-size:10px; line-height:1.3; }
+  .d347-cal b { display:block; font-family:'Montserrat',sans-serif; font-weight:900; font-size:11.5px; }
+  .d347-cal .cT { background:rgba(52,152,219,.22); color:#9bd2f8; } .d347-cal .cS { background:rgba(245,166,35,.2); color:#fcd34d; }
+  .d347-cal .cB { background:rgba(255,255,255,.06); color:#94a3b8; } .d347-cal .cX { background:rgba(255,92,122,.1); color:#fca5a5; } .d347-cal .cQ { background:rgba(46,213,115,.14); color:#86efac; }
+  .d347-boton { margin-top:10px; width:100%; min-height:42px; border-radius:10px; background:rgba(180,20,56,.15); border:1px solid rgba(180,20,56,.5); color:#fff; font-weight:700; font-size:13px; cursor:pointer; }
   /* v335 · hojas que se cierran deslizando hacia abajo: barrita arriba para indicar que se puede arrastrar */
   #alinCaja, #fichaEquipoCaja, #csCaja .cc-in, #fichaPartidoModal > div, #idaVueltaModal > div, #perfilModal > div { position:relative; }
   #alinCaja::before, #fichaEquipoCaja::before, #csCaja .cc-in::before, #fichaPartidoModal > div::before, #idaVueltaModal > div::before, #perfilModal > div::before { content:''; position:absolute; top:6px; left:50%; width:40px; height:5px; margin-left:-20px; border-radius:3px; background:rgba(255,255,255,.32); z-index:8; pointer-events:none; }
@@ -2344,6 +2389,7 @@
   // v267 (visor) · Racha de titularidad: se corta si el niño no sale de titular (banquillo o no convocado); se calcula con los titulares de cada partido.
   // v266 (visor) · Tiempo: viento desde 30 km/h, calor desde 25 °C, frío desde 6 °C y el frío manda sobre la niebla.
   // v335 (solo visor) · Ranking: grupo «Sus acciones» (pases clave, pases al área, regates, acciones defensivas, defensivas clave, paradas y tarjetas; total y media por partido); fuera «Nota IA» y el Top 5 de Comparativa.
+  // v347 (visor, sin cambios en la app) · 🔍 Toca un número y mira de dónde sale: las cifras con subrayado punteado abren una hoja con su desglose partido a partido. La temporada en números: goles, porterías a cero, asistencias, tiros (con % a puerta) y paradas (cada partido abre ese partido en Temporada → Partidos, y abajo un botón a la sección de antes). Ficha del niño: goles, asistencias, minutos y partidos (con titular/suplente), impacto, peso, pases clave, pases al área, regates, acciones defensivas y paradas (cada partido abre su ficha de ese partido). Ranking: la cifra de Impacto, goles, asistencias, minutos, partidos, acciones, paradas y peso abre el mismo desglose (el Ranking MVP ya lo tenía al tocar la fila).
   // v346 (visor, sin cambios en la app) · Niebla que se nota: fondo más espeso y bancos de niebla que pasan por encima de escudos y VS (escudos apagados); el chip y el título quedan por encima.
   // v345 (visor, sin cambios en la app) · Arreglo: en la v344 se quedaron sin efecto el nublado y el atardecer (un comentario mal puesto los anulaba).
   // v344 (visor, sin cambios en la app) · Tiempo del partido: «atardecer» solo con el sol bajando por la tarde (a las 10:00 de noviembre el sol bajo de la mañana salía como atardecer) y efecto propio «⛅ nubes y claros» (sol que se tapa y se destapa con nubes blancas).
@@ -3064,12 +3110,12 @@
     const foto = fotoNinoV(j.id);
     let meta = ''; try { const et = etiquetaPosicionV(j); meta = (et ? et.split(' · ').pop() : (esPortero ? 'Portero' : 'Jugador')); } catch (e) {}
     meta += ` · dorsal ${j.dorsal ?? '–'} · ${j.partidos || 0} ${j.partidos === 1 ? 'partido' : 'partidos'}`;
-    const N = esPortero ? [[j.paradas || 0, '🧤 paradas'], [j.partidos || 0, '📋 partidos'], [j.minutos || 0, '⏱ minutos', "'"]]
-      : [[j.goles || 0, '⚽ goles'], [j.asistencias || 0, '🅰️ asistencias'], [j.minutos || 0, '⏱ minutos', "'"]];
+    const N = esPortero ? [[j.paradas || 0, '🧤 paradas', '', 'par'], [j.partidos || 0, '📋 partidos', '', 'min'], [j.minutos || 0, '⏱ minutos', "'", 'min']]
+      : [[j.goles || 0, '⚽ goles', '', 'goles'], [j.asistencias || 0, '🅰️ asistencias', '', 'asis'], [j.minutos || 0, '⏱ minutos', "'", 'min']]; // v347: cada cifra abre su desglose
     h.innerHTML = `<div class="ph-dorsal" aria-hidden="true">${escHtml(j.dorsal ?? '')}</div><div class="ph-sombra"></div>
       <div class="ph-foto">${foto ? `<img src="${foto}" alt="">` : escHtml(j.dorsal ?? '')}</div>
       <div class="ph-info"><div class="ph-nom">${escHtml(j.name || '')}</div><div class="ph-meta">${escHtml(meta)}</div></div>
-      <div class="ph-nums">${N.map(([v, l, s]) => `<div class="ph-n"><b data-v="${Number(v) || 0}" data-s="${s || ''}">${hitoNum(Number(v) || 0)}${s || ''}</b><span>${l}</span></div>`).join('')}</div>`;
+      <div class="ph-nums">${N.map(([v, l, s, dk]) => `<div class="ph-n" ${d347Attr(j.id, dk)} style="cursor:pointer;"><b class="d347-u" data-v="${Number(v) || 0}" data-s="${s || ''}">${hitoNum(Number(v) || 0)}${s || ''}</b><span>${l}</span></div>`).join('')}</div>`;
     m.classList.add('con-hero');
     try { fi272Volar(h, foto); } catch (e) { console.error('Foto → ficha:', e); } // v272
     if (V260_RM) return;
@@ -3712,8 +3758,14 @@
       <div class="total">${e.pct}%</div>
     </div>`;
   }
-  function fdStatRow(icono, nombre, cantidadTotal, minutosTotal) {
+  let fdD347 = null; // v347: id del niño mientras se pinta su ficha (para que las cifras abran su desglose)
+  function fdStatRow(icono, nombre, cantidadTotal, minutosTotal, dk) {
     const r = fdFormatRatio(cantidadTotal, minutosTotal);
+    if (dk && fdD347 != null && (cantidadTotal || 0) > 0) return `<div class="fd-stat-row" ${d347Attr(fdD347, dk)} style="cursor:pointer;">
+      <div class="ic">${icono}</div>
+      <div class="label"><div class="nom">${nombre}</div><div class="ratio${r.pocaMuestra ? ' fd-poca-muestra' : ''}">${r.texto}</div></div>
+      <div class="total d347-u">${cantidadTotal || 0}</div>
+    </div>`;
     return `<div class="fd-stat-row">
       <div class="ic">${icono}</div>
       <div class="label"><div class="nom">${nombre}</div><div class="ratio${r.pocaMuestra ? ' fd-poca-muestra' : ''}">${r.texto}</div></div>
@@ -3756,25 +3808,26 @@
       </div>`;
     if (opts && opts.v276) { // v276 · ficha de temporada: 3 cifras arriba y el resto en bloques plegables
       const X = opts.extra || {}, mt = minutosTotal;
+      fdD347 = stats.id; // v347
       const bloque = (k, e, tit, pista, html, abierto) => html ? `<details class="fd-pl" data-k="${k}"${abierto ? ' open' : ''}><summary><span class="e" aria-hidden="true">${e}</span><b>${tit}</b>${pista ? `<small>${pista}</small>` : ''}<i aria-hidden="true">▾</i></summary><div class="fd-pl-c">${html}</div></details>` : '';
       const caja = (v, l, s2, dest) => `<div class="fd-r3${dest ? ' dest' : ''}"><div class="v">${v}</div><div class="l">${l}</div>${s2 ? `<div class="s">${s2}</div>` : ''}</div>`;
       const pos = X.posibles ? Math.round(mt / X.posibles * 100) : null;
       // (la cabecera de estrella ya enseña goles/asistencias o paradas, partidos y minutos: aquí van otras tres)
       const mvp = X.mvp != null ? caja(X.mvp, X.mvp === 1 ? 'vez MVP' : 'veces MVP', '') : '';
-      const pmin = caja(pos != null ? pos + ' %' : mt + "'", pos != null ? 'de los minutos' : 'minutos', pos != null ? `${mt}' jugados` : '');
+      const pmin = `<div ${d347Attr(stats.id, 'min')} style="cursor:pointer; display:grid;">` + caja(`<span class="d347-u">${pos != null ? pos + ' %' : mt + "'"}</span>`, pos != null ? 'de los minutos' : 'minutos', pos != null ? `${mt}' jugados` : '') + '</div>'; // v347
       let tres;
       if (stats.esPortero) {
         const par = t.paradas || 0, gr = t.golesRecibidos || 0, pct = par + gr > 0 ? Math.round(par / (par + gr) * 100) : null;
         tres = caja(pct != null ? pct + ' %' : '—', 'de paradas', `${gr} ${gr === 1 ? 'gol recibido' : 'goles recibidos'}`, true) + pmin + mvp;
       } else {
         const imp = (stats.impactoPond || 0), sImp = (imp > 0 ? '+' : '') + imp.toFixed(1).replace('.', ',');
-        tres = caja(sImp, "impacto por 70'", X.rank ? `${X.rank}.º del equipo` : '', true) + pmin + mvp;
+        tres = `<div ${d347Attr(stats.id, 'imp')} style="cursor:pointer; display:grid;">` + caja(`<span class="d347-u">${sImp}</span>`, "impacto por 70'", X.rank ? `${X.rank}.º del equipo` : '', true) + '</div>' + pmin + mvp; // v347
       }
-      const filasAt = fdStatRow('⚽', 'Goles', t.goles, mt) + fdEficaciaRow(t) + fdStatRow('👟', 'Asistencias', t.asistencias, mt) + fdStatRow('🔑', 'Pases clave', t.pasesClave, mt) + fdStatRow('📯', 'Pases al área', t.pasesArea, mt)
-        + fdStatRow('🌀', 'Regates / jugadas individuales', t.regates, mt) + (t.palos ? fdStatRow('🪵', 'Tiros al palo', t.palos, mt) : '') + (t.fuerasJuego ? fdStatRow('🚩', 'Fueras de juego', t.fuerasJuego, mt) : '');
+      const filasAt = fdStatRow('⚽', 'Goles', t.goles, mt, 'goles') + fdEficaciaRow(t) + fdStatRow('👟', 'Asistencias', t.asistencias, mt, 'asis') + fdStatRow('🔑', 'Pases clave', t.pasesClave, mt, 'pc') + fdStatRow('📯', 'Pases al área', t.pasesArea, mt, 'pa')
+        + fdStatRow('🌀', 'Regates / jugadas individuales', t.regates, mt, 'reg') + (t.palos ? fdStatRow('🪵', 'Tiros al palo', t.palos, mt) : '') + (t.fuerasJuego ? fdStatRow('🚩', 'Fueras de juego', t.fuerasJuego, mt) : '');
       const filasDef = stats.esPortero
-        ? fdStatRow('🥅', 'Goles recibidos', t.golesRecibidos, mt) + fdPorteroFilas(stats) + (stats.porteroClaveHTML || '') + fdStatRow('🧤', 'Paradas', t.paradas, mt) + fdStatRow('✋', 'De ellas, difíciles', t.paradasDificiles, mt)
-        : fdStatRow('🛡️', 'Acciones defensivas', t.accionesDef, mt) + fdStatRow('🛡️⭐', 'Acciones def. clave', t.accionesDefClave, mt);
+        ? fdStatRow('🥅', 'Goles recibidos', t.golesRecibidos, mt) + fdPorteroFilas(stats) + (stats.porteroClaveHTML || '') + fdStatRow('🧤', 'Paradas', t.paradas, mt, 'par') + fdStatRow('✋', 'De ellas, difíciles', t.paradasDificiles, mt, 'parD')
+        : fdStatRow('🛡️', 'Acciones defensivas', t.accionesDef, mt, 'def') + fdStatRow('🛡️⭐', 'Acciones def. clave', t.accionesDefClave, mt, 'defC');
       const disc = `<div class="fd-tarjetas-row" style="margin-top:0;">
         <div class="fd-tarjeta-box"><div class="cuad" style="background:#f5c518;"></div><div class="num">${t.amarillas || 0}</div></div>
         <div class="fd-tarjeta-box"><div class="cuad" style="background:#e74c3c;"></div><div class="num">${t.rojas || 0}</div></div>
@@ -3787,7 +3840,7 @@
         + bloque('comp', '🤝', 'Con sus compañeros', '', X.comp, false)
         + bloque('peso', '📊', 'Su peso en el equipo', '', X.peso, false)
         + bloque('disc', '🟨', 'Disciplina y faltas', `🟨 ${t.amarillas || 0} · 🟥 ${t.rojas || 0}`, disc, false)
-        + bloque('hitos', '🏁', 'Hitos', '', X.hitos, false);
+        + bloque('hitos', '🏁', 'Hitos', '', X.hitos, false) + (fdD347 = null, '');
     }
     return `
       <div class="fd-header v211${stats.esPortero ? ' fd-portero' : ''}">
@@ -3933,7 +3986,7 @@
       return `<div style="background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); border-radius:14px; padding:12px 14px; margin-top:12px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;"><div style="font-size:11px; font-weight:800; color:${acento}; letter-spacing:.5px;">⚖️ PESO EN EL EQUIPO</div><div style="font-size:11px; color:#94a3b8;">${puesto}</div></div>
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-              ${caja(pesoFmt(r.peso), pesoColor(r.peso), 'sobre la media de sus compañeros de partido (por 70\')')}
+              <div ${d347Attr(j.id, 'peso')} style="cursor:pointer; display:grid;">${caja(`<span class="d347-u">${pesoFmt(r.peso)}</span>`, pesoColor(r.peso), 'sobre la media de sus compañeros de partido (por 70\')')}</div>
               ${caja(pesoFmtCuota(r.cuota), r.cuota == null ? '#64748b' : (r.cuota >= 1 ? '#2ed573' : '#ff5c7a'), cuotaTxt + portTxt)}
           </div>
           ${(j.minutos || 0) < minMinutos ? `<div style="font-size:11px; color:#94a3b8; margin-top:8px;">Aún no llega a ${minMinutos} minutos: dato provisional.</div>` : ''}
@@ -8655,14 +8708,14 @@
     try { const B = b2bTemporada(t); Object.values(B).forEach(x => { b2b += x.n; b2bU += x.lista.filter(y => y.i === n - 1).length; }); } catch (e) {}
     const dia = numDiaPartido(ult, n);
     const it = [];
-    it.push({ e: '⚽', l: 'goles', v: suma(p => Number(p.golesLocal) || 0), u: Number(ult.golesLocal) || 0, ir: { sub: 'subMapaGoles' } });
+    it.push({ e: '⚽', l: 'goles', v: suma(p => Number(p.golesLocal) || 0), u: Number(ult.golesLocal) || 0, ir: { sub: 'subMapaGoles' }, d347: 'goles' });
     it.push({ e: '🏆', l: 'puntos', v: suma(pts), u: pts(ult), ir: { sub: 'subLigaClasif' } });
     it.push({ e: '➕', l: 'diferencia de goles', v: suma(dg), u: dg(ult), signo: true, ir: { sub: 'subLigaClasif' } }); // v232
-    const vc = suma(cero); if (vc > 0) it.push({ e: '🧱', l: vc === 1 ? 'portería a cero' : 'porterías a cero', v: vc, u: cero(ult), ir: { sub: 'subRecords' } }); // v232
+    const vc = suma(cero); if (vc > 0) it.push({ e: '🧱', l: vc === 1 ? 'portería a cero' : 'porterías a cero', v: vc, u: cero(ult), ir: { sub: 'subRecords' }, d347: 'cero' }); // v232 · v347: desglose
     const vr = suma(rec); if (vr > 0) it.push({ e: '🛡️', l: 'recuperaciones', v: vr, u: rec(ult), ir: { sub: 'subRanking' } });
-    const vp = suma(par); if (vp > 0) it.push({ e: '🧤', l: 'paradas', v: vp, u: par(ult), ir: { tipo: 'portero' } });
-    const va = suma(asi); if (va > 0) it.push({ e: '🅰️', l: 'asistencias', v: va, u: asi(ult), ir: { sub: 'subRanking' } });
-    const vt = suma(tir); if (vt > 0) it.push({ e: '🎯', l: 'tiros a puerta', v: vt, u: tir(ult), ir: { sub: 'subMedias' } });
+    const vp = suma(par); if (vp > 0) it.push({ e: '🧤', l: 'paradas', v: vp, u: par(ult), ir: { tipo: 'portero' }, d347: 'paradas' });
+    const va = suma(asi); if (va > 0) it.push({ e: '🅰️', l: 'asistencias', v: va, u: asi(ult), ir: { sub: 'subRanking' }, d347: 'asis' });
+    const vt = suma(tir); if (vt > 0) it.push({ e: '🎯', l: 'tiros a puerta', v: vt, u: tir(ult), ir: { sub: 'subMedias' }, d347: 'tiros' });
     const vg = suma(reg); if (vg > 0) it.push({ e: '🌀', l: 'regates', v: vg, u: reg(ult), ir: { sub: 'subRanking', sel: 'regates' } }); // v232 · v335: al Ranking (el Top 5 ya no existe)
     const vco = suma(cor); if (vco > 0) it.push({ e: '⛳', l: 'córners a favor', v: vco, u: cor(ult), ir: { sub: 'subMedias' } }); // v232
     const vm = suma(mins); if (vm > 0) it.push({ e: '⏱', l: 'minutos jugados', v: vm, u: mins(ult), extra: numTiempo(vm), ir: { sub: 'subPlantilla' } }); // v232 · todos los niños
@@ -8682,7 +8735,7 @@
     return `= ${h.toLocaleString('es-ES')} h · ${d} ${d === 1 ? 'día' : 'días'}${hr ? ' y ' + hr + ' h' : ''}`;
   }
   let numItems = [], numIn264 = false;
-  window.numIr = function (k) { const x = numItems[k]; if (!x) return; try { buscaIr(Object.assign({ tipo: 'tarjeta' }, x.ir)); if (x.ir && x.ir.sel) { const se = document.getElementById('rankingCriterioSelect'); if (se) { se.value = x.ir.sel; try { rerenderRanking(); } catch (e) {} } } } catch (e) { console.error('Números:', e); } };
+  window.numIr = function (k) { const x = numItems[k]; if (!x) return; if (x.d347) { d347Equipo(x.d347); return; } /* v347 */ try { buscaIr(Object.assign({ tipo: 'tarjeta' }, x.ir)); if (x.ir && x.ir.sel) { const se = document.getElementById('rankingCriterioSelect'); if (se) { se.value = x.ir.sel; try { rerenderRanking(); } catch (e) {} } } } catch (e) { console.error('Números:', e); } };
   // v339 · cabecera destacada de Temporada: puesto en la Liga, puntos, goles y la forma partido a partido
   function tmpHeroPintar() {
     const hero = document.getElementById('tmpHero'), cab = document.getElementById('tmpHeroCab'); if (!hero || !cab) return;
@@ -8711,7 +8764,7 @@
     const fmt = (v, sg) => (sg && v > 0 ? '+' : sg && v < 0 ? '−' : '') + Math.abs(Number(v)).toLocaleString('es-ES');
     box.style.display = '';
     box.innerHTML = `<div class="num-cab"><b>📊 La temporada en números</b><span>${R.n} ${R.n === 1 ? 'partido' : 'partidos'} · desliza →</span></div>
-      <div class="num-tira">${R.it.map((x, k) => `<button type="button" class="num-k" onclick="numIr(${k})"><b data-v="${x.v}"${x.signo ? ' data-s="1"' : ''}${x.signo && x.v < 0 ? ' style="color:#ff5c7a;"' : ''}>${fmt(x.v, x.signo)}</b><span class="l">${x.e} ${escHtml(x.l)}</span>${x.extra ? `<span class="x">${escHtml(x.extra)}</span>` : ''}<span class="n${x.u > 0 ? '' : ' gris'}"${x.signo && x.u < 0 ? ' style="color:#ff5c7a;"' : ''}>${escHtml(x.txt)}</span></button>`).join('')}</div>`;
+      <div class="num-tira">${R.it.map((x, k) => `<button type="button" class="num-k${x.d347 ? ' d347' : ''}" onclick="numIr(${k})"><b data-v="${x.v}"${x.signo ? ' data-s="1"' : ''}${x.signo && x.v < 0 ? ' style="color:#ff5c7a;"' : ''}>${fmt(x.v, x.signo)}</b><span class="l">${x.e} ${escHtml(x.l)}</span>${x.extra ? `<span class="x">${escHtml(x.extra)}</span>` : ''}<span class="n${x.u > 0 ? '' : ' gris'}"${x.signo && x.u < 0 ? ' style="color:#ff5c7a;"' : ''}>${escHtml(x.txt)}</span></button>`).join('')}</div>`;
     if (!V264_RM && !numIn264 && document.getElementById('temporada') && document.getElementById('temporada').classList.contains('active')) { // v264 · entran como rótulos, una vez por visita
       numIn264 = true; box.querySelectorAll('.num-k').forEach((x, i) => { x.style.animationDelay = Math.min(i, 8) * 90 + 'ms'; x.classList.add('in264'); });
     }
@@ -13052,12 +13105,14 @@
     const f1m = v => (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(1).replace('.', ',');
     etiquetaVal.mvp = j => { const r = mvpT[j.id]; return `<span style="color:${r.tot >= 0 ? '#f5c542' : '#ff5c7a'};">${f1m(r.tot)}</span>${r.mvps ? `<span style="font-size:10.5px; color:#cbd5e1; margin-left:6px;">⭐${r.mvps}</span>` : ''}<div style="font-size:9.5px; color:#94a3b8; text-align:right;">sin ajuste ${f1m(r.bruto)}</div>`; };
     const getEtiqueta = etiquetaVal[criterio] || etiquetaVal.pond;
+    // v347 · la cifra de algunos rankings abre su desglose partido a partido (el resto de la fila sigue abriendo la ficha)
+    const dk347 = { pond: 'imp', goles: 'goles', asistencias: 'asis', minutos: 'min', partidos: 'min', pasesClave: 'pc', pasesArea: 'pa', regates: 'reg', accionesDef: 'def', accionesDefClave: 'defC', paradas: 'par', peso: 'peso' }[criterio || 'pond'];
     cont.innerHTML = lista.map((j, i) => `
       <div class="rank-row" onclick="${esMvp ? `rkMvpVer('${j.id}')` : `abrirPerfilJugadorTemporada('${j.id}')`}" style="cursor:pointer;">
         <div class="rank-pos">${i+1}</div>
         <div class="rank-name">${(j.name||'').split(' ')[0]}</div>
         ${esImpacto ? `<div style="font-size:10px; color:#64748b; margin-right:6px;">${j.minutos || 0}'</div>` : ''}
-        <div class="rank-val">${getEtiqueta(j)}</div>
+        <div class="rank-val${dk347 ? ' d347-rk' : ''}"${dk347 ? ` ${d347Attr(j.id, dk347)}` : ''}>${getEtiqueta(j)}</div>
       </div>${esMvp && rkMvpAbierto === String(j.id) ? rkMvpDetalle(j, mvpT[j.id]) : ''}`).join('');
     if (esImpacto && lista.length === 0) {
       cont.innerHTML = `<div class="loader">Aún nadie llega a ${minRanking} minutos acumulados</div>`;
@@ -17780,6 +17835,253 @@
     if (antes !== enJuego) { try { v260TabInd(); } catch (e) {} }
   }
   // «Ver todas las estadísticas del partido» → abre ese partido en Temporada → Partidos
+  // ══ v347 · 🔍 TOCA UN NÚMERO Y MIRA DE DÓNDE SALE ═════════════════════════════════════════════
+  // Las cifras con subrayado punteado abren una hoja con su desglose partido a partido.
+  // Equipo (La temporada en números): goles, porterías a cero, asistencias, tiros, paradas.
+  // Niño (ficha y Ranking): goles, asistencias, minutos y partidos, peso, sus acciones, paradas, impacto.
+  // Cada partido de la lista se puede tocar: en el equipo abre el partido en Temporada → Partidos; en un niño, su ficha de ese partido.
+  const D347_ACC = { pc: ['🔑', 'Pases clave', 'pase clave', 'pases clave'], pa: ['📯', 'Pases al área', 'pase al área', 'pases al área'], reg: ['🌀', 'Regates / jugadas individuales', 'regate', 'regates'],
+    def: ['🛡️', 'Acciones defensivas', 'acción defensiva', 'acciones defensivas'], defC: ['🛡️⭐', 'Acciones defensivas clave', 'defensiva clave', 'defensivas clave'],
+    par: ['🧤', 'Paradas', 'parada', 'paradas'], parD: ['✋', 'Paradas difíciles', 'parada difícil', 'paradas difíciles'] };
+  const D347_ORI = { jugada: 'Jugada', robo: 'Robo / contra', rechace: 'Rechace', corner: 'Córner', falta: 'Falta', penalti: 'Penalti', error: 'Error del rival', perdida: 'Pérdida nuestra', propia: 'En propia' };
+  const D347_CPO = { der: 'Derecha', izq: 'Izquierda', cab: 'Cabeza', otra: 'Otra' };
+  let d347Ov = '';
+  const d347n = v => String(v).replace('.', ',');
+  const d347f = (v, d) => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(d == null ? 2 : d).replace('.', ',');
+  function d347Res(p) {
+    const a = Number(p.golesLocal) || 0, b = Number(p.golesRival) || 0, c = a > b ? '#2ed573' : a < b ? '#ff5c7a' : '#94a3b8';
+    return `<span class="d347-res" style="color:${c}; background:${c}22;">${a}-${b}</span>`;
+  }
+  function d347Cab(p, i) { return `<span class="d347-j">J${i + 1}</span><span class="d347-r">${escHtml(p.rival || '')}</span>${d347Res(p)}`; }
+  function d347Jug(t, id) { const js = (t && t.jugadores) || {}; return js[id] || Object.values(js).find(x => String(x.id) === String(id)) || null; }
+  function d347Nom(t, id, alt) { const j = id != null ? d347Jug(t, id) : null; return escHtml(j ? estNom(j) : (alt || '¿?')); }
+  function d347GolesH(p) { return (Array.isArray(p.goles) ? p.goles : []).filter(g => g && g.equipo !== 'rival').slice().sort((a, b) => (ptsGolMin(a) ?? 999) - (ptsGolMin(b) ?? 999)); }
+  function d347Detalle(g) {
+    const o = [];
+    if (g.propia) o.push('En propia del rival'); else if (g.penalti) o.push('Penalti'); else if (D347_ORI[g.origen]) o.push(D347_ORI[g.origen]);
+    if (D347_CPO[g.cuerpo]) o.push(D347_CPO[g.cuerpo]);
+    return o.join(' · ');
+  }
+  // fila de partido que se puede tocar: k = índice del partido; jid = niño (abre su ficha de ese partido) o nada (abre el partido)
+  function d347Fila(i, jid, html, extraCls) {
+    const on = jid != null ? `d347IrNino(${i}, '${escHtml(String(jid))}')` : `d347IrPartido(${i})`;
+    return `<div class="d347-f${extraCls ? ' ' + extraCls : ''}" role="button" tabindex="0" onclick="${on}">${html}<span class="d347-ir" aria-hidden="true">›</span></div>`;
+  }
+  function d347Barra(v, max, color) { const w = max > 0 ? Math.max(0, Math.min(100, v / max * 100)) : 0; return `<div class="d347-bar"><i style="width:${w}%; background:${color};"></i></div>`; }
+  function d347Tot(arr) { return `<div class="d347-tot">${arr.map(([v, l, c]) => `<div><b${c ? ` style="color:${c};"` : ''}>${v}</b><span>${l}</span></div>`).join('')}</div>`; }
+  function d347Pie(t) { return t ? `<div class="d347-pie">${t}</div>` : ''; }
+  function d347Vacio(t) { return `<div class="d347-pie" style="text-align:center; padding:14px 0;">${t}</div>`; }
+
+  // ── equipo ──
+  function d347EqGoles(t) {
+    const ps = t.partidos || []; let tot = 0, conDet = 0; const por = {};
+    const filas = ps.map((p, i) => {
+      const gf = Number(p.golesLocal) || 0; tot += gf; if (!gf) return '';
+      const gs = d347GolesH(p);
+      gs.forEach(g => { if (!g.propia && g.jugadorId != null) por[g.jugadorId] = (por[g.jugadorId] || 0) + 1; });
+      if (gs.length) conDet++;
+      const lista = gs.length ? gs.map(g => `<div class="d347-sub"><b>${ptsGolMin(g) != null ? ptsGolMin(g) + "'" : '–'}</b> ${g.propia ? 'En propia' : d347Nom(t, g.jugadorId, g.nombre)}${g.asistenteId != null || g.asistente ? ` <small>(👟 ${d347Nom(t, g.asistenteId, g.asistente)})</small>` : ''}${d347Detalle(g) && !g.propia ? ` <small>· ${escHtml(d347Detalle(g))}</small>` : ''}</div>`).join('')
+        : `<div class="d347-sub"><small>${gf} ${gf === 1 ? 'gol' : 'goles'} (sin detalle)</small></div>`;
+      return d347Fila(i, null, `<div class="d347-col"><div class="d347-top">${d347Cab(p, i)}<b class="d347-v">${gf}</b></div>${lista}</div>`);
+    }).join('');
+    const top = Object.keys(por).sort((a, b) => por[b] - por[a]).slice(0, 3).map(id => `${d347Nom(t, id)} ${por[id]}`).join(' · ');
+    return { tit: `⚽ Goles del equipo: ${tot}`, sub: `${ps.length} ${ps.length === 1 ? 'partido' : 'partidos'} · ${d347n((tot / Math.max(1, ps.length)).toFixed(1))} por partido`,
+      html: (top ? d347Pie(`Los que más marcan: ${top}`) : '') + filas, ir: ['Ver el mapa de goles', { sub: 'subMapaGoles' }] };
+  }
+  function d347Porteros(t, p) {
+    return Object.values(t.jugadores || {}).filter(j => { const h = ptsHistDe(j, p); return h && jugoDePortero(h); }).map(estNom).map(escHtml).join(' y ');
+  }
+  function d347EqCero(t) {
+    const ps = t.partidos || []; const L = ps.map((p, i) => ({ p, i })).filter(x => (Number(x.p.golesRival) || 0) === 0);
+    const por = {};
+    const filas = L.map(({ p, i }) => { const por1 = d347Porteros(t, p); if (por1) por[por1] = (por[por1] || 0) + 1; return d347Fila(i, null, `${d347Cab(p, i)}<span class="d347-x">${por1 ? '🧤 ' + por1 : ''}</span>`); }).join('');
+    return { tit: `🧱 Porterías a cero: ${L.length}`, sub: `En ${L.length} de ${ps.length} partidos el rival no marcó`, html: filas || d347Vacio('Aún ninguna'),
+      ir: ['Ver los récords', { sub: 'subRecords' }] };
+  }
+  function d347EqAsis(t) {
+    const ps = t.partidos || []; let tot = 0; const por = {}, soc = {};
+    const filas = ps.map((p, i) => {
+      const gs = d347GolesH(p).filter(g => g.asistenteId != null || g.asistente);
+      let lista = gs.map(g => { if (g.asistenteId != null) { por[g.asistenteId] = (por[g.asistenteId] || 0) + 1; if (g.jugadorId != null) { const k = g.asistenteId + '>' + g.jugadorId; soc[k] = (soc[k] || 0) + 1; } }
+        return `<div class="d347-sub"><b>${ptsGolMin(g) != null ? ptsGolMin(g) + "'" : '–'}</b> 👟 ${d347Nom(t, g.asistenteId, g.asistente)} → ⚽ ${d347Nom(t, g.jugadorId, g.nombre)}</div>`; });
+      let n = gs.length;
+      if (!n) { // sin detalle de goles: se cuenta con el historial de cada niño
+        const hs = Object.values(t.jugadores || {}).map(j => ({ j, h: ptsHistDe(j, p) })).filter(x => x.h && (Number(x.h.asistencias) || 0) > 0);
+        n = hs.reduce((s, x) => s + (Number(x.h.asistencias) || 0), 0);
+        lista = hs.map(x => `<div class="d347-sub">👟 ${escHtml(estNom(x.j))}${x.h.asistencias > 1 ? ' ×' + x.h.asistencias : ''}</div>`);
+      }
+      tot += n; if (!n) return '';
+      return d347Fila(i, null, `<div class="d347-col"><div class="d347-top">${d347Cab(p, i)}<b class="d347-v">${n}</b></div>${lista.join('')}</div>`);
+    }).join('');
+    const top = Object.keys(por).sort((a, b) => por[b] - por[a]).slice(0, 3).map(id => `${d347Nom(t, id)} ${por[id]}`).join(' · ');
+    const sk = Object.keys(soc).sort((a, b) => soc[b] - soc[a])[0];
+    const socTxt = sk && soc[sk] >= 2 ? ` · La pareja que más se busca: ${d347Nom(t, sk.split('>')[0])} → ${d347Nom(t, sk.split('>')[1])} (${soc[sk]})` : '';
+    return { tit: `🅰️ Asistencias: ${tot}`, sub: 'Quién la dio y quién marcó, partido a partido', html: (top ? d347Pie(`Los que más asisten: ${top}${socTxt}`) : '') + (filas || d347Vacio('Aún ninguna')),
+      ir: ['Ver el ranking de asistencias', { sub: 'subRanking', sel: 'asistencias' }] };
+  }
+  function d347EqTiros(t) {
+    const ps = t.partidos || []; let tp = 0, tf = 0, gf = 0, mejor = null, peor = null;
+    const R = ps.map((p, i) => {
+      if (p.manual || p.tirosNuestrosPuerta == null) return { p, i, sin: true };
+      const a = Number(p.tirosNuestrosPuerta) || 0, f = Number(p.tirosNuestrosFuera) || 0, n = a + f, pc = n ? Math.round(a / n * 100) : null;
+      tp += a; tf += f; gf += Number(p.golesLocal) || 0;
+      const x = { p, i, a, f, n, pc };
+      if (n >= 4) { if (!mejor || pc > mejor.pc) mejor = x; if (!peor || pc < peor.pc) peor = x; }
+      return x;
+    });
+    const max = Math.max(1, ...R.filter(x => !x.sin).map(x => x.n));
+    const filas = R.map(x => x.sin ? d347Fila(x.i, null, `${d347Cab(x.p, x.i)}<span class="d347-x">sin datos de tiros</span>`, 'd347-gris')
+      : d347Fila(x.i, null, `${d347Cab(x.p, x.i)}<div class="d347-col" style="flex:1; min-width:0;"><div class="d347-bar"><i style="width:${x.n / max * 100}%; background:rgba(180,20,56,.45);"></i><i style="width:${x.a / max * 100}%; background:#b41438;"></i></div><small class="d347-mini">${x.a} a puerta · ${x.f} fuera</small></div><b class="d347-v">${x.n}<small>${x.pc != null ? x.pc + ' %' : ''}</small></b>`)).join('');
+    const n = tp + tf, pc = n ? Math.round(tp / n * 100) : 0, ef = n ? Math.round(gf / n * 100) : 0;
+    const pie = mejor && peor && mejor !== peor ? `Mejor puntería: ${escHtml(mejor.p.rival)} (${mejor.a} de ${mejor.n}). La peor: ${escHtml(peor.p.rival)} (${peor.a} de ${peor.n}).` : '';
+    return { tit: `🎯 Tiros: ${n}`, sub: 'Por partido: barra entera = tiros · parte fuerte = a puerta',
+      html: d347Tot([[n, 'tiros'], [tp, 'a puerta'], [pc + ' %', '% a puerta'], [ef + ' %', 'acaban en gol']]) + filas + d347Pie(pie + (pie ? ' ' : '') + 'Los partidos cargados a mano no tienen tiros.'),
+      ir: ['Ver las medias por partido', { sub: 'subMedias' }] };
+  }
+  function d347EqParadas(t) {
+    const ps = t.partidos || []; let tot = 0, dif = 0; const por = {};
+    const filas = ps.map((p, i) => {
+      let n = 0, d = 0; const qu = [];
+      Object.values(t.jugadores || {}).forEach(j => { const h = ptsHistDe(j, p); if (!h || !h.acc) return; const a = (Number(h.acc.par) || 0) + (Number(h.acc.parD) || 0); if (a > 0) { n += a; d += Number(h.acc.parD) || 0; qu.push(estNom(j)); por[estNom(j)] = (por[estNom(j)] || 0) + a; } });
+      tot += n; dif += d; if (!n) return '';
+      return d347Fila(i, null, `${d347Cab(p, i)}<span class="d347-x">🧤 ${escHtml(qu.join(' y '))}</span><b class="d347-v">${n}${d ? `<small>✋ ${d} ${d === 1 ? 'difícil' : 'difíc.'}</small>` : ''}</b>`);
+    }).join('');
+    const quien = Object.keys(por).length > 1 ? Object.keys(por).sort((a, b) => por[b] - por[a]).map(k => `${escHtml(k)} ${por[k]}`).join(' · ') : '';
+    return { tit: `🧤 Paradas: ${tot}`, sub: `${dif} ${dif === 1 ? 'de ellas difícil' : 'de ellas difíciles'}${quien ? ' · ' + quien : ''}`, html: filas || d347Vacio('Aún ninguna'), ir: null };
+  }
+
+  // ── niño ──
+  function d347Partidos(t, j) { return (t.partidos || []).map((p, i) => ({ p, i, h: ptsHistDe(j, p) })); }
+  function d347Papel(p, j, h) {
+    if (!h) return 'X';
+    const m = Number(h.mins) || 0;
+    if (Array.isArray(p.titulares) && p.titulares.length) return p.titulares.map(String).includes(String(j.id)) ? 'T' : (m > 0 ? 'S' : 'B');
+    return m > 0 ? '?' : 'B';
+  }
+  function d347NinoGoles(t, j, asis) {
+    const id = String(j.id); let tot = 0, p1 = 0, p2 = 0; const cpo = {};
+    const filas = d347Partidos(t, j).map(({ p, i, h }) => {
+      const gs = d347GolesH(p).filter(g => String(asis ? g.asistenteId : g.jugadorId) === id && !(!asis && g.propia));
+      const n = gs.length || (h ? Number(asis ? h.asistencias : h.goles) || 0 : 0); if (!n) return '';
+      tot += n;
+      const dur = (/^(\d+):/.exec(String(p.duracion || '')) || [0, 70])[1] / 2;
+      gs.forEach(g => { const m = ptsGolMin(g); if (m != null) { if (m <= dur) p1++; else p2++; } if (!asis && D347_CPO[g.cuerpo]) cpo[g.cuerpo] = (cpo[g.cuerpo] || 0) + 1; });
+      const lista = gs.length ? gs.map(g => `<div class="d347-sub"><b>${ptsGolMin(g) != null ? ptsGolMin(g) + "'" : '–'}</b> ${asis ? `⚽ Gol de ${d347Nom(t, g.jugadorId, g.nombre)}` : escHtml(d347Detalle(g) || 'Gol')}${!asis && (g.asistenteId != null || g.asistente) ? ` <small>· 👟 ${d347Nom(t, g.asistenteId, g.asistente)}</small>` : ''}</div>`).join('')
+        : `<div class="d347-sub"><small>sin minuto apuntado</small></div>`;
+      return d347Fila(i, j.id, `<div class="d347-col"><div class="d347-top">${d347Cab(p, i)}<b class="d347-v">${n}</b></div>${lista}</div>`);
+    }).join('');
+    const nom = escHtml(estNom(j));
+    let pie = p1 + p2 ? `${p1} en la 1.ª parte y ${p2} en la 2.ª.` : '';
+    if (!asis && Object.keys(cpo).length) pie += ` Con qué marca: ${Object.keys(cpo).sort((a, b) => cpo[b] - cpo[a]).map(k => `${D347_CPO[k].toLowerCase()} ${cpo[k]}`).join(', ')}.`;
+    return asis ? { tit: `🅰️ Asistencias de ${nom}: ${tot}`, sub: 'A quién y cuándo', html: (filas || d347Vacio('Aún ninguna')) + d347Pie(pie) }
+      : { tit: `⚽ Goles de ${nom}: ${tot}`, sub: 'Minuto, cómo fue y con qué', html: (filas || d347Vacio('Aún ninguno')) + d347Pie(pie) };
+  }
+  function d347NinoMin(t, j) {
+    const L = d347Partidos(t, j); let tot = 0, pj = 0, tit = 0, pos = 0; const papeles = [];
+    const filas = L.map(({ p, i, h }) => {
+      const m = h ? Number(h.mins) || 0 : 0, dur = Number((/^(\d+):/.exec(String(p.duracion || '')) || [0, 70])[1]) || 70, pa = d347Papel(p, j, h);
+      pos += dur; tot += m; if (m > 0) pj++; if (pa === 'T') tit++; papeles.push({ i, pa, m });
+      const col = pa === 'S' ? '#f5a623' : '#3498db';
+      const etq = { T: 'titular', S: 'suplente', B: 'no jugó', X: 'no convocado', '?': '' }[pa];
+      return d347Fila(i, j.id, `${d347Cab(p, i)}<div class="d347-col" style="flex:1; min-width:0;">${m > 0 ? d347Barra(m, dur, col) : ''}<small class="d347-mini">${etq}${dePortero(j, h) ? ' · 🧤 de portero' : ''}</small></div><b class="d347-v">${m > 0 ? m + "'" : '—'}</b>`, m > 0 ? '' : 'd347-gris');
+    }).join('');
+    const hayPapel = papeles.some(x => x.pa === 'T' || x.pa === 'S');
+    const cal = `<div class="d347-cal">${papeles.map(x => `<div class="c${x.pa === '?' ? 'Q' : x.pa}"><b>J${x.i + 1}</b>${{ T: 'Titular', S: 'Suplente', B: 'Banquillo', X: 'No conv.', '?': 'Jugó' }[x.pa]}</div>`).join('')}</div>`;
+    let racha = 0; for (let k = papeles.length - 1; k >= 0 && papeles[k].pa === 'T'; k--) racha++;
+    const nom = escHtml(estNom(j));
+    return { tit: `⏱ Minutos de ${nom}: ${tot}'`, sub: `${pj} ${pj === 1 ? 'partido' : 'partidos'}${hayPapel ? ` · titular en ${tit}` : ''} · ${pos ? Math.round(tot / pos * 100) : 0} % de los minutos posibles${pj ? ` · ${Math.round(tot / pj)}' por partido` : ''}`,
+      html: cal + (racha >= 2 ? d347Pie(`🔥 Lleva ${racha} partidos seguidos de titular.`) : '') + `<div style="height:8px;"></div>` + filas
+        + d347Pie(`<span style="color:#7cc3f5;">Azul</span>: titular · <span style="color:#fbbf24;">naranja</span>: suplente.${hayPapel ? '' : ' En los partidos antiguos no se apuntaba quién era titular.'}`) };
+  }
+  function dePortero(j, h) { try { return !!h && partidoPorteroDeCampo(j, h); } catch (e) { return false; } }
+  function d347NinoPeso(t, j) {
+    const r = pesoEquipoTemporada(t)[j.id]; if (!r || r.peso === null) return null;
+    const max = Math.max(1, ...r.partidos.filter(x => x.valorado).map(x => Math.abs(x.dif)));
+    const filas = r.partidos.map(x => {
+      if (!x.valorado) return d347Fila(x.i, j.id, `${d347Cab(x.p, x.i)}<span class="d347-x">pocos minutos</span><b class="d347-v" style="color:#64748b;">—</b>`, 'd347-gris');
+      const w = Math.min(1, Math.abs(x.dif) / max) * 50, c = pesoColor(x.dif);
+      return d347Fila(x.i, j.id, `${d347Cab(x.p, x.i)}<div class="d347-peso"><i style="${x.dif >= 0 ? 'left' : 'right'}:50%; width:${w}%; background:${c};"></i></div><b class="d347-v" style="color:${c};">${pesoFmt(x.dif, 1)}</b>`);
+    }).join('');
+    const val = r.partidos.filter(x => x.valorado), enc = val.filter(x => x.dif >= 0).length;
+    const top = val.slice().sort((a, b) => b.dif - a.dif).slice(0, 2).map(x => `${escHtml(x.p.rival)} (${pesoFmt(x.dif, 1)})`).join(' y ');
+    return { tit: `⚖️ Peso en el equipo de ${escHtml(estNom(j))}: ${pesoFmt(r.peso)}`, sub: "Su impacto por 70' frente a la media de los que jugaron ese día",
+      html: filas + d347Pie(`Por encima de sus compañeros en ${enc} de ${val.length} partidos.${top ? ` Donde más pesó: ${top}.` : ''}`) };
+  }
+  function d347NinoAcc(t, j, k) {
+    const A = D347_ACC[k]; if (!A) return null;
+    const ks = k === 'par' ? ['par', 'parD'] : [k];
+    let tot = 0, pj = 0; const L = d347Partidos(t, j).map(x => { const n = x.h && x.h.acc ? ks.reduce((s, q) => s + (Number(x.h.acc[q]) || 0), 0) : null; if (n != null) { tot += n; if ((Number(x.h.mins) || 0) > 0) pj++; } return Object.assign(x, { n }); });
+    const max = Math.max(1, ...L.map(x => x.n || 0));
+    const filas = L.filter(x => x.h && (Number(x.h.mins) || 0) > 0).map(x => x.n == null ? d347Fila(x.i, j.id, `${d347Cab(x.p, x.i)}<span class="d347-x">cargado a mano</span><b class="d347-v" style="color:#64748b;">—</b>`, 'd347-gris')
+      : d347Fila(x.i, j.id, `${d347Cab(x.p, x.i)}${d347Barra(x.n, max, '#b41438')}<b class="d347-v">${x.n}${k === 'par' && x.h.acc.parD ? `<small>✋ ${x.h.acc.parD}</small>` : ''}</b>`)).join('');
+    const mejor = L.filter(x => x.n).sort((a, b) => b.n - a.n)[0];
+    return { tit: `${A[0]} ${A[1]} de ${escHtml(estNom(j))}: ${tot}`, sub: `${pj ? d347n((tot / pj).toFixed(1)) + ' por partido' : ''}`,
+      html: (filas || d347Vacio('Sin partidos')) + d347Pie(mejor && mejor.n > 1 ? `Su mejor partido: ${escHtml(mejor.p.rival)} (${mejor.n} ${A[3]}).` : '') };
+  }
+  function d347NinoImp(t, j) {
+    let tot = 0, mins = 0;
+    const L = d347Partidos(t, j).filter(x => x.h && (Number(x.h.mins) || 0) > 0).map(x => { const imp = evoImpDe(x.h), m = Number(x.h.mins) || 0; tot += imp; mins += m; return Object.assign(x, { imp, m, p70: x.h.impPond !== undefined ? Number(x.h.impPond) : imp / m * 70 }); });
+    const max = Math.max(1, ...L.map(x => Math.abs(x.imp)));
+    const filas = L.map(x => { const c = x.imp >= 0 ? '#2ed573' : '#ff5c7a', w = Math.min(1, Math.abs(x.imp) / max) * 50;
+      return d347Fila(x.i, j.id, `${d347Cab(x.p, x.i)}<div class="d347-col" style="flex:1; min-width:0;"><div class="d347-peso"><i style="${x.imp >= 0 ? 'left' : 'right'}:50%; width:${w}%; background:${c};"></i></div><small class="d347-mini">${x.m}' · ${d347f(x.p70, 1)} por 70'</small></div><b class="d347-v" style="color:${c};">${d347f(x.imp, 1)}</b>`); }).join('');
+    if ((Number(j.minutos) || 0) > 0 && j.impactoAcum != null) { tot = Number(j.impactoAcum) || 0; mins = Number(j.minutos); } // la misma cifra que el Ranking y la ficha
+    const p70 = mins ? tot / mins * 70 : 0;
+    return { tit: `📈 Impacto de ${escHtml(estNom(j))}: ${d347f(p70)} por 70'`, sub: `Lo que sumó o restó en cada partido · total ${d347f(tot, 1)} en ${mins}'`,
+      html: (filas || d347Vacio('Sin partidos')) + d347Pie("El impacto incluye lo del equipo: goles a favor y en contra mientras está en el campo, portería a cero y tiros del rival. La cifra de la temporada es el total dividido entre sus minutos, por 70'.") };
+  }
+
+  // ── la hoja ──
+  function d347Modal() {
+    let m = document.getElementById('d347Modal');
+    if (!m) {
+      document.body.insertAdjacentHTML('beforeend', `<div id="d347Modal" role="dialog" aria-modal="true" aria-label="De dónde sale" onclick="if(event.target===this)d347Cerrar()" style="display:none; position:fixed; inset:0; z-index:965; background:rgba(0,0,0,.72); align-items:flex-end; justify-content:center; overscroll-behavior:contain;">
+        <div id="d347Caja"></div></div>`);
+      m = document.getElementById('d347Modal');
+    }
+    return m;
+  }
+  function d347Abrir(R) {
+    if (!R) return;
+    const m = d347Modal(), c = document.getElementById('d347Caja');
+    const ir = R.ir ? `<button type="button" class="d347-boton" onclick="d347IrSeccion()">${R.ir[0]} ›</button>` : '';
+    window.__d347Ir = R.ir ? R.ir[1] : null;
+    c.innerHTML = `<div class="d347-cabecera"><div style="flex:1; min-width:0;"><div class="d347-tit">${R.tit}</div>${R.sub ? `<div class="d347-subt">${R.sub}</div>` : ''}</div>
+      <button type="button" onclick="d347Cerrar()" aria-label="Cerrar" class="d347-x2">✕</button></div>${R.html}${ir}`;
+    if (m.style.display !== 'flex') d347Ov = document.body.style.overflow;
+    m.style.display = 'flex'; c.scrollTop = 0; document.body.style.overflow = 'hidden';
+  }
+  window.d347Cerrar = () => { const m = document.getElementById('d347Modal'); if (m) m.style.display = 'none'; document.body.style.overflow = d347Ov; };
+  window.d347IrSeccion = () => { const ir = window.__d347Ir; d347Cerrar(); if (!ir) return; try { buscaIr(Object.assign({ tipo: 'tarjeta' }, ir)); if (ir.sel) { const se = document.getElementById('rankingCriterioSelect'); if (se) { se.value = ir.sel; try { rerenderRanking(); } catch (e) {} } } } catch (e) { console.error('Desglose → sección:', e); } };
+  window.d347IrPartido = (i) => {
+    d347Cerrar();
+    const t = ultimaTemporada, p = t && t.partidos && t.partidos[i]; if (!p) return;
+    const clave = `${p.fecha || ''}|${p.rival || ''}`; partidosAbiertos.add(clave);
+    showTab('temporada');
+    try { const b = document.querySelector(`#temporada .subtab-btn[onclick*="'subPartidos'"]`); if (b && !b.classList.contains('active')) b.click(); } catch (e) {}
+    try { pintarPartidos(t); } catch (e) {}
+    setTimeout(() => {
+      let el = null; try { el = [...document.querySelectorAll('#subPartidos details.hp-det')].find(d => d.dataset.k === clave); } catch (e) {}
+      if (el) { el.open = true; el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } else { const sp = document.getElementById('subPartidos'); if (sp) sp.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    }, 120);
+  };
+  window.d347IrNino = (i, jid) => { d347Cerrar(); try { window.abrirFichaPartido(i, jid); } catch (e) { console.error('Desglose → ficha del partido:', e); } };
+  window.d347Equipo = (k) => {
+    const t = ultimaTemporada; if (!t) return;
+    try { d347Abrir({ goles: d347EqGoles, cero: d347EqCero, asis: d347EqAsis, tiros: d347EqTiros, paradas: d347EqParadas }[k](t)); } catch (e) { console.error('Desglose del equipo:', e); }
+  };
+  window.d347Nino = (jid, k, ev) => {
+    if (ev) ev.stopPropagation();
+    const t = ultimaTemporada; if (!t) return; const j = d347Jug(t, jid); if (!j) return;
+    try {
+      const R = k === 'goles' ? d347NinoGoles(t, j, false) : k === 'asis' ? d347NinoGoles(t, j, true) : k === 'min' ? d347NinoMin(t, j) : k === 'peso' ? d347NinoPeso(t, j) : k === 'imp' ? d347NinoImp(t, j) : d347NinoAcc(t, j, k);
+      d347Abrir(R);
+    } catch (e) { console.error('Desglose del niño:', e); }
+  };
+  // atributo para una cifra del niño que se puede tocar (ficha y Ranking)
+  function d347Attr(jid, k) { return `role="button" tabindex="0" onclick="d347Nino('${escHtml(String(jid))}', '${k}', event)"`; }
+  // la hoja también se cierra deslizando hacia abajo, como las demás
+  try { H335.push(['d347Modal', '#d347Caja', 'd347Cerrar']); } catch (e) {}
+
   window.irAPartidoTemporada = function () {
     const t = ultimaTemporada, m = ultimoMatchData;
     let p = null;
@@ -17904,7 +18206,7 @@
     window.addEventListener('scroll', prog, { passive: true });
     prog();
   })();
-  const VIS_VERSION = 346;
+  const VIS_VERSION = 347;
   function visSO() { try { const u = navigator.userAgent || ''; if (/iPhone|iPad|iPod/i.test(u) || (/Macintosh/i.test(u) && navigator.maxTouchPoints > 1)) return 'i'; if (/Android/i.test(u)) return 'a'; } catch (e) {} return 'o'; }
   function visMhCambio(v) { // v268: al cambiar «Mi hijo», se apunta el niño nuevo (o se quita)
     if (!visActivo() || !visDia) return;
